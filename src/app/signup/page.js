@@ -25,7 +25,7 @@ export default function SignupPage() {
 
   return (
     <div 
-      className="min-h-screen flex items-center justify-center bg-cover bg-center bg-no-repeat p-4"
+      className="pt-18 min-h-screen flex items-center justify-center bg-cover bg-center bg-no-repeat p-4"
       style={{ backgroundImage: "url('/Images/Backg.png')" }}
     >
       <div className="bg-white/90 backdrop-blur-sm rounded-2xl shadow-xl w-full max-w-md overflow-hidden border border-white/20">
