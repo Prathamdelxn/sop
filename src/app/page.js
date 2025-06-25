@@ -7,7 +7,7 @@ const ActionButton = ({ href, children, variant = "blue" }) => {
     blue: "bg-blue-600 hover:bg-blue-700 hover:shadow-blue-500/25",
     green: "bg-green-600 hover:bg-green-700 hover:shadow-green-500/25"
   };
-  
+
   return (
     <Link
       href={href}
@@ -35,23 +35,23 @@ export default function Home() {
       <div className="absolute top-20 left-10 w-4 h-4 bg-blue-400/70 rounded-full animate-pulse"></div>
       <div className="absolute top-40 right-20 w-6 h-6 bg-green-400/60 rounded-full animate-ping"></div>
       <div className="absolute bottom-32 left-20 w-3 h-3 bg-purple-400/80 rounded-full animate-bounce"></div>
-      
+
       <WelcomeCard>
         <h1 className="text-4xl font-bold mb-6 bg-gradient-to-r from-blue-600 via-purple-600 to-green-600 bg-clip-text text-transparent">
           Welcome to Our App
         </h1>
-        
+
         <p className="text-gray-600 mb-8 text-lg">
           Your journey starts here
         </p>
-        
+
         <div className="space-y-4">
           <div className="animate-bounce" style={{ animationDelay: '0s', animationDuration: '3s' }}>
             <ActionButton href="/login" variant="blue">
               Login
             </ActionButton>
           </div>
-          
+
           <div className="animate-bounce" style={{ animationDelay: '0.5s', animationDuration: '3s' }}>
             <ActionButton href="/signup" variant="green">
               Sign Up

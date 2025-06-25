@@ -20,7 +20,7 @@ export default function ForgotPasswordPage() {
   };
 
   return (
-    <div 
+    <div
       className="min-h-screen flex items-center justify-center bg-cover bg-center bg-no-repeat p-4"
       style={{ backgroundImage: "url('/Images/Backg.png')" }}
     >
@@ -44,8 +44,8 @@ export default function ForgotPasswordPage() {
                 </svg>
               </div>
               <p className="text-green-600 mb-4">{message}</p>
-              <Link 
-                href="/login" 
+              <Link
+                href="/login"
                 className="inline-flex items-center text-blue-500 hover:underline font-medium"
               >
                 Back to Login
@@ -72,9 +72,8 @@ export default function ForgotPasswordPage() {
                 <button
                   type="submit"
                   disabled={isLoading}
-                  className={`w-full py-3 bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-lg transition-all shadow-sm flex items-center justify-center ${
-                    isLoading ? 'opacity-75 cursor-not-allowed' : ''
-                  }`}
+                  className={`w-full py-3 bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-lg transition-all shadow-sm flex items-center justify-center ${isLoading ? 'opacity-75 cursor-not-allowed' : ''
+                    }`}
                 >
                   {isLoading ? (
                     <>
