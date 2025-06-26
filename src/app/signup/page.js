@@ -24,13 +24,13 @@ export default function SignupPage() {
   };
 
   return (
-    <div 
-      className="min-h-screen flex items-center justify-center bg-cover bg-center bg-no-repeat p-4"
+    <div
+      className="pt-18 min-h-screen flex items-center justify-center bg-cover bg-center bg-no-repeat p-4"
       style={{ backgroundImage: "url('/Images/Backg.png')" }}
     >
       <div className="bg-white/90 backdrop-blur-sm rounded-2xl shadow-xl w-full max-w-md overflow-hidden border border-white/20">
         <div className="p-1 bg-gradient-to-r from-blue-500 to-blue-600"></div>
-        
+
         <div className="px-8 py-6">
           <div className="text-center mb-6">
             <h1 className="text-2xl font-semibold text-gray-800">Create Your Account</h1>
