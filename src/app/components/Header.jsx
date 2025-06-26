@@ -72,17 +72,12 @@ const Header = () => {
 
           {/* CTA Buttons */}
           <div className="hidden md:flex items-center space-x-3">
-            <Link
-              href="/login"
-              className="px-4 py-2 text-sm font-medium text-blue-300 hover:text-white transition-colors"
-            >
-              Sign In
-            </Link>
+          
             <Link
               href="/demo"
               className="rounded-md bg-gradient-to-r from-blue-500 to-blue-600 px-4 py-2 text-sm font-medium text-white shadow-sm hover:from-blue-600 hover:to-blue-700 transition-all duration-300 hover:shadow-lg"
             >
-              Request Demo
+                Sign In
             </Link>
           </div>
 
@@ -131,19 +126,13 @@ const Header = () => {
               ))}
             </div>
             <div className="border-t border-slate-700 px-2 py-4">
-              <Link
-                href="/login"
-                className="block w-full rounded-md px-3 py-2 text-base font-medium text-slate-300 hover:bg-slate-700 hover:text-white mb-2"
-                onClick={() => setMobileMenuOpen(false)}
-              >
-                Sign In
-              </Link>
+            
               <Link
                 href="/demo"
                 className="block w-full rounded-md bg-gradient-to-r from-blue-500 to-blue-600 px-3 py-2 text-center text-base font-medium text-white shadow-sm hover:from-blue-600 hover:to-blue-700"
                 onClick={() => setMobileMenuOpen(false)}
               >
-                Request Demo
+                Sign In
               </Link>
             </div>
           </motion.div>
