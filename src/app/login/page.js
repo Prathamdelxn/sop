@@ -1,105 +1,223 @@
 "use client";
+import React, { useState } from 'react';
+import { ArrowRight, User, Lock, Shield, CheckCircle, Settings, Eye, EyeOff, Beaker, ClipboardCheck } from 'lucide-react';
 
-import { useState } from 'react';
-import Link from 'next/link';
+const LoginPage = () => {
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [selectedRole, setSelectedRole] = useState('operator');
+  const [showPassword, setShowPassword] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
 
-export default function LoginPage() {
-    const [formData, setFormData] = useState({
-        username: '',
-        password: ''
-    });
+  const roles = [
+    { id: 'admin', name: 'Admin', icon: Shield, color: 'bg-red-500 hover:bg-red-600' },
+    { id: 'operator', name: 'Operator', icon: User, color: 'bg-blue-500 hover:bg-blue-600' },
+    { id: 'supervisor', name: 'Supervisor', icon: CheckCircle, color: 'bg-green-500 hover:bg-green-600' },
+    { id: 'qa', name: 'QA', icon: ClipboardCheck, color: 'bg-purple-500 hover:bg-purple-600' },
+    { id: 'equipment_admin', name: 'Equipment', icon: Settings, color: 'bg-orange-500 hover:bg-orange-600' }
+  ];
 
-    const handleChange = (e) => {
-        setFormData({
-            ...formData,
-            [e.target.name]: e.target.value
-        });
-    };
+  const handleLogin = async () => {
+    setIsLoading(true);
+    // Simulate login process
+    await new Promise(resolve => setTimeout(resolve, 2000));
+    setIsLoading(false);
+  };
 
-    const handleSubmit = (e) => {
-        e.preventDefault();
-        // Add your login logic here
-        console.log('Login form submitted:', formData);
-    };
-
-    return (
-        <div
-            className="pt-15 min-h-screen flex items-center justify-center bg-cover bg-center bg-no-repeat p-4"
-            style={{ backgroundImage: "url('/Images/Backg.png')" }}
-        >
-            <div className="bg-white/95 backdrop-blur-sm rounded-xl shadow-xl w-full max-w-sm border border-white/20">
-                <div className="p-6">
-                    <div className="text-center mb-8">
-                        <div className="w-16 h-16 bg-blue-50 rounded-full flex items-center justify-center mx-auto mb-4">
-                            <svg className="w-7 h-7 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M11 16l-4-4m0 0l4-4m-4 4h14m-5 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h7a3 3 0 013 3v1" />
-                            </svg>
-                        </div>
-                        <h2 className="text-2xl font-semibold text-gray-800">Welcome Back</h2>
-                        <p className="text-gray-500 text-sm mt-1">Login to continue</p>
-                    </div>
-
-                    <form onSubmit={handleSubmit} className="space-y-5">
-                        <div>
-                            <label className="block text-sm font-medium text-gray-600 mb-1">Username</label>
-                            <input
-                                type="text"
-                                name="username"
-                                value={formData.username}
-                                onChange={handleChange}
-                                placeholder="Enter your username"
-                                className="w-full px-4 py-2.5 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-300 focus:border-transparent transition-all"
-                                required
-                            />
-                        </div>
-
-                        <div>
-                            <label className="block text-sm font-medium text-gray-600 mb-1">Password</label>
-                            <input
-                                type="password"
-                                name="password"
-                                value={formData.password}
-                                onChange={handleChange}
-                                placeholder="Enter your password"
-                                className="w-full px-4 py-2.5 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-300 focus:border-transparent transition-all"
-                                required
-                                minLength="6"
-                            />
-                        </div>
-
-                        <div className="flex items-center justify-between">
-                            <div className="flex items-center">
-                                <input
-                                    id="remember-me"
-                                    name="remember-me"
-                                    type="checkbox"
-                                    className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
-                                />
-                                <label htmlFor="remember-me" className="ml-2 text-sm text-gray-600">
-                                    Remember me
-                                </label>
-                            </div>
-                            <Link href="/forgetpassword" className="text-sm text-blue-500 hover:underline">
-                                Forgot password?
-                            </Link>
-                        </div>
-
-                        <button
-                            type="submit"
-                            className="w-full py-3 bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-lg transition-all shadow-sm"
-                        >
-                            Login
-                        </button>
-                    </form>
-
-                    <div className="mt-6 text-center text-sm">
-                        <span className="text-gray-600">Don't have an account? </span>
-                        <Link href="/signup" className="text-blue-500 font-medium hover:underline">
-                            Create account
-                        </Link>
-                    </div>
-                </div>
-            </div>
+  return (
+    <div className="min-h-screen flex">
+      {/* Left Side - Company Branding */}
+      <div className="hidden lg:flex lg:w-1/2 bg-slate-900 relative overflow-hidden">
+        {/* Subtle background pattern */}
+        <div className="absolute inset-0 opacity-5">
+          <div className="absolute inset-0" style={{
+            backgroundImage: `url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23ffffff' fill-opacity='0.1'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E")`
+          }}></div>
         </div>
-    );
-}
+
+        <div className="relative z-10 flex flex-col justify-center items-center p-12 text-center">
+          {/* Company Logo/Icon */}
+          <div className="mb-12">
+            <div className="relative">
+              {/* Glow effect */}
+              <div className="absolute -inset-4 bg-blue-500/20 rounded-full blur-xl"></div>
+              {/* Main logo container */}
+              <div className="relative w-32 h-32 bg-gradient-to-br from-blue-500 to-blue-600 rounded-3xl flex items-center justify-center shadow-2xl border border-blue-400/20">
+                <Beaker className="w-16 h-16 text-white" />
+              </div>
+            </div>
+          </div>
+
+          {/* Company Info */}
+          <div className="max-w-md">
+            <h1 className="text-4xl font-bold text-white mb-4 leading-tight">
+              CleanVal
+              <span className="text-blue-400">Pro</span>
+            </h1>
+            <div className="w-16 h-1 bg-blue-500 mx-auto mb-6 rounded-full"></div>
+            <p className="text-xl text-slate-300 mb-8 leading-relaxed">
+              Industrial Cleaning Validation System
+            </p>
+            <p className="text-slate-400 text-sm leading-relaxed">
+              GMP compliant digital workflow for pharmaceutical and food manufacturing excellence. 
+              Streamline your validation processes with our comprehensive platform.
+            </p>
+          </div>
+
+          {/* Features */}
+          <div className="mt-12 grid grid-cols-1 gap-4 w-full max-w-sm">
+            {[
+              { icon: Shield, text: 'GMP Compliant' },
+              { icon: ClipboardCheck, text: 'Digital Workflows' },
+              { icon: CheckCircle, text: 'Real-time Monitoring' }
+            ].map((feature, index) => (
+              <div key={index} className="flex items-center space-x-3 text-slate-300 group hover:text-white transition-colors">
+                <div className="w-8 h-8 bg-slate-800 rounded-lg flex items-center justify-center group-hover:bg-blue-600 transition-colors">
+                  <feature.icon className="w-4 h-4" />
+                </div>
+                <span className="text-sm font-medium">{feature.text}</span>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        {/* Bottom decoration */}
+        <div className="absolute bottom-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-blue-500/50 to-transparent"></div>
+      </div>
+
+      {/* Right Side - Login Form */}
+      <div className="w-full lg:w-1/2 bg-white flex items-center justify-center p-8">
+        <div className="w-full max-w-md">
+          {/* Header */}
+          <div className="text-center mb-8">
+            <h2 className="text-3xl font-bold text-gray-900 mb-2">Welcome Back</h2>
+            <p className="text-gray-600">Sign in to access your dashboard</p>
+          </div>
+
+          {/* Role Selection */}
+          <div className="mb-8">
+            <label className="block text-sm font-semibold text-gray-700 mb-4">Select Your Role</label>
+            <div className="grid grid-cols-5 gap-2">
+              {roles.map((role) => {
+                const IconComponent = role.icon;
+                return (
+                  <button
+                    key={role.id}
+                    onClick={() => setSelectedRole(role.id)}
+                    className={`group relative p-3 rounded-xl transition-all duration-200 transform hover:scale-105 ${
+                      selectedRole === role.id
+                        ? `${role.color.split(' ')[0]} text-white shadow-lg`
+                        : 'bg-gray-50 text-gray-600 hover:bg-gray-100 border border-gray-200'
+                    }`}
+                  >
+                    <IconComponent className="w-5 h-5 mx-auto mb-1" />
+                    <div className="text-xs font-medium">{role.name}</div>
+                    {selectedRole === role.id && (
+                      <div className="absolute inset-0 rounded-xl ring-2 ring-blue-500 ring-opacity-50"></div>
+                    )}
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+
+          {/* Login Form */}
+          <div className="space-y-6">
+            {/* Email Input */}
+            <div>
+              <label htmlFor="email" className="block text-sm font-semibold text-gray-700 mb-2">
+                Email Address
+              </label>
+              <div className="relative group">
+                <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
+                  <User className="h-5 w-5 text-gray-400 group-focus-within:text-blue-500 transition-colors" />
+                </div>
+                <input
+                  id="email"
+                  type="email"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  placeholder="Enter your email"
+                  className="block w-full pl-12 pr-4 py-4 border border-gray-300 rounded-xl text-gray-900 placeholder-gray-500 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200 bg-gray-50 focus:bg-white"
+                  required
+                />
+              </div>
+            </div>
+
+            {/* Password Input */}
+            <div>
+              <label htmlFor="password" className="block text-sm font-semibold text-gray-700 mb-2">
+                Password
+              </label>
+              <div className="relative group">
+                <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
+                  <Lock className="h-5 w-5 text-gray-400 group-focus-within:text-blue-500 transition-colors" />
+                </div>
+                <input
+                  id="password"
+                  type={showPassword ? "text" : "password"}
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  placeholder="Enter your password"
+                  className="block w-full pl-12 pr-12 py-4 border border-gray-300 rounded-xl text-gray-900 placeholder-gray-500 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200 bg-gray-50 focus:bg-white"
+                  required
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowPassword(!showPassword)}
+                  className="absolute inset-y-0 right-0 pr-4 flex items-center text-gray-400 hover:text-gray-600 transition-colors"
+                >
+                  {showPassword ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
+                </button>
+              </div>
+            </div>
+
+            {/* Additional Options */}
+            <div className="flex items-center justify-between text-sm">
+              <label className="flex items-center">
+                <input type="checkbox" className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500" />
+                <span className="ml-2 text-gray-600">Remember me</span>
+              </label>
+              <button className="text-blue-600 hover:text-blue-700 font-medium transition-colors">
+                Forgot password?
+              </button>
+            </div>
+
+            {/* Submit Button */}
+            <button
+              onClick={handleLogin}
+              disabled={isLoading}
+              className={`group relative w-full flex justify-center items-center py-4 px-6 border border-transparent rounded-xl text-white font-semibold transition-all duration-200 transform hover:scale-[1.02] focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 ${
+                isLoading 
+                  ? 'bg-gray-400 cursor-not-allowed' 
+                  : 'bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 shadow-lg hover:shadow-xl'
+              }`}
+            >
+              {isLoading ? (
+                <>
+                  <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin mr-3" />
+                  Signing In...
+                </>
+              ) : (
+                <>
+                  <span>Sign In to Dashboard</span>
+                  <ArrowRight className="ml-2 h-5 w-5 group-hover:translate-x-1 transition-transform" />
+                </>
+              )}
+            </button>
+          </div>
+
+          {/* Footer */}
+          <div className="mt-8 text-center">
+            <div className="flex items-center justify-center space-x-2 text-sm text-gray-500">
+              <Shield className="w-4 h-4" />
+              <span>Secured & GMP Compliant</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+export default LoginPage;
