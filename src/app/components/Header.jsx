@@ -50,7 +50,7 @@ const Header = () => {
                   className="h-10 w-auto"
                 /> */}
                 <span className="ml-2 text-xl font-bold bg-gradient-to-r from-blue-400 to-blue-300 bg-clip-text text-transparent">
-                  CleanTrack Pro
+                  ManufacturingExecutionSystem
                 </span>
               </motion.div>
             </Link>
