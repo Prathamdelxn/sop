@@ -305,38 +305,7 @@ const Footer = () => {
                 </div>
 
                 {/* Bottom Section */}
-                <div className="border-t border-slate-700/50 pt-8">
-                    <div className="flex flex-col lg:flex-row justify-between items-center">
-                        <div className="flex flex-col lg:flex-row items-center mb-6 lg:mb-0">
-                            <div className="flex items-center space-x-4 mb-4 lg:mb-0 lg:mr-8">
-                                <div className="flex items-center bg-slate-700/50 px-4 py-2 rounded-full">
-                                    <GlobeIcon />
-                                    <span className="text-sm text-slate-300 ml-2">Web Application</span>
-                                </div>
-                                <div className="flex items-center bg-slate-700/50 px-4 py-2 rounded-full">
-                                    <SmartphoneIcon />
-                                    <span className="text-sm text-slate-300 ml-2">Mobile Ready</span>
-                                </div>
-                            </div>
-
-                            <div className="text-center lg:text-left">
-                                <p className="text-sm text-slate-300 font-medium">
-                                    © 2025 PharmaSOP Digital Workflow
-                                </p>
-                                <p className="text-xs text-slate-400 mt-1">
-                                    v1.0.0 | React + Next.js | Node.js + Express | MongoDB
-                                </p>
-                            </div>
-                        </div>
-
-                        <div className="flex items-center space-x-4">
-                            <div className="flex items-center text-xs text-slate-400">
-                                <div className="w-2 h-2 bg-emerald-400 rounded-full mr-2 animate-pulse"></div>
-                                All systems operational
-                            </div>
-                        </div>
-                    </div>
-                </div>
+               
             </div>
         </footer>
     );
