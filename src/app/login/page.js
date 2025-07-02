@@ -85,7 +85,7 @@ console.log(data);
           {/* Company Info */}
           <div className="max-w-md">
             <h1 className="text-4xl font-bold text-white mb-4 leading-tight">
-              CleanVal
+              Manufacturing Execution System
               <span className="text-blue-400">Pro</span>
             </h1>
             <div className="w-16 h-1 bg-blue-500 mx-auto mb-6 rounded-full"></div>
@@ -99,7 +99,7 @@ console.log(data);
           </div>
 
           {/* Features */}
-          <div className="mt-12 grid grid-cols-1 gap-4 w-full max-w-sm">
+          {/* <div className="mt-12 grid grid-cols-1 gap-4 w-full max-w-sm">
             {[
               { icon: Shield, text: 'GMP Compliant' },
               { icon: ClipboardCheck, text: 'Digital Workflows' },
@@ -112,7 +112,7 @@ console.log(data);
                 <span className="text-sm font-medium">{feature.text}</span>
               </div>
             ))}
-          </div>
+          </div> */}
         </div>
 
         {/* Bottom decoration */}

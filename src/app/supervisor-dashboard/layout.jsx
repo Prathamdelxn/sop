@@ -107,7 +107,10 @@ fetchUser();
               return (
                 <div
                   key={label}
-                  onClick={() => setActiveItem(label)}
+                  onClick={() => 
+                    {
+                        router.push("/supervisor-dashboard/assign-task")
+                        setActiveItem(label)}}
                   className={`flex flex-col items-center text-center cursor-pointer transition-all duration-200 px-4 py-3 rounded-xl transform hover:scale-105 ${
                     isActive
                       ? "text-blue-600 bg-gradient-to-br from-blue-50 to-blue-100 border-2 border-blue-200 shadow-lg"
