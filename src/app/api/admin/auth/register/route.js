@@ -1,4 +1,4 @@
-import dbConnect from "@/lib/db";
+import dbConnect from "@/utils/db";
 import Admin from "@/model/Admin";
 import bcrypt from "bcryptjs";
 import { NextResponse } from "next/server";
