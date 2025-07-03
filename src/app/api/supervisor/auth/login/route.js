@@ -1,7 +1,7 @@
 // /app/api/supervisor/auth/login/route.js
 
 import { NextResponse } from 'next/server';
-import dbConnect from '@/lib/db';
+import dbConnect from '@/utils/db';
 import Supervisor from '@/model/Supervisor';
 import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
