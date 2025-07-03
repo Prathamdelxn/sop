@@ -300,7 +300,10 @@ const LoginPage = () => {
         router.push('/admin');
       } else if (selectedRole === "supervisor") {
         router.push('/supervisor-dashboard');
-      } else if (selectedRole === "facility-admin") {
+      } else if (selectedRole === "operator") {
+        router.push('/operator-dashboard');
+      } 
+      else if (selectedRole === "facility-admin") {
         router.push('/facility-dashboard');
       }
 

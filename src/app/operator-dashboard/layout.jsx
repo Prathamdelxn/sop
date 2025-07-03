@@ -1,9 +1,10 @@
 "use client";
  
-import { useState } from "react";
+import { useState,useEffect } from "react";
 import { Bell, Users, ClipboardEdit, LogOut, ClipboardList, BarChart3, UserPlus } from "lucide-react";
- 
+ import { useRouter } from "next/navigation";
 export default function Layout({ children }) {
+    const router=useRouter();
   const [activeItem, setActiveItem] = useState("Create Task");
  
   const sidebarItems = [
@@ -24,7 +25,23 @@ export default function Layout({ children }) {
       icon: <BarChart3 className="w-6 h-6 mb-2" />
     }
   ];
- 
+  const handleLogout = () => {
+  localStorage.removeItem('token');
+  localStorage.removeItem('user');
+  router.replace('/login'); // You can also use replace instead of push
+};
+const[userDetails,setUSer]=useState();
+ useEffect(()=>{
+    const data =localStorage.getItem('user');
+    console.log("Data",data)
+    const userData=JSON.parse(data);
+    if(userData?.role!="operator"){
+        router.push("/login")
+    }
+   
+    setUSer(userData);
+
+  },[])
   return (
     <div className="flex flex-col min-h-screen">
       {/* Top Navbar */}
@@ -37,7 +54,7 @@ export default function Layout({ children }) {
             <div className="text-xl">System</div>
           </div>
           <div className="text-sm text-gray-800 font-normal">
-            Welcome, <strong>Lorem Ipsum</strong>{" "}
+            Welcome, <strong>{userDetails?.name || "Lorem Ipsum"}</strong>{" "}
             <span className="text-gray-500">(Operator)</span>
           </div>
         </div>
@@ -45,7 +62,7 @@ export default function Layout({ children }) {
         <div className="flex items-center gap-5">
           <Bell className="w-6 h-6 text-blue-600 cursor-pointer hover:text-blue-800" />
           <Users className="w-6 h-6 text-blue-600 cursor-pointer hover:text-blue-800" />
-          <button className="flex items-center gap-2 bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600">
+          <button onClick={handleLogout} className="flex items-center gap-2 bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600">
             <LogOut className="w-4 h-4" />
             Log out
           </button>

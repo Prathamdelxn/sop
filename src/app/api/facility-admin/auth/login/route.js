@@ -1,6 +1,6 @@
 // app/api/login/route.js
 import { NextResponse } from "next/server";
-import dbConnect from "@/lib/db"; // your MongoDB connection utility
+import dbConnect from "@/utils/db"; // your MongoDB connection utility
 import FacilityAdmin from "@/model/FacilityAdmin";
 import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";

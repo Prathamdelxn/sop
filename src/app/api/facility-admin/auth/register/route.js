@@ -2,7 +2,7 @@ import { NextResponse } from 'next/server';
 import mongoose from 'mongoose';
 import bcrypt from 'bcryptjs';
 import FacilityAdmin from '@/model/FacilityAdmin'; // Ensure this is the correct model path
-import dbConnect from '@/lib/db'; // DB connection utility
+import dbConnect from '@/utils/db'; // DB connection utility
 
 export async function POST(req) {
   await dbConnect();

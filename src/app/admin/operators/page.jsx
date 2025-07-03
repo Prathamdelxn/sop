@@ -1,29 +1,10 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Plus, Search, Filter, Edit, Trash2, Mail, Phone, MapPin, Users, Activity } from 'lucide-react';
-import { useEffect } from 'react';
+
 const SupervisorsPage = () => {
-  const [supervisors, setSupervisors] = useState([
-    {
-      id: 1,
-      name: 'John Smith',
-      email: 'john.smith@company.com',
-      phone: '+1 (555) 123-4567',
-      status: 'active',
-      location: 'New York, NY',
-    },
-    {
-      id: 2,
-      name: 'Sarah Johnson',
-      email: 'sarah.johnson@company.com',
-      phone: '+1 (555) 234-5678',
-      status: 'active',
-      location: 'Los Angeles, CA',
-    }
-  ]);
-
-
+  const [supervisors, setSupervisors] = useState([]);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingSupervisor, setEditingSupervisor] = useState(null);
   const [searchTerm, setSearchTerm] = useState('');
@@ -37,13 +18,37 @@ const SupervisorsPage = () => {
     password: '',
   });
 
+  // Fetch all operators
+  useEffect(() => {
+    const fetchOperators = async () => {
+      try {
+        const res = await fetch('/api/operator/fetchAll');
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.message);
+
+        const operatorsWithId = data.operators.map(op => ({
+          id: op._id,
+          name: op.name,
+          email: op.email,
+          phone: op.phone,
+          location: op.location,
+          status: op.status,
+        }));
+        setSupervisors(operatorsWithId);
+      } catch (error) {
+        console.error('Fetch error:', error);
+        alert('Failed to fetch operators');
+      }
+    };
+
+    fetchOperators();
+  }, []);
+
   const handleAddSupervisor = () => {
     setEditingSupervisor(null);
     setFormData({ name: '', email: '', phone: '', location: '', password: '' });
     setIsModalOpen(true);
   };
-
-
 
   const handleEditSupervisor = (supervisor) => {
     setEditingSupervisor(supervisor);
@@ -52,39 +57,59 @@ const SupervisorsPage = () => {
       email: supervisor.email,
       phone: supervisor.phone,
       location: supervisor.location,
-      password: '', // Don't show/edit password on update
+      password: '',
     });
     setIsModalOpen(true);
   };
 
+  const handleSubmit = async () => {
+    try {
+      const res = await fetch('/api/operator/register', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(formData),
+      });
 
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.message);
 
-const handleSubmit = async () => {
- console.log("hello world")
-};
+      const newOperator = data.operator;
+      setSupervisors(prev => [...prev, {
+        id: newOperator.id,
+        name: newOperator.name,
+        email: newOperator.email,
+        phone: newOperator.phone,
+        location: newOperator.location,
+        status: newOperator.status,
+      }]);
 
-const handleDelete = async (id) => {
-  if (!window.confirm('Are you sure you want to delete this supervisor?')) return;
-
-  try {
-    const res = await fetch(`/api/supervisor/delete-by-id/${id}`, {
-      method: 'DELETE',
-    });
-
-    const data = await res.json();
-
-    if (!res.ok) {
-      alert(data.message || 'Failed to delete supervisor');
-      return;
+      setIsModalOpen(false);
+      setFormData({ name: '', email: '', phone: '', location: '', password: '' });
+      alert('Operator registered successfully!');
+    } catch (error) {
+      console.error('Registration error:', error);
+      alert(error.message || 'Something went wrong.');
     }
+  };
 
-    setSupervisors((prev) => prev.filter((s) => s.id !== id));
-  } catch (error) {
-    console.error('Error deleting supervisor:', error);
-    alert('Something went wrong.');
-  }
-};
+  const handleDelete = async (id) => {
+    if (!window.confirm('Are you sure you want to delete this operator?')) return;
 
+    try {
+      const res = await fetch(`/api/operator/delete-by-id/${id}`, {
+        method: 'DELETE',
+      });
+
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.message);
+
+      setSupervisors(prev => prev.filter(s => s.id !== id));
+      alert('Deleted successfully');
+    } catch (error) {
+      console.error('Delete error:', error);
+      alert(error.message || 'Something went wrong.');
+    }
+  };
 
   const filteredSupervisors = supervisors.filter(supervisor => {
     const matchesSearch =
@@ -105,16 +130,15 @@ const handleDelete = async (id) => {
       <div className="flex justify-between items-center">
         <div>
           <h1 className="text-3xl font-bold text-gray-900">Facility Admin</h1>
-          <p className="text-gray-600 mt-2">Manage your supervisors and their info</p>
+          <p className="text-gray-600 mt-2">Manage your operators and their info</p>
         </div>
         <button
           onClick={handleAddSupervisor}
           className="flex items-center space-x-2 bg-gradient-to-r from-blue-600 to-purple-600 text-white px-6 py-3 rounded-xl hover:from-blue-700 hover:to-purple-700 transition-all duration-200 shadow-lg hover:shadow-xl transform hover:scale-105"
         >
           <Plus className="h-5 w-5" />
-          <span>Add Facility Admin</span>
+          <span>Add Operator</span>
         </button>
-
       </div>
 
       {/* Summary */}
@@ -122,7 +146,7 @@ const handleDelete = async (id) => {
         <div className="bg-gradient-to-br from-blue-50 to-blue-100 p-6 rounded-xl border border-blue-200">
           <div className="flex justify-between items-center">
             <div>
-              <p className="text-blue-600 text-sm font-medium">Total Facility Admin</p>
+              <p className="text-blue-600 text-sm font-medium">Total Operators</p>
               <p className="text-2xl font-bold text-blue-900">{supervisors.length}</p>
             </div>
             <div className="bg-blue-500 p-3 rounded-lg">
@@ -133,7 +157,7 @@ const handleDelete = async (id) => {
         <div className="bg-gradient-to-br from-green-50 to-green-100 p-6 rounded-xl border border-green-200">
           <div className="flex justify-between items-center">
             <div>
-              <p className="text-green-600 text-sm font-medium">Active Facility Admin</p>
+              <p className="text-green-600 text-sm font-medium">Active Operators</p>
               <p className="text-2xl font-bold text-green-900">{supervisors.filter(s => s.status === 'active').length}</p>
             </div>
             <div className="bg-green-500 p-3 rounded-lg">
@@ -150,7 +174,7 @@ const handleDelete = async (id) => {
             <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400" />
             <input
               type="text"
-              placeholder="Search supervisors..."
+              placeholder="Search operators..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
               className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
@@ -171,7 +195,7 @@ const handleDelete = async (id) => {
         </div>
       </div>
 
-      {/* Supervisors List */}
+      {/* Operators List */}
       <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-6">
         {filteredSupervisors.map((supervisor) => (
           <div key={supervisor.id} className="bg-white rounded-xl shadow-sm border border-gray-200 p-6 hover:shadow-md transition-all">
@@ -210,7 +234,7 @@ const handleDelete = async (id) => {
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
           <div className="bg-white rounded-xl shadow-2xl p-6 w-full max-w-md">
             <h2 className="text-xl font-semibold mb-4">
-              {editingSupervisor ? 'Edit Supervisor' : 'Add Supervisor'}
+              {editingSupervisor ? 'Edit Operator' : 'Add Operator'}
             </h2>
             <div className="space-y-4">
               {['name', 'email', 'phone', 'location'].map((field) => (
@@ -225,7 +249,6 @@ const handleDelete = async (id) => {
                 </div>
               ))}
 
-              {/* Password only in Add Mode */}
               {!editingSupervisor && (
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">Password</label>
