@@ -1,6 +1,6 @@
 "use client";
 import React, { useState } from 'react';
-import { ChevronDown, ChevronUp, ArrowLeft, Users, X, Search,Check } from 'lucide-react';
+import { ChevronDown, ChevronUp, ArrowLeft, Users, X, Search, Check } from 'lucide-react';
 
 const TaskDashboard = () => {
   const [expandedStages, setExpandedStages] = useState({
@@ -14,19 +14,19 @@ const TaskDashboard = () => {
       id: 'task-1-1',
       stage: 'stage1',
       name: 'Task 1.1 : Disassemble part 1',
-      assigned: true
+      assigned: false
     },
     {
       id: 'task-1-2',
       stage: 'stage1',
       name: 'Task 1.1 : Disassemble part 2',
-      assigned: true
+      assigned: false
     },
     {
       id: 'task-1-3',
       stage: 'stage1',
       name: 'Task 1.1 : Disassemble part 3',
-      assigned: true
+      assigned: false
     },
     {
       id: 'task-2-1',
@@ -66,12 +66,16 @@ const TaskDashboard = () => {
     }
   ]);
 
-  const [selectAllStages, setSelectAllStages] = useState(true);
+  const [selectAllStages, setSelectAllStages] = useState(false);
   const [showAssignPopup, setShowAssignPopup] = useState(false);
   const [selectedRole, setSelectedRole] = useState('Operator');
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedMembers, setSelectedMembers] = useState([]);
   const [sendNotification, setSendNotification] = useState(false);
+  
+  // Track assigned operators for each stage
+  const [stageAssignments, setStageAssignments] = useState({});
+  const [assignedOperators, setAssignedOperators] = useState(new Set());
 
   const teamMembers = [
     { id: 1, name: 'Dilipbhai Tarsangbhai Rathod', empId: '0123456', initials: 'DR', color: 'bg-orange-400' },
@@ -142,8 +146,10 @@ const TaskDashboard = () => {
     return tasks.filter(task => task.assigned).length;
   };
 
+  // Filter out already assigned operators
   const filteredMembers = teamMembers.filter(member =>
-    member.name.toLowerCase().includes(searchTerm.toLowerCase())
+    member.name.toLowerCase().includes(searchTerm.toLowerCase()) &&
+    !assignedOperators.has(member.id)
   );
 
   const toggleMemberSelection = (memberId) => {
@@ -159,7 +165,31 @@ const TaskDashboard = () => {
   };
 
   const handleAssignToTeam = () => {
-    // Here you would typically handle the assignment logic
+    // Add selected members to assigned operators
+    const newAssignedOperators = new Set(assignedOperators);
+    selectedMembers.forEach(memberId => {
+      newAssignedOperators.add(memberId);
+    });
+    setAssignedOperators(newAssignedOperators);
+    
+    // Store stage assignments
+    const assignedStages = Object.keys(stageInfo).filter(stageId => getStageStatus(stageId));
+    const newStageAssignments = { ...stageAssignments };
+    
+    assignedStages.forEach(stageId => {
+      if (!newStageAssignments[stageId]) {
+        newStageAssignments[stageId] = [];
+      }
+      selectedMembers.forEach(memberId => {
+        const member = teamMembers.find(m => m.id === memberId);
+        if (member && !newStageAssignments[stageId].some(m => m.id === memberId)) {
+          newStageAssignments[stageId].push(member);
+        }
+      });
+    });
+    
+    setStageAssignments(newStageAssignments);
+    
     console.log('Assigning tasks to:', selectedMembers);
     console.log('Role:', selectedRole);
     console.log('Send notification:', sendNotification);
@@ -172,6 +202,16 @@ const TaskDashboard = () => {
     setShowAssignPopup(false);
     setSelectedMembers([]);
     setSendNotification(false);
+  };
+
+  const handleAssignedButtonClick = (stageId) => {
+    if (getStageStatus(stageId)) {
+      setShowAssignPopup(true);
+    }
+  };
+
+  const getStageOperators = (stageId) => {
+    return stageAssignments[stageId] || [];
   };
 
   return (
@@ -211,6 +251,7 @@ const TaskDashboard = () => {
             const stageTasks = tasks.filter(task => task.stage === stageId);
             const isExpanded = expandedStages[stageId];
             const isStageAssigned = getStageStatus(stageId);
+            const stageOperators = getStageOperators(stageId);
 
             return (
               <div key={stageId} className={`border rounded-lg ${info.color} shadow-sm hover:shadow-md transition-shadow`}>
@@ -234,13 +275,22 @@ const TaskDashboard = () => {
                     <span className="font-medium text-gray-800">{info.title}</span>
                   </div>
                   
-                  <span className={`px-3 py-1 rounded-full text-sm font-medium transition-colors ${
-                    isStageAssigned 
-                      ? 'bg-green-100 text-green-800' 
-                      : 'bg-orange-100 text-orange-800'
-                  }`}>
-                    {isStageAssigned ? 'Assigned' : 'Unassigned'}
-                  </span>
+                  <div className="flex items-center gap-3">
+                    {/* Operator indicator removed - no longer showing assigned operators */}
+                    
+                    {/* Status Badge */}
+                    <button
+                      onClick={() => handleAssignedButtonClick(stageId)}
+                      className={`px-3 py-1 rounded-full text-sm font-medium transition-all ${
+                        isStageAssigned 
+                          ? 'bg-green-100 text-green-800 hover:bg-green-200 hover:shadow-md cursor-pointer transform hover:scale-105' 
+                          : 'bg-orange-100 text-orange-800 cursor-default'
+                      }`}
+                      disabled={!isStageAssigned}
+                    >
+                      {isStageAssigned ? 'Assigned' : 'Unassigned'}
+                    </button>
+                  </div>
                 </div>
 
                 {/* Stage Tasks */}
@@ -304,9 +354,9 @@ const TaskDashboard = () => {
       </div>
 
       {/* Role Selection */}
-      <div className="p-5 border-b border-gray-100">
+      <div className="p-2 border-b border-gray-100 ml-40">
         <div className="flex flex-wrap gap-2">
-          {['Supervisor', 'Operator', 'Quality Assurance (QA)'].map((role) => (
+          {['Operator'].map((role) => (
             <button
               key={role}
               onClick={() => setSelectedRole(role)}
@@ -367,12 +417,15 @@ const TaskDashboard = () => {
           ))
         ) : (
           <div className="p-6 text-center text-gray-500">
-            No team members found
+            {assignedOperators.size > 0 && teamMembers.length === assignedOperators.size ? 
+              'All operators have been assigned' : 
+              'No team members found'
+            }
           </div>
         )}
       </div>
 
-      {/* Footer - This section contains the buttons */}
+      {/* Footer */}
       <div className="p-5 border-t border-gray-100 bg-white">
         <div className="flex items-center gap-3 mb-4">
           <input
