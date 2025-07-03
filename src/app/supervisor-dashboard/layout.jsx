@@ -45,7 +45,7 @@ const[userId,setId]=useState();
   const userData = JSON.parse(data);
   setId(userData.id); // still useful if you need to use it elsewhere
 
-  if (userData.role !== "supervisor") {
+  if (userData?.role !== "supervisor") {
     router.push("/login");
     return;
   }
@@ -67,7 +67,7 @@ fetchUser();
     const data =localStorage.getItem('user');
     console.log("Data",data)
     const userData=JSON.parse(data);
-    if(userData.role!="supervisor"){
+    if(userData?.role!="supervisor"){
         router.push("/login")
     }
 
@@ -84,7 +84,7 @@ fetchUser();
           </div>
           <div className="text-sm text-gray-800 font-medium">
             Welcome, <strong className="text-blue-700">{userDetails?.name ||'Lorem Ipsum'}</strong>{" "}
-            <span className="text-gray-500 font-normal">(Supervisor)</span>
+            <span className="text-gray-500 font-normal">(Facility Admin)</span>
           </div>
         </div>
         <div className="flex items-center gap-6">
@@ -107,10 +107,10 @@ fetchUser();
               return (
                 <div
                   key={label}
-                  onClick={() => 
+                  onClick={() =>
                     {
-                        router.push("/supervisor-dashboard/assign-task")
-                        setActiveItem(label)}}
+                      router.push("/supervisor-dashboard/assign-task")
+                     setActiveItem(label)}}
                   className={`flex flex-col items-center text-center cursor-pointer transition-all duration-200 px-4 py-3 rounded-xl transform hover:scale-105 ${
                     isActive
                       ? "text-blue-600 bg-gradient-to-br from-blue-50 to-blue-100 border-2 border-blue-200 shadow-lg"
