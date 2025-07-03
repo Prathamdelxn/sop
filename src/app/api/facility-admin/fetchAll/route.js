@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import dbConnect from '@/lib/db';
+import dbConnect from '@/utils/db';
 import FacilityAdmin from '@/model/FacilityAdmin';
 
 export async function GET() {
