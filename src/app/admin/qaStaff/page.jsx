@@ -105,15 +105,15 @@ const handleDelete = async (id) => {
       {/* Header */}
       <div className="flex justify-between items-center">
         <div>
-          <h1 className="text-3xl font-bold text-gray-900">Operators</h1>
-          <p className="text-gray-600 mt-2">Manage your operators and their info</p>
+          <h1 className="text-3xl font-bold text-gray-900">QA Staff</h1>
+          <p className="text-gray-600 mt-2">Manage your QA Staff and their info</p>
         </div>
         <button
           onClick={handleAddSupervisor}
           className="flex items-center space-x-2 bg-gradient-to-r from-blue-600 to-purple-600 text-white px-6 py-3 rounded-xl hover:from-blue-700 hover:to-purple-700 transition-all duration-200 shadow-lg hover:shadow-xl transform hover:scale-105"
         >
           <Plus className="h-5 w-5" />
-          <span>Add Operator</span>
+          <span>Add QA Staff</span>
         </button>
 
       </div>
@@ -123,7 +123,7 @@ const handleDelete = async (id) => {
         <div className="bg-gradient-to-br from-blue-50 to-blue-100 p-6 rounded-xl border border-blue-200">
           <div className="flex justify-between items-center">
             <div>
-              <p className="text-blue-600 text-sm font-medium">Total Operators</p>
+              <p className="text-blue-600 text-sm font-medium">Total QA Staff</p>
               <p className="text-2xl font-bold text-blue-900">{supervisors.length}</p>
             </div>
             <div className="bg-blue-500 p-3 rounded-lg">
@@ -134,7 +134,7 @@ const handleDelete = async (id) => {
         <div className="bg-gradient-to-br from-green-50 to-green-100 p-6 rounded-xl border border-green-200">
           <div className="flex justify-between items-center">
             <div>
-              <p className="text-green-600 text-sm font-medium">Active Operators</p>
+              <p className="text-green-600 text-sm font-medium">Active QA Staff</p>
               <p className="text-2xl font-bold text-green-900">{supervisors.filter(s => s.status === 'active').length}</p>
             </div>
             <div className="bg-green-500 p-3 rounded-lg">
@@ -151,7 +151,7 @@ const handleDelete = async (id) => {
             <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400" />
             <input
               type="text"
-              placeholder="Search operators..."
+              placeholder="Search QA Staff..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
               className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
