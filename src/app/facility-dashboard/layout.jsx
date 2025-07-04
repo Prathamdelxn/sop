@@ -14,7 +14,7 @@ export default function Layout({ children }) {
 const[userDetails,setUSer]=useState();
   const sidebarItems = [
     { 
-      label: "Create Task", 
+      label: "Create Sop", 
       route:"/facility-dashboard",
       icon: <ClipboardEdit className="w-6 h-6 mb-2" />
     },
