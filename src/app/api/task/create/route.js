@@ -1,5 +1,5 @@
-import dbConnect from "@/utils/db"; // Your DB connection utility
-import Task from "@/model/Task";   // Your Mongoose model (title/stages/tasks/subtasks)
+import dbConnect from "@/utils/db";
+import Task from "@/model/Task";
 import { NextResponse } from "next/server";
 
 // Handle preflight CORS
@@ -11,19 +11,45 @@ export async function OPTIONS() {
   return response;
 }
 
-// Create a full Title document
+// Create a full Title document with task status logic
 export async function POST(req) {
-  await dbConnect(); // Ensure DB is connected
+  await dbConnect();
 
   try {
     const body = await req.json();
 
-    // Basic validation
     if (!body.title) {
       return NextResponse.json({ error: "Title is required" }, { status: 400 });
     }
 
-    // Save the full document to the database
+    // Auto-check task/subtask verified & completion logic
+    if (Array.isArray(body.stages)) {
+      body.stages.forEach(stage => {
+        if (Array.isArray(stage.tasks)) {
+          stage.tasks.forEach(task => {
+            // Subtask setup
+            if (Array.isArray(task.subtasks)) {
+              task.subtasks.forEach(sub => {
+                sub.verified = sub.verified ?? false;
+                sub.completed = sub.completed ?? false;
+              });
+
+              // Task completed = all subtasks completed
+              task.completed = task.subtasks.every(sub => sub.completed);
+
+              // Task verified = all subtasks verified
+              task.verified = task.subtasks.every(sub => sub.verified);
+            } else {
+              // No subtasks — default task status
+              task.verified = task.verified ?? false;
+              task.completed = task.completed ?? false;
+            }
+          });
+        }
+      });
+    }
+
+    // Save to DB
     const createdDoc = await Task.create(body);
 
     const response = NextResponse.json(
@@ -32,6 +58,7 @@ export async function POST(req) {
     );
     response.headers.set("Access-Control-Allow-Origin", "*");
     return response;
+
   } catch (error) {
     console.error("Error creating Title:", error);
     const response = NextResponse.json({ error: "Internal Server Error" }, { status: 500 });
