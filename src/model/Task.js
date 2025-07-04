@@ -23,7 +23,6 @@ const taskSchema = new mongoose.Schema({
 // ✅ Stage Schema
 const stageSchema = new mongoose.Schema({
   name: { type: String, required: true },
-  description: String,
   tasks: [taskSchema],
 }, { _id: false });
 
