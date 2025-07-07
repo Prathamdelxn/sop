@@ -1,7 +1,7 @@
 // app/api/login/route.js
 import { NextResponse } from "next/server";
 import dbConnect from "@/utils/db"; // your MongoDB connection utility
-import Admin from "@/model/Admin";
+import FacilityAdmin from "@/model/FacilityAdmin";
 import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
 
@@ -17,10 +17,10 @@ export async function POST(req) {
       return NextResponse.json({ message: "Email and password are required" }, { status: 400 });
     }
 
-    const user = await Admin.findOne({ email });
+    const user = await FacilityAdmin.findOne({ email });
 
     if (!user) {
-      return NextResponse.json({ message: "Admin not found" }, { status: 404 });
+      return NextResponse.json({ message: "Facility Admin not found" }, { status: 404 });
     }
 
     const isMatch = await bcrypt.compare(password, user.password);

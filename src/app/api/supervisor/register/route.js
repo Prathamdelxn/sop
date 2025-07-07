@@ -2,7 +2,7 @@ import { NextResponse } from 'next/server';
 import mongoose from 'mongoose';
 import bcrypt from 'bcryptjs';
 import Supervisor from '@/model/Supervisor'; // Adjust the import if path is different
-import dbConnect from '@/lib/db'; // Utility to connect to MongoDB
+import dbConnect from '@/utils/db'; // Utility to connect to MongoDB
 
 export async function POST(req) {
   await dbConnect();
