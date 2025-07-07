@@ -1,5 +1,3 @@
-// src/utils/db.js or lib/db.js
- 
 import mongoose from "mongoose";
  
 let isConnected = false; // Track connection status (for dev hot-reload)
