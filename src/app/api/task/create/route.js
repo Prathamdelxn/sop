@@ -11,7 +11,7 @@ export async function OPTIONS() {
   return response;
 }
 
-// Create a full Title document with task status logic
+// Create a full Title document with task/subtask status & image support
 export async function POST(req) {
   await dbConnect();
 
@@ -22,28 +22,30 @@ export async function POST(req) {
       return NextResponse.json({ error: "Title is required" }, { status: 400 });
     }
 
-    // Auto-check task/subtask verified & completion logic
+    // Task & Subtask logic
     if (Array.isArray(body.stages)) {
       body.stages.forEach(stage => {
+        // ✅ No stage.description expected here
+
         if (Array.isArray(stage.tasks)) {
           stage.tasks.forEach(task => {
-            // Subtask setup
+            // Subtasks setup
             if (Array.isArray(task.subtasks)) {
               task.subtasks.forEach(sub => {
                 sub.verified = sub.verified ?? false;
                 sub.completed = sub.completed ?? false;
+                sub.image = sub.image ?? null; // ✅ Optional image
               });
 
-              // Task completed = all subtasks completed
+              // Task completion based on subtasks
               task.completed = task.subtasks.every(sub => sub.completed);
-
-              // Task verified = all subtasks verified
               task.verified = task.subtasks.every(sub => sub.verified);
             } else {
-              // No subtasks — default task status
               task.verified = task.verified ?? false;
               task.completed = task.completed ?? false;
             }
+
+            task.image = task.image ?? null; // ✅ Optional image
           });
         }
       });

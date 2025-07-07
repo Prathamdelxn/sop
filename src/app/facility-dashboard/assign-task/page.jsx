@@ -1,105 +1,139 @@
-"use client";
+'use client'
 import React, { useState } from 'react';
-import { ChevronDown, ChevronUp, ArrowLeft, Users, X, Search, Check } from 'lucide-react';
+import { 
+  ChevronDown, ChevronRight, User, Plus, 
+  UserPlus, X, ArrowRight, MoreVertical,
+  FileText, Calendar, Tag, Search, Zap,
+  Clock, Users, Activity, TrendingUp
+} from 'lucide-react';
+import { motion, AnimatePresence } from 'framer-motion';
 
-const TaskDashboard = () => {
-  const [expandedStages, setExpandedStages] = useState({
-    stage1: true,
-    stage2: true,
-    stage3: true
-  });
+const PrototypeManagement = () => {
+  // Available operators list
+  const [operators] = useState([
+    { id: 1, name: "John Smith", role: "UI/UX Designer", avatar: "JS", color: "bg-gradient-to-r from-purple-500 to-pink-500" },
+    { id: 2, name: "Sarah Johnson", role: "Frontend Developer", avatar: "SJ", color: "bg-gradient-to-r from-blue-500 to-cyan-500" },
+    { id: 3, name: "Mike Chen", role: "QA Engineer", avatar: "MC", color: "bg-gradient-to-r from-green-500 to-emerald-500" },
+    { id: 4, name: "Emma Davis", role: "Business Analyst", avatar: "ED", color: "bg-gradient-to-r from-pink-500 to-rose-500" },
+    { id: 5, name: "Alex Wilson", role: "Product Manager", avatar: "AW", color: "bg-gradient-to-r from-orange-500 to-amber-500" },
+    { id: 6, name: "David Brown", role: "Hardware Engineer", avatar: "DB", color: "bg-gradient-to-r from-indigo-500 to-purple-500" },
+    { id: 7, name: "Lisa Garcia", role: "Backend Developer", avatar: "LG", color: "bg-gradient-to-r from-red-500 to-pink-500" },
+    { id: 8, name: "Tom Wilson", role: "DevOps Engineer", avatar: "TW", color: "bg-gradient-to-r from-teal-500 to-cyan-500" },
+    { id: 9, name: "Anna Martinez", role: "Data Scientist", avatar: "AM", color: "bg-gradient-to-r from-yellow-500 to-orange-500" },
+    { id: 10, name: "Chris Lee", role: "Mobile Developer", avatar: "CL", color: "bg-gradient-to-r from-cyan-500 to-blue-500" }
+  ]);
 
-  const [tasks, setTasks] = useState([
+  const [prototypes, setPrototypes] = useState([
     {
-      id: 'task-1-1',
-      stage: 'stage1',
-      name: 'Task 1.1 : Disassemble part 1',
-      assigned: false
+      id: 1,
+      name: "Mobile App Prototype",
+      description: "iOS/Android mobile application with AI-powered features",
+      priority: "High",
+      deadline: "2023-12-15",
+      progress: 65,
+      stages: [
+        {
+          id: 1,
+          name: "Design Phase",
+          assignedOperator: 1,
+          progress: 85,
+          tasks: [
+            { id: 1, title: "Create wireframes", assignedTo: 1, completed: true },
+            { id: 2, title: "Design mockups", assignedTo: 1, completed: true },
+            { id: 3, title: "User flow diagrams", assignedTo: 1, completed: false }
+          ]
+        },
+        {
+          id: 2,
+          name: "Development Phase",
+          assignedOperator: 2,
+          progress: 45,
+          tasks: [
+            { id: 4, title: "Setup project structure", assignedTo: 2, completed: true },
+            { id: 5, title: "Implement core features", assignedTo: 2, completed: false },
+            { id: 6, title: "Add authentication", assignedTo: 2, completed: false }
+          ]
+        },
+        {
+          id: 3,
+          name: "Testing Phase",
+          assignedOperator: 3,
+          progress: 20,
+          tasks: [
+            { id: 7, title: "Unit testing", assignedTo: 3, completed: false },
+            { id: 8, title: "Integration testing", assignedTo: 3, completed: false },
+            { id: 9, title: "User acceptance testing", assignedTo: 3, completed: false }
+          ]
+        }
+      ]
     },
     {
-      id: 'task-1-2',
-      stage: 'stage1',
-      name: 'Task 1.1 : Disassemble part 2',
-      assigned: false
+      id: 2,
+      name: "Web Dashboard Prototype",
+      description: "Real-time analytics dashboard with interactive visualizations",
+      priority: "Medium",
+      deadline: "2024-01-20",
+      progress: 30,
+      stages: [
+        {
+          id: 4,
+          name: "Requirements Analysis",
+          assignedOperator: 4,
+          progress: 90,
+          tasks: [
+            { id: 10, title: "Gather requirements", assignedTo: 4, completed: true },
+            { id: 11, title: "Create user stories", assignedTo: 4, completed: true },
+            { id: 12, title: "Technical specifications", assignedTo: 4, completed: false }
+          ]
+        },
+        {
+          id: 5,
+          name: "UI/UX Design",
+          assignedOperator: 1,
+          progress: 15,
+          tasks: [
+            { id: 13, title: "Design system creation", assignedTo: 1, completed: false },
+            { id: 14, title: "Dashboard layouts", assignedTo: 1, completed: false },
+            { id: 15, title: "Interactive prototypes", assignedTo: 1, completed: false }
+          ]
+        }
+      ]
     },
     {
-      id: 'task-1-3',
-      stage: 'stage1',
-      name: 'Task 1.1 : Disassemble part 3',
-      assigned: false
-    },
-    {
-      id: 'task-2-1',
-      stage: 'stage2',
-      name: 'Task 2.1 : Clean part 1.',
-      assigned: false
-    },
-    {
-      id: 'task-2-2',
-      stage: 'stage2',
-      name: 'Task 2.1 : Clean part 2.',
-      assigned: false
-    },
-    {
-      id: 'task-2-3',
-      stage: 'stage2',
-      name: 'Task 2.1 : Clean part 3.',
-      assigned: false
-    },
-    {
-      id: 'task-3-1',
-      stage: 'stage3',
-      name: 'Task 2.1 : Assemble part 1.',
-      assigned: false
-    },
-    {
-      id: 'task-3-2',
-      stage: 'stage3',
-      name: 'Task 2.1 : Assemble part 2.',
-      assigned: false
-    },
-    {
-      id: 'task-3-3',
-      stage: 'stage3',
-      name: 'Task 2.1 : Assemble part 3.',
-      assigned: false
+      id: 3,
+      name: "IoT Device Prototype",
+      description: "Smart home automation device with voice control",
+      priority: "Low",
+      deadline: "2024-03-10",
+      progress: 10,
+      stages: [
+        {
+          id: 6,
+          name: "Hardware Design",
+          assignedOperator: 6,
+          progress: 25,
+          tasks: [
+            { id: 16, title: "Component selection", assignedTo: 6, completed: true },
+            { id: 17, title: "Circuit design", assignedTo: 6, completed: false },
+            { id: 18, title: "PCB layout", assignedTo: 6, completed: false }
+          ]
+        }
+      ]
     }
   ]);
 
-  const [selectAllStages, setSelectAllStages] = useState(false);
-  const [showAssignPopup, setShowAssignPopup] = useState(false);
-  const [selectedRole, setSelectedRole] = useState('Operator');
-  const [searchTerm, setSearchTerm] = useState('');
-  const [selectedMembers, setSelectedMembers] = useState([]);
-  const [sendNotification, setSendNotification] = useState(false);
-  
-  // Track assigned operators for each stage
-  const [stageAssignments, setStageAssignments] = useState({});
-  const [assignedOperators, setAssignedOperators] = useState(new Set());
+  const [expandedPrototypes, setExpandedPrototypes] = useState({});
+  const [expandedStages, setExpandedStages] = useState({});
+  const [newTaskInputs, setNewTaskInputs] = useState({});
+  const [assignModalOpen, setAssignModalOpen] = useState(false);
+  const [selectedTask, setSelectedTask] = useState(null);
+  const [searchQuery, setSearchQuery] = useState('');
 
-  const teamMembers = [
-    { id: 1, name: 'Dilipbhai Tarsangbhai Rathod', empId: '0123456', initials: 'DR', color: 'bg-orange-400' },
-    { id: 2, name: 'Jayeshkumar Kantibhai Patel', empId: '0123456', initials: 'JP', color: 'bg-pink-400' },
-    { id: 3, name: 'Kailash Bajirao Patil', empId: '0123456', initials: 'KP', color: 'bg-red-400' },
-    { id: 4, name: 'Prajapati Maulikumar Madhavlal', empId: '0123456', initials: 'PM', color: 'bg-green-400' },
-    { id: 5, name: 'Dilipbhai Tarsangbhai Rathod', empId: '0123456', initials: 'DR', color: 'bg-blue-400' },
-    { id: 6, name: 'Jayeshkumar Kantibhai Patel', empId: '0123456', initials: 'JP', color: 'bg-orange-400' },
-    { id: 7, name: 'Kailash Bajirao Patil', empId: '0123456', initials: 'KP', color: 'bg-blue-400' }
-  ];
-
-  const stageInfo = {
-    stage1: {
-      title: 'Stage 1 : Disassembly of the Machine.',
-      color: 'bg-blue-50 border-blue-200'
-    },
-    stage2: {
-      title: 'Stage 2 : Cleaning the machine & Parts',
-      color: 'bg-blue-50 border-blue-200'
-    },
-    stage3: {
-      title: 'Stage 3 : Assemble the machine.',
-      color: 'bg-blue-50 border-blue-200'
-    }
+  const togglePrototype = (prototypeId) => {
+    setExpandedPrototypes(prev => ({
+      ...prev,
+      [prototypeId]: !prev[prototypeId]
+    }));
   };
 
   const toggleStage = (stageId) => {
@@ -109,362 +143,559 @@ const TaskDashboard = () => {
     }));
   };
 
-  const toggleTask = (taskId) => {
-    setTasks(prev => prev.map(task => 
-      task.id === taskId 
-        ? { ...task, assigned: !task.assigned }
-        : task
+  const addTask = (prototypeId, stageId) => {
+    const taskTitle = newTaskInputs[`${prototypeId}-${stageId}`];
+    if (!taskTitle?.trim()) return;
+
+    const newTask = {
+      id: Date.now(),
+      title: taskTitle,
+      assignedTo: null,
+      completed: false
+    };
+
+    setPrototypes(prev => prev.map(prototype => 
+      prototype.id === prototypeId 
+        ? {
+            ...prototype,
+            stages: prototype.stages.map(stage =>
+              stage.id === stageId
+                ? { ...stage, tasks: [...stage.tasks, newTask] }
+                : stage
+            )
+          }
+        : prototype
     ));
+
+    setNewTaskInputs(prev => ({
+      ...prev,
+      [`${prototypeId}-${stageId}`]: ''
+    }));
   };
 
-  const toggleSelectAll = () => {
-    const newSelectAll = !selectAllStages;
-    setSelectAllStages(newSelectAll);
-    
-    setTasks(prev => prev.map(task => ({
-      ...task,
-      assigned: newSelectAll
-    })));
+  const openAssignModal = (prototypeId, stageId) => {
+    setSelectedTask({ prototypeId, stageId });
+    setAssignModalOpen(true);
   };
 
-  const getStageStatus = (stageId) => {
-    const stageTasks = tasks.filter(task => task.stage === stageId);
-    const assignedTasks = stageTasks.filter(task => task.assigned);
-    return assignedTasks.length === stageTasks.length && stageTasks.length > 0;
-  };
+  const assignStageToOperator = (operatorId) => {
+    if (!selectedTask) return;
 
-  const toggleStageSelection = (stageId) => {
-    const stageAssigned = getStageStatus(stageId);
-    setTasks(prev => prev.map(task => 
-      task.stage === stageId 
-        ? { ...task, assigned: !stageAssigned }
-        : task
+    setPrototypes(prev => prev.map(prototype => 
+      prototype.id === selectedTask.prototypeId 
+        ? {
+            ...prototype,
+            stages: prototype.stages.map(stage =>
+              stage.id === selectedTask.stageId
+                ? { ...stage, assignedOperator: operatorId }
+                : stage
+            )
+          }
+        : prototype
     ));
+
+    setAssignModalOpen(false);
+    setSelectedTask(null);
   };
 
-  const getAssignedCount = () => {
-    return tasks.filter(task => task.assigned).length;
+  const getOperatorById = (operatorId) => {
+    return operators.find(op => op.id === operatorId);
   };
 
-  // Filter out already assigned operators
-  const filteredMembers = teamMembers.filter(member =>
-    member.name.toLowerCase().includes(searchTerm.toLowerCase()) &&
-    !assignedOperators.has(member.id)
-  );
-
-  const toggleMemberSelection = (memberId) => {
-    setSelectedMembers(prev => 
-      prev.includes(memberId) 
-        ? prev.filter(id => id !== memberId)
-        : [...prev, memberId]
-    );
-  };
-
-  const handleAssignTasks = () => {
-    setShowAssignPopup(true);
-  };
-
-  const handleAssignToTeam = () => {
-    // Add selected members to assigned operators
-    const newAssignedOperators = new Set(assignedOperators);
-    selectedMembers.forEach(memberId => {
-      newAssignedOperators.add(memberId);
-    });
-    setAssignedOperators(newAssignedOperators);
-    
-    // Store stage assignments
-    const assignedStages = Object.keys(stageInfo).filter(stageId => getStageStatus(stageId));
-    const newStageAssignments = { ...stageAssignments };
-    
-    assignedStages.forEach(stageId => {
-      if (!newStageAssignments[stageId]) {
-        newStageAssignments[stageId] = [];
-      }
-      selectedMembers.forEach(memberId => {
-        const member = teamMembers.find(m => m.id === memberId);
-        if (member && !newStageAssignments[stageId].some(m => m.id === memberId)) {
-          newStageAssignments[stageId].push(member);
-        }
-      });
-    });
-    
-    setStageAssignments(newStageAssignments);
-    
-    console.log('Assigning tasks to:', selectedMembers);
-    console.log('Role:', selectedRole);
-    console.log('Send notification:', sendNotification);
-    setShowAssignPopup(false);
-    setSelectedMembers([]);
-    setSendNotification(false);
-  };
-
-  const handleCancel = () => {
-    setShowAssignPopup(false);
-    setSelectedMembers([]);
-    setSendNotification(false);
-  };
-
-  const handleAssignedButtonClick = (stageId) => {
-    if (getStageStatus(stageId)) {
-      setShowAssignPopup(true);
+  const getPriorityColor = (priority) => {
+    switch (priority) {
+      case 'High': return 'bg-gradient-to-r from-red-500 to-pink-500 text-white';
+      case 'Medium': return 'bg-gradient-to-r from-yellow-500 to-orange-500 text-white';
+      case 'Low': return 'bg-gradient-to-r from-green-500 to-emerald-500 text-white';
+      default: return 'bg-gradient-to-r from-gray-500 to-gray-600 text-white';
     }
   };
 
-  const getStageOperators = (stageId) => {
-    return stageAssignments[stageId] || [];
+  const getPriorityIcon = (priority) => {
+    switch (priority) {
+      case 'High': return <Zap className="h-3 w-3" />;
+      case 'Medium': return <TrendingUp className="h-3 w-3" />;
+      case 'Low': return <Clock className="h-3 w-3" />;
+      default: return <Activity className="h-3 w-3" />;
+    }
+  };
+
+  const filteredPrototypes = prototypes.filter(prototype => {
+    return prototype.name.toLowerCase().includes(searchQuery.toLowerCase()) || 
+           prototype.description.toLowerCase().includes(searchQuery.toLowerCase());
+  });
+
+  const containerVariants = {
+    hidden: { opacity: 0, y: 20 },
+    visible: {
+      opacity: 1,
+      y: 0,
+      transition: {
+        duration: 0.6,
+        staggerChildren: 0.1
+      }
+    }
+  };
+
+  const itemVariants = {
+    hidden: { opacity: 0, y: 20 },
+    visible: {
+      opacity: 1,
+      y: 0,
+      transition: { duration: 0.5 }
+    }
   };
 
   return (
-    <div className="min-h-screen bg-gray-50 p-6">
-      <div className="max-w-6xl mx-auto">
-        {/* Header */}
-        <div className="flex items-center justify-between mb-6">
-          <div className="flex items-center gap-4">
-            <button className="flex items-center gap-2 text-gray-600 hover:text-gray-800 transition-colors">
-              <ArrowLeft size={20} />
-              <span>Go Back</span>
-            </button>
-            
-            <div className="flex items-center gap-2">
-              <input
-                type="checkbox"
-                checked={selectAllStages}
-                onChange={toggleSelectAll}
-                className="w-4 h-4 text-blue-600 rounded focus:ring-blue-500"
-              />
-              <span className="text-gray-700">Select all stages & associated tasks</span>
-            </div>
-          </div>
-          
-          <button 
-            onClick={handleAssignTasks}
-            className="flex items-center gap-2 bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors shadow-lg hover:shadow-xl transform hover:scale-105 duration-200"
+    <>
+    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50">
+      {/* Background Pattern */}
+      <div className="absolute inset-0 "></div>
+      
+      <div className="relative z-10 p-6">
+        <div className="max-w-7xl mx-auto">
+          {/* Header */}
+          <motion.div 
+            initial={{ opacity: 0, y: -20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.8 }}
+            className="mb-12"
           >
-            <Users size={20} />
-            <span>Assign {getAssignedCount()} Tasks</span>
-          </button>
-        </div>
-
-        {/* Task Stages */}
-        <div className="space-y-4">
-          {Object.entries(stageInfo).map(([stageId, info]) => {
-            const stageTasks = tasks.filter(task => task.stage === stageId);
-            const isExpanded = expandedStages[stageId];
-            const isStageAssigned = getStageStatus(stageId);
-            const stageOperators = getStageOperators(stageId);
-
-            return (
-              <div key={stageId} className={`border rounded-lg ${info.color} shadow-sm hover:shadow-md transition-shadow`}>
-                {/* Stage Header */}
-                <div className="flex items-center justify-between p-4">
-                  <div className="flex items-center gap-3">
-                    <button
-                      onClick={() => toggleStage(stageId)}
-                      className="text-gray-500 hover:text-gray-700 transition-colors p-1 rounded hover:bg-gray-100"
-                    >
-                      {isExpanded ? <ChevronUp size={20} /> : <ChevronDown size={20} />}
-                    </button>
-                    
+            <div className="bg-white/60 backdrop-blur-xl rounded-3xl p-8 shadow-lg border border-white/20">
+              <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-6">
+                <div>
+                  <motion.h1 
+                    initial={{ opacity: 0, x: -20 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    transition={{ delay: 0.2, duration: 0.6 }}
+                    className="text-4xl font-bold bg-gradient-to-r from-slate-900 via-blue-900 to-indigo-900 bg-clip-text text-transparent mb-3"
+                  >
+                    Prototype Management
+                  </motion.h1>
+                  <motion.p 
+                    initial={{ opacity: 0, x: -20 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    transition={{ delay: 0.4, duration: 0.6 }}
+                    className="text-slate-600 text-lg"
+                  >
+                    Track and manage your development progress with real-time insights
+                  </motion.p>
+                </div>
+                
+                <motion.div 
+                  initial={{ opacity: 0, x: 20 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  transition={{ delay: 0.6, duration: 0.6 }}
+                  className="relative w-full lg:w-80"
+                >
+                  <div className="absolute inset-0 bg-gradient-to-r from-blue-500 to-purple-500 rounded-2xl blur opacity-20"></div>
+                  <div className="relative bg-white/90 backdrop-blur-xl rounded-2xl border border-white/20 shadow-lg">
                     <input
-                      type="checkbox"
-                      checked={isStageAssigned}
-                      onChange={() => toggleStageSelection(stageId)}
-                      className="w-4 h-4 text-blue-600 rounded focus:ring-blue-500"
+                      type="text"
+                      placeholder="Search prototypes..."
+                      value={searchQuery}
+                      onChange={(e) => setSearchQuery(e.target.value)}
+                      className="w-full pl-12 pr-4 py-4 bg-transparent rounded-2xl focus:outline-none focus:ring-2 focus:ring-blue-500/50 text-slate-900 placeholder-slate-500"
                     />
-                    
-                    <span className="font-medium text-gray-800">{info.title}</span>
+                    <Search className="absolute left-4 top-4 h-5 w-5 text-slate-400" />
+                  </div>
+                </motion.div>
+              </div>
+            </div>
+          </motion.div>
+
+          {/* Stats Cards */}
+          <motion.div 
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.8, duration: 0.6 }}
+            className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8"
+          >
+            <div className="bg-white/60 backdrop-blur-xl rounded-2xl p-6 border border-white/20 shadow-lg">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-slate-600 text-sm font-medium">Total Prototypes</p>
+                  <p className="text-2xl font-bold text-slate-900">{prototypes.length}</p>
+                </div>
+                <div className="w-12 h-12 bg-gradient-to-r from-blue-500 to-purple-500 rounded-xl flex items-center justify-center">
+                  <FileText className="h-6 w-6 text-white" />
+                </div>
+              </div>
+            </div>
+            
+            <div className="bg-white/60 backdrop-blur-xl rounded-2xl p-6 border border-white/20 shadow-lg">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-slate-600 text-sm font-medium">Active Operators</p>
+                  <p className="text-2xl font-bold text-slate-900">{operators.length}</p>
+                </div>
+                <div className="w-12 h-12 bg-gradient-to-r from-green-500 to-emerald-500 rounded-xl flex items-center justify-center">
+                  <Users className="h-6 w-6 text-white" />
+                </div>
+              </div>
+            </div>
+            
+            <div className="bg-white/60 backdrop-blur-xl rounded-2xl p-6 border border-white/20 shadow-lg">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-slate-600 text-sm font-medium">Active Supervisors</p>
+                  <p className="text-2xl font-bold text-slate-900">
+9                  </p>
+                </div>
+                <div className="w-12 h-12 bg-gradient-to-r from-orange-500 to-red-500 rounded-xl flex items-center justify-center">
+                  <Users className="h-6 w-6 text-white" />
+                </div>
+              </div>
+            </div>
+          </motion.div>
+
+          {/* Prototypes List */}
+          <motion.div 
+            variants={containerVariants}
+            initial="hidden"
+            animate="visible"
+            className="space-y-6"
+          >
+            {filteredPrototypes.length > 0 ? (
+              filteredPrototypes.map((prototype, index) => (
+                <motion.div 
+                  key={prototype.id}
+                  variants={itemVariants}
+                  whileHover={{ y: -5 }}
+                  className="group"
+                >
+                  <div className="bg-white/60 backdrop-blur-xl rounded-3xl shadow-lg border border-white/20 overflow-hidden hover:shadow-2xl transition-all duration-500">
+                    {/* Prototype Header */}
+                    <div 
+                      className="p-8 cursor-pointer hover:bg-white/40 transition-all duration-300"
+                      onClick={() => togglePrototype(prototype.id)}
+                    >
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center space-x-6">
+                          <div className="relative">
+                            <div className="w-16 h-16 bg-gradient-to-r from-blue-500 to-purple-500 rounded-2xl flex items-center justify-center shadow-lg">
+                              <FileText className="h-8 w-8 text-white" />
+                            </div>
+                            {/* <div className="absolute -bottom-2 -right-2 w-6 h-6 bg-gradient-to-r from-green-500 to-emerald-500 rounded-full flex items-center justify-center shadow-lg">
+                              <span className="text-white text-xs font-bold">{prototype.progress}%</span>
+                            </div> */}
+                          </div>
+                          <div>
+                            <h2 className="text-2xl font-bold text-slate-900 mb-2">{prototype.name}</h2>
+                            <p className="text-slate-600 text-lg mb-3">{prototype.description}</p>
+                            <div className="flex items-center space-x-4">
+                              {/* <span className={`px-4 py-2 rounded-xl text-sm font-semibold shadow-lg ${getPriorityColor(prototype.priority)} flex items-center space-x-2`}>
+                                {getPriorityIcon(prototype.priority)}
+                                <span>{prototype.priority}</span>
+                              </span> */}
+                              <div className="flex items-center text-slate-600 bg-white/60 px-3 py-2 rounded-xl">
+                                <Calendar className="h-4 w-4 mr-2" />
+                                <span className="text-sm font-medium">{prototype.deadline}</span>
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+                        <div className="flex items-center space-x-4">
+                          {/* Progress Bar */}
+                          {/* <div className="w-32 bg-slate-200 rounded-full h-3 overflow-hidden">
+                            <motion.div
+                              initial={{ width: 0 }}
+                              animate={{ width: `${prototype.progress}%` }}
+                              transition={{ duration: 1, delay: 0.5 }}
+                              className="h-full bg-gradient-to-r from-blue-500 to-purple-500 rounded-full shadow-sm"
+                            />
+                          </div> */}
+                          <motion.div
+                            animate={{ rotate: expandedPrototypes[prototype.id] ? 180 : 0 }}
+                            transition={{ duration: 0.3 }}
+                          >
+                            <ChevronDown className="h-6 w-6 text-slate-500" />
+                          </motion.div>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Prototype Content */}
+                    <AnimatePresence>
+                      {expandedPrototypes[prototype.id] && (
+                        <motion.div
+                          initial={{ opacity: 0, height: 0 }}
+                          animate={{ opacity: 1, height: 'auto' }}
+                          exit={{ opacity: 0, height: 0 }}
+                          transition={{ duration: 0.5, ease: "easeInOut" }}
+                          className="border-t border-white/20"
+                        >
+                          <div className="p-8 bg-gradient-to-r from-slate-50/50 to-blue-50/50">
+                            <div className="space-y-6">
+                              <h3 className="text-xl font-bold text-slate-900 mb-6">Development Stages</h3>
+                              {prototype.stages.map((stage, stageIndex) => (
+                                <motion.div 
+                                  key={stage.id}
+                                  initial={{ opacity: 0, y: 20 }}
+                                  animate={{ opacity: 1, y: 0 }}
+                                  transition={{ duration: 0.5, delay: stageIndex * 0.1 }}
+                                  className="bg-white/70 backdrop-blur-xl rounded-2xl overflow-hidden border border-white/30 shadow-lg hover:shadow-xl transition-all duration-300"
+                                >
+                                  {/* Stage Header */}
+                                  <div 
+                                    className="p-6 cursor-pointer hover:bg-white/50 transition-all duration-300"
+                                    onClick={() => toggleStage(stage.id)}
+                                  >
+                                    <div className="flex items-center justify-between">
+                                      <div className="flex items-center space-x-4">
+                                        <div className="relative">
+                                          <div className="w-12 h-12 bg-gradient-to-r from-slate-500 to-slate-600 rounded-xl flex items-center justify-center shadow-lg">
+                                            <FileText className="h-6 w-6 text-white" />
+                                          </div>
+                                          {/* <div className="absolute -bottom-1 -right-1 w-5 h-5 bg-gradient-to-r from-green-500 to-emerald-500 rounded-full flex items-center justify-center shadow-lg">
+                                            <span className="text-white text-xs font-bold">{stage.progress}%</span>
+                                          </div> */}
+                                        </div>
+                                        <div>
+                                          <h3 className="text-lg font-bold text-slate-900 mb-1">{stage.name}</h3>
+                                          <div className="flex items-center space-x-4">
+                                            {stage.assignedOperator ? (
+                                              <div className="flex items-center space-x-3">
+                                                <div className={`w-8 h-8 ${getOperatorById(stage.assignedOperator)?.color} rounded-full flex items-center justify-center text-white text-sm font-bold shadow-lg`}>
+                                                  {getOperatorById(stage.assignedOperator)?.avatar}
+                                                </div>
+                                                <span className="text-slate-900 font-semibold">{getOperatorById(stage.assignedOperator)?.name}</span>
+                                              </div>
+                                            ) : (
+                                              <span className="text-slate-500 font-medium">Unassigned</span>
+                                            )}
+                                          </div>
+                                        </div>
+                                      </div>
+                                      <div className="flex items-center space-x-4">
+                                        {/* Stage Progress Bar */}
+                                        {/* <div className="w-24 bg-slate-200 rounded-full h-2 overflow-hidden">
+                                          <motion.div
+                                            initial={{ width: 0 }}
+                                            animate={{ width: `${stage.progress}%` }}
+                                            transition={{ duration: 1, delay: 0.3 }}
+                                            className="h-full bg-gradient-to-r from-green-500 to-emerald-500 rounded-full shadow-sm"
+                                          />
+                                        </div> */}
+                                        <motion.button
+                                          whileHover={{ scale: 1.1 }}
+                                          whileTap={{ scale: 0.9 }}
+                                          onClick={(e) => {
+                                            e.stopPropagation();
+                                            openAssignModal(prototype.id, stage.id);
+                                          }}
+                                          className="p-2 bg-gradient-to-r from-blue-500 to-purple-500 text-white rounded-xl hover:shadow-lg transition-all duration-300"
+                                          title="Assign operator"
+                                        >
+                                          <UserPlus className="h-5 w-5" />
+                                        </motion.button>
+                                        <motion.div
+                                          animate={{ rotate: expandedStages[stage.id] ? 180 : 0 }}
+                                          transition={{ duration: 0.3 }}
+                                        >
+                                          <ChevronDown className="h-5 w-5 text-slate-500" />
+                                        </motion.div>
+                                      </div>
+                                    </div>
+                                  </div>
+
+                                  {/* Stage Tasks */}
+                                  <AnimatePresence>
+                                    {expandedStages[stage.id] && (
+                                      <motion.div
+                                        initial={{ opacity: 0, height: 0 }}
+                                        animate={{ opacity: 1, height: 'auto' }}
+                                        exit={{ opacity: 0, height: 0 }}
+                                        transition={{ duration: 0.4, ease: "easeInOut" }}
+                                        className="border-t border-white/30 bg-white/50"
+                                      >
+                                        <div className="p-6">
+                                          <div className="flex items-center justify-between mb-6">
+                                            <h4 className="text-lg font-bold text-slate-900">Tasks</h4>
+                                            <div className="flex items-center space-x-2">
+                                              <span className="text-sm text-slate-600 bg-white/60 px-3 py-1 rounded-full">
+                                                {stage.tasks.filter(t => t.completed).length}/{stage.tasks.length} completed
+                                              </span>
+                                            </div>
+                                          </div>
+                                          <div className="space-y-3">
+                                            {stage.tasks.map((task, taskIndex) => (
+                                              <motion.div 
+                                                key={task.id}
+                                                initial={{ opacity: 0, x: -20 }}
+                                                animate={{ opacity: 1, x: 0 }}
+                                                transition={{ duration: 0.3, delay: taskIndex * 0.05 }}
+                                                whileHover={{ x: 5 }}
+                                                className={`flex items-center space-x-4 p-4 rounded-xl border transition-all duration-300 ${
+                                                  task.completed 
+                                                    ? 'bg-green-50 border-green-200 text-green-900' 
+                                                    : 'bg-white/60 border-white/30 text-slate-900 hover:bg-white/80'
+                                                }`}
+                                              >
+                                                <div className={`w-5 h-5 rounded-full border-2 transition-all duration-300 ${
+                                                  task.completed 
+                                                    ? 'bg-green-500 border-green-500' 
+                                                    : 'border-slate-300 hover:border-blue-500'
+                                                }`}>
+                                                  {task.completed && (
+                                                    <motion.div
+                                                      initial={{ scale: 0 }}
+                                                      animate={{ scale: 1 }}
+                                                      className="w-full h-full flex items-center justify-center"
+                                                    >
+                                                      <div className="w-2 h-2 bg-white rounded-full" />
+                                                    </motion.div>
+                                                  )}
+                                                </div>
+                                                <span className={`flex-1 font-medium ${task.completed ? 'line-through' : ''}`}>
+                                                  {task.title}
+                                                </span>
+                                                {task.assignedTo && (
+                                                  <div className={`w-8 h-8 ${getOperatorById(task.assignedTo)?.color} rounded-full flex items-center justify-center text-white text-sm font-bold shadow-lg`}>
+                                                    {getOperatorById(task.assignedTo)?.avatar}
+                                                  </div>
+                                                )}
+                                              </motion.div>
+                                            ))}
+                                          </div>
+
+                                          {/* Add New Task */}
+                                          <motion.div 
+                                            initial={{ opacity: 0, y: 20 }}
+                                            animate={{ opacity: 1, y: 0 }}
+                                            transition={{ delay: 0.2 }}
+                                            className="mt-6 flex items-center space-x-3"
+                                          >
+                                            <div className="flex-1 relative">
+                                              <input
+                                                type="text"
+                                                placeholder="Add new task..."
+                                                value={newTaskInputs[`${prototype.id}-${stage.id}`] || ''}
+                                                onChange={(e) => setNewTaskInputs(prev => ({
+                                                  ...prev,
+                                                  [`${prototype.id}-${stage.id}`]: e.target.value
+                                                }))}
+                                                onKeyPress={(e) => e.key === 'Enter' && addTask(prototype.id, stage.id)}
+                                                className="w-full px-4 py-3 bg-white/70 backdrop-blur-xl border border-white/30 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500/50 focus:border-transparent transition-all duration-300"
+                                              />
+                                            </div>
+                                            <motion.button
+                                              whileHover={{ scale: 1.05 }}
+                                              whileTap={{ scale: 0.95 }}
+                                              onClick={() => addTask(prototype.id, stage.id)}
+                                              className="p-3 bg-gradient-to-r from-blue-500 to-purple-500 text-white rounded-xl hover:shadow-lg transition-all duration-300 shadow-lg"
+                                            >
+                                              <Plus className="h-5 w-5" />
+                                            </motion.button>
+                                          </motion.div>
+                                        </div>
+                                      </motion.div>
+                                    )}
+                                  </AnimatePresence>
+                                </motion.div>
+                              ))}
+                            </div>
+                          </div>
+                        </motion.div>
+                      )}
+                    </AnimatePresence>
+                  </div>
+                </motion.div>
+              ))
+            ) : (
+              <motion.div
+                initial={{ opacity: 0, scale: 0.9 }}
+                animate={{ opacity: 1, scale: 1 }}
+                transition={{ duration: 0.5 }}
+                className="bg-white/60 backdrop-blur-xl rounded-3xl p-12 text-center border border-white/20 shadow-lg"
+              >
+                <div className="w-24 h-24 bg-gradient-to-r from-slate-300 to-slate-400 rounded-full flex items-center justify-center mx-auto mb-6">
+                  <FileText className="h-12 w-12 text-white" />
+                </div>
+                <h3 className="text-2xl font-bold text-slate-900 mb-3">No prototypes found</h3>
+                <p className="text-slate-600 text-lg">Try adjusting your search criteria or create a new prototype</p>
+              </motion.div>
+            )}
+          </motion.div>
+
+          {/* Assignment Modal */}
+          <AnimatePresence>
+            {assignModalOpen && (
+              <motion.div
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+                className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4 z-50"
+              >
+                <motion.div
+                  initial={{ scale: 0.9, opacity: 0, y: 20 }}
+                  animate={{ scale: 1, opacity: 1, y: 0 }}
+                  exit={{ scale: 0.9, opacity: 0, y: 20 }}
+                  transition={{ duration: 0.3 }}
+                  className="bg-white/90 backdrop-blur-xl rounded-3xl shadow-2xl max-w-md w-full max-h-[80vh] overflow-hidden border border-white/20"
+                >
+                  <div className="flex items-center justify-between p-8 border-b border-white/20">
+                    <h3 className="text-2xl font-bold text-slate-900">Assign Stage to Operator</h3>
+                    <motion.button
+                      whileHover={{ scale: 1.1 }}
+                      whileTap={{ scale: 0.9 }}
+                      onClick={() => setAssignModalOpen(false)}
+                      className="p-2 text-slate-400 hover:text-slate-600 hover:bg-white/50 rounded-xl transition-all duration-300"
+                    >
+                      <X className="h-6 w-6" />
+                    </motion.button>
                   </div>
                   
-                  <div className="flex items-center gap-3">
-                    {/* Operator indicator removed - no longer showing assigned operators */}
-                    
-                    {/* Status Badge */}
-                    <button
-                      onClick={() => handleAssignedButtonClick(stageId)}
-                      className={`px-3 py-1 rounded-full text-sm font-medium transition-all ${
-                        isStageAssigned 
-                          ? 'bg-green-100 text-green-800 hover:bg-green-200 hover:shadow-md cursor-pointer transform hover:scale-105' 
-                          : 'bg-orange-100 text-orange-800 cursor-default'
-                      }`}
-                      disabled={!isStageAssigned}
+                  <div className="p-6 overflow-y-auto max-h-96">
+                    <div className="space-y-4">
+                      {operators.map((operator, index) => (
+                        <motion.div
+                          key={operator.id}
+                          initial={{ opacity: 0, x: -20 }}
+                          animate={{ opacity: 1, x: 0 }}
+                          transition={{ duration: 0.3, delay: index * 0.05 }}
+                          whileHover={{ scale: 1.02, x: 5 }}
+                          whileTap={{ scale: 0.98 }}
+                          onClick={() => assignStageToOperator(operator.id)}
+                          className="flex items-center space-x-4 p-4 rounded-2xl border border-white/30 hover:bg-white/60 hover:border-blue-200 cursor-pointer transition-all duration-300 bg-white/40 backdrop-blur-xl shadow-lg hover:shadow-xl"
+                        >
+                          <div className={`w-14 h-14 ${operator.color} rounded-2xl flex items-center justify-center text-white text-lg font-bold shadow-lg`}>
+                            {operator.avatar}
+                          </div>
+                          <div className="flex-1">
+                            <h4 className="font-bold text-slate-900 text-lg">{operator.name}</h4>
+                            <p className="text-slate-600 font-medium">{operator.role}</p>
+                          </div>
+                          <motion.div
+                            whileHover={{ x: 5 }}
+                            transition={{ duration: 0.2 }}
+                          >
+                            <ArrowRight className="h-5 w-5 text-slate-400" />
+                          </motion.div>
+                        </motion.div>
+                      ))}
+                    </div>
+                  </div>
+                  
+                  <div className="p-6 border-t border-white/20 bg-gradient-to-r from-slate-50/50 to-blue-50/50">
+                    <motion.button
+                      whileHover={{ scale: 1.02 }}
+                      whileTap={{ scale: 0.98 }}
+                      onClick={() => assignStageToOperator(null)}
+                      className="w-full px-6 py-4 text-slate-600 border border-slate-300 rounded-2xl hover:bg-white/60 transition-all duration-300 font-semibold bg-white/40 backdrop-blur-xl shadow-lg hover:shadow-xl"
                     >
-                      {isStageAssigned ? 'Assigned' : 'Unassigned'}
-                    </button>
+                      Remove Assignment
+                    </motion.button>
                   </div>
-                </div>
-
-                {/* Stage Tasks */}
-                {isExpanded && (
-                  <div className="border-t border-blue-200 bg-white">
-                    {stageTasks.map((task) => (
-                      <div key={task.id} className="flex items-center justify-between p-4 border-b border-gray-100 last:border-b-0 hover:bg-gray-50 transition-colors">
-                        <div className="flex items-center gap-3">
-                          <input
-                            type="checkbox"
-                            checked={task.assigned}
-                            onChange={() => toggleTask(task.id)}
-                            className="w-4 h-4 text-blue-600 rounded focus:ring-blue-500"
-                          />
-                          <span className="text-gray-700">{task.name}</span>
-                        </div>
-                        
-                        <span className={`px-3 py-1 rounded-full text-sm font-medium transition-colors ${
-                          task.assigned 
-                            ? 'bg-green-100 text-green-800' 
-                            : 'bg-orange-100 text-orange-800'
-                        }`}>
-                          {task.assigned ? 'Assigned' : 'Unassigned'}
-                        </span>
-                      </div>
-                    ))}
-                  </div>
-                )}
-              </div>
-            );
-          })}
-        </div>
-
-        {/* Summary */}
-        <div className="mt-6 p-4 bg-white border rounded-lg shadow-sm">
-          <div className="flex justify-between items-center">
-            <span className="text-gray-600">Total Tasks: {tasks.length}</span>
-            <div className="flex gap-4">
-              <span className="text-green-600 font-medium">Assigned: {getAssignedCount()}</span>
-              <span className="text-orange-600 font-medium">Unassigned: {tasks.length - getAssignedCount()}</span>
-            </div>
-          </div>
-        </div>
-      </div>
-
-     
-    {/* Assignment Popup */}
-{showAssignPopup && (
-  <div className="fixed inset-0 bg-black/30 backdrop-blur-sm flex items-center justify-center z-50">
-    <div className="bg-white rounded-xl w-full max-w-md max-h-[90vh] overflow-hidden shadow-xl animate-in fade-in zoom-in duration-200 flex flex-col">
-      {/* Header */}
-      <div className="flex items-center justify-between p-5 border-b border-gray-100">
-        <h2 className="text-xl font-semibold text-gray-900">Assign Tasks to Roles</h2>
-        <button 
-          onClick={handleCancel}
-          className="text-gray-500 hover:text-gray-700 transition-colors p-1 rounded-full hover:bg-gray-100"
-          aria-label="Close popup"
-        >
-          <X size={20} />
-        </button>
-      </div>
-
-      {/* Role Selection */}
-      <div className="p-2 border-b border-gray-100 ml-40">
-        <div className="flex flex-wrap gap-2">
-          {['Operator'].map((role) => (
-            <button
-              key={role}
-              onClick={() => setSelectedRole(role)}
-              className={`px-3.5 py-1.5 rounded-full text-sm font-medium transition-all ${
-                selectedRole === role
-                  ? 'bg-blue-600 text-white shadow-sm'
-                  : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
-              }`}
-            >
-              {role}
-            </button>
-          ))}
-        </div>
-      </div>
-
-      {/* Search */}
-      <div className="p-4 border-b border-gray-100">
-        <div className="relative">
-          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" size={18} />
-          <input
-            type="text"
-            placeholder="Search team members..."
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-            className="w-full pl-9 pr-4 py-2.5 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition-all text-sm"
-          />
-        </div>
-      </div>
-
-      {/* Team Members List */}
-      <div className="flex-1 overflow-y-auto">
-        {filteredMembers.length > 0 ? (
-          filteredMembers.map((member) => (
-            <div 
-              key={member.id} 
-              className={`flex items-center gap-3 p-3 hover:bg-gray-50 cursor-pointer transition-colors ${
-                selectedMembers.includes(member.id) ? 'bg-blue-50 border-l-2 border-blue-500' : ''
-              }`}
-              onClick={() => toggleMemberSelection(member.id)}
-            >
-              <div className={`w-9 h-9 rounded-full ${member.color} flex items-center justify-center text-white font-medium text-sm shadow-sm`}>
-                {member.initials}
-              </div>
-              <div className="flex-1 min-w-0">
-                <p className="text-xs text-gray-500 truncate">{member.empId}</p>
-                <p className="font-medium text-gray-800 truncate">{member.name}</p>
-              </div>
-              <div className={`w-5 h-5 rounded border flex items-center justify-center transition-colors ${
-                selectedMembers.includes(member.id) 
-                  ? 'bg-blue-600 border-blue-600' 
-                  : 'border-gray-300 hover:border-gray-400'
-              }`}>
-                {selectedMembers.includes(member.id) && (
-                  <Check size={12} className="text-white" />
-                )}
-              </div>
-            </div>
-          ))
-        ) : (
-          <div className="p-6 text-center text-gray-500">
-            {assignedOperators.size > 0 && teamMembers.length === assignedOperators.size ? 
-              'All operators have been assigned' : 
-              'No team members found'
-            }
-          </div>
-        )}
-      </div>
-
-      {/* Footer */}
-      <div className="p-5 border-t border-gray-100 bg-white">
-        <div className="flex items-center gap-3 mb-4">
-          <input
-            type="checkbox"
-            id="notification"
-            checked={sendNotification}
-            onChange={(e) => setSendNotification(e.target.checked)}
-            className="w-4 h-4 text-blue-600 rounded focus:ring-blue-500 border-gray-300"
-          />
-          <label htmlFor="notification" className="text-sm text-gray-600">
-            Send notification to selected members
-          </label>
-        </div>
-        
-        <div className="flex gap-3">
-          <button 
-            onClick={handleCancel}
-            className="flex-1 px-4 py-2.5 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors font-medium text-sm"
-          >
-            Cancel
-          </button>
-          <button 
-            onClick={handleAssignToTeam}
-            disabled={selectedMembers.length === 0}
-            className={`flex-1 px-4 py-2.5 rounded-lg font-medium text-sm transition-colors ${
-              selectedMembers.length > 0 
-                ? 'bg-blue-600 text-white hover:bg-blue-700 shadow-sm' 
-                : 'bg-gray-200 text-gray-500 cursor-not-allowed'
-            }`}
-          >
-            Assign to {selectedMembers.length > 0 ? `${selectedMembers.length} ` : ''}Team Member{selectedMembers.length !== 1 ? 's' : ''}
-          </button>
+                </motion.div>
+              </motion.div>
+            )}
+          </AnimatePresence>
         </div>
       </div>
     </div>
-  </div>
-)}
-    </div>
+    </>
   );
 };
 
-export default TaskDashboard;
+export default PrototypeManagement;
