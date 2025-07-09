@@ -136,6 +136,8 @@
 import { useEffect, useState } from "react";
 import { Bell, Users, ClipboardEdit, LogOut, ClipboardList, BarChart3, UserPlus, ChevronDown, Settings2Icon, LucideSettings } from "lucide-react";
 import { useRouter } from "next/navigation";
+import { ScrollText } from 'lucide-react';
+
 
 export default function Layout({ children }) {
     const router = useRouter();
@@ -182,6 +184,11 @@ export default function Layout({ children }) {
             label: "Report", 
             route: "/facility-dashboard/report",
             icon: <BarChart3 className="w-6 h-6 mb-2" />
+        },
+        {
+            label: "Asign",
+            route: "/facility-dashboard/asign",
+            icon: <ScrollText className="w-6 h-6 mb-2" />
         }
     ];
 

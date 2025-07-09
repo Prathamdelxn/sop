@@ -1,7 +1,7 @@
 'use client';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-
+import { HelpingHand } from 'lucide-react';
 export default function Sidebar({ sidebarOpen, setSidebarOpen }) {
   const pathname = usePathname();
 
@@ -10,8 +10,9 @@ export default function Sidebar({ sidebarOpen, setSidebarOpen }) {
     // { name: 'All Users', href: '/dashboard/users', icon: '👥', color: 'from-green-500 to-green-600' },
     { name: 'Supervisors', href: '/admin/supervisor', icon: '👨‍💼', color: 'from-purple-500 to-purple-600' },
     { name: 'Operators', href: '/admin/operators', icon: '⚙️', color: 'from-orange-500 to-orange-600' },
-    { name: 'QA Staff', href: '/dashboard/qa', icon: '🔍', color: 'from-teal-500 to-teal-600' },
-    { name: 'Managers', href: '/dashboard/managers', icon: '👔', color: 'from-indigo-500 to-indigo-600' },
+    { name: 'QA Staff', href: '/admin/qaStaff', icon: '🔍', color: 'from-teal-500 to-teal-600' },
+    { name: 'User Facility Admin', href: '/admin/user-facility-admin', icon: '👔', color: 'from-indigo-500 to-indigo-600' },
+
   ];
 
   return (

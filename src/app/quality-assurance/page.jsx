@@ -1,21 +1,21 @@
 "use client";
-
+ 
 import React, { useState, useMemo, useEffect } from 'react';
 import { Search, Plus, Check, Eye, X, AlertCircle, CheckCircle, XCircle, Filter, Calendar, Users, TrendingUp, Bell, Settings, Download, RefreshCw } from 'lucide-react';
-
+ 
 // Utility function for animations
 const useAnimation = (dependency) => {
   const [animate, setAnimate] = useState(false);
-  
+ 
   useEffect(() => {
     setAnimate(true);
     const timer = setTimeout(() => setAnimate(false), 300);
     return () => clearTimeout(timer);
   }, [dependency]);
-  
+ 
   return animate;
 };
-
+ 
 // Enhanced SearchBar Component
 const SearchBar = ({ searchQuery, onSearchChange, onFilter }) => {
   return (
@@ -48,7 +48,7 @@ const SearchBar = ({ searchQuery, onSearchChange, onFilter }) => {
     </div>
   );
 };
-
+ 
 // Enhanced Status Badge Component
 const StatusBadge = ({ status, type }) => {
   const badges = {
@@ -57,14 +57,14 @@ const StatusBadge = ({ status, type }) => {
     rejected: 'bg-gradient-to-r from-red-100 to-rose-100 text-red-800 border-red-200',
     ongoing: 'bg-gradient-to-r from-blue-100 to-indigo-100 text-blue-800 border-blue-200'
   };
-  
+ 
   return (
     <span className={`px-4 py-2 rounded-full text-sm font-medium border ${badges[type]} transition-all duration-200`}>
       {status}
     </span>
   );
 };
-
+ 
 // Enhanced Assignee Avatar Component
 const AssigneeAvatar = ({ initials, color, index }) => {
   const colors = {
@@ -75,10 +75,10 @@ const AssigneeAvatar = ({ initials, color, index }) => {
     'BN': 'bg-gradient-to-br from-green-400 to-green-600',
     'CR': 'bg-gradient-to-br from-red-400 to-red-600'
   };
-  
+ 
   return (
     <div
-      className={`w-10 h-10 rounded-full flex items-center justify-center text-white text-sm font-semibold ${colors[initials] || 'bg-gradient-to-br from-gray-400 to-gray-600'} 
+      className={`w-10 h-10 rounded-full flex items-center justify-center text-white text-sm font-semibold ${colors[initials] || 'bg-gradient-to-br from-gray-400 to-gray-600'}
         transition-all duration-200 hover:scale-110 hover:shadow-lg cursor-pointer ring-2 ring-white shadow-sm`}
       style={{ zIndex: 10 - index, marginLeft: index > 0 ? '-8px' : '0' }}
       title={initials}
@@ -87,7 +87,7 @@ const AssigneeAvatar = ({ initials, color, index }) => {
     </div>
   );
 };
-
+ 
 // Enhanced Action Buttons Component
 const ActionButtons = ({ task, onAction }) => {
   if (task.type === 'pending' || task.type === 'ongoing') {
@@ -110,7 +110,7 @@ const ActionButtons = ({ task, onAction }) => {
       </div>
     );
   }
-  
+ 
   return (
     <button className="inline-flex items-center px-4 py-2 rounded-lg text-sm font-medium bg-gradient-to-r from-blue-500 to-indigo-500 text-white hover:from-blue-600 hover:to-indigo-600 transition-all duration-200 shadow-sm hover:shadow-md transform hover:-translate-y-0.5">
       <Eye className="w-4 h-4 mr-2" />
@@ -118,7 +118,7 @@ const ActionButtons = ({ task, onAction }) => {
     </button>
   );
 };
-
+ 
 // Enhanced Statistics Card Component
 const StatCard = ({ icon: Icon, label, value, color, trend }) => {
   const colorClasses = {
@@ -128,7 +128,7 @@ const StatCard = ({ icon: Icon, label, value, color, trend }) => {
     yellow: 'from-yellow-500 to-amber-500',
     blue: 'from-blue-500 to-indigo-500'
   };
-  
+ 
   return (
     <div className="bg-white rounded-2xl p-6 shadow-sm hover:shadow-lg transition-all duration-300 border border-gray-100 group">
       <div className="flex items-center justify-between mb-4">
@@ -149,7 +149,7 @@ const StatCard = ({ icon: Icon, label, value, color, trend }) => {
     </div>
   );
 };
-
+ 
 // Main Dashboard Component
 const Dashboard = () => {
   const [searchQuery, setSearchQuery] = useState('');
@@ -198,16 +198,16 @@ const Dashboard = () => {
       priority: 'high'
     }
   ]);
-
+ 
   const [workSummary, setWorkSummary] = useState({
     pendingReviews: 12,
     approvedThisWeek: 24,
     rejectedThisWeek: 12,
     deviationRaised: 2
   });
-
+ 
   const animateStats = useAnimation(workSummary);
-
+ 
   const filteredTasks = useMemo(() => {
     return tasks.filter(task => {
       const matchesSearch = task.PrototypeName.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -216,7 +216,7 @@ const Dashboard = () => {
       return matchesSearch && matchesFilter;
     });
   }, [tasks, searchQuery, selectedFilter]);
-
+ 
   const handleTaskAction = (taskId, action) => {
     setTasks(prevTasks =>
       prevTasks.map(task => {
@@ -230,7 +230,7 @@ const Dashboard = () => {
         return task;
       })
     );
-
+ 
     if (action === 'approve') {
       setWorkSummary(prev => ({
         ...prev,
@@ -245,12 +245,12 @@ const Dashboard = () => {
       }));
     }
   };
-
+ 
   const handleRefresh = () => {
     setRefreshing(true);
     setTimeout(() => setRefreshing(false), 1000);
   };
-
+ 
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-50 to-blue-50">
       <div className="max-w-7xl mx-auto p-6">
@@ -260,7 +260,7 @@ const Dashboard = () => {
           onSearchChange={setSearchQuery}
           onFilter={() => setFilterOpen(!filterOpen)}
         />
-
+ 
         {/* Filter Bar */}
         {filterOpen && (
           <div className="mb-6 bg-white rounded-xl shadow-sm p-4 border border-gray-200">
@@ -281,7 +281,7 @@ const Dashboard = () => {
             </div>
           </div>
         )}
-
+ 
         {/* Statistics Cards */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
           <StatCard
@@ -313,7 +313,7 @@ const Dashboard = () => {
             trend="+1.1%"
           />
         </div>
-
+ 
         {/* Priority Tasks Table */}
         <div className="bg-white rounded-2xl shadow-sm border border-gray-200 overflow-hidden mb-8">
           <div className="bg-gradient-to-r from-blue-600 to-indigo-600 px-6 py-4 flex items-center justify-between">
@@ -330,7 +330,7 @@ const Dashboard = () => {
               </button>
             </div>
           </div>
-          
+         
           <div className="overflow-x-auto">
             <table className="w-full">
               <thead className="bg-gray-50">
@@ -388,7 +388,7 @@ const Dashboard = () => {
             </table>
           </div>
         </div>
-
+ 
         {/* Bottom Section */}
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           {/* Task History */}
@@ -412,7 +412,7 @@ const Dashboard = () => {
                     View History
                   </button>
                 </div>
-                
+               
                 <div className="flex items-center justify-between p-4 bg-gray-50 rounded-xl hover:bg-gray-100 transition-colors">
                   <div className="flex items-center gap-3">
                     <div className="w-10 h-10 bg-gradient-to-br from-green-500 to-emerald-500 rounded-full flex items-center justify-center">
@@ -430,19 +430,19 @@ const Dashboard = () => {
               </div>
             </div>
           </div>
-
+ 
           {/* Quick Actions */}
           <div className="bg-white rounded-2xl shadow-sm border border-gray-200">
             <div className="bg-gradient-to-r from-amber-500 to-orange-500 px-6 py-4 rounded-t-2xl">
               <h3 className="text-lg font-semibold text-white">Quick Actions</h3>
             </div>
             <div className="p-6 space-y-4">
-              
+             
               <button className="w-full flex items-center gap-3 p-4 bg-gradient-to-r from-green-50 to-emerald-50 rounded-xl hover:from-green-100 hover:to-emerald-100 transition-all duration-200 text-left">
                 <Download className="w-5 h-5 text-green-600" />
                 <span className="font-medium text-gray-900">Export Reports</span>
               </button>
-              
+             
               <button className="w-full flex items-center gap-3 p-4 bg-gradient-to-r from-purple-50 to-pink-50 rounded-xl hover:from-purple-100 hover:to-pink-100 transition-all duration-200 text-left">
                 <Settings className="w-5 h-5 text-purple-600" />
                 <span className="font-medium text-gray-900">Settings</span>
@@ -454,5 +454,5 @@ const Dashboard = () => {
     </div>
   );
 };
-
+ 
 export default Dashboard;
