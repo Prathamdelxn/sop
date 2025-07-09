@@ -134,7 +134,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { Bell, Users, ClipboardEdit, LogOut, ClipboardList, BarChart3, UserPlus, ChevronDown } from "lucide-react";
+import { Bell, Users, ClipboardEdit, LogOut, ClipboardList, BarChart3, UserPlus, ChevronDown, Settings2Icon, LucideSettings } from "lucide-react";
 import { useRouter } from "next/navigation";
 
 export default function Layout({ children }) {
@@ -157,6 +157,11 @@ export default function Layout({ children }) {
             label: "Create Prototype", 
             route: "/facility-dashboard",
             icon: <ClipboardEdit className="w-6 h-6 mb-2" />
+        },
+        { 
+            label: "Assign Equipment", 
+            route: "/facility-dashboard",
+            icon: <LucideSettings className="w-6 h-6 mb-2" />
         },
         { 
             label: "Assign Task", 
