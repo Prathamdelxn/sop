@@ -108,6 +108,35 @@ function generateNextSopNumber(latest) {
   return `PRO-MOD-${String(nextNum).padStart(2, "0")}`;
 }
 
+// Recursive function to normalize subtasks
+function normalizeSubtask(subtask) {
+  subtask.title = subtask?.title || "";
+  subtask.description = subtask?.description || "";
+
+  subtask.duration = {
+    min: subtask?.duration?.min || "0",
+    max: subtask?.duration?.max || "0",
+  };
+
+  subtask.image = {
+    title: subtask?.image?.title || "",
+    description: subtask?.image?.description || "",
+    url: Array.isArray(subtask?.image?.url) ? subtask.image.url : [],
+  };
+
+  subtask.status = subtask?.status ?? false;
+  subtask.completed = subtask?.completed ?? false;
+
+  if (Array.isArray(subtask.subtasks)) {
+    subtask.subtasks = subtask.subtasks.map(normalizeSubtask);
+  } else {
+    subtask.subtasks = [];
+  }
+
+  return subtask;
+}
+
+// POST /api/task/create
 export async function POST(req) {
   await dbConnect();
 
@@ -118,75 +147,67 @@ export async function POST(req) {
       return NextResponse.json({ error: "Title is required" }, { status: 400 });
     }
 
-    // Get the task with the highest sopNumber
-    const latestTask = await Task.findOne({ sopNumber: { $regex: /^PRO-MOD-/ } })
-      .sort({ createdAt: -1 })
-      .select("sopNumber");
+    // ✅ assignedEquipment should be an array
+    body.assignedEquipment = Array.isArray(body.assignedEquipment) ? body.assignedEquipment : [];
 
-    // Generate next SOP number
-    const nextSopNumber = generateNextSopNumber(latestTask?.sopNumber);
-    body.sopNumber = nextSopNumber;
-
-    // Process stages and tasks
+    // ✅ Normalize stages
     if (Array.isArray(body.stages)) {
-      body.stages.forEach(stage => {
+      body.stages = body.stages.map(stage => {
+        stage.title = stage.title || "";
+
+        // ✅ assignedMember should be string
+        stage.assignedMember = typeof stage.assignedMember === "string" ? stage.assignedMember : "";
+
+        // ✅ Normalize tasks
         if (Array.isArray(stage.tasks)) {
-          stage.tasks.forEach(task => {
-            // Handle duration - ensure it's an object with min and max
-            if (typeof task.duration !== 'object' || task.duration === null) {
-              task.duration = { min: 0, max: 0 };
-            } else {
-              task.duration.min = typeof task.duration.min === 'number' ? task.duration.min : 0;
-              task.duration.max = typeof task.duration.max === 'number' ? task.duration.max : 0;
-            }
+          stage.tasks = stage.tasks.map(task => {
+            task.title = task?.title || "";
+            task.description = task?.description || "";
 
-            // Handle image
-            if (typeof task.image !== 'object' || task.image === null) {
-              task.image = { title: "", description: "", url: [] };
-            } else {
-              task.image.title = task.image.title || "";
-              task.image.description = task.image.description || "";
-              task.image.url = Array.isArray(task.image.url) ? task.image.url : [];
-            }
+            task.duration = {
+              min: task?.duration?.min || "0",
+              max: task?.duration?.max || "0",
+            };
 
-            // Process subtasks if they exist
+            task.image = {
+              title: task?.image?.title || "",
+              description: task?.image?.description || "",
+              url: Array.isArray(task?.image?.url) ? task.image.url : [],
+            };
+
+            task.status = task?.status ?? false;
+            task.completed = task?.completed ?? false;
+
             if (Array.isArray(task.subtasks)) {
-              task.subtasks.forEach(sub => {
-                sub.verified = sub.verified ?? false;
-                sub.completed = sub.completed ?? false;
-                
-                if (typeof sub.image !== 'object' || sub.image === null) {
-                  sub.image = { title: "", description: "", url: "" };
-                } else {
-                  sub.image.title = sub.image.title || "";
-                  sub.image.description = sub.image.description || "";
-                  sub.image.url = sub.image.url || "";
-                }
-              });
-
-              task.completed = task.subtasks.every(sub => sub.completed);
-              task.verified = task.subtasks.every(sub => sub.verified);
+              task.subtasks = task.subtasks.map(normalizeSubtask);
             } else {
-              task.completed = task.completed ?? false;
-              task.verified = task.verified ?? false;
+              task.subtasks = [];
             }
+
+            return task;
           });
+        } else {
+          stage.tasks = [];
         }
+
+        return stage;
       });
+    } else {
+      body.stages = [];
     }
 
-    // Save to DB
+    // Save to MongoDB
     const createdDoc = await Task.create(body);
 
     const response = NextResponse.json(
-      { message: "Task created successfully", data: createdDoc },
+      { message: "Task document created successfully", data: createdDoc },
       { status: 201 }
     );
     response.headers.set("Access-Control-Allow-Origin", "*");
     return response;
 
   } catch (error) {
-    console.error("Error creating Task:", error);
+    console.error("Error creating Task document:", error);
     const response = NextResponse.json({ error: "Internal Server Error" }, { status: 500 });
     response.headers.set("Access-Control-Allow-Origin", "*");
     return response;

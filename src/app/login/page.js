@@ -493,7 +493,7 @@ const LoginPage = () => {
     try {
       setIsLoading(true);
  
-      const response = await fetch(`/api/auth/login`, {
+      const response = await fetch(`/api/single-login`, {
         method: 'POST',
         credentials: 'include',
         headers: {
@@ -503,13 +503,25 @@ const LoginPage = () => {
       });
  
       const data = await response.json();
-      console.log(data);
+      const role=data.user.role
+      console.log(data.user.role);
+      if(role=="QA"){
+        router.push('/quality-assurance');
+      }else if(role=="admin"){
+        router.push('/admin');
+
+      }else if(role=="supervisor"){
+        router.push('/supervisor-dashboard');
+      }
+      else if(role=="user-facility-admin"){
+        router.push('/userfacility-admin');
+      }
  
       if (!response.ok) throw new Error(data.message || 'Login failed');
  
-      login(data.token, data.user);
+      // login(data.token, data.user);
       toast.success('Login successful!');
-      router.push('/dashboard');
+      // router.push('/dashboard');
  
     } catch (error) {
       toast.error(error.message);
