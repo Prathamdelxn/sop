@@ -24,7 +24,16 @@ const SupervisorsPage = () => {
     
   ]);
 
+useEffect(()=>{
+const fetchAllUFA=async()=>{
+  const res= await fetch("/api/user-facility-admin/fetch-all")
+  const data= await res.json();
+ setSupervisors // console.log("data",data.data);
+  setSupervisors(data.data)
 
+}
+fetchAllUFA();
+},[])
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingSupervisor, setEditingSupervisor] = useState(null);
   const [searchTerm, setSearchTerm] = useState('');
@@ -175,7 +184,7 @@ const handleDelete = async (id) => {
       {/* Supervisors List */}
       <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-6">
         {filteredSupervisors.map((supervisor) => (
-          <div key={supervisor.id} className="bg-white rounded-xl shadow-sm border border-gray-200 p-6 hover:shadow-md transition-all">
+          <div key={supervisor._id} className="bg-white rounded-xl shadow-sm border border-gray-200 p-6 hover:shadow-md transition-all">
             <div className="flex justify-between items-center mb-4">
               <div className="flex items-center space-x-3">
                 <div className="w-12 h-12 bg-gradient-to-br from-blue-500 to-purple-600 rounded-xl flex items-center justify-center text-white font-bold text-lg">
