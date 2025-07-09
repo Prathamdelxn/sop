@@ -11,7 +11,35 @@ export async function OPTIONS() {
   return response;
 }
 
-// Create a full Title document with task/subtask image, duration & status logic
+// Recursive function to normalize subtasks
+function normalizeSubtask(subtask) {
+  subtask.title = subtask?.title || "";
+  subtask.description = subtask?.description || "";
+
+  subtask.duration = {
+    min: subtask?.duration?.min || "0",
+    max: subtask?.duration?.max || "0",
+  };
+
+  subtask.image = {
+    title: subtask?.image?.title || "",
+    description: subtask?.image?.description || "",
+    url: Array.isArray(subtask?.image?.url) ? subtask.image.url : [],
+  };
+
+  subtask.status = subtask?.status ?? false;
+  subtask.completed = subtask?.completed ?? false;
+
+  if (Array.isArray(subtask.subtasks)) {
+    subtask.subtasks = subtask.subtasks.map(normalizeSubtask);
+  } else {
+    subtask.subtasks = [];
+  }
+
+  return subtask;
+}
+
+// POST /api/task/create
 export async function POST(req) {
   await dbConnect();
 
@@ -22,72 +50,67 @@ export async function POST(req) {
       return NextResponse.json({ error: "Title is required" }, { status: 400 });
     }
 
-    // Enrich stages, tasks, subtasks
+    // ✅ assignedEquipment should be an array
+    body.assignedEquipment = Array.isArray(body.assignedEquipment) ? body.assignedEquipment : [];
+
+    // ✅ Normalize stages
     if (Array.isArray(body.stages)) {
-      body.stages.forEach(stage => {
+      body.stages = body.stages.map(stage => {
+        stage.title = stage.title || "";
+
+        // ✅ assignedMember should be string
+        stage.assignedMember = typeof stage.assignedMember === "string" ? stage.assignedMember : "";
+
+        // ✅ Normalize tasks
         if (Array.isArray(stage.tasks)) {
-          stage.tasks.forEach(task => {
-            // ✅ Ensure task.duration is valid
-            if (typeof task.duration !== "object" || task.duration === null) {
-              task.duration = {
-                min: 0,
-                max: 0,
-              };
-            } else {
-              task.duration.min = task.duration.min ?? 0;
-              task.duration.max = task.duration.max ?? 0;
-            }
+          stage.tasks = stage.tasks.map(task => {
+            task.title = task?.title || "";
+            task.description = task?.description || "";
 
-            // ✅ Ensure task.image is a single object with array of URLs
-            if (typeof task.image !== "object" || task.image === null) {
-              task.image = {
-                title: "",
-                description: "",
-                url: [],
-              };
-            } else {
-              task.image.title = task.image.title ?? "";
-              task.image.description = task.image.description ?? "";
-              task.image.url = Array.isArray(task.image.url) ? task.image.url : [];
-            }
+            task.duration = {
+              min: task?.duration?.min || "0",
+              max: task?.duration?.max || "0",
+            };
 
-            // ✅ Subtask logic
+            task.image = {
+              title: task?.image?.title || "",
+              description: task?.image?.description || "",
+              url: Array.isArray(task?.image?.url) ? task.image.url : [],
+            };
+
+            task.status = task?.status ?? false;
+            task.completed = task?.completed ?? false;
+
             if (Array.isArray(task.subtasks)) {
-              task.subtasks.forEach(sub => {
-                sub.verified = sub.verified ?? false;
-                sub.completed = sub.completed ?? false;
-
-                // Subtask image is still a single object with one URL
-                sub.image = sub.image ?? {
-                  title: "",
-                  description: "",
-                  url: ""
-                };
-              });
-
-              task.completed = task.subtasks.every(sub => sub.completed);
-              task.verified = task.subtasks.every(sub => sub.verified);
+              task.subtasks = task.subtasks.map(normalizeSubtask);
             } else {
-              task.verified = task.verified ?? false;
-              task.completed = task.completed ?? false;
+              task.subtasks = [];
             }
+
+            return task;
           });
+        } else {
+          stage.tasks = [];
         }
+
+        return stage;
       });
+    } else {
+      body.stages = [];
     }
 
-    // Save to DB
+    // Save to MongoDB
     const createdDoc = await Task.create(body);
 
     const response = NextResponse.json(
-      { message: "Title created successfully", data: createdDoc },
+      { message: "Task document created successfully", data: createdDoc },
       { status: 201 }
     );
     response.headers.set("Access-Control-Allow-Origin", "*");
     return response;
 
   } catch (error) {
-    console.error("Error creating Title:", error);
+    console.error("Error creating Task document:", error);
     const response = NextResponse.json({ error: "Internal Server Error" }, { status: 500 });
     response.headers.set("Access-Control-Allow-Origin", "*");
     return response;

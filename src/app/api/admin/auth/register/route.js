@@ -1,33 +1,74 @@
 import dbConnect from "@/utils/db";
 import Admin from "@/model/Admin";
+import Supervisor from "@/model/Supervisor";
+import Operator from "@/model/Operator";
+import QA from "@/model/QA";
+import UserFacilityAdmin from "@/model/FacilityAdmin";
 import bcrypt from "bcryptjs";
 import { NextResponse } from "next/server";
+import FacilityAdmin from "@/model/FacilityAdmin";
 
-// Handle OPTIONS request for preflight
-export async function OPTIONS() {
-  const response = NextResponse.json({}, { status: 200 });
-  response.headers.set("Access-Control-Allow-Origin", "*");
-  response.headers.set("Access-Control-Allow-Methods", "POST, OPTIONS");
-  response.headers.set("Access-Control-Allow-Headers", "Content-Type");
-  return response;
-}
+const validRoles = [
+  "admin",
+  "facility-admin",
+  "user-facility-admin",
+  "supervisor",
+  "operator",
+  "QA"
+];
 
 export async function POST(req) {
   await dbConnect();
-
   const { name, email, password, role } = await req.json();
 
-  const userExists = await Admin.findOne({ email });
-  if (userExists) {
-    const response = NextResponse.json({ error: "User already exists" }, { status: 400 });
-    response.headers.set("Access-Control-Allow-Origin", "*");
-    return response;
+  if (!name || !email || !password || !role) {
+    return NextResponse.json({ error: "All fields are required" }, { status: 400 });
   }
 
-  const hashedPassword = await bcrypt.hash(password, 10);
-  const admin = await Admin.create({ name, email, password: hashedPassword, role });
+  if (!validRoles.includes(role)) {
+    return NextResponse.json({ error: "Invalid role" }, { status: 400 });
+  }
 
-  const response = NextResponse.json({ message: "Admin created", admin: admin._id }, { status: 201 });
-  response.headers.set("Access-Control-Allow-Origin", "*");
-  return response;
+  // ✅ Check if email already exists in any role schema
+  const checkEmailExists = async () => {
+    const models = [Admin, FacilityAdmin, Supervisor, Operator, QA, UserFacilityAdmin];
+    for (const model of models) {
+      const user = await model.findOne({ email });
+      if (user) return true;
+    }
+    return false;
+  };
+
+  const emailExists = await checkEmailExists();
+
+  if (emailExists) {
+    return NextResponse.json({ error: "Email already registered in another role" }, { status: 400 });
+  }
+
+  // ✅ Save in appropriate model
+  const hashedPassword = await bcrypt.hash(password, 10);
+  let newUser;
+
+  switch (role) {
+    case "admin":
+    case "facility-admin":
+      newUser = await Admin.create({ name, email, password: hashedPassword, role });
+      break;
+    case "user-facility-admin":
+      newUser = await UserFacilityAdmin.create({ name, email, password: hashedPassword, role });
+      break;
+    case "supervisor":
+      newUser = await Supervisor.create({ name, email, password: hashedPassword, role });
+      break;
+    case "operator":
+      newUser = await Operator.create({ name, email, password: hashedPassword, role });
+      break;
+    case "QA":
+      newUser = await QA.create({ name, email, password: hashedPassword, role });
+      break;
+    default:
+      return NextResponse.json({ error: "Unhandled role" }, { status: 400 });
+  }
+
+  return NextResponse.json({ message: `${role} created`, id: newUser._id }, { status: 201 });
 }
