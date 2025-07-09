@@ -72,7 +72,7 @@ function PhotoAttachmentModal({
 
         <div className="space-y-6">
           <div>
-            <label className="block text-sm font-semibold text-gray-700 mb-2">Title</label>
+            <label className="block text-sm font-medium text-gray-700 mb-2">Title</label>
             <input
               type="text"
               value={title}
@@ -84,7 +84,7 @@ function PhotoAttachmentModal({
           </div>
 
           <div>
-            <label className="block text-sm font-semibold text-gray-700 mb-2">Description</label>
+            <label className="block text-sm font-medium text-gray-700 mb-2">Description</label>
             <textarea
               value={description}
               onChange={(e) => setDescription(e.target.value)}
@@ -97,7 +97,7 @@ function PhotoAttachmentModal({
 
           <div>
             <div className="flex justify-between items-center mb-3">
-              <label className="block text-sm font-semibold text-gray-700">Photos</label>
+              <label className="block text-sm font-medium text-gray-700">Photos</label>
               <button
                 onClick={() => fileInputRef.current.click()}
                 className="bg-gradient-to-r from-blue-500 to-blue-600 text-white px-4 py-2 rounded-lg hover:from-blue-600 hover:to-blue-700 transition-all shadow-md hover:shadow-lg active:scale-95 flex items-center gap-2 text-sm"
@@ -157,13 +157,13 @@ function PhotoAttachmentModal({
         <div className="flex gap-3 mt-6">
           <button
             onClick={onClose}
-            className="flex-1 py-2 px-4 border-2 border-gray-300 text-gray-600 rounded-lg hover:bg-gray-50 font-semibold transition-all hover:border-gray-400 active:bg-gray-100 active:scale-95"
+            className="flex-1 py-2 px-4 border-2 border-gray-300 text-gray-600 rounded-lg hover:bg-gray-50 font-medium transition-all hover:border-gray-400 active:bg-gray-100 active:scale-95"
           >
             Cancel
           </button>
           <button
             onClick={handleSave}
-            className="flex-1 py-2 px-4 bg-gradient-to-r from-emerald-500 to-emerald-600 text-white rounded-lg hover:from-emerald-600 hover:to-emerald-700 font-semibold transition-all shadow-lg hover:shadow-md active:scale-95"
+            className="flex-1 py-2 px-4 bg-gradient-to-r from-emerald-500 to-emerald-600 text-white rounded-lg hover:from-emerald-600 hover:to-emerald-700 font-medium transition-all shadow-lg hover:shadow-md active:scale-95"
           >
             Save Changes
           </button>
@@ -215,7 +215,7 @@ function PhotoAttachmentModal({
 
 //                 <div className="space-y-6">
 //                     <div>
-//                         <h3 className="text-md font-semibold mb-3 text-gray-700 flex items-center gap-2">
+//                         <h3 className="text-md font-medium mb-3 text-gray-700 flex items-center gap-2">
 //                             <Clock className="w-4 h-4 text-green-600" />
 //                             Minimum Duration
 //                         </h3>
@@ -248,7 +248,7 @@ function PhotoAttachmentModal({
 //                     </div>
 
 //                     <div>
-//                         <h3 className="text-md font-semibold mb-3 text-gray-700 flex items-center gap-2">
+//                         <h3 className="text-md font-medium mb-3 text-gray-700 flex items-center gap-2">
 //                             <Clock className="w-4 h-4 text-blue-600" />
 //                             Maximum Duration
 //                         </h3>
@@ -284,13 +284,13 @@ function PhotoAttachmentModal({
 //                 <div className="flex gap-3 mt-6">
 //                     <button
 //                         onClick={onClose}
-//                         className="flex-1 py-2 px-4 border-2 border-gray-300 text-gray-600 rounded-lg hover:bg-gray-50 font-semibold transition-all hover:border-gray-400 active:bg-gray-100 active:scale-95"
+//                         className="flex-1 py-2 px-4 border-2 border-gray-300 text-gray-600 rounded-lg hover:bg-gray-50 font-medium transition-all hover:border-gray-400 active:bg-gray-100 active:scale-95"
 //                     >
 //                         Cancel
 //                     </button>
 //                     <button
 //                         onClick={handleSave}
-//                         className="flex-1 py-2 px-4 bg-gradient-to-r from-emerald-500 to-emerald-600 text-white rounded-lg hover:from-emerald-600 hover:to-emerald-700 font-semibold transition-all shadow-lg hover:shadow-md active:scale-95"
+//                         className="flex-1 py-2 px-4 bg-gradient-to-r from-emerald-500 to-emerald-600 text-white rounded-lg hover:from-emerald-600 hover:to-emerald-700 font-medium transition-all shadow-lg hover:shadow-md active:scale-95"
 //                     >
 //                         Save
 //                     </button>
@@ -357,7 +357,7 @@ function TimeSettingModal({ isOpen, onClose, onSave, initialMinTime, initialMaxT
                     <div className="space-y-4">
                         <div className="flex items-center gap-2">
                             <div className="w-3 h-3 bg-gradient-to-r from-emerald-400 to-emerald-500 rounded-full"></div>
-                            <h3 className="font-semibold text-gray-800">Minimum Duration</h3>
+                            <h3 className="font-medium text-gray-800">Minimum Duration</h3>
                         </div>
                         
                         <div className="flex items-center justify-center gap-4">
@@ -406,7 +406,7 @@ function TimeSettingModal({ isOpen, onClose, onSave, initialMinTime, initialMaxT
                     <div className="space-y-4">
                         <div className="flex items-center gap-2">
                             <div className="w-3 h-3 bg-gradient-to-r from-blue-400 to-blue-500 rounded-full"></div>
-                            <h3 className="font-semibold text-gray-800">Maximum Duration</h3>
+                            <h3 className="font-medium text-gray-800">Maximum Duration</h3>
                         </div>
                         
                         <div className="flex items-center justify-center gap-4">
@@ -447,13 +447,13 @@ function TimeSettingModal({ isOpen, onClose, onSave, initialMinTime, initialMaxT
                     <div className="flex gap-3">
                         <button
                             onClick={onClose}
-                            className="flex-1 py-3 px-6 bg-white border-2 border-gray-200 text-gray-700 rounded-2xl hover:bg-gray-50 hover:border-gray-300 font-semibold transition-all active:scale-95"
+                            className="flex-1 py-3 px-6 bg-white border-2 border-gray-200 text-gray-700 rounded-2xl hover:bg-gray-50 hover:border-gray-300 font-medium transition-all active:scale-95"
                         >
                             Cancel
                         </button>
                         <button
                             onClick={handleSave}
-                            className="flex-1 py-3 px-6 bg-gradient-to-r from-indigo-500 to-purple-500 hover:from-indigo-600 hover:to-purple-600 text-white rounded-2xl font-semibold transition-all shadow-lg hover:shadow-xl active:scale-95"
+                            className="flex-1 py-3 px-6 bg-gradient-to-r from-indigo-500 to-purple-500 hover:from-indigo-600 hover:to-purple-600 text-white rounded-2xl font-medium transition-all shadow-lg hover:shadow-xl active:scale-95"
                         >
                             Save Changes
                         </button>
@@ -906,7 +906,7 @@ export default function SupervisorPage() {
                         </button> */}
                         <button 
                             onClick={handleSave}
-                            className="bg-gradient-to-r from-emerald-500 to-emerald-600 text-white px-8 py-3 rounded-xl hover:from-emerald-600 hover:to-emerald-700 font-semibold transition-all shadow-lg hover:shadow-xl transform hover:scale-105 active:scale-100 flex items-center gap-2"
+                            className="bg-gradient-to-r from-emerald-500 to-emerald-600 text-white px-8 py-3 rounded-xl hover:from-emerald-600 hover:to-emerald-700 font-normal transition-all shadow-lg hover:shadow-xl transform hover:scale-105 active:scale-100 flex items-center gap-2"
                         >
                             <Save className="w-5 h-5" />
                             Save Prototype Created
@@ -924,7 +924,7 @@ export default function SupervisorPage() {
                                 onClick={() => setSelectedStage(stage.id)}
                             >
                                 <div className="flex justify-between items-center mb-4">
-                                    <h3 className="font-bold text-blue-800 text-lg">Stage {stage.id}</h3>
+                                    <h3 className="font-medium text-blue-800 text-lg">Stage {stage.id}</h3>
                                     <button
                                         onClick={(e) => {
                                             e.stopPropagation();
@@ -936,7 +936,7 @@ export default function SupervisorPage() {
                                     </button>
                                 </div>
                                 <div>
-                                    <label className="block text-sm font-semibold text-blue-700 mb-2">Stage Name</label>
+                                    <label className="block text-sm font-medium text-blue-700 mb-2">Stage Name</label>
                                     <input
                                         type="text"
                                         value={stage.name}
@@ -951,7 +951,8 @@ export default function SupervisorPage() {
 
                         <button
                             onClick={addNewStage}
-                            className="w-full bg-gradient-to-r from-blue-500 to-blue-600 text-white py-4 px-6 rounded-2xl hover:from-blue-600 hover:to-blue-700 flex items-center justify-center gap-3 font-semibold transition-all shadow-lg hover:shadow-xl transform hover:scale-105 active:scale-100"
+                            className="w-full bg-gradient-to-r from-blue-500 to-blue-600 text-white py-4 px-6 rounded-2xl hover:from-blue-600 hover:to-blue-700 flex items-center justify-center gap-3 font-\
+                             transition-all shadow-lg hover:shadow-xl transform hover:scale-105 active:scale-100"
                         >
                             <Plus className="w-6 h-6" />
                             Add New Stage
@@ -999,7 +1000,7 @@ export default function SupervisorPage() {
                                                 <div className="flex gap-3">
                                                     <button
                                                         onClick={() => handleSetTimeForTask(task.id)}
-                                                        className="bg-gradient-to-r from-purple-500 to-purple-600 text-white px-6 py-3 rounded-xl hover:from-purple-600 hover:to-purple-700 flex items-center gap-2 font-semibold transition-all shadow-lg hover:shadow-xl active:scale-95"
+                                                        className="bg-gradient-to-r from-purple-500 to-purple-600 text-white px-6 py-3 rounded-xl hover:from-purple-600 hover:to-purple-700 flex items-center gap-2 font-medium transition-all shadow-lg hover:shadow-xl active:scale-95"
                                                     >
                                                         <Clock className="w-5 h-5" />
                                                         Set Duration
@@ -1035,7 +1036,7 @@ export default function SupervisorPage() {
 
                                             <div className="mb-6">
                                                 <div className="flex justify-between items-center mb-3">
-                                                    <label className="block text-sm font-semibold text-gray-700">Task Description</label>
+                                                    <label className="block text-sm font-medium text-gray-700">Task Description</label>
                                                     <div className="text-sm font-medium text-gray-600">
                                                         <span className="text-green-600">Min: {formatTimeDisplay(task.minTime)}</span>
                                                         <span className="mx-2">|</span>
@@ -1079,11 +1080,11 @@ export default function SupervisorPage() {
                                             </div>
 
                                             <div className="mb-6">
-                                                <p className="text-sm font-semibold text-gray-700 mb-4">Break Down Task into Sub-Tasks</p>
+                                                <p className="text-sm font-medium text-gray-700 mb-4">Break Down Task into Sub-Tasks</p>
                                                 <div className="flex gap-3 mb-6">
                                                     <button
                                                         onClick={() => addSubTask(selectedStage, task.id)}
-                                                        className="bg-gradient-to-r from-blue-500 to-blue-600 text-white px-6 py-3 rounded-xl hover:from-blue-600 hover:to-blue-700 font-semibold transition-all shadow-lg hover:shadow-xl transform hover:scale-105 active:scale-100 flex items-center gap-2"
+                                                        className="bg-gradient-to-r from-blue-500 to-blue-600 text-white px-6 py-3 rounded-xl hover:from-blue-600 hover:to-blue-700 font-medium transition-all shadow-lg hover:shadow-xl transform hover:scale-105 active:scale-100 flex items-center gap-2"
                                                     >
                                                         <Plus className="w-4 h-4" />
                                                         Create Sub-Task
@@ -1163,7 +1164,7 @@ export default function SupervisorPage() {
 
                                                     <div className="mb-4">
                                                         <div className="flex justify-between items-center mb-2">
-                                                            <label className="block text-sm font-semibold text-gray-700">Task Description</label>
+                                                            <label className="block text-sm font-medium text-gray-700">Task Description</label>
                                                             <div className="text-xs font-medium text-gray-600">
                                                                 <span className="text-green-600">Min: {formatTimeDisplay(subtask.minTime)}</span>
                                                                 <span className="mx-1">|</span>
@@ -1212,7 +1213,7 @@ export default function SupervisorPage() {
                                     <button
                                         onClick={() => addTask(selectedStage)}
                                         disabled={tasks[selectedStage]?.length > 0 && !taskCompletionStatus[tasks[selectedStage][tasks[selectedStage].length - 1].id]}
-                                        className={`w-full py-4 px-6 rounded-2xl flex items-center justify-center gap-3 font-semibold transition-all shadow-lg hover:shadow-xl transform hover:scale-105 active:scale-100 ${
+                                        className={`w-full py-4 px-6 rounded-2xl flex items-center justify-center gap-3 font-medium transition-all shadow-lg hover:shadow-xl transform hover:scale-105 active:scale-100 ${
                                             tasks[selectedStage]?.length === 0 || taskCompletionStatus[tasks[selectedStage][tasks[selectedStage].length - 1].id]
                                                 ? 'bg-gradient-to-r from-blue-500 to-blue-600 text-white hover:from-blue-600 hover:to-blue-700'
                                                 : 'bg-gray-300 text-gray-500 cursor-not-allowed'
@@ -1230,7 +1231,7 @@ export default function SupervisorPage() {
                                     <p className="text-gray-500 mb-6">No tasks created for this stage yet</p>
                                     <button
                                         onClick={() => addTask(selectedStage)}
-                                        className="bg-gradient-to-r from-blue-500 to-blue-600 text-white py-3 px-6 rounded-xl hover:from-blue-600 hover:to-blue-700 font-semibold transition-all shadow-lg hover:shadow-xl transform hover:scale-105 active:scale-100 flex items-center gap-2"
+                                        className="bg-gradient-to-r from-blue-500 to-blue-600 text-white py-3 px-6 rounded-xl hover:from-blue-600 hover:to-blue-700 font-medium transition-all shadow-lg hover:shadow-xl transform hover:scale-105 active:scale-100 flex items-center gap-2"
                                     >
                                         <Plus className="w-5 h-5" />
                                         Create First Task
