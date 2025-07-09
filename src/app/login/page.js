@@ -274,6 +274,7 @@ const LoginPage = () => {
     { id: 'equipment_admin', name: 'Equipment', icon: Settings, color: 'bg-orange-500 hover:bg-orange-600' },
   
   ];
+  
 
   const handleLogin = async () => {
     try {

@@ -1,8 +1,10 @@
 "use client";
 import React, { useState } from 'react';
 import { Bell, User, Eye, Clock, Download, FileText, Menu, X } from 'lucide-react';
+import { useRouter } from 'next/navigation'; // ✅ App Router
 
 const Layout = ({ children, onNavigate }) => {
+  const router = useRouter();
   const [activeView, setActiveView] = useState('overview');
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
   const [user] = useState({
@@ -10,45 +12,50 @@ const Layout = ({ children, onNavigate }) => {
     role: "Quality Assurance"
   });
 
+  const navigationItems = [
+    {
+      id: 'Inbox',
+      label: 'Inbox',
+      icon: Eye,
+      isSingle: true,
+      route: '/quality-assurance', // ✅
+    },
+    {
+      id: 'Approve Equipment',
+      label: 'Approve Equipment',
+      icon: Clock,
+      isSingle: false,
+      route: '/quality-assurance/approve_equipment', // ✅
+    },
+    {
+      id: 'Approve Task',
+      label: 'Approve Task',
+      icon: Download,
+      isSingle: false,
+      route: '/quality-assurance/approve_task', // ✅
+    },
+    {
+      id: 'Profile',
+      label: 'Profile',
+      icon: FileText,
+      isSingle: true,
+      route: '/quality-assurance/profile', // ✅
+    }
+  ];
+
   const handleNavigation = (view) => {
     setActiveView(view);
-    if (onNavigate) {
-      onNavigate(view);
+    if (onNavigate) onNavigate(view);
+
+    const selectedItem = navigationItems.find(item => item.id === view);
+    if (selectedItem?.route) {
+      router.push(selectedItem.route);
     }
-    // Auto-close sidebar on mobile after navigation
+
     if (window.innerWidth < 1024) {
       setIsSidebarOpen(false);
     }
   };
-
-  const navigationItems = [
-    {
-      id: 'overview',
-      label: 'Overview',
-      icon: Eye,
-      isSingle: true
-    },
-    {
-      id: 'scheduled',
-      label: 'Scheduled to',
-      sublabel: 'Reviews',
-      icon: Clock,
-      isSingle: false
-    },
-    {
-      id: 'download',
-      label: 'Download',
-      sublabel: 'Report',
-      icon: Download,
-      isSingle: false
-    },
-    {
-      id: 'report',
-      label: 'Report',
-      icon: FileText,
-      isSingle: true
-    }
-  ];
 
   const Navbar = () => (
     <div className="bg-white border-b border-gray-200 px-4 lg:px-6 py-3 flex items-center justify-between shadow-sm relative z-10">
@@ -90,17 +97,14 @@ const Layout = ({ children, onNavigate }) => {
 
   const Sidebar = () => (
     <>
-      {/* Mobile backdrop */}
       {isSidebarOpen && (
         <div 
           className="lg:hidden fixed inset-0 bg-black bg-opacity-50 z-20 transition-opacity"
           onClick={() => setIsSidebarOpen(false)}
         />
       )}
-      
-      {/* Sidebar */}
-      <div className={`
-        fixed lg:relative top-0 left-0 z-30 lg:z-0
+
+      <div className={`fixed lg:relative top-0 left-0 z-30 lg:z-0
         w-64 bg-gradient-to-b from-gray-50 to-gray-100 
         border-r border-gray-200 h-full flex flex-col
         transform transition-transform duration-300 ease-in-out
@@ -111,43 +115,30 @@ const Layout = ({ children, onNavigate }) => {
           {navigationItems.map((item) => {
             const Icon = item.icon;
             const isActive = activeView === item.id;
-            
+
             return (
               <button
                 key={item.id}
                 onClick={() => handleNavigation(item.id)}
-                className={`
-                  flex items-center space-x-3 p-3 rounded-xl w-full text-left 
+                className={`flex items-center space-x-3 p-3 rounded-xl w-full text-left 
                   transition-all duration-200 transform hover:scale-105 group
                   ${isActive 
                     ? 'bg-gradient-to-r from-blue-100 to-blue-50 text-blue-700 shadow-md border border-blue-200' 
-                    : 'hover:bg-white hover:shadow-sm'
-                  }
+                    : 'hover:bg-white hover:shadow-sm'}
                 `}
               >
-                <div className={`
-                  w-10 h-10 rounded-full flex items-center justify-center transition-all duration-200
+                <div className={`w-10 h-10 rounded-full flex items-center justify-center transition-all duration-200
                   ${isActive 
                     ? 'bg-gradient-to-r from-blue-500 to-blue-600 text-white shadow-lg' 
-                    : 'bg-gray-200 group-hover:bg-gray-300'
-                  }
+                    : 'bg-gray-200 group-hover:bg-gray-300'}
                 `}>
                   <Icon className="w-5 h-5" />
                 </div>
-                
                 {(isSidebarOpen || !window.matchMedia('(min-width: 1024px)').matches) && (
                   <div className="flex-1">
-                    {item.isSingle ? (
-                      <span className="font-medium text-sm lg:text-base">{item.label}</span>
-                    ) : (
-                      <div className="text-sm">
-                        <div className="font-medium">{item.label}</div>
-                        <div className="text-gray-500 text-xs">{item.sublabel}</div>
-                      </div>
-                    )}
+                    <span className="font-medium text-sm lg:text-base">{item.label}</span>
                   </div>
                 )}
-                
                 {isActive && (
                   <div className="w-1 h-8 bg-gradient-to-b from-blue-500 to-blue-600 rounded-full"></div>
                 )}
@@ -155,15 +146,13 @@ const Layout = ({ children, onNavigate }) => {
             );
           })}
         </div>
-        
-        {/* Sidebar footer */}
+
         <div className="p-4 border-t border-gray-200 bg-white">
           <div className="text-xs text-gray-500 text-center">
             CleanTrack Pro v2.1
           </div>
         </div>
-        
-        {/* Collapse button for desktop */}
+
         <button
           onClick={() => setIsSidebarOpen(!isSidebarOpen)}
           className="hidden lg:block absolute -right-3 top-20 w-6 h-6 bg-white border border-gray-300 rounded-full shadow-md hover:shadow-lg transition-all duration-200 flex items-center justify-center text-gray-600 hover:text-blue-600 z-10"
@@ -179,10 +168,7 @@ const Layout = ({ children, onNavigate }) => {
       <Navbar />
       <div className="flex flex-1 overflow-hidden relative">
         <Sidebar />
-        <main className={`
-          flex-1 overflow-auto transition-all duration-300 ease-in-out
-          ${!isSidebarOpen ? 'lg:ml-0' : ''}
-        `}>
+        <main className={`flex-1 overflow-auto transition-all duration-300 ease-in-out ${!isSidebarOpen ? 'lg:ml-0' : ''}`}>
           {children}
         </main>
       </div>

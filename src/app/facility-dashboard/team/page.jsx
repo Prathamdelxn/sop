@@ -1,0 +1,208 @@
+'use client';
+
+import React, { useState, useEffect } from 'react';
+import { Search, Users, UserCheck, Phone, Mail, MapPin, Filter } from 'lucide-react';
+
+const TeamsPage = () => {
+  const [searchTerm, setSearchTerm] = useState('');
+  const [filterRole, setFilterRole] = useState('all');
+  const [teamMembers, setTeamMembers] = useState([]);
+
+  const locationQuery = 'Building A';
+
+  useEffect(() => {
+    const fetchTeamMembers = async () => {
+      try {
+        const [supervisorRes, operatorRes] = await Promise.all([
+          fetch(`/api/supervisor/fetchAll?location=${encodeURIComponent(locationQuery)}`),
+          fetch(`/api/operator/fetchAll?location=${encodeURIComponent(locationQuery)}`),
+        ]);
+
+        const supervisorData = await supervisorRes.json();
+        const operatorData = await operatorRes.json();
+
+        if (!supervisorRes.ok || !operatorRes.ok) {
+          throw new Error('Failed to fetch data');
+        }
+
+        const formattedSupervisors = supervisorData.supervisors.map((member) => ({
+          ...member,
+          role: 'supervisor',
+        }));
+
+        const formattedOperators = operatorData.operators.map((member) => ({
+          ...member,
+          role: 'operator',
+        }));
+
+        setTeamMembers([...formattedSupervisors, ...formattedOperators]);
+      } catch (error) {
+        console.error('Fetch error:', error);
+        alert('Failed to fetch team members.');
+      }
+    };
+
+    fetchTeamMembers();
+  }, []);
+
+  const filteredMembers = teamMembers.filter((member) => {
+    const matchesSearch =
+      member.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      member.department?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      member.location?.toLowerCase().includes(searchTerm.toLowerCase());
+    const matchesRole = filterRole === 'all' || member.role === filterRole;
+    return matchesSearch && matchesRole;
+  });
+
+  const supervisors = filteredMembers.filter((m) => m.role === 'supervisor');
+  const operators = filteredMembers.filter((m) => m.role === 'operator');
+
+  const MemberCard = ({ member }) => (
+    <div className="bg-white rounded-xl shadow-lg hover:shadow-xl transition-all duration-300 transform hover:-translate-y-1 border border-gray-100 overflow-hidden">
+      <div className={`h-2 ${member.role === 'supervisor' ? 'bg-gradient-to-r from-purple-500 to-pink-500' : 'bg-gradient-to-r from-blue-500 to-cyan-500'}`}></div>
+      <div className="p-6">
+        <div className="flex items-center justify-between mb-4">
+          <div className="flex items-center space-x-3">
+            <div className={`w-12 h-12 rounded-full flex items-center justify-center ${member.role === 'supervisor' ? 'bg-purple-100 text-purple-600' : 'bg-blue-100 text-blue-600'}`}>
+              {member.role === 'supervisor' ? <UserCheck size={24} /> : <Users size={24} />}
+            </div>
+            <div>
+              <h3 className="font-bold text-lg text-gray-800">{member.name}</h3>
+              <span className={`inline-block px-3 py-1 rounded-full text-xs font-medium ${member.role === 'supervisor' ? 'bg-purple-100 text-purple-800' : 'bg-blue-100 text-blue-800'}`}>
+                {member.role.charAt(0).toUpperCase() + member.role.slice(1)}
+              </span>
+            </div>
+          </div>
+          <div className="text-right">
+            <p className="text-sm text-gray-500">Experience</p>
+            <p className="font-semibold text-gray-800">{member.experience || 'N/A'}</p>
+          </div>
+        </div>
+        <div className="space-y-3 text-sm text-gray-600">
+          <div className="flex items-center"><Users size={16} /><span className="ml-2">{member.department || 'N/A'}</span></div>
+          <div className="flex items-center"><MapPin size={16} /><span className="ml-2">{member.location || 'N/A'}</span></div>
+          <div className="flex items-center"><Phone size={16} /><span className="ml-2">{member.phone || 'N/A'}</span></div>
+          <div className="flex items-center"><Mail size={16} /><span className="ml-2">{member.email || 'N/A'}</span></div>
+        </div>
+        <div className="mt-4 pt-4 border-t border-gray-100 flex justify-between">
+          <span className="text-sm text-gray-500">Shift</span>
+          <span className="text-sm font-medium text-gray-800">{member.shift || 'N/A'}</span>
+        </div>
+      </div>
+    </div>
+  );
+
+  return (
+    <div className="min-h-screen bg-gradient-to-br from-indigo-50 via-white to-purple-50">
+      <div className="container mx-auto px-4 py-8">
+        {/* Header */}
+        <div className="text-center mb-12">
+          <h1 className="text-4xl font-bold text-gray-800 mb-4">Teams Directory</h1>
+          <p className="text-xl text-gray-600">Operators & Supervisors</p>
+        </div>
+
+        {/* Search and Filter */}
+        <div className="flex flex-col md:flex-row gap-4 mb-8">
+          <div className="flex-1 relative">
+            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" size={20} />
+            <input
+              type="text"
+              placeholder="Search by name, department, or location..."
+              className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+            />
+          </div>
+          <div className="relative">
+            <Filter className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" size={20} />
+            <select
+              className="pl-10 pr-8 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent appearance-none bg-white"
+              value={filterRole}
+              onChange={(e) => setFilterRole(e.target.value)}
+            >
+              <option value="all">All Roles</option>
+              <option value="supervisor">Supervisors</option>
+              <option value="operator">Operators</option>
+            </select>
+          </div>
+        </div>
+
+        {/* Stats */}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+          <div className="bg-white rounded-xl shadow-lg p-6 border border-gray-100">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm text-gray-500">Total Members</p>
+                <p className="text-2xl font-bold text-gray-800">{filteredMembers.length}</p>
+              </div>
+              <div className="w-12 h-12 bg-green-100 rounded-full flex items-center justify-center">
+                <Users className="text-green-600" size={24} />
+              </div>
+            </div>
+          </div>
+          <div className="bg-white rounded-xl shadow-lg p-6 border border-gray-100">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm text-gray-500">Supervisors</p>
+                <p className="text-2xl font-bold text-purple-600">{supervisors.length}</p>
+              </div>
+              <div className="w-12 h-12 bg-purple-100 rounded-full flex items-center justify-center">
+                <UserCheck className="text-purple-600" size={24} />
+              </div>
+            </div>
+          </div>
+          <div className="bg-white rounded-xl shadow-lg p-6 border border-gray-100">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm text-gray-500">Operators</p>
+                <p className="text-2xl font-bold text-blue-600">{operators.length}</p>
+              </div>
+              <div className="w-12 h-12 bg-blue-100 rounded-full flex items-center justify-center">
+                <Users className="text-blue-600" size={24} />
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Sections */}
+        {supervisors.length > 0 && (filterRole === 'all' || filterRole === 'supervisor') && (
+          <>
+            <h2 className="text-2xl font-bold text-gray-800 mb-6 flex items-center">
+              <UserCheck className="mr-2 text-purple-600" size={28} />
+              Supervisors ({supervisors.length})
+            </h2>
+            <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6 mb-12">
+              {supervisors.map((member) => (
+                <MemberCard key={member._id || member.id} member={member} />
+              ))}
+            </div>
+          </>
+        )}
+
+        {operators.length > 0 && (filterRole === 'all' || filterRole === 'operator') && (
+          <>
+            <h2 className="text-2xl font-bold text-gray-800 mb-6 flex items-center">
+              <Users className="mr-2 text-blue-600" size={28} />
+              Operators ({operators.length})
+            </h2>
+            <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6 mb-12">
+              {operators.map((member) => (
+                <MemberCard key={member._id || member.id} member={member} />
+              ))}
+            </div>
+          </>
+        )}
+
+        {filteredMembers.length === 0 && (
+          <div className="text-center py-12">
+            <Users className="mx-auto text-gray-400 mb-4" size={48} />
+            <h3 className="text-xl font-semibold text-gray-600 mb-2">No team members found</h3>
+            <p className="text-gray-500">Try adjusting your search criteria</p>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+};
+
+export default TeamsPage;
