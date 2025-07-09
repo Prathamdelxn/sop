@@ -1,8 +1,14 @@
 import { NextResponse } from 'next/server';
-import mongoose from 'mongoose';
 import bcrypt from 'bcryptjs';
-import FacilityAdmin from '@/model/FacilityAdmin'; // Ensure this is the correct model path
-import dbConnect from '@/utils/db'; // DB connection utility
+import dbConnect from '@/utils/db';
+
+// Import all role-based models
+import Admin from '@/model/Admin';
+import FacilityAdmin from '@/model/FacilityAdmin';
+import UserFacilityAdmin from '@/model/UserFacilityAdmin';
+import Supervisor from '@/model/Supervisor';
+import Operator from '@/model/Operator';
+import QA from '@/model/QA';
 
 export async function POST(req) {
   await dbConnect();
@@ -10,7 +16,7 @@ export async function POST(req) {
   try {
     const { name, email, password, phone, location } = await req.json();
 
-    // Validation
+    // ✅ Validate input
     if (!name || !email || !password || !phone || !location) {
       return NextResponse.json(
         { message: 'All fields are required (name, email, password, phone, location)' },
@@ -18,19 +24,23 @@ export async function POST(req) {
       );
     }
 
-    // Check if Facility Admin already exists
-    const existingAdmin = await FacilityAdmin.findOne({ email });
-    if (existingAdmin) {
-      return NextResponse.json(
-        { message: 'Facility Admin with this email already exists' },
-        { status: 409 }
-      );
+    // ✅ Check across all models if email already exists
+    const models = [Admin, FacilityAdmin, UserFacilityAdmin, Supervisor, Operator, QA];
+
+    for (const model of models) {
+      const existing = await model.findOne({ email });
+      if (existing) {
+        return NextResponse.json(
+          { message: `Email already registered in another role` },
+          { status: 409 }
+        );
+      }
     }
 
-    // Hash the password
+    // ✅ Hash password
     const hashedPassword = await bcrypt.hash(password, 10);
 
-    // Create new Facility Admin
+    // ✅ Create new Facility Admin
     const facilityAdmin = await FacilityAdmin.create({
       name,
       email,
@@ -41,7 +51,7 @@ export async function POST(req) {
       status: 'active',
     });
 
-    // Respond with selected details
+    // ✅ Respond
     return NextResponse.json(
       {
         message: 'Facility Admin registered successfully',

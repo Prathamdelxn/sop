@@ -17,49 +17,55 @@ export async function POST(req) {
     const { name, email, password, phone, location } = await req.json();
 
     // ✅ Validate input
-    if (!name || !email || !password) {
-      return NextResponse.json({ message: 'All fields are required' }, { status: 400 });
+    if (!name || !email || !password || !phone || !location) {
+      return NextResponse.json(
+        { message: 'All fields (name, email, password, phone, location) are required' },
+        { status: 400 }
+      );
     }
 
-    // ✅ Check if email exists in any other role-based collection
+    // ✅ Check if email exists in any role-based collection
     const models = [Admin, FacilityAdmin, UserFacilityAdmin, Supervisor, Operator, QA];
 
     for (const model of models) {
-      const existingUser = await model.findOne({ email });
-      if (existingUser) {
-        return NextResponse.json({ message: 'Email already registered in another role' }, { status: 409 });
+      const existing = await model.findOne({ email });
+      if (existing) {
+        return NextResponse.json(
+          { message: 'Email already registered in another role' },
+          { status: 409 }
+        );
       }
     }
 
-    // ✅ Hash the password
+    // ✅ Hash password
     const hashedPassword = await bcrypt.hash(password, 10);
 
-    // ✅ Create the Supervisor
-    const newSupervisor = await Supervisor.create({
+    // ✅ Create new User Facility Admin
+    const newUserFA = await UserFacilityAdmin.create({
       name,
       email,
       password: hashedPassword,
       phone,
       location,
-      role: 'supervisor',
+      role: 'user-facility-admin',
       status: 'active',
     });
 
     return NextResponse.json({
-      message: 'Supervisor registered successfully',
-      supervisor: {
-        id: newSupervisor._id,
-        name: newSupervisor.name,
-        email: newSupervisor.email,
-        role: newSupervisor.role,
-        status: newSupervisor.status,
-        phone: newSupervisor.phone,
-        location: newSupervisor.location,
-      },
+      message: 'User Facility Admin registered successfully',
+      userFacilityAdmin: {
+        id: newUserFA._id,
+        name: newUserFA.name,
+        email: newUserFA.email,
+        phone: newUserFA.phone,
+        location: newUserFA.location,
+        role: newUserFA.role,
+        status: newUserFA.status,
+      }
     }, { status: 201 });
 
   } catch (error) {
-    console.error('Supervisor Register API Error:', error);
+    console.error('User Facility Admin Register API Error:', error);
     return NextResponse.json({ message: 'Server Error' }, { status: 500 });
   }
 }

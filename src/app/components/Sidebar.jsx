@@ -11,7 +11,7 @@ export default function Sidebar({ sidebarOpen, setSidebarOpen }) {
     { name: 'Supervisors', href: '/admin/supervisor', icon: '👨‍💼', color: 'from-purple-500 to-purple-600' },
     { name: 'Operators', href: '/admin/operators', icon: '⚙️', color: 'from-orange-500 to-orange-600' },
     { name: 'QA Staff', href: '/admin/qaStaff', icon: '🔍', color: 'from-teal-500 to-teal-600' },
-    { name: 'Managers', href: '/admin/managers', icon: '👔', color: 'from-indigo-500 to-indigo-600' },
+    { name: 'User Facility Admin', href: '/admin/user-facility-admin', icon: '👔', color: 'from-indigo-500 to-indigo-600' },
 
   ];
 
