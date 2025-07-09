@@ -505,16 +505,25 @@ const LoginPage = () => {
       const data = await response.json();
       const role=data.user.role
       console.log(data.user.role);
+      login(data.token, data.user);
       if(role=="QA"){
         router.push('/quality-assurance');
       }else if(role=="admin"){
         router.push('/admin');
-
       }else if(role=="supervisor"){
         router.push('/supervisor-dashboard');
+      }else if(role=="facility-admin"){
+        router.push("/facility-dashboard")
+
       }
       else if(role=="user-facility-admin"){
         router.push('/userfacility-admin');
+      }
+      else if(role=="operator"){
+        router.push("/operator-dashboard")
+      }
+      else{
+        alert("Not found proper role dashboard")
       }
  
       if (!response.ok) throw new Error(data.message || 'Login failed');
