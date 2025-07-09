@@ -564,53 +564,73 @@ export default function SupervisorPage() {
         return (minHours + maxHours) / 2;
     };
 
-    const transformDataForBackend = () => {
-        const transformedStages = stages.map(stage => {
-            const stageTasks = tasks[stage.id] || [];
-            
-            const transformedTasks = stageTasks.map(task => {
-                const transformedSubtasks = task.subtasks.map(subtask => ({
-                    title: subtask.title,
-                    description: subtask.description,
-                    image: subtask.photos[0] || '',
-                    duration: calculateDurationInHours(subtask.minTime, subtask.maxTime),
-                    status: taskCompletionStatus[subtask.id] || false,
-                    completed: taskCompletionStatus[subtask.id] || false
-                }));
+  
 
-                return {
-                    title: task.title,
-                    description: task.description,
-                    image: task.photos[0] || '',
-                    duration: calculateDurationInHours(task.minTime, task.maxTime),
-                    status: taskCompletionStatus[task.id] || false,
-                    completed: taskCompletionStatus[task.id] || false,
-                    subtasks: transformedSubtasks
-                };
-            });
+   const handleSave = async() => {
+  if (stages.length === 0) {
+    alert("Please add at least one stage before saving");
+    return;
+  }
 
-            return {
-                name: stage.name,
-                tasks: transformedTasks
-            };
-        });
+  // Transform the data to match the Mongoose schema
+  const dataToSave = {
+    title: sopName || "Untitled SOP",
+    stages: stages.map(stage => {
+      const stageTasks = tasks[stage.id] || [];
+      
+      return {
+        name: stage.name,
+        tasks: stageTasks.map(task => {
+          // Transform subtasks if they exist
+          const subtasks = task.subtasks?.map(subtask => ({
+            title: subtask.title,
+            description: subtask.description,
+            image: {
+              title: subtask.photoTitle || "",
+              description: subtask.photoDescription || "",
+              url: subtask.photos[0] || "" // Taking first photo if multiple exist
+            },
+            status: taskCompletionStatus[subtask.id] || false,
+            completed: taskCompletionStatus[subtask.id] || false
+          })) || [];
 
-        return {
-            title: sopName || "Untitled SOP",
-            sopNumber: sopNumber || "",
-            stages: transformedStages
-        };
-    };
+          // Calculate duration in minutes (or hours if preferred)
+          const minDuration = (task.minTime?.hours || 0) * 60 + (task.minTime?.minutes || 0);
+          const maxDuration = (task.maxTime?.hours || 0) * 60 + (task.maxTime?.minutes || 0);
 
-    const handleSave = () => {
-        if (stages.length === 0) {
-            alert("Please add at least one stage before saving");
-            return;
-        }
-        const dataToSave = transformDataForBackend();
-        console.log("Data ready for backend:", dataToSave);
-        alert("Check console for the data structure matching your Mongoose schema");
-    };
+          return {
+            title: task.title,
+            description: task.description,
+            image: {
+              title: task.photoTitle || "",
+              description: task.photoDescription || "",
+              url: task.photos // This should be an array of strings according to your schema
+            },
+            duration: {
+              min: minDuration.toString(),
+              max: maxDuration.toString()
+            },
+            status: taskCompletionStatus[task.id] || false,
+            completed: taskCompletionStatus[task.id] || false,
+            subtasks: subtasks
+          };
+        })
+      };
+    })
+  };
+
+  console.log("Data ready for backend:",dataToSave);
+  const res = await fetch("/api/task/create",{
+    method:"POST",
+     headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify(dataToSave),
+  })
+  const resposnse = await res.json();
+  console.log("Response is ",resposnse)
+  alert("Check console for the properly formatted data matching your Mongoose schema");
+};
 
     const addNewStage = () => {
         const newStageId = stages.length > 0 ? Math.max(...stages.map(s => s.id)) + 1 : 1;
