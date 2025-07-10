@@ -19,7 +19,7 @@ export default function FacilityAdminDashboard() {
     model: '',
     serial: '',
     assetTag: '',
-    status: 'Pending'
+  
   });
 
   const [errors, setErrors] = useState({});
@@ -265,20 +265,7 @@ export default function FacilityAdminDashboard() {
                   <option key={type} value={type}>{type}</option>
                 ))}
               </select> */}
-              <div className="flex bg-gray-100 rounded-xl p-1">
-                <button
-                  onClick={() => setViewMode('grid')}
-                  className={`px-4 py-2 rounded-lg transition-colors ${viewMode === 'grid' ? 'bg-white shadow-sm' : 'hover:bg-gray-200'}`}
-                >
-                  Grid
-                </button>
-                <button
-                  onClick={() => setViewMode('table')}
-                  className={`px-4 py-2 rounded-lg transition-colors ${viewMode === 'table' ? 'bg-white shadow-sm' : 'hover:bg-gray-200'}`}
-                >
-                  Table
-                </button>
-              </div>
+              
             </div>
           </div>
         </div>
@@ -448,18 +435,7 @@ export default function FacilityAdminDashboard() {
                   </div>
 
                   {/* Status */}
-                  <div>
-                    <label className="block font-semibold mb-1">Status</label>
-                    <input
-                      type="text"
-                      name="status"
-                      placeholder="e.g., Approved, Pending, Unassigned"
-                      value={formData.status}
-                      onChange={handleChange}
-                      className="w-full border border-gray-300 p-3 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500"
-                    />
-                  </div>
-
+                 
                   {/* Manufacturer */}
                   <div>
                     <label className="block font-semibold mb-1">Manufacturer</label>
