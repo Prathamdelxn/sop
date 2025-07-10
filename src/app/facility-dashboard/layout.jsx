@@ -137,6 +137,8 @@ import { useEffect, useState } from "react";
 import { Bell, Users, ClipboardEdit, LogOut, ClipboardList, BarChart3, UserPlus, ChevronDown, Settings2Icon, LucideSettings } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { ScrollText } from 'lucide-react';
+import { User } from 'lucide-react';
+
 
 
 export default function Layout({ children }) {
@@ -162,7 +164,7 @@ export default function Layout({ children }) {
         },
         { 
             label: "Assign Equipment", 
-            route: "/facility-dashboard",
+            route: "/facility-dashboard/assign-equipment",
             icon: <LucideSettings className="w-6 h-6 mb-2" />
         },
         { 
@@ -171,25 +173,15 @@ export default function Layout({ children }) {
             icon: <UserPlus className="w-6 h-6 mb-2" />
         },
         { 
-            label: "Tasks", 
-            route: "/facility-dashboard/task",
-            icon: <ClipboardList className="w-6 h-6 mb-2" />
-        },
-        { 
             label: "Teams", 
             route: "/facility-dashboard/team",
             icon: <Users className="w-6 h-6 mb-2" />
         },
-        { 
-            label: "Report", 
-            route: "/facility-dashboard/report",
-            icon: <BarChart3 className="w-6 h-6 mb-2" />
-        },
         {
-            label: "Asign",
-            route: "/facility-dashboard/asign",
-            icon: <ScrollText className="w-6 h-6 mb-2" />
-        }
+            label: "Profile", 
+            route: "/facility-dashboard/profile",
+            icon: <User className="w-6 h-6 mb-2" />
+        },
     ];
 
     useEffect(() => {

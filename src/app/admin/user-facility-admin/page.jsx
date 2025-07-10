@@ -6,7 +6,7 @@ import { useEffect } from 'react';
 const SupervisorsPage = () => {
   const [supervisors, setSupervisors] = useState([
     {
-      id: 1,
+      _id: 1,
       name: 'John Smith',
       email: 'john.smith@company.com',
       phone: '+1 (555) 123-4567',
@@ -14,7 +14,7 @@ const SupervisorsPage = () => {
       location: 'New York, NY',
     },
     {
-      id: 2,
+      _id: 2,
       name: 'Sarah Johnson',
       email: 'sarah.johnson@company.com',
       phone: '+1 (555) 234-5678',
