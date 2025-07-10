@@ -11,7 +11,11 @@ const Layout = ({ children, onNavigate }) => {
     name: "Prajapati Maulikumar Madhavlal",
     role: "Quality Assurance"
   });
-
+const handleLogout = () => {
+  localStorage.removeItem('token');
+  localStorage.removeItem('user');
+  router.replace('/login'); // You can also use replace instead of push
+};
   const navigationItems = [
     {
       id: 'Inbox',
@@ -25,21 +29,21 @@ const Layout = ({ children, onNavigate }) => {
       label: 'Approve Equipment',
       icon: Clock,
       isSingle: false,
-      route: '/quality-assurance/approve_equipment', // ✅
+      route: '/quality-assurance/approve_equipment', 
     },
     {
       id: 'Approve Task',
       label: 'Approve Task',
       icon: Download,
       isSingle: false,
-      route: '/quality-assurance/approve_task', // ✅
+      route: '/quality-assurance/approve_task', 
     },
     {
       id: 'Profile',
       label: 'Profile',
       icon: FileText,
       isSingle: true,
-      route: '/quality-assurance/profile', // ✅
+      route: '/quality-assurance/profile', 
     }
   ];
 
@@ -88,7 +92,7 @@ const Layout = ({ children, onNavigate }) => {
             Profile Settings
           </div>
         </button>
-        <button className="px-3 py-2 lg:px-4 bg-gradient-to-r from-blue-600 to-blue-700 text-white rounded-lg hover:from-blue-700 hover:to-blue-800 transition-all duration-200 transform hover:scale-105 shadow-sm hover:shadow-md text-sm lg:text-base">
+        <button onClick={handleLogout} className="px-3 py-2 lg:px-4 bg-gradient-to-r from-blue-600 to-blue-700 text-white rounded-lg hover:from-blue-700 hover:to-blue-800 transition-all duration-200 transform hover:scale-105 shadow-sm hover:shadow-md text-sm lg:text-base">
           Log out
         </button>
       </div>

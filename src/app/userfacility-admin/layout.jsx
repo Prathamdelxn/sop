@@ -43,7 +43,7 @@ export default function Layout({ children }) {
                 </div>
                 <div className="flex items-center gap-6">
                     <Bell className="w-6 h-6 text-blue-600 cursor-pointer hover:text-blue-800 transition-colors" />
-                    <Users className="w-6 h-6 text-blue-600 cursor-pointer hover:text-blue-800 transition-colors" />
+                    {/* <Users className="w-6 h-6 text-blue-600 cursor-pointer hover:text-blue-800 transition-colors" /> */}
                     <button onClick={handleLogout} className="flex items-center gap-2 bg-gradient-to-r from-red-500 to-red-600 text-white px-6 py-2 rounded-xl hover:from-red-600 hover:to-red-700 font-semibold transition-all shadow-lg hover:shadow-xl transform hover:scale-105">
                         <LogOut className="w-4 h-4" />
                         Log out
