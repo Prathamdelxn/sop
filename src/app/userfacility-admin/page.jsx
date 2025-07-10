@@ -9,7 +9,24 @@ export default function FacilityAdminDashboard() {
   const [searchTerm, setSearchTerm] = useState('');
   const [filterType, setFilterType] = useState('');
   const [viewMode, setViewMode] = useState('grid');
+useEffect(() => {
+  const fetchEquipment = async () => {
+    try {
+      const res = await fetch('/api/equipment/fetchAll');
+      const result = await res.json();
 
+      if (res.ok && result.success) {
+        setEquipmentList(result.data);
+      } else {
+        console.error('Failed to fetch equipment:', result.message);
+      }
+    } catch (err) {
+      console.error('Error fetching equipment:', err);
+    }
+  };
+
+  fetchEquipment();
+}, []);
   const [formData, setFormData] = useState({
     name: '',
     id: '',
@@ -94,31 +111,96 @@ export default function FacilityAdminDashboard() {
     setErrors({});
   };
 
-  const handleSubmit = () => {
-    const validationErrors = validate();
-    if (Object.keys(validationErrors).length > 0) {
-      setErrors(validationErrors);
-      return;
-    }
+//   const handleSubmit = async() => {
+//     const validationErrors = validate();
+//     if (Object.keys(validationErrors).length > 0) {
+//       setErrors(validationErrors);
+//       return;
+//     }
+// console.log("asd",formData)
 
-    const newEquipment = {
-      ...formData,
-      name: formData.name.trim(),
-      id: editingEquipment ? editingEquipment.id : generateId(),
-      type: formData.type.trim(),
-      dateAdded: editingEquipment ? editingEquipment.dateAdded : new Date().toISOString().split('T')[0]
-    };
+// const newData={
+//   name:formData.name,
+//   type: formData.type,
+//       manufacturer: formData.manufacturer,
+//       supplier: formData.supplier,
+//       model: formData.model,
+//       serial: formData.serial,
+//       assetTag: formData.assetTag
 
-    if (editingEquipment) {
-      setEquipmentList(prev => 
-        prev.map(eq => eq.id === editingEquipment.id ? newEquipment : eq)
-      );
-    } else {
-      setEquipmentList(prev => [...prev, newEquipment]);
-    }
+// }
 
-    closePopup();
+// try{
+//   const res = await fetch('/api/equipment/create'{
+//     method:"POST",
+//     headers
+//   })
+
+// }catch(err){
+//   console.log("Internal Server Error",err)
+
+// }
+//     // const newEquipment = {
+//     //   ...formData,
+//     //   name: formData.name.trim(),
+//     //   id: editingEquipment ? editingEquipment.id : generateId(),
+//     //   type: formData.type.trim(),
+//     //   dateAdded: editingEquipment ? editingEquipment.dateAdded : new Date().toISOString().split('T')[0]
+//     // };
+
+//     // if (editingEquipment) {
+//     //   setEquipmentList(prev => 
+//     //     prev.map(eq => eq.id === editingEquipment.id ? newEquipment : eq)
+//     //   );
+//     // } else {
+//     //   setEquipmentList(prev => [...prev, newEquipment]);
+//     // }
+
+//     closePopup();
+//   };
+
+
+
+const handleSubmit = async () => {
+  const validationErrors = validate();
+  if (Object.keys(validationErrors).length > 0) {
+    setErrors(validationErrors);
+    return;
+  }
+
+
+  const newData = {
+    name: formData.name,
+    type: formData.type,
+    manufacturer: formData.manufacturer,
+    supplier: formData.supplier,
+    model: formData.model,
+    serial: formData.serial,
+    assetTag: formData.assetTag
   };
+
+  try {
+    const res = await fetch('/api/equipment/create', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify(newData)
+    });
+
+    const result = await res.json();
+
+    if (res.ok) {
+      // Add the new equipment to the local list for UI update
+      setEquipmentList(prev => [...prev, result.data]);
+      closePopup();
+    } else {
+      console.error('API error:', result.message);
+    }
+  } catch (err) {
+    console.error('Internal Server Error', err);
+  }
+};
 
   const handleReset = () => {
     setFormData({
@@ -153,7 +235,7 @@ export default function FacilityAdminDashboard() {
     switch (status) {
       case 'Approved':
         return 'bg-green-100 text-green-800';
-      case 'Pending':
+      case 'pending':
         return 'bg-yellow-100 text-yellow-800';
       case 'Unassigned':
         return 'bg-gray-100 text-gray-800';
@@ -166,7 +248,7 @@ export default function FacilityAdminDashboard() {
     switch (status) {
       case 'Approved':
         return <CheckCircle className="text-green-600" size={32} />;
-      case 'Pending':
+      case 'pending':
         return <Clock className="text-yellow-600" size={32} />;
       case 'Unassigned':
         return <XCircle className="text-gray-600" size={32} />;
@@ -176,7 +258,7 @@ export default function FacilityAdminDashboard() {
   };
 
   const approvedCount = equipmentList.filter(eq => eq.status === 'Approved').length;
-  const pendingCount = equipmentList.filter(eq => eq.status === 'Pending').length;
+  const pendingCount = equipmentList.filter(eq => eq.status === 'pending').length;
   const unassignedCount = equipmentList.filter(eq => eq.status === 'Unassigned').length;
 
   return (
@@ -283,7 +365,7 @@ export default function FacilityAdminDashboard() {
           ) : viewMode === 'grid' ? (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
               {filteredEquipment.map((equipment) => (
-                <div key={equipment.id} className="border border-gray-200 rounded-xl p-6 hover:shadow-lg transition-shadow">
+                <div key={equipment._id} className="border border-gray-200 rounded-xl p-6 hover:shadow-lg transition-shadow">
                   <div className="flex items-start justify-between mb-4">
                     <div className="flex items-center gap-3">
                       <div className="w-12 h-12 bg-blue-100 rounded-xl flex items-center justify-center">
