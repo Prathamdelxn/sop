@@ -29,21 +29,21 @@ const handleLogout = () => {
       label: 'Approve Equipment',
       icon: Clock,
       isSingle: false,
-      route: '/quality-assurance/approve_equipment', // ✅
+      route: '/quality-assurance/approve_equipment', 
     },
     {
       id: 'Approve Task',
       label: 'Approve Task',
       icon: Download,
       isSingle: false,
-      route: '/quality-assurance/approve_task', // ✅
+      route: '/quality-assurance/approve_task', 
     },
     {
       id: 'Profile',
       label: 'Profile',
       icon: FileText,
       isSingle: true,
-      route: '/quality-assurance/profile', // ✅
+      route: '/quality-assurance/profile', 
     }
   ];
 

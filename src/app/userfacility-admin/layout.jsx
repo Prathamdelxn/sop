@@ -17,11 +17,13 @@ export default function Layout({ children }) {
     const sidebarItems = [
         {
             label: "Create Equipment",
-            icon: <Package className="w-7 h-7 mb-3" />
+            icon: <Package className="w-7 h-7 mb-3" />,
+            route:"/userfacility-admin"
         },
         {
             label: "Profile",
-            icon: <User className="w-7 h-7 mb-3" />
+            icon: <User className="w-7 h-7 mb-3" />,
+            route:"/userfacility-admin/profile"
         }
         
     ];
@@ -54,12 +56,13 @@ export default function Layout({ children }) {
                 {/* Sidebar - Fixed */}
                 <aside className="fixed left-0 top-20 bottom-0 w-36 bg-white border-r border-gray-200 py-8 flex flex-col items-center shadow-lg z-30">
                     <div className="flex flex-col gap-6">
-                        {sidebarItems.map(({ icon, label }) => {
+                        {sidebarItems.map(({ icon, label,route }) => {
                             const isActive = activeItem === label;
                             return (
                                 <div
                                     key={label}
                                     onClick={() => {
+                                        router.push(route);
                                         setActiveItem(label);
                                     }}
                                     className={`flex flex-col items-center text-center cursor-pointer transition-all duration-300 px-4 py-4 rounded-xl transform hover:scale-105 min-w-[100px]

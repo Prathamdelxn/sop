@@ -1717,31 +1717,231 @@
 // };
 
 // export default SOPDashboard;
+
+
+
+// 'use client';
+// import React, { useEffect, useState } from 'react';
+// import {
+//   Search, Plus, CheckCircle, Activity, AlertCircle, Zap,
+//   TrendingUp, Target, Layers, Workflow, Star, Eye, Heart,
+//   Bookmark, FileText, Clock, Users, Sparkles, Edit3,
+//   Share2, MoreVertical,
+//   Trash2Icon
+// } from 'lucide-react';
+// import { useRouter } from 'next/navigation';
+
+// const SOPDashboard = () => {
+//   const router = useRouter();
+//   const [searchTerm, setSearchTerm] = useState('');
+//   const [hoveredCard, setHoveredCard] = useState(null);
+//   const [isSearchFocused, setIsSearchFocused] = useState(false);
+//   const [sopData, setSopData] = useState([]);
+//   const [loading, setLoading] = useState(true);
+
+//   const allIcons = [
+//     CheckCircle, Activity, AlertCircle, Zap, TrendingUp,
+//     Target, Layers, Workflow, Star, Eye, Heart, Bookmark,
+//     FileText, Clock, Users
+//   ];
+
+//   const colorOptions = [
+//     { bg: 'bg-emerald-50', gradient: 'from-emerald-500 to-teal-500', text: 'text-emerald-600' },
+//     { bg: 'bg-blue-50', gradient: 'from-blue-500 to-purple-500', text: 'text-blue-600' },
+//     { bg: 'bg-orange-50', gradient: 'from-orange-500 to-red-500', text: 'text-orange-600' },
+//     { bg: 'bg-purple-50', gradient: 'from-purple-500 to-indigo-500', text: 'text-purple-600' },
+//     { bg: 'bg-pink-50', gradient: 'from-pink-500 to-rose-500', text: 'text-pink-600' },
+//     { bg: 'bg-amber-50', gradient: 'from-amber-500 to-yellow-500', text: 'text-amber-600' },
+//   ];
+
+//   const handleCreate = () => {
+//     router.push("/facility-dashboard/create-sop");
+//   };
+
+//   useEffect(() => {
+//     const fetchSops = async () => {
+//       try {
+//         const res = await fetch('/api/task/fetchAll');
+//         const data = await res.json();
+//       console.log(data);
+//           setSopData(data.data);
+       
+//       } catch (err) {
+//         console.error("Failed to fetch SOPs:", err);
+//       } finally {
+//         setLoading(false);
+//       }
+//     };
+
+//     fetchSops();
+//   }, []);
+
+//   // Enhance each item with icon + color based on index
+//   const enhancedSopData = sopData.map((item, index) => {
+//     const Icon = allIcons[index % allIcons.length];
+//     const colors = colorOptions[index % colorOptions.length];
+
+//     return {
+//       id: item._id,
+//       name: item.title,
+//       number: item.sopNumber,
+//       dateCreated: new Date(item.createdAt).toLocaleDateString("en-IN"),
+//       icon: <Icon className={`w-6 h-6 ${colors.text}`} />,
+//       bgColor: colors.bg,
+//       color: colors.gradient
+//     };
+//   });
+
+
+
+//   return (
+//     <div className="min-h-screen bg-gray-50">
+//       {/* Header */}
+//       <div className="bg-white border-b border-gray-200 shadow-sm">
+//         <div className="max-w-7xl mx-auto px-6 py-8 flex flex-col lg:flex-row lg:items-center lg:justify-between gap-6">
+//           <div className="flex items-center space-x-4">
+//             <div className="p-4 bg-gradient-to-br from-blue-500 via-purple-500 to-pink-500 rounded-3xl shadow">
+//               <Sparkles className="w-8 h-8 text-white" />
+//             </div>
+//             <div>
+//               <h1 className="text-4xl font-bold text-gray-900">Prototype Workspace</h1>
+//               <p className="text-gray-600 mt-2 text-lg">Manage and track your development processes</p>
+//             </div>
+//           </div>
+//           <button
+//             onClick={handleCreate}
+//             className="bg-gradient-to-r from-blue-600 via-purple-600 to-pink-600 text-white font-bold py-4 px-8 rounded-2xl flex items-center space-x-3 shadow hover:shadow-md"
+//           >
+//             <Plus className="w-5 h-5" />
+//             <span>Create New</span>
+//           </button>
+//         </div>
+//       </div>
+
+//       {/* Search Bar */}
+//       <div className="bg-white border-b border-gray-200">
+//         <div className="max-w-7xl mx-auto px-6 py-6">
+//           <div className="flex flex-col sm:flex-row gap-4 items-center">
+//             <div className="relative flex-1 w-full sm:max-w-md">
+//               <Search className={`absolute left-4 top-1/2 transform -translate-y-1/2 w-5 h-5 ${isSearchFocused ? 'text-blue-500' : 'text-gray-400'}`} />
+//               <input
+//                 type="text"
+//                 placeholder="Search prototypes..."
+//                 className="w-full pl-12 pr-4 py-4 bg-white border border-gray-300 rounded-2xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none"
+//                 value={searchTerm}
+//                 onChange={(e) => setSearchTerm(e.target.value)}
+//                 onFocus={() => setIsSearchFocused(true)}
+//                 onBlur={() => setIsSearchFocused(false)}
+//               />
+//             </div>
+//           </div>
+//         </div>
+//       </div>
+
+//       {/* Main Content */}
+//       <div className="max-w-7xl mx-auto px-6 py-8">
+//         {loading ? (
+//           <p className="text-center text-gray-600">Loading Prototype's...</p>
+//         ) : sopData.length > 0 ? (
+//           <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+//             {sopData.map((sop) => (
+//               <div
+//                 key={sop.id}
+//                 className="group relative bg-white rounded-2xl shadow border border-gray-200 overflow-hidden cursor-pointer hover:shadow-md transition-shadow"
+//                 onMouseEnter={() => setHoveredCard(sop.id)}
+//                 onMouseLeave={() => setHoveredCard(null)}
+//               >
+//                 {/* Progress Bar */}
+//                 <div className="h-2 bg-gray-200">
+//                   <div className={`h-full bg-gradient-to-r ${sop.color}`} />
+//                 </div>
+
+//                 <div className="p-6">
+//                   <div className="flex items-start space-x-4">
+//                     <div className={`w-12 h-12 rounded-xl flex items-center justify-center ${sop.bgColor} mt-1`}>
+//                       {sop.icon}
+//                     </div>
+//                     <div className="flex-1">
+//                       <h3 className="text-lg font-bold text-gray-900 group-hover:text-blue-600">{sop.name}</h3>
+//                       <p className="text-sm text-gray-500 font-medium mt-1">Number of Stages {sop.stages.length}</p>
+// <p className="text-sm text-gray-500">
+//  <strong> Created At:</strong> {new Date(sop.createdAt).toLocaleString('en-IN', {
+//     day: '2-digit',
+//     month: 'short',
+//     year: 'numeric',
+//     hour: '2-digit',
+//     minute: '2-digit',
+//     hour12: true,
+//   })}
+// </p>
+//                     </div>
+//                   </div>
+
+//                   {/* Action Buttons */}
+//                   <div className={`flex justify-end space-x-2 mt-4 transition-opacity opacity-100 `}>
+//                     <button className="p-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600">
+//                       <Trash2Icon className="w-4 h-4" />
+//                     </button>
+                  
+                    
+//                   </div>
+//                 </div>
+//               </div>
+//             ))}
+//           </div>
+//         ) : (
+//           <div className="text-center py-20">
+//             <div className="max-w-md mx-auto">
+//               <div className="w-20 h-20 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-8">
+//                 <Search className="w-10 h-10 text-gray-400" />
+//               </div>
+//               <h3 className="text-2xl font-bold text-gray-900 mb-3">No prototypes found</h3>
+//               <p className="text-gray-600 mb-8 text-lg">Try adjusting your search or create a new prototype.</p>
+//               <div className="flex flex-col sm:flex-row gap-4 justify-center">
+//                 <button
+//                   onClick={() => setSearchTerm('')}
+//                   className="px-8 py-3 bg-white border border-gray-300 text-gray-700 rounded-2xl hover:bg-gray-50"
+//                 >
+//                   Clear Filters
+//                 </button>
+//                 <button
+//                   onClick={handleCreate}
+//                   className="bg-gradient-to-r from-blue-600 to-purple-600 text-white font-bold py-3 px-8 rounded-2xl shadow hover:shadow-md"
+//                 >
+//                   Create New Prototype
+//                 </button>
+//               </div>
+//             </div>
+//           </div>
+//         )}
+//       </div>
+//     </div>
+//   );
+// };
+
+// export default SOPDashboard;
 'use client';
 import React, { useEffect, useState } from 'react';
 import {
-  Search, Plus, CheckCircle, Activity, AlertCircle, Zap,
-  TrendingUp, Target, Layers, Workflow, Star, Eye, Heart,
-  Bookmark, FileText, Clock, Users, Sparkles, Edit3,
-  Share2, MoreVertical
+  Plus, Sparkles, Trash2,
+  CheckCircle, Activity, AlertCircle, Zap, TrendingUp,
+  Target, Layers, Workflow, Star, Eye, Heart,
+  Bookmark, FileText, Clock, Users
 } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 
 const SOPDashboard = () => {
   const router = useRouter();
-  const [searchTerm, setSearchTerm] = useState('');
-  const [hoveredCard, setHoveredCard] = useState(null);
-  const [isSearchFocused, setIsSearchFocused] = useState(false);
   const [sopData, setSopData] = useState([]);
   const [loading, setLoading] = useState(true);
 
-  const allIcons = [
+  const icons = [
     CheckCircle, Activity, AlertCircle, Zap, TrendingUp,
     Target, Layers, Workflow, Star, Eye, Heart, Bookmark,
     FileText, Clock, Users
   ];
 
-  const colorOptions = [
+  const colors = [
     { bg: 'bg-emerald-50', gradient: 'from-emerald-500 to-teal-500', text: 'text-emerald-600' },
     { bg: 'bg-blue-50', gradient: 'from-blue-500 to-purple-500', text: 'text-blue-600' },
     { bg: 'bg-orange-50', gradient: 'from-orange-500 to-red-500', text: 'text-orange-600' },
@@ -1759,9 +1959,7 @@ const SOPDashboard = () => {
       try {
         const res = await fetch('/api/task/fetchAll');
         const data = await res.json();
-      
-          setSopData(data.data);
-       
+        setSopData(data.data);
       } catch (err) {
         console.error("Failed to fetch SOPs:", err);
       } finally {
@@ -1772,26 +1970,22 @@ const SOPDashboard = () => {
     fetchSops();
   }, []);
 
-  // Enhance each item with icon + color based on index
   const enhancedSopData = sopData.map((item, index) => {
-    const Icon = allIcons[index % allIcons.length];
-    const colors = colorOptions[index % colorOptions.length];
+    const Icon = icons[index % icons.length];
+    const color = colors[index % colors.length];
 
     return {
+      ...item,
       id: item._id,
-      name: item.title,
-      number: item.sopNumber,
-      dateCreated: new Date(item.createdAt).toLocaleDateString("en-IN"),
-      icon: <Icon className={`w-6 h-6 ${colors.text}`} />,
-      bgColor: colors.bg,
-      color: colors.gradient
+      icon: <Icon className={`w-6 h-6 ${color.text}`} />,
+      bgColor: color.bg,
+      gradient: color.gradient,
+      formattedDate: new Date(item.createdAt).toLocaleString('en-IN', {
+        day: '2-digit', month: 'short', year: 'numeric',
+        hour: '2-digit', minute: '2-digit', hour12: true,
+      })
     };
   });
-
-  const filteredSopData = enhancedSopData.filter(sop =>
-    sop.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    sop.number.toLowerCase().includes(searchTerm.toLowerCase())
-  );
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -1817,42 +2011,19 @@ const SOPDashboard = () => {
         </div>
       </div>
 
-      {/* Search Bar */}
-      <div className="bg-white border-b border-gray-200">
-        <div className="max-w-7xl mx-auto px-6 py-6">
-          <div className="flex flex-col sm:flex-row gap-4 items-center">
-            <div className="relative flex-1 w-full sm:max-w-md">
-              <Search className={`absolute left-4 top-1/2 transform -translate-y-1/2 w-5 h-5 ${isSearchFocused ? 'text-blue-500' : 'text-gray-400'}`} />
-              <input
-                type="text"
-                placeholder="Search prototypes..."
-                className="w-full pl-12 pr-4 py-4 bg-white border border-gray-300 rounded-2xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none"
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                onFocus={() => setIsSearchFocused(true)}
-                onBlur={() => setIsSearchFocused(false)}
-              />
-            </div>
-          </div>
-        </div>
-      </div>
-
       {/* Main Content */}
       <div className="max-w-7xl mx-auto px-6 py-8">
         {loading ? (
-          <p className="text-center text-gray-600">Loading SOPs...</p>
-        ) : filteredSopData.length > 0 ? (
+          <p className="text-center text-gray-600">Loading Prototypes...</p>
+        ) : enhancedSopData.length > 0 ? (
           <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-            {filteredSopData.map((sop) => (
+            {enhancedSopData.map((sop) => (
               <div
                 key={sop.id}
-                className="group relative bg-white rounded-2xl shadow border border-gray-200 overflow-hidden cursor-pointer hover:shadow-md transition-shadow"
-                onMouseEnter={() => setHoveredCard(sop.id)}
-                onMouseLeave={() => setHoveredCard(null)}
+                className="group bg-white rounded-2xl shadow border border-gray-200 overflow-hidden cursor-pointer hover:shadow-md transition-shadow"
               >
-                {/* Progress Bar */}
                 <div className="h-2 bg-gray-200">
-                  <div className={`h-full bg-gradient-to-r ${sop.color}`} />
+                  <div className={`h-full bg-gradient-to-r ${sop.gradient}`} />
                 </div>
 
                 <div className="p-6">
@@ -1861,22 +2032,17 @@ const SOPDashboard = () => {
                       {sop.icon}
                     </div>
                     <div className="flex-1">
-                      <h3 className="text-lg font-bold text-gray-900 group-hover:text-blue-600">{sop.name}</h3>
-                      <p className="text-sm text-gray-500 font-medium mt-1">{sop.number}</p>
-                      <p className="text-sm text-gray-500 mt-2">Created: {sop.dateCreated}</p>
+                      <h3 className="text-lg font-bold text-gray-900 group-hover:text-blue-600">{sop.title}</h3>
+                      <p className="text-sm text-gray-500 font-medium mt-1">Number of Stages: {sop.stages.length}</p>
+                      <p className="text-sm text-gray-500 mt-1">
+                        <strong>Created At:</strong> {sop.formattedDate}
+                      </p>
                     </div>
                   </div>
 
-                  {/* Action Buttons */}
-                  <div className={`flex justify-end space-x-2 mt-4 transition-opacity ${hoveredCard === sop.id ? 'opacity-100' : 'opacity-0'}`}>
+                  <div className="flex justify-end mt-4">
                     <button className="p-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600">
-                      <Edit3 className="w-4 h-4" />
-                    </button>
-                    <button className="p-2 bg-purple-500 text-white rounded-lg hover:bg-purple-600">
-                      <Share2 className="w-4 h-4" />
-                    </button>
-                    <button className="p-2 bg-gray-500 text-white rounded-lg hover:bg-gray-600">
-                      <MoreVertical className="w-4 h-4" />
+                      <Trash2 className="w-4 h-4" />
                     </button>
                   </div>
                 </div>
@@ -1886,25 +2052,14 @@ const SOPDashboard = () => {
         ) : (
           <div className="text-center py-20">
             <div className="max-w-md mx-auto">
-              <div className="w-20 h-20 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-8">
-                <Search className="w-10 h-10 text-gray-400" />
-              </div>
               <h3 className="text-2xl font-bold text-gray-900 mb-3">No prototypes found</h3>
-              <p className="text-gray-600 mb-8 text-lg">Try adjusting your search or create a new prototype.</p>
-              <div className="flex flex-col sm:flex-row gap-4 justify-center">
-                <button
-                  onClick={() => setSearchTerm('')}
-                  className="px-8 py-3 bg-white border border-gray-300 text-gray-700 rounded-2xl hover:bg-gray-50"
-                >
-                  Clear Filters
-                </button>
-                <button
-                  onClick={handleCreate}
-                  className="bg-gradient-to-r from-blue-600 to-purple-600 text-white font-bold py-3 px-8 rounded-2xl shadow hover:shadow-md"
-                >
-                  Create New Prototype
-                </button>
-              </div>
+              <p className="text-gray-600 mb-8 text-lg">Click below to create a new prototype.</p>
+              <button
+                onClick={handleCreate}
+                className="bg-gradient-to-r from-blue-600 to-purple-600 text-white font-bold py-3 px-8 rounded-2xl shadow hover:shadow-md"
+              >
+                Create New Prototype
+              </button>
             </div>
           </div>
         )}

@@ -14,25 +14,21 @@ export default function Layout({ children }) {
 const[userDetails,setUSer]=useState();
   const sidebarItems = [
     { 
-      label: "Create Task", 
-      icon: <ClipboardEdit className="w-6 h-6 mb-2" />
-    },
-    { 
-      label: "Assign Task", 
-      icon: <UserPlus className="w-6 h-6 mb-2" />
+      label: "Inbox", 
+      icon: <ClipboardEdit className="w-6 h-6 mb-2" />,
+       route: "/supervisor-dashboard",
     },
     { 
       label: "Tasks", 
-      icon: <ClipboardList className="w-6 h-6 mb-2" />
+      icon: <ClipboardList className="w-6 h-6 mb-2" />,
+       route: "/supervisor-dashboard",
     },
     { 
-      label: "Teams", 
-      icon: <Users className="w-6 h-6 mb-2" />
+      label: "Profile", 
+      icon: <Users className="w-6 h-6 mb-2" />,
+      route: "/supervisor-dashboard/profile",
     },
-    { 
-      label: "Report", 
-      icon: <BarChart3 className="w-6 h-6 mb-2" />
-    }
+    
   ];
 const[userId,setId]=useState();
  const fetchUser = async () => {
@@ -102,14 +98,14 @@ fetchUser();
         {/* Sidebar - Fixed */}
         <aside className="fixed left-0 top-20 bottom-0 w-32 bg-white border-r border-gray-200 py-8 flex flex-col items-center shadow-lg z-30">
           <div className="flex flex-col gap-4">
-            {sidebarItems.map(({ icon, label }) => {
+            {sidebarItems.map(({ icon, label,route }) => {
               const isActive = activeItem === label;
               return (
                 <div
                   key={label}
                   onClick={() =>
                     {
-                      router.push("/supervisor-dashboard/assign-task")
+                      router.push(route)
                      setActiveItem(label)}}
                   className={`flex flex-col items-center text-center cursor-pointer transition-all duration-200 px-4 py-3 rounded-xl transform hover:scale-105 ${
                     isActive

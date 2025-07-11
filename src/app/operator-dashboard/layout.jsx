@@ -10,20 +10,29 @@ export default function Layout({ children }) {
   const sidebarItems = [
     {
       label: "Inbox",
-      icon: <ClipboardEdit className="w-6 h-6 mb-2" />
+      icon: <ClipboardEdit className="w-6 h-6 mb-2" />,
+      route: "/operator-dashboard",
     },
     {
       label: "Tasks",
-      icon: <ClipboardList className="w-6 h-6 mb-2" />
+      icon: <ClipboardList className="w-6 h-6 mb-2" />,
+      route: "/operator-dashboard",
     },
     {
       label: "Teams",
-      icon: <Users className="w-6 h-6 mb-2" />
+      icon: <Users className="w-6 h-6 mb-2" />,
+      route: "/operator-dashboard",
     },
     {
       label: "Report",
-      icon: <BarChart3 className="w-6 h-6 mb-2" />
-    }
+      icon: <BarChart3 className="w-6 h-6 mb-2" />,
+      route: "/operator-dashboard",
+    },
+    { 
+      label: "Profile", 
+      icon: <Users className="w-6 h-6 mb-2" />,
+      route: "/operator-dashboard/profile",
+    },
   ];
   const handleLogout = () => {
   localStorage.removeItem('token');
@@ -74,12 +83,14 @@ const[userDetails,setUSer]=useState();
         {/* Sidebar */}
         <aside className="w-28 bg-white border-r border-gray-200 py-8 flex flex-col items-center shadow-sm">
           <div className="flex flex-col gap-6">
-            {sidebarItems.map(({ icon, label }) => {
+            {sidebarItems.map(({ icon, label,route }) => {
               const isActive = activeItem === label;
               return (
                 <div
                   key={label}
-                  onClick={() => setActiveItem(label)}
+                  onClick={() => {
+                    router.push(route)
+                    setActiveItem()}}
                   className={`flex flex-col items-center text-center cursor-pointer transition-colors duration-200 px-3 py-2 rounded-lg ${
                     isActive
                       ? "text-blue-600 bg-blue-50"
