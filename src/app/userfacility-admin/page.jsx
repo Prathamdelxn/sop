@@ -1,6 +1,6 @@
 'use client';
 import { useState, useEffect } from 'react';
-import { Package, Plus, X, Edit, Trash2, Search, CheckCircle, Clock, XCircle } from 'lucide-react';
+import { Package, Plus, X, Edit, Trash2, Search, CheckCircle, Clock, XCircle, Eye } from 'lucide-react';
 
 export default function FacilityAdminDashboard() {
   const [equipmentList, setEquipmentList] = useState([]);
@@ -9,6 +9,9 @@ export default function FacilityAdminDashboard() {
   const [searchTerm, setSearchTerm] = useState('');
   const [filterType, setFilterType] = useState('');
   const [viewMode, setViewMode] = useState('grid');
+  const [viewingEquipment, setViewingEquipment] = useState(null);
+const [isInfoModalOpen, setIsInfoModalOpen] = useState(false);
+
 useEffect(() => {
   const fetchEquipment = async () => {
     try {
@@ -27,6 +30,11 @@ useEffect(() => {
 
   fetchEquipment();
 }, []);
+const viewEquipmentDetails = (equipment) => {
+  setViewingEquipment(equipment);
+  setIsInfoModalOpen(true);
+};
+
   const [formData, setFormData] = useState({
     name: '',
     id: '',
@@ -222,7 +230,15 @@ const handleSubmit = async () => {
       setEquipmentList(prev => prev.filter(eq => eq.id !== id));
     }
   };
-
+// Helper component for detail items
+const DetailItem = ({ label, value }) => (
+  <div>
+    <p className="text-sm font-medium text-gray-500">{label}</p>
+    <p className="text-gray-900 mt-1">
+      {value || <span className="text-gray-400">N/A</span>}
+    </p>
+  </div>
+);
   const filteredEquipment = equipmentList.filter(equipment => {
     const matchesSearch = equipment.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
                          equipment.id.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -401,13 +417,39 @@ const handleSubmit = async () => {
                   </div>
                   
                   <div className="flex gap-2">
-                    <button
+                    {equipment.status === "approved" ? (
+  <button
+    onClick={() => viewEquipmentDetails(equipment)}
+    className="flex-1 bg-blue-600 text-white py-2 px-3 rounded-lg hover:bg-blue-700 transition-colors flex items-center justify-center gap-2"
+  >
+    <Eye size={16} />
+    Show Info
+  </button>
+) : (
+  <button
+    onClick={() => openPopup(equipment)}
+    className="flex-1 bg-blue-600 text-white py-2 px-3 rounded-lg hover:bg-blue-700 transition-colors flex items-center justify-center gap-2"
+  >
+    <Edit size={16} />
+    Edit
+  </button>
+)}
+
+                    {/* {equipment.status=="approved"?  <button
+                     
+                      className="flex-1 bg-blue-600 text-white py-2 px-3 rounded-lg hover:bg-blue-700 transition-colors flex items-center justify-center gap-2"
+                    >
+                      <Eye size={16} />
+                      Show Info
+                    </button>:
+                    <> <button
                       onClick={() => openPopup(equipment)}
                       className="flex-1 bg-blue-600 text-white py-2 px-3 rounded-lg hover:bg-blue-700 transition-colors flex items-center justify-center gap-2"
                     >
                       <Edit size={16} />
                       Edit
-                    </button>
+                    </button></>} */}
+                   
                     <button
                       onClick={() => deleteEquipment(equipment.id)}
                       className="bg-red-600 text-white py-2 px-3 rounded-lg hover:bg-red-700 transition-colors flex items-center justify-center"
@@ -468,6 +510,122 @@ const handleSubmit = async () => {
             </div>
           )}
         </div>
+{/* {isInfoModalOpen && viewingEquipment && (
+  <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+    <div className="bg-white rounded-2xl shadow-2xl max-w-2xl w-full p-6">
+      <div className="flex justify-between items-center border-b pb-4">
+        <h2 className="text-xl font-bold text-blue-600">Equipment Info</h2>
+        <button
+          onClick={() => {
+            setViewingEquipment(null);
+            setIsInfoModalOpen(false);
+          }}
+          className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+        >
+          <X size={24} />
+        </button>
+      </div>
+
+      <div className="mt-4 space-y-3">
+        <p><strong>Name:</strong> {viewingEquipment.name}</p>
+        <p><strong>ID:</strong> {viewingEquipment._id}</p>
+        <p><strong>Type:</strong> {viewingEquipment.type}</p>
+        <p><strong>Manufacturer:</strong> {viewingEquipment.manufacturer || 'N/A'}</p>
+        <p><strong>Supplier:</strong> {viewingEquipment.supplier || 'N/A'}</p>
+        <p><strong>Model:</strong> {viewingEquipment.model || 'N/A'}</p>
+        <p><strong>Serial:</strong> {viewingEquipment.serial || 'N/A'}</p>
+        <p><strong>Asset Tag:</strong> {viewingEquipment.assetTag || 'N/A'}</p>
+        <p><strong>Status:</strong> {viewingEquipment.status}</p>
+        <p><strong>Generated Barcode</strong> <img src={viewingEquipment.barcode} alt="" /></p>
+      </div>
+
+      <div className="mt-6 text-right">
+        <button
+          onClick={() => {
+            setViewingEquipment(null);
+            setIsInfoModalOpen(false);
+          }}
+          className="bg-blue-600 text-white px-5 py-2 rounded-xl hover:bg-blue-700 transition"
+        >
+          Close
+        </button>
+      </div>
+    </div>
+  </div>
+)} */}
+{isInfoModalOpen && viewingEquipment && (
+  <div className="fixed inset-0 bg-black/30 backdrop-blur-sm flex items-center justify-center z-50 p-4 transition-opacity duration-300">
+    <div className="bg-white rounded-xl shadow-xl max-w-2xl w-full overflow-hidden transform transition-all duration-300 scale-[0.98] hover:scale-100">
+      {/* Header */}
+      <div className="bg-gradient-to-r from-blue-600 to-blue-500 px-6 py-4 flex justify-between items-center">
+        <div>
+          <h2 className="text-xl font-bold text-white">Equipment Details</h2>
+          <p className="text-blue-100 text-sm">{viewingEquipment.type} • ID: {viewingEquipment._id}</p>
+        </div>
+        <button
+          onClick={() => {
+            setViewingEquipment(null);
+            setIsInfoModalOpen(false);
+          }}
+          className="p-1 rounded-full hover:bg-blue-700/30 transition-colors text-white"
+        >
+          <X size={20} />
+        </button>
+      </div>
+
+      {/* Content */}
+      <div className="p-6 space-y-4">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div className="space-y-3">
+            <DetailItem label="Name" value={viewingEquipment.name} />
+            <DetailItem label="Manufacturer" value={viewingEquipment.manufacturer} />
+            <DetailItem label="Model" value={viewingEquipment.model} />
+            <DetailItem label="Status" value={
+              <span className={`px-2 py-1 rounded-full text-xs font-medium ${
+                viewingEquipment.status === 'active' 
+                  ? 'bg-green-100 text-green-800' 
+                  : 'bg-yellow-100 text-yellow-800'
+              }`}>
+                {viewingEquipment.status}
+              </span>
+            } />
+          </div>
+          <div className="space-y-3">
+            <DetailItem label="Supplier" value={viewingEquipment.supplier} />
+            <DetailItem label="Serial" value={viewingEquipment.serial} />
+            <DetailItem label="Asset Tag" value={viewingEquipment.assetTag} />
+          </div>
+        </div>
+
+        {/* Barcode Section */}
+        <div className="pt-4 border-t">
+          <h3 className="font-medium text-gray-700 mb-3">Barcode</h3>
+          <div className="bg-gray-50 p-4 rounded-lg flex justify-center">
+            <img 
+              src={viewingEquipment.barcode} 
+              alt="Equipment barcode" 
+              className="h-20 object-contain"
+            />
+          </div>
+        </div>
+      </div>
+
+      {/* Footer */}
+      <div className="bg-gray-50 px-6 py-4 flex justify-end">
+        <button
+          onClick={() => {
+            setViewingEquipment(null);
+            setIsInfoModalOpen(false);
+          }}
+          className="px-5 py-2 rounded-lg bg-white border border-gray-300 text-gray-700 hover:bg-gray-50 transition-colors shadow-sm font-medium"
+        >
+          Close
+        </button>
+      </div>
+    </div>
+  </div>
+)}
+
 
         {/* Popup Modal */}
         {isPopupOpen && (

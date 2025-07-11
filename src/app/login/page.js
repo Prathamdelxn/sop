@@ -1,4 +1,3 @@
-
 // // // "use client";
 // // // import React, { useState } from 'react';
 // // // import { ArrowRight, User, Lock, Shield, CheckCircle, Settings, Eye, EyeOff, Beaker, ClipboardCheck } from 'lucide-react';
@@ -48,7 +47,7 @@
 // // //     else if(selectedRole=="supervisor"){
 // // //       router.push('/supervisor-dashboard');
 // // //     }
-   
+
 // // //   } catch (error) {
 // // //     toast.error(error.message);
 // // //     console.error('Login error:', error);
@@ -56,7 +55,6 @@
 // // //     setIsLoading(false);
 // // //   }
 // // // };
-
 
 // // //   return (
 // // //     <div className="min-h-screen flex">
@@ -93,7 +91,7 @@
 // // //               Industrial Cleaning Validation System
 // // //             </p>
 // // //             <p className="text-slate-400 text-sm leading-relaxed">
-// // //               GMP compliant digital workflow for pharmaceutical and food manufacturing excellence. 
+// // //               GMP compliant digital workflow for pharmaceutical and food manufacturing excellence.
 // // //               Streamline your validation processes with our comprehensive platform.
 // // //             </p>
 // // //           </div>
@@ -211,8 +209,8 @@
 // // //               onClick={handleLogin}
 // // //               disabled={isLoading}
 // // //               className={`group relative w-full flex justify-center items-center py-4 px-6 border border-transparent rounded-xl text-white font-semibold transition-all duration-200 transform hover:scale-[1.02] focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 ${
-// // //                 isLoading 
-// // //                   ? 'bg-gray-400 cursor-not-allowed' 
+// // //                 isLoading
+// // //                   ? 'bg-gray-400 cursor-not-allowed'
 // // //                   : 'bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 shadow-lg hover:shadow-xl'
 // // //               }`}
 // // //             >
@@ -236,7 +234,6 @@
 // // // };
 
 // // // export default LoginPage;
-
 
 // // "use client";
 // // import React, { useState } from 'react';
@@ -272,7 +269,7 @@
 // //     { id: 'supervisor', name: 'Supervisor', icon: CheckCircle, color: 'bg-green-500 hover:bg-green-600' },
 // //     { id: 'qa', name: 'QA', icon: ClipboardCheck, color: 'bg-purple-500 hover:bg-purple-600' },
 // //     { id: 'equipment_admin', name: 'Equipment', icon: Settings, color: 'bg-orange-500 hover:bg-orange-600' },
-  
+
 // //   ];
 
 // //   const handleLogin = async () => {
@@ -302,7 +299,7 @@
 // //         router.push('/supervisor-dashboard');
 // //       } else if (selectedRole === "operator") {
 // //         router.push('/operator-dashboard');
-// //       } 
+// //       }
 // //       else if (selectedRole === "facility-admin") {
 // //         router.push('/facility-dashboard');
 // //       }
@@ -344,7 +341,7 @@
 // //               Industrial Cleaning Validation System
 // //             </p>
 // //             <p className="text-slate-400 text-sm leading-relaxed">
-// //               GMP compliant digital workflow for pharmaceutical and food manufacturing excellence. 
+// //               GMP compliant digital workflow for pharmaceutical and food manufacturing excellence.
 // //               Streamline your validation processes with our comprehensive platform.
 // //             </p>
 // //           </div>
@@ -439,8 +436,8 @@
 // //               onClick={handleLogin}
 // //               disabled={isLoading}
 // //               className={`group relative w-full flex justify-center items-center py-4 px-6 border border-transparent rounded-xl text-white font-semibold transition-all duration-200 transform hover:scale-[1.02] focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 ${
-// //                 isLoading 
-// //                   ? 'bg-gray-400 cursor-not-allowed' 
+// //                 isLoading
+// //                   ? 'bg-gray-400 cursor-not-allowed'
 // //                   : 'bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 shadow-lg hover:shadow-xl'
 // //               }`}
 // //             >
@@ -465,8 +462,6 @@
 
 // // export default LoginPage;
 
-
- 
 // "use client";
 // import React, { useState } from 'react';
 // import {
@@ -480,7 +475,7 @@
 // import { useRouter } from 'next/navigation';
 // import { toast } from 'react-toastify';
 // import { useAuth } from '@/context/AuthContext';
- 
+
 // const LoginPage = () => {
 //   const [email, setEmail] = useState('');
 //   const { login } = useAuth();
@@ -488,11 +483,11 @@
 //   const [showPassword, setShowPassword] = useState(false);
 //   const [isLoading, setIsLoading] = useState(false);
 //   const router = useRouter();
- 
+
 //   const handleLogin = async () => {
 //     try {
 //       setIsLoading(true);
- 
+
 //       const response = await fetch(`/api/single-login`, {
 //         method: 'POST',
 //         credentials: 'include',
@@ -501,7 +496,7 @@
 //         },
 //         body: JSON.stringify({ email, password }),
 //       });
- 
+
 //       const data = await response.json();
 //       const role=data.user.role
 //       console.log(data.user.role);
@@ -525,13 +520,13 @@
 //       else{
 //         alert("Not found proper role dashboard")
 //       }
- 
+
 //       if (!response.ok) throw new Error(data.message || 'Login failed');
- 
+
 //       // login(data.token, data.user);
 //       toast.success('Login successful!');
 //       // router.push('/dashboard');
- 
+
 //     } catch (error) {
 //       toast.error(error.message);
 //       console.error('Login error:', error);
@@ -539,7 +534,7 @@
 //       setIsLoading(false);
 //     }
 //   };
- 
+
 //   return (
 //     <div className="min-h-screen flex">
 //       {/* Left Side */}
@@ -549,7 +544,7 @@
 //             backgroundImage: `url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23ffffff' fill-opacity='0.1'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E")`
 //           }}></div>
 //         </div>
- 
+
 //         <div className="relative z-10 flex flex-col justify-center items-center p-12 text-center">
 //           <div className="mb-12">
 //             <div className="relative">
@@ -559,7 +554,7 @@
 //               </div>
 //             </div>
 //           </div>
- 
+
 //           <div className="max-w-md">
 //             <h1 className="text-4xl font-bold text-white mb-4 leading-tight">
 //               Manufacturing Execution System <span className="text-blue-400">Pro</span>
@@ -574,10 +569,10 @@
 //             </p>
 //           </div>
 //         </div>
- 
+
 //         <div className="absolute bottom-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-blue-500/50 to-transparent"></div>
 //       </div>
- 
+
 //       {/* Right Side */}
 //       <div className="w-full lg:w-1/2 bg-white flex items-center justify-center p-8">
 //         <div className="w-full max-w-md">
@@ -585,7 +580,7 @@
 //             <h2 className="text-3xl font-bold text-gray-900 mb-2">Welcome Back</h2>
 //             <p className="text-gray-600">Sign in to access your dashboard</p>
 //           </div>
- 
+
 //           <div className="space-y-6">
 //             <div>
 //               <label htmlFor="email" className="block text-sm font-semibold text-gray-700 mb-2">
@@ -606,7 +601,7 @@
 //                 />
 //               </div>
 //             </div>
- 
+
 //             <div>
 //               <label htmlFor="password" className="block text-sm font-semibold text-gray-700 mb-2">
 //                 Password
@@ -633,7 +628,7 @@
 //                 </button>
 //               </div>
 //             </div>
- 
+
 //             <button
 //               onClick={handleLogin}
 //               disabled={isLoading}
@@ -661,95 +656,452 @@
 //     </div>
 //   );
 // };
- 
+
 // export default LoginPage;
- 
+
+// "use client";
+// import React, { useState } from 'react';
+// import {
+//   ArrowRight,
+//   User,
+//   Lock,
+//   Eye,
+//   EyeOff,
+//   Beaker,
+//   X
+// } from 'lucide-react';
+// import { useRouter } from 'next/navigation';
+// import { toast } from 'react-toastify';
+// import { useAuth } from '@/context/AuthContext';
+
+// const LoginPage = () => {
+//   const [email, setEmail] = useState('');
+//   const { login } = useAuth();
+//   const [password, setPassword] = useState('');
+//   const [showPassword, setShowPassword] = useState(false);
+//   const [isLoading, setIsLoading] = useState(false);
+//   const [showErrorModal, setShowErrorModal] = useState(false);
+//   const [errorMessage, setErrorMessage] = useState('');
+//   const router = useRouter();
+
+//   const handleLogin = async () => {
+//     try {
+//       setIsLoading(true);
+
+//       const response = await fetch(`/api/single-login`, {
+//         method: 'POST',
+//         credentials: 'include',
+//         headers: {
+//           'Content-Type': 'application/json',
+//         },
+//         body: JSON.stringify({ email, password }),
+//       });
+
+//       const data = await response.json();
+
+//       if (!response.ok) {
+//         setErrorMessage(data.message || 'Login failed. Please check your credentials.');
+//         setShowErrorModal(true);
+//         throw new Error(data.message || 'Login failed');
+//       }
+
+//       const role = data.user.role;
+//       console.log(data.user.role);
+//       login(data.token, data.user);
+
+//       if (role == "QA") {
+//         router.push('/quality-assurance');
+//       } else if (role == "admin") {
+//         router.push('/admin');
+//       } else if (role == "supervisor") {
+//         router.push('/supervisor-dashboard');
+//       } else if (role == "facility-admin") {
+//         router.push("/facility-dashboard")
+//       } else if (role == "user-facility-admin") {
+//         router.push('/userfacility-admin');
+//       } else if (role == "operator") {
+//         router.push("/operator-dashboard")
+//       } else {
+//         alert("Not found proper role dashboard")
+//       }
+
+//       toast.success('Login successful!');
+
+//     } catch (error) {
+//       console.error('Login error:', error);
+//     } finally {
+//       setIsLoading(false);
+//     }
+//   };
+
+//   return (
+//     <div className="min-h-screen flex">
+//       {/* Error Modal */}
+//       {showErrorModal && (
+//         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+//           <div className="bg-white rounded-xl p-6 max-w-md w-full shadow-2xl">
+//             <div className="flex justify-between items-center mb-4">
+//               <h3 className="text-xl font-bold text-red-600">Login Failed</h3>
+//               <button
+//                 onClick={() => setShowErrorModal(false)}
+//                 className="text-gray-500 hover:text-gray-700"
+//               >
+//                 <X className="h-6 w-6" />
+//               </button>
+//             </div>
+//             <p className="text-gray-700 mb-6">{errorMessage}</p>
+//             <div className="flex justify-end">
+//               <button
+//                 onClick={() => setShowErrorModal(false)}
+//                 className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors"
+//               >
+//                 Try Again
+//               </button>
+//             </div>
+//           </div>
+//         </div>
+//       )}
+
+//       {/* Left Side */}
+//       <div className="hidden lg:flex lg:w-1/2 bg-slate-900 relative overflow-hidden">
+//         <div className="absolute inset-0 opacity-5">
+//           <div className="absolute inset-0" style={{
+//             backgroundImage: `url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23ffffff' fill-opacity='0.1'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E")`
+//           }}></div>
+//         </div>
+
+//         <div className="relative z-10 flex flex-col justify-center items-center p-12 text-center">
+//           <div className="mb-12">
+//             <div className="relative">
+//               <div className="absolute -inset-4 bg-blue-500/20 rounded-full blur-xl"></div>
+//               <div className="relative w-32 h-32 bg-gradient-to-br from-blue-500 to-blue-600 rounded-3xl flex items-center justify-center shadow-2xl border border-blue-400/20">
+//                 <Beaker className="w-16 h-16 text-white" />
+//               </div>
+//             </div>
+//           </div>
+
+//           <div className="max-w-md">
+//             <h1 className="text-4xl font-bold text-white mb-4 leading-tight">
+//               Manufacturing Execution System <span className="text-blue-400">Pro</span>
+//             </h1>
+//             <div className="w-16 h-1 bg-blue-500 mx-auto mb-6 rounded-full"></div>
+//             <p className="text-xl text-slate-300 mb-8 leading-relaxed">
+//               Industrial Cleaning Validation System
+//             </p>
+//             <p className="text-slate-400 text-sm leading-relaxed">
+//               GMP compliant digital workflow for pharmaceutical and food manufacturing excellence.
+//               Streamline your validation processes with our comprehensive platform.
+//             </p>
+//           </div>
+//         </div>
+
+//         <div className="absolute bottom-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-blue-500/50 to-transparent"></div>
+//       </div>
+
+//       {/* Right Side */}
+//       <div className="w-full lg:w-1/2 bg-white flex items-center justify-center p-8">
+//         <div className="w-full max-w-md">
+//           <div className="text-center mb-8">
+//             <h2 className="text-3xl font-bold text-gray-900 mb-2">Welcome Back</h2>
+//             <p className="text-gray-600">Sign in to access your dashboard</p>
+//           </div>
+
+//           <div className="space-y-6">
+//             <div>
+//               <label htmlFor="email" className="block text-sm font-semibold text-gray-700 mb-2">
+//                 Email Address
+//               </label>
+//               <div className="relative group">
+//                 <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
+//                   <User className="h-5 w-5 text-gray-400 group-focus-within:text-blue-500 transition-colors" />
+//                 </div>
+//                 <input
+//                   id="email"
+//                   type="email"
+//                   value={email}
+//                   onChange={(e) => setEmail(e.target.value)}
+//                   placeholder="Enter your email"
+//                   className="block w-full pl-12 pr-4 py-4 border border-gray-300 rounded-xl text-gray-900 placeholder-gray-500 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200 bg-gray-50 focus:bg-white"
+//                   required
+//                 />
+//               </div>
+//             </div>
+
+//             <div>
+//               <label htmlFor="password" className="block text-sm font-semibold text-gray-700 mb-2">
+//                 Password
+//               </label>
+//               <div className="relative group">
+//                 <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
+//                   <Lock className="h-5 w-5 text-gray-400 group-focus-within:text-blue-500 transition-colors" />
+//                 </div>
+//                 <input
+//                   id="password"
+//                   type={showPassword ? "text" : "password"}
+//                   value={password}
+//                   onChange={(e) => setPassword(e.target.value)}
+//                   placeholder="Enter your password"
+//                   className="block w-full pl-12 pr-12 py-4 border border-gray-300 rounded-xl text-gray-900 placeholder-gray-500 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200 bg-gray-50 focus:bg-white"
+//                   required
+//                 />
+//                 <button
+//                   type="button"
+//                   onClick={() => setShowPassword(!showPassword)}
+//                   className="absolute inset-y-0 right-0 pr-4 flex items-center text-gray-400 hover:text-gray-600 transition-colors"
+//                 >
+//                   {showPassword ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
+//                 </button>
+//               </div>
+//             </div>
+
+//             <button
+//               onClick={handleLogin}
+//               disabled={isLoading}
+//               className={`group relative w-full flex justify-center items-center py-4 px-6 border border-transparent rounded-xl text-white font-semibold transition-all duration-200 transform hover:scale-[1.02] focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 ${
+//                 isLoading
+//                   ? 'bg-gray-400 cursor-not-allowed'
+//                   : 'bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 shadow-lg hover:shadow-xl'
+//               }`}
+//             >
+//               {isLoading ? (
+//                 <>
+//                   <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin mr-3" />
+//                   Signing In...
+//                 </>
+//               ) : (
+//                 <>
+//                   <span>Sign In to Dashboard</span>
+//                   <ArrowRight className="ml-2 h-5 w-5 group-hover:translate-x-1 transition-transform" />
+//                 </>
+//               )}
+//             </button>
+//           </div>
+//         </div>
+//       </div>
+//     </div>
+//   );
+// };
+
+// export default LoginPage;
 "use client";
-import React, { useState } from 'react';
-import {
-  ArrowRight,
-  User,
-  Lock,
-  Eye,
-  EyeOff,
-  Beaker,
-  X
-} from 'lucide-react';
-import { useRouter } from 'next/navigation';
-import { toast } from 'react-toastify';
-import { useAuth } from '@/context/AuthContext';
+import React, { useState } from "react";
+import { ArrowRight, User, Lock, Eye, EyeOff, Beaker, X } from "lucide-react";
+import { useRouter } from "next/navigation";
+import { toast } from "react-toastify";
+import { useAuth } from "@/context/AuthContext";
 
 const LoginPage = () => {
-  const [email, setEmail] = useState('');
-  const { login } = useAuth();
-  const [password, setPassword] = useState('');
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [showErrorModal, setShowErrorModal] = useState(false);
-  const [errorMessage, setErrorMessage] = useState('');
+  const [errorMessage, setErrorMessage] = useState("");
   const router = useRouter();
+  const { login } = useAuth();
 
-  const handleLogin = async () => {
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    if (!email || !password) {
+      setErrorMessage("Please enter both email and password");
+      setShowErrorModal(true);
+      return;
+    }
+
+    setIsLoading(true);
+
     try {
-      setIsLoading(true);
-
-      const response = await fetch(`/api/single-login`, {
-        method: 'POST',
-        credentials: 'include',
-        headers: {
-          'Content-Type': 'application/json',
-        },
+      const response = await fetch("/api/single-login", {
+        method: "POST",
+        credentials: "include",
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ email, password }),
       });
 
       const data = await response.json();
-      
+
       if (!response.ok) {
-        setErrorMessage(data.message || 'Login failed. Please check your credentials.');
-        setShowErrorModal(true);
-        throw new Error(data.message || 'Login failed');
+        throw new Error(
+          data.message || "Login failed. Please check your credentials."
+        );
       }
 
-      const role = data.user.role;
-      console.log(data.user.role);
+      // Successful login
       login(data.token, data.user);
-      
-      if (role == "QA") {
-        router.push('/quality-assurance');
-      } else if (role == "admin") {
-        router.push('/admin');
-      } else if (role == "supervisor") {
-        router.push('/supervisor-dashboard');
-      } else if (role == "facility-admin") {
-        router.push("/facility-dashboard")
-      } else if (role == "user-facility-admin") {
-        router.push('/userfacility-admin');
-      } else if (role == "operator") {
-        router.push("/operator-dashboard")
+      toast.success("Login successful!");
+
+      // Redirect based on role
+      const roleRedirects = {
+        QA: "/quality-assurance",
+        admin: "/admin",
+        supervisor: "/supervisor-dashboard",
+        "facility-admin": "/facility-dashboard",
+        "user-facility-admin": "/userfacility-admin",
+        operator: "/operator-dashboard",
+      };
+
+      const redirectPath = roleRedirects[data.user.role];
+      if (redirectPath) {
+        router.push(redirectPath);
       } else {
-        alert("Not found proper role dashboard")
+        console.warn("No dashboard found for role:", data.user.role);
+        router.push("/"); // Fallback to home
       }
-
-      toast.success('Login successful!');
-
     } catch (error) {
-      console.error('Login error:', error);
+      console.error("Login error:", error);
+      setErrorMessage(error.message);
+      setShowErrorModal(true);
     } finally {
       setIsLoading(false);
     }
   };
 
   return (
-    <div className="min-h-screen flex">
+    <div className="min-h-screen flex bg-gray-50">
+      {/* Left Side - Branding */}
+      <div className="hidden lg:flex lg:w-1/2 bg-gradient-to-br from-slate-900 to-slate-800 relative overflow-hidden">
+        <div className="absolute inset-0 opacity-5">
+          <div
+            className="absolute inset-0"
+            style={{
+              backgroundImage: `url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23ffffff' fill-opacity='0.1'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E")`,
+            }}
+          ></div>
+        </div>
+
+        <div className="relative z-10 flex flex-col justify-center items-center p-12 text-center">
+          <div className="mb-12">
+            <div className="relative">
+              <div className="absolute -inset-4 bg-blue-500/20 rounded-full blur-xl"></div>
+              <div className="relative w-32 h-32 bg-gradient-to-br from-blue-500 to-blue-600 rounded-3xl flex items-center justify-center shadow-2xl border border-blue-400/20">
+                <Beaker className="w-16 h-16 text-white" />
+              </div>
+            </div>
+          </div>
+
+          <div className="max-w-md">
+            <h1 className="text-4xl font-bold text-white mb-4 leading-tight">
+              Manufacturing Execution System{" "}
+              <span className="text-blue-400">Pro</span>
+            </h1>
+            <div className="w-16 h-1 bg-blue-500 mx-auto mb-6 rounded-full"></div>
+            <p className="text-xl text-slate-300 mb-8 leading-relaxed">
+              Industrial Cleaning Validation System
+            </p>
+            <p className="text-slate-400 text-sm leading-relaxed">
+              GMP compliant digital workflow for pharmaceutical and food
+              manufacturing excellence.
+            </p>
+          </div>
+        </div>
+      </div>
+
+      {/* Right Side - Login Form */}
+      <div className="w-full lg:w-1/2 flex items-center justify-center p-8">
+        <div className="w-full max-w-md bg-white rounded-2xl shadow-xl p-8">
+          <div className="text-center mb-8">
+            <h2 className="text-3xl font-bold text-gray-900 mb-2">
+              Welcome Back
+            </h2>
+            <p className="text-gray-600">Sign in to access your dashboard</p>
+          </div>
+
+          <form onSubmit={handleSubmit} className="space-y-6">
+            <div>
+              <label
+                htmlFor="email"
+                className="block text-sm font-semibold text-gray-700 mb-2"
+              >
+                Email Address
+              </label>
+              <div className="relative group">
+                <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
+                  <User className="h-5 w-5 text-gray-400 group-focus-within:text-blue-500 transition-colors" />
+                </div>
+                <input
+                  id="email"
+                  type="email"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  placeholder="Enter your email"
+                  className="block w-full pl-12 pr-4 py-3 border border-gray-300 rounded-xl text-gray-900 placeholder-gray-500 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200 bg-gray-50 focus:bg-white"
+                  required
+                  autoComplete="username"
+                />
+              </div>
+            </div>
+
+            <div>
+              <label
+                htmlFor="password"
+                className="block text-sm font-semibold text-gray-700 mb-2"
+              >
+                Password
+              </label>
+              <div className="relative group">
+                <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
+                  <Lock className="h-5 w-5 text-gray-400 group-focus-within:text-blue-500 transition-colors" />
+                </div>
+                <input
+                  id="password"
+                  type={showPassword ? "text" : "password"}
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  placeholder="Enter your password"
+                  className="block w-full pl-12 pr-12 py-3 border border-gray-300 rounded-xl text-gray-900 placeholder-gray-500 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200 bg-gray-50 focus:bg-white"
+                  required
+                  autoComplete="current-password"
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowPassword(!showPassword)}
+                  className="absolute inset-y-0 right-0 pr-4 flex items-center text-gray-400 hover:text-gray-600 transition-colors"
+                  aria-label={showPassword ? "Hide password" : "Show password"}
+                >
+                  {showPassword ? (
+                    <EyeOff className="h-5 w-5" />
+                  ) : (
+                    <Eye className="h-5 w-5" />
+                  )}
+                </button>
+              </div>
+            </div>
+
+            <button
+              type="submit"
+              disabled={isLoading}
+              className={`group relative w-full flex justify-center items-center py-3 px-6 border border-transparent rounded-xl text-white font-semibold transition-all duration-200 ${
+                isLoading
+                  ? "bg-gray-400 cursor-not-allowed"
+                  : "bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 shadow-md hover:shadow-lg"
+              }`}
+            >
+              {isLoading ? (
+                <>
+                  <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin mr-3" />
+                  Signing In...
+                </>
+              ) : (
+                <>
+                  <span>Sign In</span>
+                  <ArrowRight className="ml-2 h-5 w-5 group-hover:translate-x-1 transition-transform" />
+                </>
+              )}
+            </button>
+          </form>
+        </div>
+      </div>
+
       {/* Error Modal */}
       {showErrorModal && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-xl p-6 max-w-md w-full shadow-2xl">
+        <div className="fixed inset-0 backdrop-blur-md bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-xl p-6 max-w-md w-full shadow-2xl animate-fade-in">
             <div className="flex justify-between items-center mb-4">
               <h3 className="text-xl font-bold text-red-600">Login Failed</h3>
-              <button 
+              <button
                 onClick={() => setShowErrorModal(false)}
-                className="text-gray-500 hover:text-gray-700"
+                className="text-gray-500 hover:text-gray-700 transition-colors"
+                aria-label="Close error modal"
               >
                 <X className="h-6 w-6" />
               </button>
@@ -766,123 +1118,6 @@ const LoginPage = () => {
           </div>
         </div>
       )}
-
-      {/* Left Side */}
-      <div className="hidden lg:flex lg:w-1/2 bg-slate-900 relative overflow-hidden">
-        <div className="absolute inset-0 opacity-5">
-          <div className="absolute inset-0" style={{
-            backgroundImage: `url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23ffffff' fill-opacity='0.1'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E")`
-          }}></div>
-        </div>
-
-        <div className="relative z-10 flex flex-col justify-center items-center p-12 text-center">
-          <div className="mb-12">
-            <div className="relative">
-              <div className="absolute -inset-4 bg-blue-500/20 rounded-full blur-xl"></div>
-              <div className="relative w-32 h-32 bg-gradient-to-br from-blue-500 to-blue-600 rounded-3xl flex items-center justify-center shadow-2xl border border-blue-400/20">
-                <Beaker className="w-16 h-16 text-white" />
-              </div>
-            </div>
-          </div>
-
-          <div className="max-w-md">
-            <h1 className="text-4xl font-bold text-white mb-4 leading-tight">
-              Manufacturing Execution System <span className="text-blue-400">Pro</span>
-            </h1>
-            <div className="w-16 h-1 bg-blue-500 mx-auto mb-6 rounded-full"></div>
-            <p className="text-xl text-slate-300 mb-8 leading-relaxed">
-              Industrial Cleaning Validation System
-            </p>
-            <p className="text-slate-400 text-sm leading-relaxed">
-              GMP compliant digital workflow for pharmaceutical and food manufacturing excellence.
-              Streamline your validation processes with our comprehensive platform.
-            </p>
-          </div>
-        </div>
-
-        <div className="absolute bottom-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-blue-500/50 to-transparent"></div>
-      </div>
-
-      {/* Right Side */}
-      <div className="w-full lg:w-1/2 bg-white flex items-center justify-center p-8">
-        <div className="w-full max-w-md">
-          <div className="text-center mb-8">
-            <h2 className="text-3xl font-bold text-gray-900 mb-2">Welcome Back</h2>
-            <p className="text-gray-600">Sign in to access your dashboard</p>
-          </div>
-
-          <div className="space-y-6">
-            <div>
-              <label htmlFor="email" className="block text-sm font-semibold text-gray-700 mb-2">
-                Email Address
-              </label>
-              <div className="relative group">
-                <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
-                  <User className="h-5 w-5 text-gray-400 group-focus-within:text-blue-500 transition-colors" />
-                </div>
-                <input
-                  id="email"
-                  type="email"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  placeholder="Enter your email"
-                  className="block w-full pl-12 pr-4 py-4 border border-gray-300 rounded-xl text-gray-900 placeholder-gray-500 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200 bg-gray-50 focus:bg-white"
-                  required
-                />
-              </div>
-            </div>
-
-            <div>
-              <label htmlFor="password" className="block text-sm font-semibold text-gray-700 mb-2">
-                Password
-              </label>
-              <div className="relative group">
-                <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
-                  <Lock className="h-5 w-5 text-gray-400 group-focus-within:text-blue-500 transition-colors" />
-                </div>
-                <input
-                  id="password"
-                  type={showPassword ? "text" : "password"}
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  placeholder="Enter your password"
-                  className="block w-full pl-12 pr-12 py-4 border border-gray-300 rounded-xl text-gray-900 placeholder-gray-500 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200 bg-gray-50 focus:bg-white"
-                  required
-                />
-                <button
-                  type="button"
-                  onClick={() => setShowPassword(!showPassword)}
-                  className="absolute inset-y-0 right-0 pr-4 flex items-center text-gray-400 hover:text-gray-600 transition-colors"
-                >
-                  {showPassword ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
-                </button>
-              </div>
-            </div>
-
-            <button
-              onClick={handleLogin}
-              disabled={isLoading}
-              className={`group relative w-full flex justify-center items-center py-4 px-6 border border-transparent rounded-xl text-white font-semibold transition-all duration-200 transform hover:scale-[1.02] focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 ${
-                isLoading
-                  ? 'bg-gray-400 cursor-not-allowed'
-                  : 'bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 shadow-lg hover:shadow-xl'
-              }`}
-            >
-              {isLoading ? (
-                <>
-                  <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin mr-3" />
-                  Signing In...
-                </>
-              ) : (
-                <>
-                  <span>Sign In to Dashboard</span>
-                  <ArrowRight className="ml-2 h-5 w-5 group-hover:translate-x-1 transition-transform" />
-                </>
-              )}
-            </button>
-          </div>
-        </div>
-      </div>
     </div>
   );
 };

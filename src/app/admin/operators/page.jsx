@@ -1,12 +1,14 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { Plus, Search, Filter, Edit, Trash2, Mail, Phone, MapPin, Users, Activity } from 'lucide-react';
+import { Plus, Search, Filter, Edit, Trash2, Mail, Phone, MapPin, Users, Activity, Eye, X, UserX } from 'lucide-react';
 
 const SupervisorsPage = () => {
   const [supervisors, setSupervisors] = useState([]);
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [isViewModalOpen, setIsViewModalOpen] = useState(false);
   const [editingSupervisor, setEditingSupervisor] = useState(null);
+  const [viewingSupervisor, setViewingSupervisor] = useState(null);
   const [searchTerm, setSearchTerm] = useState('');
   const [filterStatus, setFilterStatus] = useState('all');
 
@@ -60,6 +62,11 @@ const SupervisorsPage = () => {
       password: '',
     });
     setIsModalOpen(true);
+  };
+
+  const handleViewSupervisor = (supervisor) => {
+    setViewingSupervisor(supervisor);
+    setIsViewModalOpen(true);
   };
 
   const handleSubmit = async () => {
@@ -124,12 +131,17 @@ const SupervisorsPage = () => {
       ? 'bg-green-100 text-green-800 border-green-200'
       : 'bg-red-100 text-red-800 border-red-200';
 
+  const getStatusDot = (status) =>
+    status === 'active'
+      ? 'bg-green-500'
+      : 'bg-red-500';
+
   return (
     <div className="space-y-8">
       {/* Header */}
       <div className="flex justify-between items-center">
         <div>
-          <h1 className="text-3xl font-bold text-gray-900">Facility Admin</h1>
+          <h1 className="text-3xl font-bold text-gray-900">Operator Management</h1>
           <p className="text-gray-600 mt-2">Manage your operators and their info</p>
         </div>
         <button
@@ -142,7 +154,7 @@ const SupervisorsPage = () => {
       </div>
 
       {/* Summary */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
         <div className="bg-gradient-to-br from-blue-50 to-blue-100 p-6 rounded-xl border border-blue-200">
           <div className="flex justify-between items-center">
             <div>
@@ -162,6 +174,17 @@ const SupervisorsPage = () => {
             </div>
             <div className="bg-green-500 p-3 rounded-lg">
               <Activity className="h-6 w-6 text-white" />
+            </div>
+          </div>
+        </div>
+        <div className="bg-gradient-to-br from-red-50 to-red-100 p-6 rounded-xl border border-red-200">
+          <div className="flex justify-between items-center">
+            <div>
+              <p className="text-red-600 text-sm font-medium">Deactive Operators</p>
+              <p className="text-2xl font-bold text-red-900">{supervisors.filter(s => s.status === 'inactive').length}</p>
+            </div>
+            <div className="bg-red-500 p-3 rounded-lg">
+              <UserX className="h-6 w-6 text-white" />
             </div>
           </div>
         </div>
@@ -195,41 +218,83 @@ const SupervisorsPage = () => {
         </div>
       </div>
  
-      {/* Operators List */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-6">
-        {filteredSupervisors.map((supervisor) => (
-          <div key={supervisor.id} className="bg-white rounded-xl shadow-sm border border-gray-200 p-6 hover:shadow-md transition-all">
-            <div className="flex justify-between items-center mb-4">
-              <div className="flex items-center space-x-3">
-                <div className="w-12 h-12 bg-gradient-to-br from-blue-500 to-purple-600 rounded-xl flex items-center justify-center text-white font-bold text-lg">
-                  {supervisor.name.split(' ').map(n => n[0]).join('')}
-                </div>
-                <div>
-                  <h3 className="font-semibold text-gray-900">{supervisor.name}</h3>
-                </div>
-              </div>
-              <span className={`px-3 py-1 rounded-full text-xs font-medium border ${getStatusColor(supervisor.status)}`}>
-                {supervisor.status}
-              </span>
+      {/* Operators Table */}
+      <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
+        <div className="overflow-x-auto">
+          <table className="w-full">
+            <thead className="bg-gray-50 border-b border-gray-200">
+              <tr>
+                <th className="text-left py-4 px-6 font-semibold text-gray-900">Operator</th>
+                <th className="text-left py-4 px-6 font-semibold text-gray-900">Email</th>
+                <th className="text-left py-4 px-6 font-semibold text-gray-900">Phone</th>
+                <th className="text-left py-4 px-6 font-semibold text-gray-900">Location</th>
+                <th className="text-left py-4 px-6 font-semibold text-gray-900">Status</th>
+                <th className="text-left py-4 px-6 font-semibold text-gray-900">Actions</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-gray-200">
+              {filteredSupervisors.map((supervisor) => (
+                <tr key={supervisor.id} className="hover:bg-gray-50 transition-colors">
+                  <td className="py-4 px-6">
+                    <div className="flex items-center space-x-3">
+                      <div className="w-10 h-10 bg-gradient-to-br from-blue-500 to-purple-600 rounded-full flex items-center justify-center text-white font-bold text-sm">
+                        {supervisor.name.split(' ').map(n => n[0]).join('')}
+                      </div>
+                      <div>
+                        <div className="font-medium text-gray-900">{supervisor.name}</div>
+                      </div>
+                    </div>
+                  </td>
+                  <td className="py-4 px-6 text-gray-600">{supervisor.email}</td>
+                  <td className="py-4 px-6 text-gray-600">{supervisor.phone}</td>
+                  <td className="py-4 px-6 text-gray-600">{supervisor.location}</td>
+                  <td className="py-4 px-6">
+                    <div className="flex items-center space-x-2">
+                      <div className={`w-2 h-2 rounded-full ${getStatusDot(supervisor.status)}`}></div>
+                      <span className={`px-2 py-1 rounded-full text-xs font-medium border ${getStatusColor(supervisor.status)}`}>
+                        {supervisor.status}
+                      </span>
+                    </div>
+                  </td>
+                  <td className="py-4 px-6">
+                    <div className="flex items-center space-x-2">
+                      <button
+                        onClick={() => handleViewSupervisor(supervisor)}
+                        className="text-blue-600 hover:bg-blue-50 p-2 rounded-lg transition-colors"
+                        title="View Details"
+                      >
+                        <Eye className="h-4 w-4" />
+                      </button>
+                      <button
+                        onClick={() => handleEditSupervisor(supervisor)}
+                        className="text-green-600 hover:bg-green-50 p-2 rounded-lg transition-colors"
+                        title="Edit"
+                      >
+                        <Edit className="h-4 w-4" />
+                      </button>
+                      <button
+                        onClick={() => handleDelete(supervisor.id)}
+                        className="text-red-600 hover:bg-red-50 p-2 rounded-lg transition-colors"
+                        title="Delete"
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </button>
+                    </div>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+          {filteredSupervisors.length === 0 && (
+            <div className="text-center py-12">
+              <div className="text-gray-500 text-lg">No operators found</div>
+              <div className="text-gray-400 text-sm mt-2">Try adjusting your search or filters</div>
             </div>
-            <div className="space-y-2 text-sm text-gray-600">
-              <div className="flex items-center"><Mail className="h-4 w-4 mr-2" />{supervisor.email}</div>
-              <div className="flex items-center"><Phone className="h-4 w-4 mr-2" />{supervisor.phone}</div>
-              <div className="flex items-center"><MapPin className="h-4 w-4 mr-2" />{supervisor.location}</div>
-            </div>
-            <div className="mt-4 pt-4 border-t border-gray-100 flex justify-end space-x-2">
-              <button onClick={() => handleEditSupervisor(supervisor)} className="text-blue-600 hover:bg-blue-50 p-2 rounded-lg">
-                <Edit className="h-4 w-4" />
-              </button>
-              <button onClick={() => handleDelete(supervisor.id)} className="text-red-600 hover:bg-red-50 p-2 rounded-lg">
-                <Trash2 className="h-4 w-4" />
-              </button>
-            </div>
-          </div>
-        ))}
+          )}
+        </div>
       </div>
 
-      {/* Modal */}
+      {/* Add/Edit Modal */}
       {isModalOpen && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
           <div className="bg-white rounded-xl shadow-2xl p-6 w-full max-w-md">
@@ -273,6 +338,87 @@ const SupervisorsPage = () => {
                   className="flex-1 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
                 >
                   {editingSupervisor ? 'Update' : 'Add'}
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* View Details Modal */}
+      {isViewModalOpen && viewingSupervisor && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-xl shadow-2xl p-6 w-full max-w-md">
+            <div className="flex justify-between items-center mb-6">
+              <h2 className="text-xl font-semibold text-gray-900">Operator Details</h2>
+              <button
+                onClick={() => setIsViewModalOpen(false)}
+                className="text-gray-400 hover:text-gray-600 p-1"
+              >
+                <X className="h-5 w-5" />
+              </button>
+            </div>
+            
+            <div className="space-y-6">
+              {/* Profile Section */}
+              <div className="flex items-center space-x-4">
+                <div className="w-16 h-16 bg-gradient-to-br from-blue-500 to-purple-600 rounded-full flex items-center justify-center text-white font-bold text-xl">
+                  {viewingSupervisor.name.split(' ').map(n => n[0]).join('')}
+                </div>
+                <div>
+                  <h3 className="text-lg font-semibold text-gray-900">{viewingSupervisor.name}</h3>
+                  <div className="flex items-center space-x-2 mt-1">
+                    <div className={`w-2 h-2 rounded-full ${getStatusDot(viewingSupervisor.status)}`}></div>
+                    <span className={`px-2 py-1 rounded-full text-xs font-medium border ${getStatusColor(viewingSupervisor.status)}`}>
+                      {viewingSupervisor.status}
+                    </span>
+                  </div>
+                </div>
+              </div>
+
+              {/* Contact Information */}
+              <div className="space-y-4">
+                <div className="flex items-center space-x-3 p-3 bg-gray-50 rounded-lg">
+                  <Mail className="h-5 w-5 text-gray-400" />
+                  <div>
+                    <p className="text-sm text-gray-600">Email</p>
+                    <p className="font-medium text-gray-900">{viewingSupervisor.email}</p>
+                  </div>
+                </div>
+                
+                <div className="flex items-center space-x-3 p-3 bg-gray-50 rounded-lg">
+                  <Phone className="h-5 w-5 text-gray-400" />
+                  <div>
+                    <p className="text-sm text-gray-600">Phone</p>
+                    <p className="font-medium text-gray-900">{viewingSupervisor.phone}</p>
+                  </div>
+                </div>
+                
+                <div className="flex items-center space-x-3 p-3 bg-gray-50 rounded-lg">
+                  <MapPin className="h-5 w-5 text-gray-400" />
+                  <div>
+                    <p className="text-sm text-gray-600">Location</p>
+                    <p className="font-medium text-gray-900">{viewingSupervisor.location}</p>
+                  </div>
+                </div>
+              </div>
+
+              {/* Action Buttons */}
+              <div className="flex space-x-3 pt-4 border-t border-gray-200">
+                <button
+                  onClick={() => {
+                    setIsViewModalOpen(false);
+                    handleEditSupervisor(viewingSupervisor);
+                  }}
+                  className="flex-1 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+                >
+                  Edit Operator
+                </button>
+                <button
+                  onClick={() => setIsViewModalOpen(false)}
+                  className="flex-1 px-4 py-2 text-gray-700 bg-gray-100 rounded-lg hover:bg-gray-200 transition-colors"
+                >
+                  Close
                 </button>
               </div>
             </div>

@@ -1,5 +1,5 @@
 import dbConnect from "@/utils/db";
-import Task from "@/model/Task";
+import Prototype from "@/model/Task";
 import { NextResponse } from "next/server";
 
 // Handle CORS preflight
@@ -16,7 +16,7 @@ export async function GET() {
   await dbConnect();
 
   try {
-    const titles = await Task.find(); // get all title documents
+    const titles = await Prototype.find(); // get all title documents
 
     const response = NextResponse.json(
       { message: "Titles fetched successfully", data: titles },
