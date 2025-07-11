@@ -12,6 +12,7 @@ export default async function dbConnect() {
     const db = await mongoose.connect(mongoUri, {
       useNewUrlParser: true,
       useUnifiedTopology: true,
+      autoIndex: false,
       dbName: "sop", // Optional: Specify your DB name here
     });
  
