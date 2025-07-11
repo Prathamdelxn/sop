@@ -1,86 +1,103 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { Bell, Users, ClipboardEdit, LogOut, ClipboardList, BarChart3, UserPlus } from "lucide-react";
+import {
+  Bell,
+  Users,
+  ClipboardEdit,
+  LogOut,
+  ClipboardList,
+  BarChart3,
+  Inbox,
+  Eye,
+  User
+} from "lucide-react";
 import { useRouter } from "next/navigation";
+
 export default function Layout({ children }) {
-    const router=useRouter();
-  const [activeItem, setActiveItem] = useState("Create Task");
-    const handleLogout = () => {
-  localStorage.removeItem('token');
-  localStorage.removeItem('user');
-  router.replace('/login'); // You can also use replace instead of push
-};
-const[userDetails,setUSer]=useState();
+  const router = useRouter();
+  const [activeItem, setActiveItem] = useState("Inbox");
+  const [userDetails, setUSer] = useState();
+  const [userId, setId] = useState();
+
+  const handleLogout = () => {
+    localStorage.removeItem('token');
+    localStorage.removeItem('user');
+    router.replace('/login');
+  };
+
   const sidebarItems = [
-    { 
-      label: "Inbox", 
-      icon: <ClipboardEdit className="w-6 h-6 mb-2" />,
-       route: "/supervisor-dashboard",
+    {
+      label: "Inbox",
+      icon: < Inbox className="w-6 h-6 mb-2" />
     },
-    { 
-      label: "Tasks", 
-      icon: <ClipboardList className="w-6 h-6 mb-2" />,
-       route: "/supervisor-dashboard",
+    {
+      label: "View Prototype",
+      icon: <Eye className="w-6 h-6 mb-2" />
     },
-    { 
-      label: "Profile", 
-      icon: <Users className="w-6 h-6 mb-2" />,
-      route: "/supervisor-dashboard/profile",
+    {
+      label: "Profile",
+      icon: <User className="w-6 h-6 mb-2" />
     },
-    
+    {
+      label: "Teams",
+      icon: <Users className="w-6 h-6 mb-2" />
+    },
+    {
+      label: "Report",
+      icon: <BarChart3 className="w-6 h-6 mb-2" />
+    }
   ];
-const[userId,setId]=useState();
- const fetchUser = async () => {
-  const data = localStorage.getItem('user');
-  if (!data) {
-    router.push("/login");
-    return;
-  }
 
-  const userData = JSON.parse(data);
-  setId(userData.id); // still useful if you need to use it elsewhere
-
-  if (userData?.role !== "supervisor") {
-    router.push("/login");
-    return;
-  }
-
-  try {
-    const res = await fetch(`/api/supervisor/fetch-by-id/${userData.id}`);
-    const newdata = await res.json();
-    console.log("Fetched Supervisor Data:", newdata);
-    setUSer(newdata.supervisor)
-  } catch (error) {
-    console.error("Failed to fetch supervisor:", error);
-  }
-};
-
-  useEffect(()=>{
-fetchUser();
-  },[])
-  useEffect(()=>{
-    const data =localStorage.getItem('user');
-    console.log("Data",data)
-    const userData=JSON.parse(data);
-    if(userData?.role!="supervisor"){
-        router.push("/login")
+  const fetchUser = async () => {
+    const data = localStorage.getItem('user');
+    if (!data) {
+      router.push("/login");
+      return;
     }
 
-  },[])
+    const userData = JSON.parse(data);
+    setId(userData.id);
+
+    if (userData?.role !== "supervisor") {
+      router.push("/login");
+      return;
+    }
+
+    try {
+      const res = await fetch(`/api/supervisor/fetch-by-id/${userData.id}`);
+      const newdata = await res.json();
+      console.log("Fetched Supervisor Data:", newdata);
+      setUSer(newdata.supervisor);
+    } catch (error) {
+      console.error("Failed to fetch supervisor:", error);
+    }
+  };
+
+  useEffect(() => {
+    fetchUser();
+  }, []);
+
+  useEffect(() => {
+    const data = localStorage.getItem('user');
+    console.log("Data", data);
+    const userData = JSON.parse(data);
+    if (userData?.role != "supervisor") {
+      router.push("/login");
+    }
+  }, []);
+
   return (
     <div className="flex flex-col min-h-screen bg-gray-50">
       {/* Top Navbar - Fixed */}
       <header className="fixed top-0 left-0 right-0 z-40 flex justify-between items-center px-8 h-20 border-b border-gray-200 bg-white shadow-lg backdrop-blur-sm">
         <div className="flex items-center gap-8">
           <div className="text-blue-700 font-extrabold tracking-wide leading-tight">
-            <div className="text-xl">Manufacturing</div>
-            <div className="text-xl">Execution</div>
-            {/* <div className="text-xl">System</div> */}
+            <div className="text-xl">Manufacturing Execution System</div>
           </div>
           <div className="text-sm text-gray-800 font-medium">
-            Welcome, <strong className="text-blue-700">{userDetails?.name ||'Lorem Ipsum'}</strong>{" "}
-            <span className="text-gray-500 font-normal">(Facility Admin)</span>
+            Welcome, <strong className="text-blue-700">{userDetails?.name || 'Lorem Ipsum'}</strong>{" "}
+            <span className="text-gray-500 font-normal">(Supervisor)</span>
           </div>
         </div>
         <div className="flex items-center gap-6">
@@ -103,15 +120,13 @@ fetchUser();
               return (
                 <div
                   key={label}
-                  onClick={() =>
-                    {
-                      router.push(route)
-                     setActiveItem(label)}}
-                  className={`flex flex-col items-center text-center cursor-pointer transition-all duration-200 px-4 py-3 rounded-xl transform hover:scale-105 ${
-                    isActive
+                  onClick={() => {
+                    setActiveItem(label);
+                  }}
+                  className={`flex flex-col items-center text-center cursor-pointer transition-all duration-200 px-4 py-3 rounded-xl transform hover:scale-105 ${isActive
                       ? "text-blue-600 bg-gradient-to-br from-blue-50 to-blue-100 border-2 border-blue-200 shadow-lg"
                       : "text-gray-600 hover:text-blue-600 hover:bg-gradient-to-br hover:from-gray-50 hover:to-gray-100 hover:shadow-md"
-                  }`}
+                    }`}
                 >
                   <div className="flex flex-col items-center">
                     {icon}

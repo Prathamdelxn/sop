@@ -220,10 +220,6 @@ const TaskDashboard = () => {
         {/* Header */}
         <div className="flex items-center justify-between mb-6">
           <div className="flex items-center gap-4">
-            <button className="flex items-center gap-2 text-gray-600 hover:text-gray-800 transition-colors">
-              <ArrowLeft size={20} />
-              <span>Go Back</span>
-            </button>
             
             <div className="flex items-center gap-2">
               <input
