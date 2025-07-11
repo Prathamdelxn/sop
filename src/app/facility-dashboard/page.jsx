@@ -2032,7 +2032,7 @@ const SOPDashboard = () => {
                       {sop.icon}
                     </div>
                     <div className="flex-1">
-                      <h3 className="text-lg font-bold text-gray-900 group-hover:text-blue-600">{sop.title}</h3>
+                      <h3 className="text-lg font-bold text-gray-900 group-hover:text-blue-600">{sop.name}</h3>
                       <p className="text-sm text-gray-500 font-medium mt-1">Number of Stages: {sop.stages.length}</p>
                       <p className="text-sm text-gray-500 mt-1">
                         <strong>Created At:</strong> {sop.formattedDate}
