@@ -266,7 +266,6 @@ import {
 } from 'lucide-react';
 
 const SupervisorsPage = () => {
-<<<<<<< HEAD
   const [supervisors, setSupervisors] = useState([
     {
       _id: 1,
@@ -297,9 +296,6 @@ const fetchAllUFA=async()=>{
 }
 fetchAllUFA();
 },[])
-=======
-  const [supervisors, setSupervisors] = useState([]);
->>>>>>> 0edcbec8b0284c6b56e554c6e17cea917aab8ee6
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingSupervisor, setEditingSupervisor] = useState(null);
   const [searchTerm, setSearchTerm] = useState('');
