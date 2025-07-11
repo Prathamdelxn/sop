@@ -266,7 +266,40 @@ import {
 } from 'lucide-react';
 
 const SupervisorsPage = () => {
+<<<<<<< HEAD
+  const [supervisors, setSupervisors] = useState([
+    {
+      _id: 1,
+      name: 'John Smith',
+      email: 'john.smith@company.com',
+      phone: '+1 (555) 123-4567',
+      status: 'active',
+      location: 'New York, NY',
+    },
+    {
+      _id: 2,
+      name: 'Sarah Johnson',
+      email: 'sarah.johnson@company.com',
+      phone: '+1 (555) 234-5678',
+      status: 'active',
+      location: 'Los Angeles, CA',
+    },
+    
+  ]);
+
+useEffect(()=>{
+const fetchAllUFA=async()=>{
+  const res= await fetch("/api/user-facility-admin/fetch-all")
+  const data= await res.json();
+ setSupervisors // console.log("data",data.data);
+  setSupervisors(data.data)
+
+}
+fetchAllUFA();
+},[])
+=======
   const [supervisors, setSupervisors] = useState([]);
+>>>>>>> 0edcbec8b0284c6b56e554c6e17cea917aab8ee6
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingSupervisor, setEditingSupervisor] = useState(null);
   const [searchTerm, setSearchTerm] = useState('');

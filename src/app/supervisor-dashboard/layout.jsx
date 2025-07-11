@@ -115,7 +115,7 @@ export default function Layout({ children }) {
         {/* Sidebar - Fixed */}
         <aside className="fixed left-0 top-20 bottom-0 w-32 bg-white border-r border-gray-200 py-8 flex flex-col items-center shadow-lg z-30">
           <div className="flex flex-col gap-4">
-            {sidebarItems.map(({ icon, label }) => {
+            {sidebarItems.map(({ icon, label,route }) => {
               const isActive = activeItem === label;
               return (
                 <div
