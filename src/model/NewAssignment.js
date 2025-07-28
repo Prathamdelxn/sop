@@ -46,6 +46,9 @@ const assignmentSchema = new mongoose.Schema({
   type:Object,
     required: true,
   },
+  companyId:{type:String},
+  userId:{type:String},
+  status:{type:String , default:"pending"},
   assignedAt: {
     type: Date,
     default: Date.now,

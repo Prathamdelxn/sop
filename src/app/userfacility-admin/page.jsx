@@ -554,7 +554,7 @@ const DetailItem = ({ label, value }) => (
   </div>
 )} */}
 {isInfoModalOpen && viewingEquipment && (
-  <div className="fixed inset-0 bg-black/30 backdrop-blur-sm flex items-center justify-center z-50 p-4 transition-opacity duration-300">
+  <div className="fixed inset-0 backdrop-blur-sm flex items-center justify-center z-50 p-4 transition-opacity duration-300">
     <div className="bg-white rounded-xl shadow-xl max-w-2xl w-full overflow-hidden transform transition-all duration-300 scale-[0.98] hover:scale-100">
       {/* Header */}
       <div className="bg-gradient-to-r from-blue-600 to-blue-500 px-6 py-4 flex justify-between items-center">
@@ -629,7 +629,7 @@ const DetailItem = ({ label, value }) => (
 
         {/* Popup Modal */}
         {isPopupOpen && (
-          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="fixed inset-0 backdrop-blur-sm bg-opacity-50 flex items-center justify-center z-50 p-4">
             <div className="bg-white rounded-2xl shadow-2xl max-w-4xl w-full max-h-[90vh] overflow-y-auto">
               <div className="p-6 border-b border-gray-200 flex items-center justify-between">
                 <h2 className="text-2xl font-bold text-blue-600 flex items-center gap-2">

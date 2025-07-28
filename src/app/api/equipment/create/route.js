@@ -14,7 +14,9 @@ export async function POST(req) {
       supplier,
       model,
       serial,
-      assetTag
+      assetTag,
+      companyId,
+      userId,
     } = body;
 
     // Optional: Validate required fields
@@ -34,6 +36,8 @@ export async function POST(req) {
       model,
       serial,
       assetTag,
+       companyId,
+      userId,
     });
 
     return NextResponse.json({ success: true, data: newEquipment }, { status: 201 });

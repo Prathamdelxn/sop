@@ -381,6 +381,8 @@ const stageSchema = new mongoose.Schema({
 // Main Prototype Schema
 const prototypeSchema = new mongoose.Schema({
   name: { type: String, required: true },
+  companyId:{type:String},
+  userId:{type:String},
   stages: [stageSchema],
   createdAt: { type: Date, default: Date.now },
   updatedAt: { type: Date, default: Date.now }

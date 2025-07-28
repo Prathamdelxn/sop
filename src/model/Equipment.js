@@ -26,6 +26,8 @@ const equipmentSchema = new mongoose.Schema({
     type: String,
     unique: true, // assuming assetTag is unique
   },
+  companyId:{type:String},
+  userId:{type:String},
   barcode:{type:String,default:''},
   status:{type:String,default:'pending'},
   assignedPrototype:{type:String}

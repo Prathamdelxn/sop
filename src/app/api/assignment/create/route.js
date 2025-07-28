@@ -10,7 +10,7 @@ export async function POST(req) {
   try {
     const body = await req.json();
     console.log(body);
-    const { generatedId, equipment, prototype } = body;
+    const { generatedId, equipment, prototype ,companyId,userId} = body;
 
     // Validation
     if (!generatedId || !equipment || !prototype) {
@@ -26,6 +26,8 @@ export async function POST(req) {
       generatedId,
       equipment,
       prototypeData:prototype,
+      companyId,
+      userId
     });
     console.log(newAssignment)
     return NextResponse.json({
