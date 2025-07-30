@@ -498,6 +498,8 @@ export default function ClientManagement() {
   const [isEditing, setIsEditing] = useState(false);
   const [editingClientId, setEditingClientId] = useState(null);
   const [isUploading, setIsUploading] = useState(false);
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+const [clientToDelete, setClientToDelete] = useState(null);
 
   useEffect(() => {
     const fetchdata = async () => {
@@ -523,7 +525,7 @@ export default function ClientManagement() {
     address: '',
     username: '',
     password: '',
-    status: 'Active',
+    status: 'active',
     logo: null,
     logoPreview: ''
   });
@@ -689,28 +691,58 @@ export default function ClientManagement() {
       setIsUploading(false);
     }
   };
+const handleDelete = (id) => {
+  setClientToDelete(id);
+  setShowDeleteConfirm(true);
+};
 
-  const handleDelete = async (id) => {
-    try {
-      const response = await fetch(`/api/superAdmin/updateStatus`, {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ id, status: 'Inactive' })
-      });
+const handleConfirmDelete = async () => {
+  if (!clientToDelete) return;
+  
+  try {
+    const response = await fetch(`/api/superAdmin/updateStatus`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ id: clientToDelete, status: 'Inactive' })
+    });
 
-      if (!response.ok) {
-        throw new Error('Failed to update status');
-      }
-
-      const updatedClients = clients.map(client =>
-        client._id === id ? { ...client, status: 'Inactive' } : client
-      );
-      setClients(updatedClients);
-    } catch (error) {
-      console.error('Error updating status:', error);
-      alert('Error deactivating client');
+    if (!response.ok) {
+      throw new Error('Failed to update status');
     }
-  };
+
+    const updatedClients = clients.map(client =>
+      client._id === clientToDelete ? { ...client, status: 'Inactive' } : client
+    );
+    setClients(updatedClients);
+  } catch (error) {
+    console.error('Error updating status:', error);
+    alert('Error deactivating client');
+  } finally {
+    setShowDeleteConfirm(false);
+    setClientToDelete(null);
+  }
+};
+  // const handleDelete = async (id) => {
+  //   try {
+  //     const response = await fetch(`/api/superAdmin/updateStatus`, {
+  //       method: 'PUT',
+  //       headers: { 'Content-Type': 'application/json' },
+  //       body: JSON.stringify({ id, status: 'Inactive' })
+  //     });
+
+  //     if (!response.ok) {
+  //       throw new Error('Failed to update status');
+  //     }
+
+  //     const updatedClients = clients.map(client =>
+  //       client._id === id ? { ...client, status: 'Inactive' } : client
+  //     );
+  //     setClients(updatedClients);
+  //   } catch (error) {
+  //     console.error('Error updating status:', error);
+  //     alert('Error deactivating client');
+  //   }
+  // };
 
   const handleEdit = (client) => {
     setIsModalOpen(true);
@@ -736,7 +768,7 @@ export default function ClientManagement() {
       phone: '',
       address: '',
       username: '',
-      status: 'Active',
+      status: 'active',
       logo: null,
       logoPreview: ''
     });
@@ -807,7 +839,7 @@ export default function ClientManagement() {
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap">
                           <span className={`px-3 py-1 inline-flex text-xs leading-5 font-semibold rounded-full ${
-                              client.status === 'Active' ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'
+                              client.status === 'active' ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'
                             }`}>
                             {client.status}
                           </span>
@@ -926,7 +958,7 @@ export default function ClientManagement() {
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-1">Status</label>
                     <select name="status" value={newClient.status} onChange={handleInputChange} className="w-full px-4 py-2 border rounded-lg">
-                      <option value="Active">Active</option>
+                      <option value="active">active</option>
                       <option value="Inactive">Inactive</option>
                     </select>
                   </div>
@@ -983,6 +1015,44 @@ export default function ClientManagement() {
           </div>
         </div>
       )}
+      {showDeleteConfirm && (
+  <div className="fixed inset-0 backdrop-blur-sm bg-white/30 flex items-center justify-center p-4 z-50">
+    <div className="bg-white rounded-xl shadow-xl w-full max-w-md">
+      <div className="p-6">
+        <div className="flex justify-between items-center mb-4">
+          <h3 className="text-lg font-bold text-gray-800">Confirm Deactivation</h3>
+          <button 
+            onClick={() => setShowDeleteConfirm(false)}
+            className="text-gray-400 hover:text-gray-500"
+          >
+            <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+            </svg>
+          </button>
+        </div>
+        
+        <p className="text-gray-600 mb-6">
+          Are you sure you want to deactivate this client? They will no longer have access to the system.
+        </p>
+        
+        <div className="flex justify-end space-x-3">
+          <button
+            onClick={() => setShowDeleteConfirm(false)}
+            className="px-4 py-2 border rounded-lg text-gray-700 hover:bg-gray-100"
+          >
+            Cancel
+          </button>
+          <button
+            onClick={handleConfirmDelete}
+            className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700"
+          >
+            Confirm Deactivate
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+)}
     </div>
   );
 }
