@@ -1163,8 +1163,8 @@ export default function DynamicDashboardPage({ params }) {
       {/* Header */}
       <div className="flex justify-between items-center">
         <div>
-          <h1 className="text-3xl font-bold text-gray-900 capitalize">Welcome to {slug.replace('-', ' ')} Dashboard</h1>
-          <p className="text-gray-600 mt-2">Management of {slug.replace('-', ' ')}</p>
+          <h1 className="text-2xl font-semibold text-gray-900 capitalize">Management of {slug.replace('-', ' ')}</h1>
+         
         </div>
         <button
           onClick={handleAddPerson}

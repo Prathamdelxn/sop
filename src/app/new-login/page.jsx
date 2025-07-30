@@ -533,7 +533,7 @@ const LoginPage = () => {
         }
       }
       else{
-       if(data.user.status=="Inactive"){
+       if(data.user.status=="Inactive" || data.user.status=='isactive'){
           setShowDeactivatedModal(true);
         }
         else{
