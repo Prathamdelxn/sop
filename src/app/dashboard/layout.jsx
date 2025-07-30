@@ -21,11 +21,11 @@ import {
 
 const allNavigationItems = [
   { name: 'Dashboard', href: '/dashboard/', icon: Home, current: true },
-  { name: 'Create Prototype', href: '/dashboard/create-prototype', icon: Wrench, current: false },
+  { name: 'Create Checklist', href: '/dashboard/create-checklist', icon: Wrench, current: false },
   { name: 'Create Equipment', href: '/dashboard/create-equipment', icon: HardHat, current: false },
   { name: 'Assign Task', href: '/dashboard/assign-task', icon: ClipboardList, current: false },
   { name: 'Task Execution', href: '/dashboard/task-execution', icon: PlayCircle, current: false },
-  { name: 'Assign Prototype to Equipment', href: '/dashboard/assign-prototype-to-equipment', icon: Link, current: false },
+  { name: 'Assign Checklist to Equipment', href: '/dashboard/assign-checklist-to-equipment', icon: Link, current: false },
   { name: 'Approve Equipment', href: '/dashboard/approve-equipment', icon: CheckCircle2, current: false },
   { name: 'Approve Task', href: '/dashboard/approve-task', icon: UserCheck, current: false },
 ];
@@ -37,13 +37,23 @@ export default function DashboardLayout({ children }) {
   const [userData, setUserData] = useState(null);
   const [navigation, setNavigation] = useState([allNavigationItems[0]]);
   const [searchFocused, setSearchFocused] = useState(false);
-
+const[companyData,setCompanyData]=useState();
   useEffect(() => {
     const userdata = localStorage.getItem('user');
     const data = JSON.parse(userdata);
+    console.log(data);
     setUserData(data);
+    
+    const datafetch=async()=>{
+      const res= await fetch(`/api/superAdmin/fetchById/${data.companyId}`);
+      const da=await res.json();
+      console.log("asdf",da.superAdmin);
+      setCompanyData(da.superAdmin)
+    }
+    datafetch();
   }, []);
 
+ 
   // Helper function to check if a route is active
   const isActiveRoute = (itemHref, currentPath) => {
     // Handle Dashboard route specifically
@@ -121,7 +131,7 @@ export default function DashboardLayout({ children }) {
     localStorage.removeItem('user');
     router.replace('/new-login');
   };
-
+ console.log("user data ",userData);
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50/30 to-indigo-50/40 relative overflow-hidden">
       {/* Background elements */}
@@ -185,10 +195,10 @@ export default function DashboardLayout({ children }) {
       <div className="hidden lg:fixed lg:inset-y-0 lg:z-40 lg:flex lg:w-72 lg:flex-col">
         <div className="flex grow flex-col gap-y-5 overflow-y-auto bg-white/80 backdrop-blur-xl border-r border-white/20 px-6 pb-4 shadow-xl">
           <div className="flex h-16 shrink-0 items-center space-x-3">
-            <div className="w-10 h-10 bg-gradient-to-br from-indigo-600 via-purple-600 to-pink-600 rounded-xl flex items-center justify-center shadow-lg rotate-3 hover:rotate-0 transition-transform duration-300">
-              <div className="w-4 h-4 bg-white rounded-md"></div>
+            <div className="w-10 h-10  overflow-hidden to-pink-600 rounded-xl flex items-center justify-center shadow-lg rotate-3 hover:rotate-0 transition-transform duration-300">
+             <img src={companyData?.logo} alt="" className='h-full w-full '/>
             </div>
-            <h1 className="text-xl font-black bg-gradient-to-r from-gray-800 to-gray-600 bg-clip-text text-transparent">{userData?.role}</h1>
+            <h1 className="text-xl font-black bg-gradient-to-r from-gray-800 to-gray-600 bg-clip-text text-transparent">{companyData?.name}</h1>
           </div>
           <nav className="flex flex-1 flex-col mt-2">
             <ul className="flex flex-1 flex-col gap-y-1">
@@ -236,16 +246,9 @@ export default function DashboardLayout({ children }) {
 
           <div className="flex flex-1 gap-x-4 self-stretch justify-between items-center">
             <div className="relative flex flex-1 items-center max-w-2xl">
-              <div className="absolute inset-y-0 left-0 flex items-center pl-4 pointer-events-none">
-                <Search className={`h-4 w-4 transition-all duration-300 ${searchFocused ? 'text-indigo-500 scale-110' : 'text-gray-400'}`} />
-              </div>
-              <input
-                className={`block h-11 w-full rounded-xl border-0 bg-gray-100/70 py-1.5 pl-11 pr-4 text-gray-900 placeholder:text-gray-400 focus:ring-2 focus:ring-indigo-500/30 focus:bg-white transition-all duration-300 text-sm font-medium shadow-sm ${searchFocused ? 'ring-2 ring-indigo-500/30 bg-white shadow-lg scale-[1.02]' : ''}`}
-                placeholder="Search anything..."
-                type="search"
-                onFocus={() => setSearchFocused(true)}
-                onBlur={() => setSearchFocused(false)}
-              />
+                         <h1 className="text-lg font-black bg-gradient-to-r font-semibold capitalize from-gray-800 to-gray-600 bg-clip-text text-transparent">{userData?.role} Dashboard</h1>
+
+              
             </div>
             
             <div className="flex items-center justify-between gap-x-3">
@@ -265,7 +268,7 @@ export default function DashboardLayout({ children }) {
                     <div className="absolute -bottom-0.5 -right-0.5 w-3 h-3 bg-gradient-to-br from-green-400 to-emerald-500 rounded-full border-2 border-white shadow-sm animate-pulse"></div>
                   </div>
                  <div className="flex flex-col items-start">
-                     <span className="text-sm font-semibold text-gray-700 hidden md:inline">{userData?.username}</span>
+                     <span className="text-sm font-semibold text-gray-700 hidden md:inline">{userData?.name}{userData?.username}</span>
                   <span className="text-[10px] font-medium text-gray-500 hidden md:inline capitalize">{userData?.role}</span>
                  </div>
                 </button>

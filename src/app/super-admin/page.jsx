@@ -17,7 +17,7 @@ export default function SuperAdminDashboard() {
           
         </div>
         
-        {/* Optional: Simple Footer */}
+      
        
       </div>
     </div>

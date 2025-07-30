@@ -45,7 +45,7 @@ export default function ForgotPasswordPage() {
               </div>
               <p className="text-green-600 mb-4">{message}</p>
               <Link
-                href="/login"
+                href="/new-login"
                 className="inline-flex items-center text-blue-500 hover:underline font-medium"
               >
                 Back to Login
@@ -91,7 +91,7 @@ export default function ForgotPasswordPage() {
 
               <div className="mt-5 text-center text-sm">
                 <span className="text-gray-600">Remember your password? </span>
-                <Link href="/login" className="text-blue-500 font-medium hover:underline">
+                <Link href="/new-login" className="text-blue-500 font-medium hover:underline">
                   Login
                 </Link>
               </div>

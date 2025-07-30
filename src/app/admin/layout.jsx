@@ -15,7 +15,7 @@ export default function DashboardLayout({ children }) {
     const data = localStorage.getItem('user');
 
     if (!data) {
-      router.push('/login');
+      router.push('/new-login');
       return;
     }
 
@@ -24,11 +24,11 @@ export default function DashboardLayout({ children }) {
       if (userData?.role === 'admin') {
         setIsAuthorized(true);
       } else {
-        router.push('/login');
+        router.push('/new-login');
       }
     } catch (err) {
       console.error('Invalid user data:', err);
-      router.push('/login');
+      router.push('/new-login');
     } finally {
       setLoading(false);
     }

@@ -88,7 +88,7 @@ export default function ProfilePage() {
 
   const handleLogout = () => {
     logout();
-    router.push("/login");
+    router.push("/new-login");
   };
 
   if (loading) {

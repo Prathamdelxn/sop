@@ -72,7 +72,7 @@ const SOPDashboard = () => {
   
 
   const handleDelete = async (id) => {
-    if (confirm("Are you sure you want to delete this prototype?")) {
+    if (confirm("Are you sure you want to delete this checklist?")) {
       try {
         await fetch(`/api/task/delete/${id}`, {
           method: "DELETE",
@@ -339,7 +339,7 @@ useEffect(() => {
               <Sparkles className="w-8 h-8 text-white" />
             </div>
             <div>
-              <h1 className="text-4xl font-bold text-gray-900">Prototype Workspace</h1>
+              <h1 className="text-4xl font-bold text-gray-900">Checklist Workspace</h1>
               <p className="text-gray-600 mt-2 text-lg">Manage and track your development processes</p>
             </div>
           </div>
@@ -356,7 +356,7 @@ useEffect(() => {
       {/* Main Content */}
       <div className="max-w-7xl mx-auto px-6 py-8">
         {loading ? (
-          <p className="text-center text-gray-600">Loading Prototypes...</p>
+          <p className="text-center text-gray-600">Loading checklists...</p>
         ) : enhancedSopData.length > 0 ? (
           <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
             <div className="overflow-x-auto">
@@ -367,7 +367,7 @@ useEffect(() => {
                       scope="col"
                       className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
                     >
-                      Prototype
+                      Checklist
                     </th>
                     <th
                       scope="col"
@@ -437,13 +437,13 @@ useEffect(() => {
         ) : (
           <div className="text-center py-20">
             <div className="max-w-md mx-auto">
-              <h3 className="text-2xl font-bold text-gray-900 mb-3">No prototypes found</h3>
-              <p className="text-gray-600 mb-8 text-lg">Click below to create a new prototype.</p>
+              <h3 className="text-2xl font-bold text-gray-900 mb-3">No checklist found</h3>
+              <p className="text-gray-600 mb-8 text-lg">Click below to create a new checklist.</p>
               <button
                 onClick={handleCreate}
                 className="bg-gradient-to-r from-blue-600 to-purple-600 text-white font-bold py-3 px-8 rounded-2xl shadow hover:shadow-md"
               >
-                Create New Prototype
+                Create New Checklist
               </button>
             </div>
           </div>

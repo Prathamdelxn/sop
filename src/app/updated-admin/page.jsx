@@ -567,9 +567,9 @@ import { toast } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 
 const predefinedTasks = [
-  'Create Prototype',
+  'Create Checklist',
   'Create Equipment',
-  'Assign Prototype to Equipment',
+  'Assign Checklist to Equipment',
   'Assign Task',
   'Task Execution',
   'Approve Equipment',
