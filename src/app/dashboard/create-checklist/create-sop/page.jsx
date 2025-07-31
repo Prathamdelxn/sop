@@ -1906,7 +1906,7 @@ const PrototypeManagementPage = () => {
 
   const validatePrototype = () => {
     if (!prototypeName.trim()) {
-      alert('Please enter a prototype name');
+      alert('Please enter a Checklist name');
       return false;
     }
 
@@ -1969,8 +1969,8 @@ const PrototypeManagementPage = () => {
       await response.json();
       router.push('/dashboard/create-checklist');
     } catch (error) {
-      console.error("Error saving prototype:", error);
-      alert('Failed to save prototype. Please try again.');
+      console.error("Error saving Checklist:", error);
+      alert('Failed to save Checklist. Please try again.');
     } finally {
       setIsSaving(false);
     }
@@ -1987,24 +1987,24 @@ const PrototypeManagementPage = () => {
         </button>
 
 
-        <h1 className="text-2xl sm:text-3xl md:text-4xl font-bold text-gray-900 mt-6 mb-8 sm:mb-10 tracking-tight">Prototype Management</h1>
+        <h1 className="text-2xl sm:text-3xl md:text-4xl font-bold text-gray-900 mt-6 mb-8 sm:mb-10 tracking-tight">Checklist Management</h1>
 
         <div className="bg-white rounded-2xl shadow-lg p-4 sm:p-6 md:p-8 mb-6 sm:mb-8 transition-all duration-300 hover:shadow-xl">
           <div className="w-full">
-            <label className="block text-sm font-semibold text-gray-800 mb-3 tracking-tight">Prototype Name</label>
+            <label className="block text-sm font-semibold text-gray-800 mb-3 tracking-tight">Checklist Name</label>
             <div className="flex flex-col sm:flex-row items-center justify-between gap-4 sm:gap-6">
               <input
                 type="text"
                 value={prototypeName}
                 onChange={(e) => setPrototypeName(e.target.value)}
                 className="w-full sm:flex-1 p-3 sm:p-4 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500 transition-all duration-200 hover:border-indigo-300 text-gray-900"
-                placeholder="Enter prototype name"
+                placeholder="Enter Checklist name"
               />
               <button
                 onClick={handleSavePrototype}
                 className="w-full sm:w-auto px-4 sm:px-6 py-2 sm:py-3 bg-gradient-to-r from-indigo-600 to-indigo-700 text-white rounded-xl hover:from-indigo-700 hover:to-indigo-800 font-semibold transition-all shadow-md hover:shadow-lg active:scale-95"
               >
-                Save Prototype
+                Save Checklist
               </button>
             </div>
           </div>
