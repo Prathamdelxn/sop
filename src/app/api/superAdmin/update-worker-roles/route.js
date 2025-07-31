@@ -129,11 +129,12 @@ export async function PUT(req) {
     await superAdmin.save();
 console.log(superAdmin._id.toString()); // "68832664ae88c7c51c8595e5"
 
+console.log("dasf",oldRoleTitle.toLowerCase().replace(/\s+/g, '-'))
     // Update all users with this companyId and role
     const updateResult = await User.updateMany(
       {
         companyId: superAdmin._id.toString(),
-    role: oldRoleTitle.toLowerCase()
+    role: oldRoleTitle.toLowerCase().replace(/\s+/g, '-')
 
       },
       {

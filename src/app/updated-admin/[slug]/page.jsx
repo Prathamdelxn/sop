@@ -778,7 +778,7 @@ export default function DynamicDashboardPage({ params }) {
     username: { checking: false, available: true, error: '' },
     phone: { checking: false, available: true, error: '' }
   });
-
+console.log("asdf",slug);
   const [formData, setFormData] = useState({
     name: '',
     companyId: Id,
@@ -828,7 +828,7 @@ export default function DynamicDashboardPage({ params }) {
       setIsLoading(false);
     }
   };
-
+console.log("sss", slug)
   const fetchRoleData = async () => {
     setIsLoading(true);
     setError(null);

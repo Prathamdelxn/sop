@@ -954,6 +954,8 @@ const predefinedTasks = [
   'Task Execution',
   'Approve Equipment',
   'Approve Task',
+  'Approve Checklist',
+  'Approve Tagged Chechlist with Equipment'
 ];
 
 export default function UpdateWorkerRoles() {
