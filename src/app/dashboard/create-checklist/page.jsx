@@ -66,7 +66,7 @@ const SOPDashboard = () => {
   ]
 
   const handleCreate = () => {
-    router.push("/dashboard/create-prototype/create-sop")
+    router.push("/dashboard/create-checklist/create-sop")
   }
 
   

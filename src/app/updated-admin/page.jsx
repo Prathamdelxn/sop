@@ -1061,68 +1061,9 @@ const [popupMessage, setPopupMessage] = useState('');
     setActiveTab('create');
   };
 
-// const handleSubmit = async (e) => {
-//   e.preventDefault();
-//   if (!superadminId || !roleTitle) return;
-
-//   setIsSubmitting(true);
-  
-//   try {
-//     const endpoint = editingRole 
-//       ? '/api/superAdmin/update-worker-roles' 
-//       : '/api/superAdmin/add-worker-roles';
-//     const method = editingRole ? 'PUT' : 'POST'; // Changed to PUT for updates
-
-//     const body = editingRole
-//       ? {
-//           superadminId,
-//           oldRoleTitle: editingRole.title,
-//           workerRole: { 
-//             title: roleTitle, 
-//             task: selectedTasks 
-//           }
-//         }
-//       : {
-//           superadminId,
-//           workerRole: { 
-//             title: roleTitle, 
-//             task: selectedTasks 
-//           }
-//         };
-
-//     const res = await fetch(endpoint, {
-//       method,
-//       headers: { 'Content-Type': 'application/json' },
-//       body: JSON.stringify(body),
-//     });
-
-//     const data = await res.json();
-
-//     if (!res.ok) {
-//       throw new Error(data.message || `Failed to ${editingRole ? 'update' : 'create'} role`);
-//     }
-
-//     toast.success(`Role ${editingRole ? 'updated' : 'created'} successfully`);
-//     resetForm();
-//     await fetchRoles(superadminId);
-//     setActiveTab('manage');
-//   } catch (error) {
-//     console.error(`Error ${editingRole ? 'updating' : 'creating'} role:`, error);
-//     toast.error(error.message || `Error ${editingRole ? 'updating' : 'creating'} role`);
-//   } finally {
-//     setIsSubmitting(false);
-//   }
-// };
 const handleSubmit = async (e) => {
   e.preventDefault();
   if (!superadminId || !roleTitle) return;
-
-  // Check if role already exists (only when creating new role, not when editing)
-  if (!editingRole && roles.some(role => role.title.toLowerCase() === roleTitle.toLowerCase())) {
-    setPopupMessage(`The role "${roleTitle}" already exists. Please choose a different name.`);
-    setShowPopup(true);
-    return;
-  }
 
   setIsSubmitting(true);
   
@@ -1130,7 +1071,7 @@ const handleSubmit = async (e) => {
     const endpoint = editingRole 
       ? '/api/superAdmin/update-worker-roles' 
       : '/api/superAdmin/add-worker-roles';
-    const method = editingRole ? 'PUT' : 'POST';
+    const method = editingRole ? 'PUT' : 'PUT'; // Changed to PUT for updates
 
     const body = editingRole
       ? {
@@ -1161,22 +1102,81 @@ const handleSubmit = async (e) => {
       throw new Error(data.message || `Failed to ${editingRole ? 'update' : 'create'} role`);
     }
 
-    // Show success popup instead of toast
-    setPopupMessage(`Role "${roleTitle}" has been ${editingRole ? 'updated' : 'created'} successfully!`);
-    setShowPopup(true);
-    
+    toast.success(`Role ${editingRole ? 'updated' : 'created'} successfully`);
     resetForm();
     await fetchRoles(superadminId);
     setActiveTab('manage');
   } catch (error) {
     console.error(`Error ${editingRole ? 'updating' : 'creating'} role:`, error);
-    // Show error popup instead of toast
-    setPopupMessage(error.message || `Error ${editingRole ? 'updating' : 'creating'} role`);
-    setShowPopup(true);
+    toast.error(error.message || `Error ${editingRole ? 'updating' : 'creating'} role`);
   } finally {
     setIsSubmitting(false);
   }
 };
+// const handleSubmit = async (e) => {
+//   e.preventDefault();
+//   if (!superadminId || !roleTitle) return;
+
+//   // Check if role already exists (only when creating new role, not when editing)
+//   // if (!editingRole && roles.some(role => role.title.toLowerCase() === roleTitle.toLowerCase())) {
+//   //   setPopupMessage(`The role "${roleTitle}" already exists. Please choose a different name.`);
+//   //   setShowPopup(true);
+//   //   return;
+//   // }
+
+//   setIsSubmitting(true);
+  
+//   try {
+//     const endpoint = editingRole 
+//       ? '/api/superAdmin/update-worker-roles' 
+//       : '/api/superAdmin/add-worker-roles';
+//     const method = editingRole ? 'PUT' : 'POST';
+
+//     const body = editingRole
+//       ? {
+//           superadminId,
+//           oldRoleTitle: editingRole.title,
+//           workerRole: { 
+//             title: roleTitle, 
+//             task: selectedTasks 
+//           }
+//         }
+//       : {
+//           superadminId,
+//           workerRole: { 
+//             title: roleTitle, 
+//             task: selectedTasks 
+//           }
+//         };
+
+//     const res = await fetch(endpoint, {
+//       method,
+//       headers: { 'Content-Type': 'application/json' },
+//       body: JSON.stringify(body),
+//     });
+
+//     const data = await res.json();
+
+//     if (!res.ok) {
+//       throw new Error(data.message || `Failed to ${editingRole ? 'update' : 'create'} role`);
+//     }
+
+//     // Show success popup instead of toast
+//     setPopupMessage(`Role "${roleTitle}" has been ${editingRole ? 'updated' : 'created'} successfully!`);
+//     setShowPopup(true);
+    
+//     resetForm();
+//     await fetchRoles(superadminId);
+//     setActiveTab('manage');
+//   } catch (error) {
+//     console.error(`Error ${editingRole ? 'updating' : 'creating'} role:`, error);
+//     // Show error popup instead of toast
+//     setPopupMessage(error.message || `Error ${editingRole ? 'updating' : 'creating'} role`);
+//     setShowPopup(true);
+//   } finally {
+//     setIsSubmitting(false);
+//   }
+// };
   return (
     <div className="min-h-screen bg-gray-50 p-4 sm:p-6">
       <div className="max-w-6xl mx-auto">
