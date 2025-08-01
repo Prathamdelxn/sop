@@ -788,8 +788,10 @@ export default function FacilityAdminDashboard() {
   const [viewingEquipment, setViewingEquipment] = useState(null);
   const [isInfoModalOpen, setIsInfoModalOpen] = useState(false);
   const [isConfirmationOpen, setIsConfirmationOpen] = useState(false);
-const [equipmentToApprove, setEquipmentToApprove] = useState(null);
-const [companyData,setCompanyData]=useState();
+  const [equipmentToApprove, setEquipmentToApprove] = useState(null);
+  const [companyData, setCompanyData] = useState();
+  const [statusFilter, setStatusFilter] = useState('All Statuses');
+
   useEffect(() => {
     const fetchEquipment = async () => {
       try {
@@ -797,9 +799,8 @@ const [companyData,setCompanyData]=useState();
         const result = await res.json();
 
         if (res.ok && result.success) {
-        //   setEquipmentList(result.data);
           const filtered = result.data.filter(item => item.companyId === companyData?.companyId);
-        setEquipmentList(filtered);
+          setEquipmentList(filtered);
         } else {
           console.error('Failed to fetch equipment:', result.message);
         }
@@ -815,45 +816,43 @@ const [companyData,setCompanyData]=useState();
     setViewingEquipment(equipment);
     setIsInfoModalOpen(true);
   };
-const handleSendForApproval = (equipment) => {
-  setEquipmentToApprove(equipment);
-  setIsConfirmationOpen(true);
-};
 
-const confirmApproval = async () => {
-  try {
-    console.log(equipmentToApprove._id);
-    const res = await fetch('/api/equipment/updateStatus', {
-      method: 'PUT',
-      headers: {
-        'Content-Type': 'application/json'
-      },
-      
-      
-      body: JSON.stringify({
-        equipmentId: equipmentToApprove._id,
-        status: 'pending'
-      })
-    });
+  const handleSendForApproval = (equipment) => {
+    setEquipmentToApprove(equipment);
+    setIsConfirmationOpen(true);
+  };
 
-    const result = await res.json();
+  const confirmApproval = async () => {
+    try {
+      const res = await fetch('/api/equipment/updateStatus', {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          equipmentId: equipmentToApprove._id,
+          status: 'pending'
+        })
+      });
 
-    if (res.ok && result.success) {
-      // Update the equipment list with the new status
-      setEquipmentList(prev => 
-        prev.map(eq => 
-          eq._id === equipmentToApprove._id ? { ...eq, status: 'pending' } : eq
-        )
-      );
-      setIsConfirmationOpen(false);
-      setEquipmentToApprove(null);
-    } else {
-      console.error('Failed to update status:', result.message);
+      const result = await res.json();
+
+      if (res.ok && result.success) {
+        setEquipmentList(prev => 
+          prev.map(eq => 
+            eq._id === equipmentToApprove._id ? { ...eq, status: 'pending' } : eq
+          )
+        );
+        setIsConfirmationOpen(false);
+        setEquipmentToApprove(null);
+      } else {
+        console.error('Failed to update status:', result.message);
+      }
+    } catch (err) {
+      console.error('Error updating status:', err);
     }
-  } catch (err) {
-    console.error('Error updating status:', err);
-  }
-};
+  };
+
   const [formData, setFormData] = useState({
     name: '',
     id: '',
@@ -935,20 +934,18 @@ const confirmApproval = async () => {
     setErrors({});
   };
   
-useEffect(()=>{
-    const userData=localStorage.getItem('user');
-    const user=JSON.parse(userData);
+  useEffect(() => {
+    const userData = localStorage.getItem('user');
+    const user = JSON.parse(userData);
     setCompanyData(user);
-    console.log("Asd",user);
+  }, []);
 
-},[])
   const handleSubmit = async () => {
     const validationErrors = validate();
     if (Object.keys(validationErrors).length > 0) {
       setErrors(validationErrors);
       return;
     }
-    console.log("demo",companyData)
 
     const newData = {
       name: formData.name,
@@ -958,8 +955,8 @@ useEffect(()=>{
       model: formData.model,
       serial: formData.serial,
       assetTag: formData.assetTag,
-      companyId:companyData.companyId,
-      userId:companyData.id
+      companyId: companyData.companyId,
+      userId: companyData.id
     };
 
     try {
@@ -1019,17 +1016,20 @@ useEffect(()=>{
                          equipment.id.toLowerCase().includes(searchTerm.toLowerCase()) ||
                          (equipment.manufacturer && equipment.manufacturer.toLowerCase().includes(searchTerm.toLowerCase()));
     const matchesFilter = filterType === '' || equipment.type === filterType;
-    return matchesSearch && matchesFilter;
+    const matchesStatus = statusFilter === 'All Statuses' || equipment.status.toLowerCase() === statusFilter.toLowerCase();
+    return matchesSearch && matchesFilter && matchesStatus;
   });
 
   const getStatusColor = (status) => {
     switch (status) {
-      case 'Approved':
+      case 'approved':
         return 'bg-green-100 text-green-800';
-         case 'Created':
+      case 'created':
         return 'bg-blue-100 text-blue-800';
       case 'pending':
         return 'bg-yellow-100 text-yellow-800';
+      case 'rejected':
+        return 'bg-red-100 text-red-800';
       case 'Unassigned':
         return 'bg-gray-100 text-gray-800';
       default:
@@ -1039,12 +1039,14 @@ useEffect(()=>{
 
   const getStatusIcon = (status) => {
     switch (status) {
-      case 'Approved':
+      case 'approved':
         return <CheckCircle className="text-green-600" size={32} />;
-           case 'Created':
+      case 'created':
         return <CheckCircle className="text-blue-600" size={32} />;
       case 'pending':
         return <Clock className="text-yellow-600" size={32} />;
+      case 'rejected':
+        return <XCircle className="text-red-600" size={32} />;
       case 'Unassigned':
         return <XCircle className="text-gray-600" size={32} />;
       default:
@@ -1052,9 +1054,25 @@ useEffect(()=>{
     }
   };
 
-  const approvedCount = equipmentList.filter(eq => eq.status === 'Approved').length;
+  const getApprovalStatus = (status) => {
+    switch (status) {
+      case 'approved':
+        return 'Approved';
+      case 'created':
+        return 'Send for Approval';
+      case 'pending':
+        return 'Pending Approval';
+      case 'rejected':
+        return 'Rejected';
+      default:
+        return status;
+    }
+  };
+
+  const approvedCount = equipmentList.filter(eq => eq.status === 'approved').length;
   const pendingCount = equipmentList.filter(eq => eq.status === 'pending').length;
-  const unassignedCount = equipmentList.filter(eq => eq.status === 'Unassigned').length;
+  const createdCount = equipmentList.filter(eq => eq.status === 'created').length;
+  const rejectedCount = equipmentList.filter(eq => eq.status === 'rejected').length;
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 p-6">
@@ -1095,7 +1113,7 @@ useEffect(()=>{
                 <p className="text-gray-600 text-sm">Approved</p>
                 <p className="text-2xl font-bold text-green-600">{approvedCount}</p>
               </div>
-              {getStatusIcon('Approved')}
+              {getStatusIcon('approved')}
             </div>
           </div>
           <div className="bg-white rounded-2xl shadow-lg p-6">
@@ -1104,16 +1122,16 @@ useEffect(()=>{
                 <p className="text-gray-600 text-sm">Pending</p>
                 <p className="text-2xl font-bold text-yellow-600">{pendingCount}</p>
               </div>
-              {getStatusIcon('Pending')}
+              {getStatusIcon('pending')}
             </div>
           </div>
           <div className="bg-white rounded-2xl shadow-lg p-6">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-gray-600 text-sm">Unassigned</p>
-                <p className="text-2xl font-bold text-gray-600">{unassignedCount}</p>
+                <p className="text-gray-600 text-sm">Created</p>
+                <p className="text-2xl font-bold text-blue-600">{createdCount}</p>
               </div>
-              {getStatusIcon('Unassigned')}
+              {getStatusIcon('created')}
             </div>
           </div>
         </div>
@@ -1142,12 +1160,23 @@ useEffect(()=>{
                   <option key={type} value={type}>{type}</option>
                 ))}
               </select>
+              <select
+                value={statusFilter}
+                onChange={(e) => setStatusFilter(e.target.value)}
+                className="px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500"
+              >
+                <option value="All Statuses">All Statuses</option>
+                <option value="approved">Approved</option>
+                <option value="pending">Pending</option>
+                <option value="created">Created</option>
+                <option value="rejected">Rejected</option>
+              </select>
             </div>
           </div>
         </div>
 
         {/* Equipment Table */}
-         <div className="bg-white rounded-2xl shadow-lg p-6">
+        <div className="bg-white rounded-2xl shadow-lg p-6">
           <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6 gap-4">
             <h2 className="text-2xl font-bold text-gray-800">Equipment Inventory</h2>
             <div className="text-sm text-gray-500">
@@ -1176,10 +1205,10 @@ useEffect(()=>{
                       Type
                     </th>
                     <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Manufacturer
+                      Status
                     </th>
                     <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Status
+                      Approve
                     </th>
                     <th scope="col" className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
                       Actions
@@ -1211,12 +1240,14 @@ useEffect(()=>{
                           {equipment.type}
                         </span>
                       </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                        {equipment.manufacturer || 'N/A'}
-                      </td>
                       <td className="px-6 py-4 whitespace-nowrap">
                         <span className={`px-3 py-1 rounded-full text-xs font-semibold ${getStatusColor(equipment.status)}`}>
                           {equipment.status}
+                        </span>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <span className={`px-3 py-1 rounded-full text-xs font-semibold ${getStatusColor(equipment.status)}`}>
+                          {getApprovalStatus(equipment.status)}
                         </span>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
@@ -1228,31 +1259,24 @@ useEffect(()=>{
                           >
                             <Eye size={18} />
                           </button>
-                           {equipment.status === 'created' && (
-      <>
-        <button
-          onClick={() => openPopup(equipment)}
-          className="text-indigo-600 hover:text-indigo-900 p-2 rounded-lg hover:bg-indigo-50 transition-colors"
-          title="Edit"
-        >
-          <Edit size={18} />
-        </button>
-        <button
-          onClick={() => handleSendForApproval(equipment)}
-          className="text-green-600 hover:text-green-900 p-2 rounded-lg hover:bg-green-50 transition-colors"
-          title="Send for Approval"
-        >
-          <CheckCircle size={18} />
-        </button>
-      </>
-    )}
-                          {/* <button
-                            onClick={() => openPopup(equipment)}
-                            className="text-indigo-600 hover:text-indigo-900 p-2 rounded-lg hover:bg-indigo-50 transition-colors"
-                            title="Edit"
-                          >
-                            <Edit size={18} />
-                          </button> */}
+                          {equipment.status === 'created' && (
+                            <>
+                              <button
+                                onClick={() => openPopup(equipment)}
+                                className="text-indigo-600 hover:text-indigo-900 p-2 rounded-lg hover:bg-indigo-50 transition-colors"
+                                title="Edit"
+                              >
+                                <Edit size={18} />
+                              </button>
+                              <button
+                                onClick={() => handleSendForApproval(equipment)}
+                                className="text-green-600 hover:text-green-900 p-2 rounded-lg hover:bg-green-50 transition-colors"
+                                title="Send for Approval"
+                              >
+                                <CheckCircle size={18} />
+                              </button>
+                            </>
+                          )}
                           <button
                             onClick={() => deleteEquipment(equipment._id)}
                             className="text-red-600 hover:text-red-900 p-2 rounded-lg hover:bg-red-50 transition-colors"
@@ -1300,7 +1324,7 @@ useEffect(()=>{
                     <DetailItem label="Model" value={viewingEquipment.model} />
                     <DetailItem label="Status" value={
                       <span className={`px-2 py-1 rounded-full text-xs font-medium ${
-                        viewingEquipment.status === 'active' 
+                        viewingEquipment.status === 'approved' 
                           ? 'bg-green-100 text-green-800' 
                           : 'bg-yellow-100 text-yellow-800'
                       }`}>
@@ -1316,17 +1340,18 @@ useEffect(()=>{
                 </div>
 
                 {/* Barcode Section */}
-                {viewingEquipment.status!="approved"? <></>:<div className="pt-4 border-t">
-                  <h3 className="font-medium text-gray-700 mb-3">Barcode</h3>
-                  <div className="bg-gray-50 p-4 rounded-lg flex justify-center">
-                    <img 
-                      src={viewingEquipment.barcode} 
-                      alt="Equipment barcode" 
-                      className="h-20 object-contain"
-                    />
+                {viewingEquipment.status === "approved" && (
+                  <div className="pt-4 border-t">
+                    <h3 className="font-medium text-gray-700 mb-3">Barcode</h3>
+                    <div className="bg-gray-50 p-4 rounded-lg flex justify-center">
+                      <img 
+                        src={viewingEquipment.barcode} 
+                        alt="Equipment barcode" 
+                        className="h-20 object-contain"
+                      />
+                    </div>
                   </div>
-                </div>}
-                
+                )}
               </div>
 
               {/* Footer */}
@@ -1486,39 +1511,40 @@ useEffect(()=>{
             </div>
           </div>
         )}
+
         {/* Confirmation Popup */}
-{isConfirmationOpen && (
-  <div className="fixed inset-0 bg-black/30 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-    <div className="bg-white rounded-xl shadow-xl max-w-md w-full overflow-hidden">
-      <div className="p-6">
-        <div className="flex items-center gap-3 mb-4">
-          <div className="p-2 rounded-full bg-blue-100">
-            <CheckCircle className="text-blue-600" size={24} />
+        {isConfirmationOpen && (
+          <div className="fixed inset-0 bg-black/30 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+            <div className="bg-white rounded-xl shadow-xl max-w-md w-full overflow-hidden">
+              <div className="p-6">
+                <div className="flex items-center gap-3 mb-4">
+                  <div className="p-2 rounded-full bg-blue-100">
+                    <CheckCircle className="text-blue-600" size={24} />
+                  </div>
+                  <h3 className="text-lg font-semibold text-gray-900">Send for Approval</h3>
+                </div>
+                <p className="text-gray-600 mb-6">
+                  Are you sure you want to send <span className="font-semibold">{equipmentToApprove?.name}</span> for approval?
+                  This action cannot be undone.
+                </p>
+                <div className="flex justify-end gap-3">
+                  <button
+                    onClick={() => setIsConfirmationOpen(false)}
+                    className="px-4 py-2 rounded-lg border border-gray-300 text-gray-700 hover:bg-gray-50 transition-colors"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    onClick={confirmApproval}
+                    className="px-4 py-2 rounded-lg bg-blue-600 text-white hover:bg-blue-700 transition-colors"
+                  >
+                    Confirm
+                  </button>
+                </div>
+              </div>
+            </div>
           </div>
-          <h3 className="text-lg font-semibold text-gray-900">Send for Approval</h3>
-        </div>
-        <p className="text-gray-600 mb-6">
-          Are you sure you want to send <span className="font-semibold">{equipmentToApprove?.name}</span> for approval?
-          This action cannot be undone.
-        </p>
-        <div className="flex justify-end gap-3">
-          <button
-            onClick={() => setIsConfirmationOpen(false)}
-            className="px-4 py-2 rounded-lg border border-gray-300 text-gray-700 hover:bg-gray-50 transition-colors"
-          >
-            Cancel
-          </button>
-          <button
-            onClick={confirmApproval}
-            className="px-4 py-2 rounded-lg bg-blue-600 text-white hover:bg-blue-700 transition-colors"
-          >
-            Confirm
-          </button>
-        </div>
-      </div>
-    </div>
-  </div>
-)}
+        )}
       </div>
     </div>
   );

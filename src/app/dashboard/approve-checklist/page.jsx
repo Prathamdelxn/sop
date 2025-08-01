@@ -612,6 +612,7 @@ import {
   X,
   FileText,
   Layers,
+  Search,
 } from "lucide-react"
 import Image from "next/image"
 
@@ -624,9 +625,10 @@ const ApproveChecklistPage = () => {
   const [showApprovalFeedback, setShowApprovalFeedback] = useState(false)
   const [approvalMessage, setApprovalMessage] = useState("")
   const [sopStatuses, setSopStatuses] = useState({})
-  const [activeFilter, setActiveFilter] = useState('pending')
   const [companyData, setCompanyData] = useState(null)
   const [data, setData] = useState([])
+  const [searchTerm, setSearchTerm] = useState('')
+  const [statusFilter, setStatusFilter] = useState('All Statuses')
 
   useEffect(() => {
     const userData = localStorage.getItem('user')
@@ -640,12 +642,8 @@ const ApproveChecklistPage = () => {
         setLoading(true)
         const res = await fetch("/api/task/fetchAll")
         const data = await res.json()
-        const filtered = data.data.filter(item => item.companyId === companyData?.companyId && item.status !=="created")
-    //     const filtered = data.data.filter(
-    //     item => item.companyId === companyData?.companyId && item.status === "pending"
-    //   );
+        const filtered = data.data.filter(item => item.companyId === companyData?.companyId && item.status !== "created")
         setData(filtered)
-        console.log(filtered);
         setLoading(false)
       } catch (err) {
         console.error("Failed to fetch SOPs:", err)
@@ -673,134 +671,94 @@ const ApproveChecklistPage = () => {
     }))
   }
 
-//   const handleApprove = (sopId) => {
-//     setSopStatuses(prev => ({
-//       ...prev,
-//       [sopId]: 'approved'
-//     }))
-    
-//     setApprovalMessage(`Checklist "${selectedSop.name}" has been approved successfully!`)
-//     setShowApprovalFeedback(true)
-//     setSelectedSop(null)
-    
-//     setTimeout(() => {
-//       setShowApprovalFeedback(false)
-//     }, 3000)
-//   }
+  const handleApprove = async (sopId) => {
+    try {
+      setLoading(true);
+      
+      const res = await fetch(`/api/task/update-status/${sopId}`, {
+        method: "PATCH",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ status: "approved" }),
+      });
 
+      if (!res.ok) {
+        throw new Error("Failed to update status");
+      }
 
-const handleApprove = async (sopId) => {
-  try {
-    setLoading(true);
-    
-    // Call the API to update status
-    const res = await fetch(`/api/task/update-status/${sopId}`, {
-      method: "PATCH",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({ status: "approved" }),
-    });
-
-    if (!res.ok) {
-      throw new Error("Failed to update status");
+      setSopStatuses(prev => ({
+        ...prev,
+        [sopId]: 'approved'
+      }));
+      
+      setApprovalMessage(`Checklist "${selectedSop.name}" has been approved successfully!`);
+      setShowApprovalFeedback(true);
+      setSelectedSop(null);
+      
+      setTimeout(() => {
+        setShowApprovalFeedback(false);
+      }, 3000);
+    } catch (err) {
+      console.error("Failed to approve checklist:", err);
+      setApprovalMessage("Failed to approve checklist. Please try again.");
+      setShowApprovalFeedback(true);
+      
+      setTimeout(() => {
+        setShowApprovalFeedback(false);
+      }, 3000);
+    } finally {
+      setLoading(false);
     }
-
-    // Update local state
-    setSopStatuses(prev => ({
-      ...prev,
-      [sopId]: 'approved'
-    }));
-    
-    setApprovalMessage(`Checklist "${selectedSop.name}" has been approved successfully!`);
-    setShowApprovalFeedback(true);
-    setSelectedSop(null);
-    
-    setTimeout(() => {
-      setShowApprovalFeedback(false);
-    }, 3000);
-  } catch (err) {
-    console.error("Failed to approve checklist:", err);
-    setApprovalMessage("Failed to approve checklist. Please try again.");
-    setShowApprovalFeedback(true);
-    
-    setTimeout(() => {
-      setShowApprovalFeedback(false);
-    }, 3000);
-  } finally {
-    setLoading(false);
   }
-}
 
-//   const handleRejectSubmit = () => {
-//     if (!rejectReason.trim()) return
-    
-//     setSopStatuses(prev => ({
-//       ...prev,
-//       [selectedSop._id]: 'rejected'
-//     }))
-    
-//     setApprovalMessage(`Checklist "${selectedSop.name}" has been rejected. Reason: ${rejectReason}`)
-//     setShowApprovalFeedback(true)
-//     setShowRejectModal(false)
-//     setSelectedSop(null)
-//     setRejectReason("")
-    
-//     setTimeout(() => {
-//       setShowApprovalFeedback(false)
-//     }, 3000)
-//   }
+  const handleRejectSubmit = async () => {
+    if (!rejectReason.trim()) return;
 
-const handleRejectSubmit = async () => {
-  if (!rejectReason.trim()) return;
-console.log(rejectReason);
-  try {
-    setLoading(true);
-    
-    // Call the API to update status with rejection reason
-    const res = await fetch(`/api/task/update-status/${selectedSop._id}`, {
-      method: "PATCH",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({ 
-        status: "rejected",
-        rejectionReason: rejectReason 
-      }),
-    });
+    try {
+      setLoading(true);
+      
+      const res = await fetch(`/api/task/update-status/${selectedSop._id}`, {
+        method: "PATCH",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ 
+          status: "rejected",
+          rejectionReason: rejectReason 
+        }),
+      });
 
-    if (!res.ok) {
-      throw new Error("Failed to reject checklist");
+      if (!res.ok) {
+        throw new Error("Failed to reject checklist");
+      }
+
+      setSopStatuses(prev => ({
+        ...prev,
+        [selectedSop._id]: 'rejected'
+      }));
+      
+      setApprovalMessage(`Checklist "${selectedSop.name}" has been rejected. Reason: ${rejectReason}`);
+      setShowApprovalFeedback(true);
+      setShowRejectModal(false);
+      setSelectedSop(null);
+      setRejectReason("");
+      
+      setTimeout(() => {
+        setShowApprovalFeedback(false);
+      }, 3000);
+    } catch (err) {
+      console.error("Failed to reject checklist:", err);
+      setApprovalMessage("Failed to reject checklist. Please try again.");
+      setShowApprovalFeedback(true);
+      
+      setTimeout(() => {
+        setShowApprovalFeedback(false);
+      }, 3000);
+    } finally {
+      setLoading(false);
     }
-
-    // Update local state
-    setSopStatuses(prev => ({
-      ...prev,
-      [selectedSop._id]: 'rejected'
-    }));
-    
-    setApprovalMessage(`Checklist "${selectedSop.name}" has been rejected. Reason: ${rejectReason}`);
-    setShowApprovalFeedback(true);
-    setShowRejectModal(false);
-    setSelectedSop(null);
-    setRejectReason("");
-    
-    setTimeout(() => {
-      setShowApprovalFeedback(false);
-    }, 3000);
-  } catch (err) {
-    console.error("Failed to reject checklist:", err);
-    setApprovalMessage("Failed to reject checklist. Please try again.");
-    setShowApprovalFeedback(true);
-    
-    setTimeout(() => {
-      setShowApprovalFeedback(false);
-    }, 3000);
-  } finally {
-    setLoading(false);
   }
-}
-
 
   const formatDate = (dateString) => {
     if (!dateString) return "Not set"
@@ -947,7 +905,15 @@ console.log(rejectReason);
 
   const filteredData = data.filter(item => {
     const status = sopStatuses[item._id] || item.status
-    return status === activeFilter
+    const matchesSearch = 
+      item.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      item.description?.toLowerCase().includes(searchTerm.toLowerCase())
+    
+    const matchesStatus = 
+      statusFilter === 'All Statuses' || 
+      status?.toLowerCase() === statusFilter.toLowerCase()
+    
+    return matchesSearch && matchesStatus
   })
 
   const showActionButtons = () => {
@@ -955,6 +921,33 @@ console.log(rejectReason);
     const status = sopStatuses[selectedSop._id] || selectedSop.status
     return status === 'pending'
   }
+
+  // Skeleton loader component
+  const SkeletonRow = () => (
+    <tr className="animate-pulse">
+      <td className="px-6 py-4 whitespace-nowrap">
+        <div className="flex items-center">
+          <div className="flex-shrink-0 h-10 w-10 rounded-lg bg-gray-200"></div>
+          <div className="ml-4 space-y-2">
+            <div className="h-4 bg-gray-200 rounded w-32"></div>
+            <div className="h-3 bg-gray-200 rounded w-48"></div>
+          </div>
+        </div>
+      </td>
+      <td className="px-6 py-4 whitespace-nowrap">
+        <div className="h-6 bg-gray-200 rounded-full w-16"></div>
+      </td>
+      <td className="px-6 py-4 whitespace-nowrap">
+        <div className="h-4 bg-gray-200 rounded w-8"></div>
+      </td>
+      <td className="px-6 py-4 whitespace-nowrap">
+        <div className="h-4 bg-gray-200 rounded w-32"></div>
+      </td>
+      <td className="px-6 py-4 whitespace-nowrap text-right">
+        <div className="h-8 bg-gray-200 rounded-lg w-8 ml-auto"></div>
+      </td>
+    </tr>
+  )
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -973,30 +966,50 @@ console.log(rejectReason);
       </div>
 
       <div className="max-w-7xl mx-auto px-6 py-8">
-        <div className="flex space-x-2 mb-6">
-          <button
-            onClick={() => setActiveFilter('pending')}
-            className={`px-4 py-2 rounded-lg ${activeFilter === 'pending' ? 'bg-yellow-100 text-yellow-800 border border-yellow-300' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'}`}
-          >
-            Pending
-          </button>
-          <button
-            onClick={() => setActiveFilter('approved')}
-            className={`px-4 py-2 rounded-lg ${activeFilter === 'approved' ? 'bg-green-100 text-green-800 border border-green-300' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'}`}
-          >
-            Approved
-          </button>
-          <button
-            onClick={() => setActiveFilter('rejected')}
-            className={`px-4 py-2 rounded-lg ${activeFilter === 'rejected' ? 'bg-red-100 text-red-800 border border-red-300' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'}`}
-          >
-            Rejected
-          </button>
+        {/* Search and Filter Section */}
+        <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4 mb-6">
+          <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+            {/* Search Input */}
+            <div className="relative flex-1 min-w-0">
+              <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                <Search className="h-5 w-5 text-gray-400" />
+              </div>
+              <input
+                type="text"
+                placeholder="Search checklists..."
+                className="block w-full pl-10 pr-3 py-2 border border-gray-300 rounded-md leading-5 bg-white placeholder-gray-500 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+              />
+            </div>
+            
+            {/* Status Filter */}
+            <div className="flex items-center gap-2 w-full sm:w-auto">
+              <span className="text-sm font-medium text-gray-700 whitespace-nowrap">
+                Filter by:
+              </span>
+              <div className="relative">
+                <select
+                  className="appearance-none block pl-3 pr-8 py-2 text-base border border-gray-300 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm rounded-md min-w-[120px]"
+                  value={statusFilter}
+                  onChange={(e) => setStatusFilter(e.target.value)}
+                >
+                  <option>All Statuses</option>
+                  <option>pending</option>
+                  <option>approved</option>
+                  <option>rejected</option>
+                </select>
+                <div className="absolute inset-y-0 right-0 flex items-center pr-2 pointer-events-none">
+                  <svg className="h-5 w-5 text-gray-400" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
+                    <path fillRule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clipRule="evenodd" />
+                  </svg>
+                </div>
+              </div>
+            </div>
+          </div>
         </div>
 
         {loading ? (
-          <p className="text-center text-gray-600">Loading checklists...</p>
-        ) : data.length > 0 ? (
           <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
             <div className="overflow-x-auto">
               <table className="min-w-full divide-y divide-gray-200">
@@ -1020,7 +1033,38 @@ console.log(rejectReason);
                   </tr>
                 </thead>
                 <tbody className="bg-white divide-y divide-gray-200">
-                  {data.map((sop) => {
+                  {Array(5).fill(0).map((_, index) => (
+                    <SkeletonRow key={`skeleton-${index}`} />
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        ) : filteredData.length > 0 ? (
+          <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
+            <div className="overflow-x-auto">
+              <table className="min-w-full divide-y divide-gray-200">
+                <thead className="bg-gray-50">
+                  <tr>
+                    <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Checklist
+                    </th>
+                    <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Status
+                    </th>
+                    <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Stages
+                    </th>
+                    <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Created At
+                    </th>
+                    <th scope="col" className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Actions
+                    </th>
+                  </tr>
+                </thead>
+                <tbody className="bg-white divide-y divide-gray-200">
+                  {filteredData.map((sop) => {
                     const status = sopStatuses[sop._id] || sop.status
                     return (
                       <tr key={sop._id} className="hover:bg-gray-50">
@@ -1066,12 +1110,12 @@ console.log(rejectReason);
           <div className="text-center py-20">
             <div className="max-w-md mx-auto">
               <h3 className="text-2xl font-bold text-gray-900 mb-3">
-                {activeFilter === 'pending' ? 'No checklists pending approval' : 
-                 activeFilter === 'approved' ? 'No approved checklists' : 'No rejected checklists'}
+                {statusFilter === 'All Statuses' ? 'No checklists found' : 
+                 `No ${statusFilter} checklists found`}
               </h3>
               <p className="text-gray-600 mb-8 text-lg">
-                {activeFilter === 'pending' ? 'All checklists have been reviewed.' : 
-                 activeFilter === 'approved' ? 'No checklists have been approved yet.' : 'No checklists have been rejected.'}
+                {statusFilter === 'All Statuses' ? 'Try adjusting your search' : 
+                 `No checklists match the ${statusFilter} status filter`}
               </p>
             </div>
           </div>

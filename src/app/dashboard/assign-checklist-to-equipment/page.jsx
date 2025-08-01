@@ -269,33 +269,49 @@
 //     </div>
 //   );
 // }
-
 'use client';
 
 import React, { useEffect, useState } from 'react';
-import { Plus, Package, Users, X, Trash2, Eye } from 'lucide-react';
+import { Plus, Package, Users, X, Trash2, Eye, Search } from 'lucide-react';
 
 export default function AssignEquipmentPage() {
   const [isModalOpen, setIsModalOpen] = useState(false);
-  const [isLoading, setIsLoading] = useState(false);
+  const [isLoading, setIsLoading] = useState(true); // Changed to true initially
   const [equipment, setEquipment] = useState(null);
   const [assignee, setAssignee] = useState(null);
   const [equipmentList, setEquipmentList] = useState([]);
   const [prototypeList, setPrototypeList] = useState([]);
   const [assigndata, setAssignData] = useState([]);
- const[companyData,setCompanyData]=useState();
+  const [companyData, setCompanyData] = useState();
+  const [searchTerm, setSearchTerm] = useState('');
+  const [statusFilter, setStatusFilter] = useState('All Statuses');
+
+  // Filter assignments based on search term and status filter
+  const filteredAssignments = isLoading ? [] : assigndata.filter(assignment => {
+    const matchesSearch = 
+      assignment.prototypeData?.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      assignment.equipment?.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      assignment.generatedId?.toLowerCase().includes(searchTerm.toLowerCase());
+    
+    const matchesStatus = 
+      statusFilter === 'All Statuses' || 
+      assignment.status?.toLowerCase() === statusFilter.toLowerCase();
+    
+    return matchesSearch && matchesStatus;
+  });
+
   const handleAssign = async () => {
     const generatedId = `A-${Date.now()}`;
     const payload = {
       generatedId,
       equipment: equipment,
       prototype: assignee,
-      companyId:companyData.companyId,
-      userId:companyData.id,
-      
+      companyId: companyData.companyId,
+      userId: companyData.id,
     };
 
     try {
+      setIsLoading(true);
       const res = await fetch('/api/assignment/create', {
         method: 'POST',
         headers: {
@@ -313,84 +329,137 @@ export default function AssignEquipmentPage() {
       setIsModalOpen(false);
       setEquipment(null);
       setAssignee(null);
-      fetchAssignment(); // Refresh the assignment data
+      await fetchAssignment(); // Refresh the assignment data
     } catch (error) {
       console.error('Error while assigning equipment:', error);
+    } finally {
+      setIsLoading(false);
     }
   };
-const handleSendForApproval = async (assignmentId) => {
-  if (window.confirm('Are you sure you want to send this assignment for approval?')) {
-    try {
-      const res = await fetch(`/api/assignment/update/${assignmentId}`, {
-        method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ status: 'pending' }),
-      });
 
-      const result = await res.json();
+  const handleSendForApproval = async (assignmentId) => {
+    if (window.confirm('Are you sure you want to send this assignment for approval?')) {
+      try {
+        setIsLoading(true);
+        const res = await fetch(`/api/assignment/update/${assignmentId}`, {
+          method: 'PUT',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({ status: 'pending' }),
+        });
 
-      if (!res.ok || !result.success) {
-        throw new Error(result.message || 'Failed to update status');
+        const result = await res.json();
+
+        if (!res.ok || !result.success) {
+          throw new Error(result.message || 'Failed to update status');
+        }
+
+        await fetchAssignment(); // Refresh the assignment data
+      } catch (error) {
+        console.error('Error while updating assignment status:', error);
+      } finally {
+        setIsLoading(false);
       }
-
-      fetchAssignment(); // Refresh the assignment data
-    } catch (error) {
-      console.error('Error while updating assignment status:', error);
     }
-  }
-};
-  const fetchAssignment = async () => {
-    const res = await fetch('/api/assignment/fetchAll');
-    const data = await res.json();
-     const filteredData=data.data.filter((t)=>t.companyId===companyData?.companyId);
-    setAssignData(filteredData);
   };
- 
-useEffect(()=>{
-    const userData=localStorage.getItem('user');
-    const data=JSON.parse(userData);
+
+  const fetchAssignment = async () => {
+    try {
+      const res = await fetch('/api/assignment/fetchAll');
+      const data = await res.json();
+      const filteredData = data.data.filter((t) => t.companyId === companyData?.companyId);
+      setAssignData(filteredData);
+    } catch (error) {
+      console.error('Error fetching assignments:', error);
+    }
+  };
+
+  useEffect(() => {
+    const userData = localStorage.getItem('user');
+    const data = JSON.parse(userData);
     console.log(data);
     setCompanyData(data);
-},[])
+  }, []);
+
   useEffect(() => {
-    const fetchEquipment = async () => {
-      const res = await fetch('/api/equipment/fetchAll');
-      const data = await res.json();
-      const approvedEquipments = data.data.filter(e => e.status === 'approved' && e.companyId===companyData?.companyId);
-      setEquipmentList(approvedEquipments);
+    const fetchData = async () => {
+      try {
+        setIsLoading(true);
+        const [equipmentRes, prototypesRes] = await Promise.all([
+          fetch('/api/equipment/fetchAll'),
+          fetch('/api/task/fetchAll')
+        ]);
+        
+        const [equipmentData, prototypesData] = await Promise.all([
+          equipmentRes.json(),
+          prototypesRes.json()
+        ]);
+
+        const approvedEquipments = equipmentData.data.filter(e => e.status === 'approved' && e.companyId === companyData?.companyId);
+        setEquipmentList(approvedEquipments);
+
+        const filteredPrototypes = prototypesData.data.filter((t) => t.companyId === companyData?.companyId);
+        setPrototypeList(filteredPrototypes);
+
+        await fetchAssignment();
+      } catch (error) {
+        console.error('Error fetching data:', error);
+      } finally {
+        setIsLoading(false);
+      }
     };
 
-    const fetchPrototypes = async () => {
-      const res = await fetch('/api/task/fetchAll');
-      const data = await res.json();
-       const filteredData=data.data.filter((t)=>t.companyId===companyData?.companyId);
-      console.log(data.data);
-      console.log("asdf",filteredData)
-      setPrototypeList(filteredData);
-    };
-
-    fetchEquipment();
-    fetchPrototypes();
-    fetchAssignment();
+    if (companyData) {
+      fetchData();
+    }
   }, [companyData]);
 
   const handleDeleteAssignment = async (assignmentId) => {
     if (window.confirm('Are you sure you want to delete this assignment?')) {
       try {
+        setIsLoading(true);
         const res = await fetch(`/api/assignment/delete/${assignmentId}`, {
           method: 'DELETE',
         });
         
         if (res.ok) {
-          fetchAssignment(); // Refresh the list
+          await fetchAssignment(); // Refresh the list
         }
       } catch (error) {
         console.error('Error deleting assignment:', error);
+      } finally {
+        setIsLoading(false);
       }
     }
   };
+
+  // Skeleton loader component
+  const SkeletonRow = () => (
+    <tr className="animate-pulse">
+      <td className="px-6 py-4 whitespace-nowrap">
+        <div className="h-4 bg-gray-200 rounded w-3/4"></div>
+      </td>
+      <td className="px-6 py-4 whitespace-nowrap">
+        <div className="h-4 bg-gray-200 rounded w-4/5"></div>
+      </td>
+      <td className="px-6 py-4 whitespace-nowrap">
+        <div className="h-4 bg-gray-200 rounded w-3/4"></div>
+      </td>
+      <td className="px-6 py-4 whitespace-nowrap">
+        <div className="h-4 bg-gray-200 rounded w-1/2"></div>
+      </td>
+      <td className="px-6 py-4 whitespace-nowrap">
+        <div className="h-6 bg-gray-200 rounded-full w-16"></div>
+      </td>
+      <td className="px-6 py-4 whitespace-nowrap">
+        <div className="flex gap-2">
+          <div className="h-6 w-6 bg-gray-200 rounded"></div>
+          <div className="h-6 w-6 bg-gray-200 rounded"></div>
+        </div>
+      </td>
+    </tr>
+  );
 
   return (
     <div className="min-h-screen bg-gray-50 p-6">
@@ -410,6 +479,50 @@ useEffect(()=>{
             <Plus className="w-5 h-5" />
             <span>Assign Prototype to Equipment</span>
           </button>
+        </div>
+
+        {/* Search and Filter Section */}
+        <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4 mb-6">
+          <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+            {/* Search Input */}
+            <div className="relative flex-1 min-w-0">
+              <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                <Search className="h-5 w-5 text-gray-400" />
+              </div>
+              <input
+                type="text"
+                placeholder="Search checklists..."
+                className="block w-full pl-10 pr-3 py-2 border border-gray-300 rounded-md leading-5 bg-white placeholder-gray-500 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+              />
+            </div>
+            
+            {/* Status Filter */}
+            <div className="flex items-center gap-2 w-full sm:w-auto">
+              <span className="text-sm font-medium text-gray-700 whitespace-nowrap">
+                Filter by:
+              </span>
+              <div className="relative">
+                <select
+                  className="appearance-none block pl-3 pr-8 py-2 text-base border border-gray-300 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm rounded-md min-w-[120px]"
+                  value={statusFilter}
+                  onChange={(e) => setStatusFilter(e.target.value)}
+                >
+                  <option>All Statuses</option>
+                  <option>created</option>
+                  <option>pending</option>
+                  <option>approved</option>
+                  <option>rejected</option>
+                </select>
+                <div className="absolute inset-y-0 right-0 flex items-center pr-2 pointer-events-none">
+                  <svg className="h-5 w-5 text-gray-400" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
+                    <path fillRule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clipRule="evenodd" />
+                  </svg>
+                </div>
+              </div>
+            </div>
+          </div>
         </div>
 
         {/* Table Section */}
@@ -439,56 +552,76 @@ useEffect(()=>{
                 </tr>
               </thead>
               <tbody className="bg-white divide-y divide-gray-200">
-                {assigndata.map((item, index) => (
-                  <tr key={item._id} className="hover:bg-gray-50">
-                    <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
-                      {index + 1}
+                {isLoading ? (
+                  // Show skeleton loaders while loading
+                  Array(5).fill(0).map((_, index) => (
+                    <SkeletonRow key={`skeleton-${index}`} />
+                  ))
+                ) : filteredAssignments.length > 0 ? (
+                  // Show actual data when loaded
+                  filteredAssignments.map((item, index) => (
+                    <tr key={item._id} className="hover:bg-gray-50">
+                      <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
+                        {index + 1}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                        {item.prototypeData?.name || 'N/A'}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                        {item.equipment?.name || 'N/A'}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${
+                          item.status === 'assigned' 
+                            ? 'bg-green-100 text-green-800' 
+                            : 'bg-yellow-100 text-yellow-800'
+                        }`}>
+                          {item.generatedId}
+                        </span>
+                      </td>
+                      
+                      <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
+                        <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${
+                          item.status === 'approved' 
+                            ? 'bg-green-100 text-green-800' 
+                            : item.status === 'pending'
+                              ? 'bg-blue-100 text-blue-800'
+                              : item.status === 'rejected'
+                                ? 'bg-red-100 text-red-800'
+                                : 'bg-yellow-100 text-yellow-800'
+                        }`}>
+                          {item.status}
+                        </span>
+                      </td>
+                     <td className="px-6 py-4 whitespace-nowrap text-sm font-medium flex gap-2">
+                      {item.status === 'created' && (
+                        <button 
+                          onClick={() => handleSendForApproval(item._id)}
+                          className="text-white bg-blue-600 hover:bg-blue-700 px-3 py-1 rounded-md text-sm flex items-center gap-1"
+                        >
+                          <span>Send for Approval</span>
+                        </button>
+                        )}
+                        <button 
+                          onClick={() => handleDeleteAssignment(item._id)}
+                          className="text-red-600 hover:text-red-900"
+                          title="Delete"
+                        >
+                          <Trash2 className="w-5 h-5" />
+                        </button>
+                      </td>
+                    </tr>
+                  ))
+                ) : (
+                  // Show empty state when no results
+                  <tr>
+                    <td colSpan="6" className="px-6 py-4 text-center text-sm text-gray-500">
+                      {searchTerm || statusFilter !== 'All Statuses' ? 
+                        'No matching assignments found' : 
+                        'No assignments available'}
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                      {item.prototypeData?.name || 'N/A'}
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                      {item.equipment?.name || 'N/A'}
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${
-                        item.status === 'assigned' 
-                          ? 'bg-green-100 text-green-800' 
-                          : 'bg-yellow-100 text-yellow-800'
-                      }`}>
-                        {item.generatedId}
-                      </span>
-                    </td>
-                    
-                     <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
-                      <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${
-                        item.status === 'approved' 
-                          ? 'bg-green-100 text-green-800' 
-                          : 'bg-yellow-100 text-yellow-800'
-                      }`}>{item.status}</span>
-                    </td>
-                   <td className="px-6 py-4 whitespace-nowrap text-sm font-medium flex gap-2">
-  {item.status === 'created' && (
-    <button 
-      onClick={() => handleSendForApproval(item._id)}
-      className="text-green-600 hover:text-yellow-900"
-      title="Send for Approval"
-    >
-      <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
-        <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-11a1 1 0 10-2 0v3.586L7.707 9.293a1 1 0 00-1.414 1.414l3 3a1 1 0 001.414 0l3-3a1 1 0 00-1.414-1.414L11 10.586V7z" clipRule="evenodd" />
-      </svg>
-    </button>
-  )}
-  <button 
-    onClick={() => handleDeleteAssignment(item._id)}
-    className="text-red-600 hover:text-red-900"
-    title="Delete"
-  >
-    <Trash2 className="w-5 h-5" />
-  </button>
-</td>
                   </tr>
-                ))}
+                )}
               </tbody>
             </table>
           </div>
@@ -552,12 +685,12 @@ useEffect(()=>{
               </button>
               <button
                 onClick={handleAssign}
-                disabled={!equipment || !assignee}
+                disabled={!equipment || !assignee || isLoading}
                 className={`px-4 py-2 rounded-md text-white ${
-                  !equipment || !assignee ? 'bg-gray-400' : 'bg-blue-600 hover:bg-blue-700'
+                  !equipment || !assignee || isLoading ? 'bg-gray-400' : 'bg-blue-600 hover:bg-blue-700'
                 }`}
               >
-                Assign Equipment
+                {isLoading ? 'Assigning...' : 'Assign Equipment'}
               </button>
             </div>
           </div>
