@@ -787,6 +787,8 @@ export default function FacilityAdminDashboard() {
   const [filterType, setFilterType] = useState('');
   const [viewingEquipment, setViewingEquipment] = useState(null);
   const [isInfoModalOpen, setIsInfoModalOpen] = useState(false);
+  const [isConfirmationOpen, setIsConfirmationOpen] = useState(false);
+const [equipmentToApprove, setEquipmentToApprove] = useState(null);
 const [companyData,setCompanyData]=useState();
   useEffect(() => {
     const fetchEquipment = async () => {
@@ -813,7 +815,45 @@ const [companyData,setCompanyData]=useState();
     setViewingEquipment(equipment);
     setIsInfoModalOpen(true);
   };
+const handleSendForApproval = (equipment) => {
+  setEquipmentToApprove(equipment);
+  setIsConfirmationOpen(true);
+};
 
+const confirmApproval = async () => {
+  try {
+    console.log(equipmentToApprove._id);
+    const res = await fetch('/api/equipment/updateStatus', {
+      method: 'PUT',
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      
+      
+      body: JSON.stringify({
+        equipmentId: equipmentToApprove._id,
+        status: 'pending'
+      })
+    });
+
+    const result = await res.json();
+
+    if (res.ok && result.success) {
+      // Update the equipment list with the new status
+      setEquipmentList(prev => 
+        prev.map(eq => 
+          eq._id === equipmentToApprove._id ? { ...eq, status: 'pending' } : eq
+        )
+      );
+      setIsConfirmationOpen(false);
+      setEquipmentToApprove(null);
+    } else {
+      console.error('Failed to update status:', result.message);
+    }
+  } catch (err) {
+    console.error('Error updating status:', err);
+  }
+};
   const [formData, setFormData] = useState({
     name: '',
     id: '',
@@ -890,7 +930,7 @@ const [companyData,setCompanyData]=useState();
       model: '',
       serial: '',
       assetTag: '',
-      status: 'Pending'
+      status: 'Created'
     });
     setErrors({});
   };
@@ -954,7 +994,7 @@ useEffect(()=>{
       model: '',
       serial: '',
       assetTag: '',
-      status: 'Pending'
+      status: 'Created'
     });
     setErrors({});
   };
@@ -986,6 +1026,8 @@ useEffect(()=>{
     switch (status) {
       case 'Approved':
         return 'bg-green-100 text-green-800';
+         case 'Created':
+        return 'bg-blue-100 text-blue-800';
       case 'pending':
         return 'bg-yellow-100 text-yellow-800';
       case 'Unassigned':
@@ -999,6 +1041,8 @@ useEffect(()=>{
     switch (status) {
       case 'Approved':
         return <CheckCircle className="text-green-600" size={32} />;
+           case 'Created':
+        return <CheckCircle className="text-blue-600" size={32} />;
       case 'pending':
         return <Clock className="text-yellow-600" size={32} />;
       case 'Unassigned':
@@ -1184,13 +1228,31 @@ useEffect(()=>{
                           >
                             <Eye size={18} />
                           </button>
-                          <button
+                           {equipment.status === 'created' && (
+      <>
+        <button
+          onClick={() => openPopup(equipment)}
+          className="text-indigo-600 hover:text-indigo-900 p-2 rounded-lg hover:bg-indigo-50 transition-colors"
+          title="Edit"
+        >
+          <Edit size={18} />
+        </button>
+        <button
+          onClick={() => handleSendForApproval(equipment)}
+          className="text-green-600 hover:text-green-900 p-2 rounded-lg hover:bg-green-50 transition-colors"
+          title="Send for Approval"
+        >
+          <CheckCircle size={18} />
+        </button>
+      </>
+    )}
+                          {/* <button
                             onClick={() => openPopup(equipment)}
                             className="text-indigo-600 hover:text-indigo-900 p-2 rounded-lg hover:bg-indigo-50 transition-colors"
                             title="Edit"
                           >
                             <Edit size={18} />
-                          </button>
+                          </button> */}
                           <button
                             onClick={() => deleteEquipment(equipment._id)}
                             className="text-red-600 hover:text-red-900 p-2 rounded-lg hover:bg-red-50 transition-colors"
@@ -1254,7 +1316,7 @@ useEffect(()=>{
                 </div>
 
                 {/* Barcode Section */}
-                {viewingEquipment.status=="pending"? <></>:<div className="pt-4 border-t">
+                {viewingEquipment.status!="approved"? <></>:<div className="pt-4 border-t">
                   <h3 className="font-medium text-gray-700 mb-3">Barcode</h3>
                   <div className="bg-gray-50 p-4 rounded-lg flex justify-center">
                     <img 
@@ -1424,6 +1486,39 @@ useEffect(()=>{
             </div>
           </div>
         )}
+        {/* Confirmation Popup */}
+{isConfirmationOpen && (
+  <div className="fixed inset-0 bg-black/30 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+    <div className="bg-white rounded-xl shadow-xl max-w-md w-full overflow-hidden">
+      <div className="p-6">
+        <div className="flex items-center gap-3 mb-4">
+          <div className="p-2 rounded-full bg-blue-100">
+            <CheckCircle className="text-blue-600" size={24} />
+          </div>
+          <h3 className="text-lg font-semibold text-gray-900">Send for Approval</h3>
+        </div>
+        <p className="text-gray-600 mb-6">
+          Are you sure you want to send <span className="font-semibold">{equipmentToApprove?.name}</span> for approval?
+          This action cannot be undone.
+        </p>
+        <div className="flex justify-end gap-3">
+          <button
+            onClick={() => setIsConfirmationOpen(false)}
+            className="px-4 py-2 rounded-lg border border-gray-300 text-gray-700 hover:bg-gray-50 transition-colors"
+          >
+            Cancel
+          </button>
+          <button
+            onClick={confirmApproval}
+            className="px-4 py-2 rounded-lg bg-blue-600 text-white hover:bg-blue-700 transition-colors"
+          >
+            Confirm
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+)}
       </div>
     </div>
   );

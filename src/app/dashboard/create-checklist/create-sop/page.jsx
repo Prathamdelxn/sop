@@ -1951,6 +1951,7 @@ const PrototypeManagementPage = () => {
         name: prototypeName,
         stages: stagesToSave,
         companyId: userData.companyId,
+        status:"created",
         userId: userData.id
       };
 

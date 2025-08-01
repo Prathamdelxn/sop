@@ -892,7 +892,7 @@ const Dashboard = () => {
         const data = await res.json();
  
         const pendingTasks = data.data.filter(
-          (t) => t.companyId === companyData?.companyId
+          (t) => t.companyId === companyData?.companyId && t.status!=="created"
         );
  
         setTasks(pendingTasks);

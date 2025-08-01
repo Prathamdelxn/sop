@@ -14,6 +14,6 @@ location: {
 
 },
   role:{ type: String, required: true },
-}, { timestamps: true });
+}, { timestamps: true });0
 delete mongoose.models.User;
 export default mongoose.models.User || mongoose.model("User", userSchema);

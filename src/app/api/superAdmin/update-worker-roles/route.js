@@ -140,7 +140,7 @@ console.log("dasf",oldRoleTitle.toLowerCase().replace(/\s+/g, '-'))
       {
         $set: {
           task: workerRole.task || [],
-          role: workerRole.title // Update role title if it was changed
+           
         }
       }
     );

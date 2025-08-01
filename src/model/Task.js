@@ -384,6 +384,8 @@ const prototypeSchema = new mongoose.Schema({
   companyId:{type:String},
   userId:{type:String},
   stages: [stageSchema],
+  status:{type:String},
+   rejectionReason: { type: String, default: null },
   createdAt: { type: Date, default: Date.now },
   updatedAt: { type: Date, default: Date.now }
 }, { 

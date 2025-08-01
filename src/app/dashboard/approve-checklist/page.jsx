@@ -640,7 +640,10 @@ const ApproveChecklistPage = () => {
         setLoading(true)
         const res = await fetch("/api/task/fetchAll")
         const data = await res.json()
-        const filtered = data.data.filter(item => item.companyId === companyData?.companyId)
+        const filtered = data.data.filter(item => item.companyId === companyData?.companyId && item.status !=="created")
+    //     const filtered = data.data.filter(
+    //     item => item.companyId === companyData?.companyId && item.status === "pending"
+    //   );
         setData(filtered)
         console.log(filtered);
         setLoading(false)
@@ -670,39 +673,134 @@ const ApproveChecklistPage = () => {
     }))
   }
 
-  const handleApprove = (sopId) => {
+//   const handleApprove = (sopId) => {
+//     setSopStatuses(prev => ({
+//       ...prev,
+//       [sopId]: 'approved'
+//     }))
+    
+//     setApprovalMessage(`Checklist "${selectedSop.name}" has been approved successfully!`)
+//     setShowApprovalFeedback(true)
+//     setSelectedSop(null)
+    
+//     setTimeout(() => {
+//       setShowApprovalFeedback(false)
+//     }, 3000)
+//   }
+
+
+const handleApprove = async (sopId) => {
+  try {
+    setLoading(true);
+    
+    // Call the API to update status
+    const res = await fetch(`/api/task/update-status/${sopId}`, {
+      method: "PATCH",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({ status: "approved" }),
+    });
+
+    if (!res.ok) {
+      throw new Error("Failed to update status");
+    }
+
+    // Update local state
     setSopStatuses(prev => ({
       ...prev,
       [sopId]: 'approved'
-    }))
+    }));
     
-    setApprovalMessage(`Checklist "${selectedSop.name}" has been approved successfully!`)
-    setShowApprovalFeedback(true)
-    setSelectedSop(null)
+    setApprovalMessage(`Checklist "${selectedSop.name}" has been approved successfully!`);
+    setShowApprovalFeedback(true);
+    setSelectedSop(null);
     
     setTimeout(() => {
-      setShowApprovalFeedback(false)
-    }, 3000)
-  }
-
-  const handleRejectSubmit = () => {
-    if (!rejectReason.trim()) return
+      setShowApprovalFeedback(false);
+    }, 3000);
+  } catch (err) {
+    console.error("Failed to approve checklist:", err);
+    setApprovalMessage("Failed to approve checklist. Please try again.");
+    setShowApprovalFeedback(true);
     
+    setTimeout(() => {
+      setShowApprovalFeedback(false);
+    }, 3000);
+  } finally {
+    setLoading(false);
+  }
+}
+
+//   const handleRejectSubmit = () => {
+//     if (!rejectReason.trim()) return
+    
+//     setSopStatuses(prev => ({
+//       ...prev,
+//       [selectedSop._id]: 'rejected'
+//     }))
+    
+//     setApprovalMessage(`Checklist "${selectedSop.name}" has been rejected. Reason: ${rejectReason}`)
+//     setShowApprovalFeedback(true)
+//     setShowRejectModal(false)
+//     setSelectedSop(null)
+//     setRejectReason("")
+    
+//     setTimeout(() => {
+//       setShowApprovalFeedback(false)
+//     }, 3000)
+//   }
+
+const handleRejectSubmit = async () => {
+  if (!rejectReason.trim()) return;
+console.log(rejectReason);
+  try {
+    setLoading(true);
+    
+    // Call the API to update status with rejection reason
+    const res = await fetch(`/api/task/update-status/${selectedSop._id}`, {
+      method: "PATCH",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({ 
+        status: "rejected",
+        rejectionReason: rejectReason 
+      }),
+    });
+
+    if (!res.ok) {
+      throw new Error("Failed to reject checklist");
+    }
+
+    // Update local state
     setSopStatuses(prev => ({
       ...prev,
       [selectedSop._id]: 'rejected'
-    }))
+    }));
     
-    setApprovalMessage(`Checklist "${selectedSop.name}" has been rejected. Reason: ${rejectReason}`)
-    setShowApprovalFeedback(true)
-    setShowRejectModal(false)
-    setSelectedSop(null)
-    setRejectReason("")
+    setApprovalMessage(`Checklist "${selectedSop.name}" has been rejected. Reason: ${rejectReason}`);
+    setShowApprovalFeedback(true);
+    setShowRejectModal(false);
+    setSelectedSop(null);
+    setRejectReason("");
     
     setTimeout(() => {
-      setShowApprovalFeedback(false)
-    }, 3000)
+      setShowApprovalFeedback(false);
+    }, 3000);
+  } catch (err) {
+    console.error("Failed to reject checklist:", err);
+    setApprovalMessage("Failed to reject checklist. Please try again.");
+    setShowApprovalFeedback(true);
+    
+    setTimeout(() => {
+      setShowApprovalFeedback(false);
+    }, 3000);
+  } finally {
+    setLoading(false);
   }
+}
+
 
   const formatDate = (dateString) => {
     if (!dateString) return "Not set"
@@ -860,7 +958,7 @@ const ApproveChecklistPage = () => {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      <div className="bg-white border-b border-gray-200 shadow-sm">
+      <div className="bg-white border-b border-gray-200 rounded-xl mx-6 shadow-sm">
         <div className="max-w-7xl mx-auto px-6 py-6 flex flex-col lg:flex-row lg:items-center lg:justify-between gap-6">
           <div className="flex items-center space-x-4">
             <div className="p-4 bg-gradient-to-br from-blue-500 via-purple-500 to-pink-500 rounded-3xl shadow">
@@ -1017,6 +1115,7 @@ const ApproveChecklistPage = () => {
                       <FileText className="w-4 h-4 mr-1.5" />
                       Status: {getStatusBadge(sopStatuses[selectedSop._id] || selectedSop.status)}
                     </span>
+                   {selectedSop.rejectionReason?<div className="font-semibold capitalize">reason: {selectedSop.rejectionReason}</div>:<></>} 
                   </div>
                 </div>
               </div>

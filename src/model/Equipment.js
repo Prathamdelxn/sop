@@ -29,7 +29,7 @@ const equipmentSchema = new mongoose.Schema({
   companyId:{type:String},
   userId:{type:String},
   barcode:{type:String,default:''},
-  status:{type:String,default:'pending'},
+  status:{type:String,default:'created'},
   assignedPrototype:{type:String}
 }, {
   timestamps: true,

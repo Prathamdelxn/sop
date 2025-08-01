@@ -339,7 +339,7 @@ const allNavigationItems = [
   { name: 'Approve Equipment', href: '/dashboard/approve-equipment', icon: CheckCircle2, current: false },
   { name: 'Approve Task', href: '/dashboard/approve-task', icon: UserCheck, current: false },
    { name: 'Approve Checklist', href: '/dashboard/approve-checklist', icon: PlayCircle, current: false },
-    { name: 'Approve Tagged Chechlist with Equipment', href: '/dashboard/task-execution', icon: PlayCircle, current: false },
+    { name: 'Approve Tagged Chechlist with Equipment', href: '/dashboard/approve-assign-checklist-to-equipment', icon: PlayCircle, current: false },
 ];
  
 export default function DashboardLayout({ children }) {
@@ -591,7 +591,7 @@ const[companyData,setCompanyData]=useState();
       <div className="relative">
         <div className="relative group">
           <button
-            className="flex items-center gap-x-3 hover:bg-white/50 rounded-xl p-2 pr-4 transition-all duration-300 hover:shadow-md hover:scale-105"
+            className="flex items-center gap-x-3 hover:bg-white/50 rounded-xl p-2 pr-4 transition-all duration-300 shadow-md hover:scale-105"
             onClick={() => setIsProfileDropdownOpen(!isProfileDropdownOpen)}
           >
             <div className="relative">

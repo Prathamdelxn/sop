@@ -1220,9 +1220,9 @@ console.log("sss", slug)
                 <tr key={person._id} className="hover:bg-gray-50">
                   <td className="py-4 px-6">
                     <div className="flex items-center space-x-3">
-                      <div className="w-10 h-10 bg-gradient-to-br from-blue-500 to-purple-600 rounded-lg flex items-center justify-center text-white font-bold text-sm">
+                      {/* <div className="w-10 h-10 bg-gradient-to-br from-blue-500 to-purple-600 rounded-lg flex items-center justify-center text-white font-bold text-sm">
                         {person.name?.split(' ').map(n => n[0]).join('')}
-                      </div>
+                      </div> */}
                       <span className="font-medium text-gray-900">{person.name}</span>
                     </div>
                   </td>
