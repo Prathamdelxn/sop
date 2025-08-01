@@ -996,11 +996,28 @@ export default function FacilityAdminDashboard() {
     setErrors({});
   };
 
-  const deleteEquipment = (id) => {
-    if (window.confirm('Are you sure you want to delete this equipment?')) {
-      setEquipmentList(prev => prev.filter(eq => eq.id !== id));
+ const deleteEquipment = async (id) => {
+  if (window.confirm('Are you sure you want to delete this equipment?')) {
+    try {
+      const res = await fetch(`/api/equipment/delete/${id}`, {
+        method: 'DELETE',
+      });
+ 
+      const data = await res.json();
+ 
+      if (res.ok && data.success) {
+        // Remove equipment from the list in UI
+        setEquipmentList(prev => prev.filter(eq => eq._id !== id)); // Use _id if from MongoDB
+        alert('Equipment deleted successfully');
+      } else {
+        alert(data.message || 'Failed to delete equipment');
+      }
+    } catch (error) {
+      console.error('Error deleting equipment:', error);
+      alert('Something went wrong while deleting equipment');
     }
-  };
+  }
+};
 
   const DetailItem = ({ label, value }) => (
     <div>
