@@ -242,6 +242,7 @@ export async function POST(req) {
       responseUser.phone = regularUser.phone;
       responseUser.location = regularUser.location;
       responseUser.task = regularUser.task;
+      responseUser.name = regularUser.name;
     }
 
     return NextResponse.json(

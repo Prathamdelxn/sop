@@ -551,12 +551,7 @@ const[companyData,setCompanyData]=useState();
               ))}
             </ul>
            
-            <div className="mt-6 border-t border-gray-200/50 pt-4">
-              <button onClick={handleLogout} className="w-full flex items-center px-4 py-3 text-sm font-medium text-gray-600 hover:text-red-600 hover:bg-gradient-to-r hover:from-red-50/50 hover:to-pink-50/50 rounded-xl transition-all duration-300">
-                <LogOut className="h-4 w-4 shrink-0 mr-3" />
-                Logout
-              </button>
-            </div>
+          
           </nav>
         </div>
       </div>
@@ -601,9 +596,15 @@ const[companyData,setCompanyData]=useState();
               <div className="absolute -bottom-0.5 -right-0.5 w-3 h-3 bg-gradient-to-br from-green-400 to-emerald-500 rounded-full border-2 border-white shadow-sm animate-pulse"></div>
             </div>
             <div className="flex flex-col items-start">
-              <span className="text-sm font-semibold text-gray-700 hidden md:inline">
-                {userData?.name || userData?.username}
-              </span>
+             <span className="text-sm font-semibold text-gray-700 hidden md:inline">
+  {(() => {
+    const fullName = userData?.name || userData?.username || '';
+    const nameParts = fullName.trim().split(' ');
+    if (nameParts.length === 1) return nameParts[0];
+    return `${nameParts[0]} ${nameParts[nameParts.length - 1]}`;
+  })()}
+</span>
+
               <span className="text-[10px] font-medium text-gray-500 hidden md:inline capitalize">
                 {userData?.role}
               </span>
@@ -612,18 +613,20 @@ const[companyData,setCompanyData]=useState();
          
           {/* Dropdown menu */}
           {isProfileDropdownOpen && (
-            <div className="absolute right-0 mt-2 w-48 bg-white rounded-md shadow-lg py-1 z-50 border border-gray-200">
-             
-             
-             <button
-  onClick={handleLogout}
-  className="flex items-center w-full text-left px-4 py-2 text-sm text-red-600 hover:bg-gray-100 transition-colors duration-150"
->
-  <LogOut className="mr-2 h-4 w-4" />
-  Sign out
-</button>
-            </div>
-          )}
+  <div 
+    ref={dropdownRef}  // Make sure this is here
+    className="absolute right-0 mt-2 w-48 bg-white rounded-md shadow-lg py-1 z-50 border border-gray-200"
+  >
+    {/* Dropdown content */}
+    <button
+      onClick={handleLogout}
+      className="flex items-center w-full text-left px-4 py-2 text-sm text-red-600 hover:bg-gray-100 transition-colors duration-150"
+    >
+      <LogOut className="mr-2 h-4 w-4" />
+      Sign out
+    </button>
+  </div>
+)}
         </div>
       </div>
     </div>

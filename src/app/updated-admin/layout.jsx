@@ -636,7 +636,7 @@
 // }
 
 'use client';
-import { useState, useEffect } from 'react';
+import { useState, useEffect,useRef  } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 
@@ -649,7 +649,10 @@ export default function RootLayout({ children }) {
     path: '/updated-admin', 
     active: true 
   };
+ const dropdownRef = useRef(null);
 
+  // Function to handle clicks outside the dropdown
+ 
   // Random icons pool for dynamic items
   const iconPool = [
     '👥', '📈', '💼', '🎯', '📋', '⚙️', '🔍', '📊', '💡', '🚀',
@@ -718,6 +721,25 @@ const [showDropdown, setShowDropdown] = useState(false);
   const setActiveItem = (id) => {
     setActiveItemId(id);
   };
+   const handleClickOutside = (event) => {
+    if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
+      setShowDropdown(false);
+    }
+  };
+
+  // Add event listener when dropdown is shown
+  useEffect(() => {
+    if (showDropdown) {
+      document.addEventListener('mousedown', handleClickOutside);
+    } else {
+      document.removeEventListener('mousedown', handleClickOutside);
+    }
+
+    // Cleanup the event listener
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, [showDropdown]);
 
   const handleLogout = () => {
     localStorage.removeItem('token');
@@ -932,7 +954,7 @@ const [showDropdown, setShowDropdown] = useState(false);
                   
                   
                   {/* Profile */}
-                  <div className="relative">
+                  <div className="relative" ref={dropdownRef}>
   <button
     onClick={() => setShowDropdown(!showDropdown)}
     className="flex items-center space-x-3 bg-gradient-to-r from-gray-50 to-gray-100 rounded-2xl p-2 pr-4 hover:scale-105 text-gray-900 transition-all duration-300 hover:shadow-lg border border-gray-200"

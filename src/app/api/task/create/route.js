@@ -290,7 +290,10 @@ export async function POST(req) {
     if (!body.name) {
       return NextResponse.json({ error: "Prototype name is required" }, { status: 400 });
     }
-
+ const existingPrototype = await Prototype.findOne({ name: body.name });
+    if (existingPrototype) {
+      return NextResponse.json({ error: "Checklist name already exists" }, { status: 400 });
+    }
     // Normalize stages
     if (Array.isArray(body.stages)) {
       body.stages = body.stages.map(stage => {

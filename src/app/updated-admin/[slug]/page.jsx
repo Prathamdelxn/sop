@@ -1348,11 +1348,16 @@ console.log("sss", slug)
             </h3>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Full Name</label>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Full Name<span className='text-red-500'>*</span></label>
                 <input
                   type="text"
                   value={formData.name}
-                  onChange={(e) => setFormData({...formData, name: e.target.value})}
+                   onChange={(e) => {
+    const value = e.target.value;
+    const onlyLettersAndSpaces = value.replace(/[^a-zA-Z\s]/g, ''); // remove numbers & special chars
+    setFormData({ ...formData, name: onlyLettersAndSpaces });
+  }}
+                  // onChange={(e) => setFormData({...formData, name: e.target.value})}
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500"
                   placeholder="Enter full name"
                   required
@@ -1361,11 +1366,16 @@ console.log("sss", slug)
               </div>
               
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Location</label>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Location<span className='text-red-500'>*</span></label>
                 <input
                   type="text"
                   value={formData.location}
-                  onChange={(e) => setFormData({...formData, location: e.target.value})}
+                   onChange={(e) => {
+    const value = e.target.value;
+    const onlyLettersAndSpaces = value.replace(/[^a-zA-Z\s]/g, ''); // remove numbers & special characters
+    setFormData({ ...formData, location: onlyLettersAndSpaces });
+  }}
+                  // onChange={(e) => setFormData({...formData, location: e.target.value})}
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500"
                   placeholder="Enter location"
                   required
@@ -1380,7 +1390,7 @@ console.log("sss", slug)
             <h3 className="text-base font-medium text-gray-900">Contact Information</h3>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Email Address</label>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Email Address<span className='text-red-500'>*</span></label>
                 <input
                   type="email"
                   value={formData.email}
@@ -1428,12 +1438,16 @@ console.log("sss", slug)
               </div>
               
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Phone Number</label>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Phone Number <span className='text-red-500'>*</span></label>
                 <input
                   type="tel"
                   value={formData.phone}
+                   maxLength={10}
+                    inputMode="numeric"
+  pattern="[0-9]*"
                   onChange={async (e) => {
-                    const value = e.target.value;
+                    const value = e.target.value.replace(/\D/g, ''); 
+                    // const value = e.target.value;
                     setFormData({...formData, phone: value});
                     await validatePhone(value);
                   }}
@@ -1482,12 +1496,23 @@ console.log("sss", slug)
             <h3 className="text-base font-medium text-gray-900">Account Information</h3>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Username</label>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Username<span className='text-red-500'>*</span> <span className='text-xs font-medium text-gray-400'>(Start with Aplabet)</span> </label>
                 <input
                   type="text"
                   value={formData.username}
                   onChange={async (e) => {
-                    const value = e.target.value;
+                    let value = e.target.value;
+                    value = value.replace(/\s/g, '');
+
+    // Remove any character that is not letter, number, or @
+    value = value.replace(/[^a-zA-Z0-9@]/g, '');
+
+    // Prevent typing if it doesn't start with a letter
+    if (value && !/^[a-zA-Z]/.test(value)) return;
+
+    // Allow only one @
+    const atMatches = value.match(/@/g);
+    if (atMatches && atMatches.length > 1) return;
                     setFormData({...formData, username: value});
                     await validateUsername(value);
                   }}
@@ -1536,12 +1561,17 @@ console.log("sss", slug)
               
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Password {editingUser && '(leave blank to keep current)'}
+                  Password <span className='text-red-500'>*</span> {editingUser && '(leave blank to keep current)'}
                 </label>
                 <input
                   type="password"
                   value={formData.password}
-                  onChange={(e) => setFormData({...formData, password: e.target.value})}
+                   onChange={(e) => {
+    const value = e.target.value;
+    const noSpaces = value.replace(/\s/g, ''); // remove all spaces
+    setFormData({ ...formData, password: noSpaces });
+  }}
+                  // onChange={(e) => setFormData({...formData, password: e.target.value})}
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500"
                   placeholder={editingUser ? "Enter new password (optional)" : "Enter password"}
                   required={!editingUser}
