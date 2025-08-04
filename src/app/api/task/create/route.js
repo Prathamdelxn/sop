@@ -241,13 +241,13 @@ function normalizeTask(task) {
   // Time objects
   task.minTime = {
     hours: task?.minTime?.hours || 0,
-    minutes: task?.minTime?.minutes || 10,
+    minutes: task?.minTime?.minutes || 0,
     seconds: task?.minTime?.seconds || 0
   };
   
   task.maxTime = {
     hours: task?.maxTime?.hours || 0,
-    minutes: task?.maxTime?.minutes || 30,
+    minutes: task?.maxTime?.minutes || 0,
     seconds: task?.maxTime?.seconds || 0
   };
   

@@ -955,6 +955,7 @@ const checkIfChecklistExists = async (name) => {
         status:"created",
         userId: userData.id
       };
+      // console.log(requestData);
 
       const response = await fetch('/api/task/create', {
         method: 'POST',
@@ -970,7 +971,7 @@ const checkIfChecklistExists = async (name) => {
 
       await response.json();
       
-      router.push('/dashboard/create-checklist');
+       router.push('/dashboard/create-checklist');
     } catch (error) {
       console.error("Error saving Checklist:", error);
       alert('Failed to save Checklist. Please try again.');
@@ -979,7 +980,7 @@ const checkIfChecklistExists = async (name) => {
     }
   };
   return (
-    <div className="min-h-screen bg-gradient-to-b from-gray-50 to-gray-100 p-4 sm:p-6 md:p-8">
+    <div className="min-h-screen bg-gradient-to-b from-gray-50 to-gray-100 px-4 sm:p-6 md:px-8">
       <div className="max-w-full mx-auto">
 
         <button className="px-4 py-2 bg-white rounded-lg border border-gray-300 hover:bg-gray-50 transition-colors duration-200 shadow-sm hover:shadow-md">
@@ -990,9 +991,9 @@ const checkIfChecklistExists = async (name) => {
         </button>
 
 
-        <h1 className="text-2xl sm:text-3xl md:text-4xl font-bold text-gray-900 mt-6 mb-8 sm:mb-10 tracking-tight">Checklist Creation</h1>
+        <h1 className="text-2xl sm:text-3xl md:text-4xl font-bold text-gray-900 mt-6 mb-4 sm:mb-6 tracking-tight">Checklist Creation</h1>
 
-        <div className="bg-white rounded-2xl shadow-lg p-4 sm:p-6 md:p-8 mb-6 sm:mb-8 transition-all duration-300 hover:shadow-xl">
+        <div className="bg-white rounded-2xl shadow-lg p-4 sm:p-6 md:p-6 mb-6 sm:mb-8 transition-all duration-300 hover:shadow-xl">
           <div className="w-full">
             <label className="block text-sm font-semibold text-gray-800 mb-3 tracking-tight">Checklist Name</label>
             <div className="flex flex-col sm:flex-row items-center justify-between gap-4 sm:gap-6">

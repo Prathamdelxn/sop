@@ -308,7 +308,7 @@ import mongoose from "mongoose";
 // Duration Sub-Schema
 const durationSchema = new mongoose.Schema({
   hours: { type: Number, default: 0 },
-  minutes: { type: Number, default: 10 },
+  minutes: { type: Number, default: 0 },
   seconds: { type: Number, default: 0 }
 }, { _id: false });
 
