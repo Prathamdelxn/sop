@@ -127,15 +127,16 @@ export async function POST(req) {
       from: `"Admin Panel" <${process.env.EMAIL_USER}>`,
       to: email,
       subject: "Your SuperAdmin Account Details",
-      html: `
+    html: `
         <h2>Welcome, ${name}!</h2>
         <p>Your Admin account has been created successfully.</p>
         <p><strong>Username:</strong> ${username}</p>
         <p><strong>Password:</strong> ${password}</p>
-        <p>Please log in and Manage your Bussiness</p>
+        <p>Please log in and manage your business.</p>
+        <p><a href="https://sop-seven.vercel.app/new-login">Click here to log in</a></p>
         <br/>
         <p>Regards,<br/>Support Team</p>
-      `
+      `,
     };
 
     // Send the email
