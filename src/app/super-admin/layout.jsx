@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import Link from 'next/link';
 import { usePathname,useRouter } from 'next/navigation';
 
@@ -9,6 +9,27 @@ export default function SuperAdminLayout({ children }) {
     const [sidebarOpen, setSidebarOpen] = useState(true);
     const [profileDropdownOpen, setProfileDropdownOpen] = useState(false);
     const pathname = usePathname();
+      const dropdownRef = useRef(null);
+
+
+ useEffect(() => {
+        const handleClickOutside = (event) => {
+            if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
+                setProfileDropdownOpen(false);
+            }
+        };
+
+        // Add event listener when dropdown is open
+        if (profileDropdownOpen) {
+            document.addEventListener('mousedown', handleClickOutside);
+        }
+
+        // Clean up event listener
+        return () => {
+            document.removeEventListener('mousedown', handleClickOutside);
+        };
+    }, [profileDropdownOpen]);
+
     useEffect(()=>{
         const userdata = localStorage.getItem('user');
         const data =JSON.parse(userdata);
@@ -179,7 +200,7 @@ export default function SuperAdminLayout({ children }) {
                            
 
                             {/* Profile Dropdown */}
-                           <div className="relative">
+                           <div className="relative" ref={dropdownRef}>
                 <button 
                     onClick={() => setProfileDropdownOpen(!profileDropdownOpen)}
                     className="flex items-center space-x-3 focus:outline-none group bg-slate-50 rounded-xl px-4 py-2 hover:bg-slate-100 transition-all duration-200"
