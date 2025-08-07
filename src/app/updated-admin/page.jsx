@@ -92,15 +92,19 @@ const [popupMessage, setPopupMessage] = useState('');
           roleTitle,
         }),
       });
+      console.log("adsf",res);
 
       const data = await res.json();
 
       if (res.ok) {
+        console.log("Inside ok")
         toast.success(`Deleted role "${roleTitle}" and ${data.deletedUsersCount || 0} associated user(s)`);
         await fetchRoles(superadminId);
         if (editingRole && editingRole.title === roleTitle) {
           resetForm();
+           
         }
+         window.location.reload();
       } else {
         throw new Error(data.error || 'Failed to delete role');
       }

@@ -32,13 +32,17 @@ export async function DELETE(req) {
     if (!superAdmin) {
       return NextResponse.json({ error: "SuperAdmin not found" }, { status: 404 });
     }
+    console.log(roleTitle);
+    const formattedRoleTitle = roleTitle.replace(/\s+/g, "-");
+     console.log(superadminId);
+console.log("asd",formattedRoleTitle)
 
     // Step 2: Delete all users with the same role and matching companyId
     const deletedUsers = await User.deleteMany({
-      role: roleTitle,
+      role: formattedRoleTitle,
       companyId: superadminId, // companyId in users refers to the superAdminId
     });
-
+console.log("de",deletedUsers);
     return NextResponse.json({
       message: `Worker role '${roleTitle}' and related users deleted successfully`,
       deletedUsersCount: deletedUsers.deletedCount,
