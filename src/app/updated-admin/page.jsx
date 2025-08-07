@@ -1,5 +1,3 @@
-
-
 'use client';
 
 import { useEffect, useState } from 'react';
@@ -28,9 +26,12 @@ export default function UpdateWorkerRoles() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [activeTab, setActiveTab] = useState('create');
   const [isDeleting, setIsDeleting] = useState(false);
-  const [editingRole, setEditingRole] = useState(null); // Track which role is being edited
+  const [editingRole, setEditingRole] = useState(null);
   const [showPopup, setShowPopup] = useState(false);
-const [popupMessage, setPopupMessage] = useState('');
+  const [popupMessage, setPopupMessage] = useState('');
+  const [popupType, setPopupType] = useState('alert'); // 'alert' or 'confirm'
+  const [popupCallback, setPopupCallback] = useState(null);
+  const [deletingRole, setDeletingRole] = useState(null);
 
   useEffect(() => {
     const fetchUserData = async () => {
@@ -43,12 +44,25 @@ const [popupMessage, setPopupMessage] = useState('');
         }
       } catch (error) {
         console.error('Error fetching user data:', error);
-        toast.error('Failed to load user data');
+        showAlert('Failed to load user data');
       }
     };
 
     fetchUserData();
   }, []);
+
+  const showAlert = (message) => {
+    setPopupMessage(message);
+    setPopupType('alert');
+    setShowPopup(true);
+  };
+
+  const showConfirm = (message, callback) => {
+    setPopupMessage(message);
+    setPopupType('confirm');
+    setPopupCallback(() => callback);
+    setShowPopup(true);
+  };
 
   const fetchRoles = async (adminId) => {
     try {
@@ -57,11 +71,11 @@ const [popupMessage, setPopupMessage] = useState('');
       if (data.success) {
         setRoles(data.superAdmin?.workerRole || []);
       } else {
-        toast.error(data.message || 'Failed to fetch roles');
+        showAlert(data.message || 'Failed to fetch roles');
       }
     } catch (error) {
       console.error('Error fetching roles:', error);
-      toast.error('Error fetching roles');
+      showAlert('Error fetching roles');
     }
   };
 
@@ -76,44 +90,47 @@ const [popupMessage, setPopupMessage] = useState('');
   const handleDeleteRole = async (roleTitle) => {
     if (!superadminId) return;
     
-    const confirmDelete = window.confirm(
-      `Are you sure you want to delete the role "${roleTitle}"? This will also delete users with this role.`
-    );
-    
-    if (!confirmDelete) return;
-
-    setIsDeleting(true);
-    try {
-      const res = await fetch('/api/superAdmin/delete-roles', {
-        method: 'DELETE',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          superadminId,
-          roleTitle,
-        }),
-      });
-      console.log("adsf",res);
-
-      const data = await res.json();
-
-      if (res.ok) {
-        console.log("Inside ok")
-        toast.success(`Deleted role "${roleTitle}" and ${data.deletedUsersCount || 0} associated user(s)`);
-        await fetchRoles(superadminId);
-        if (editingRole && editingRole.title === roleTitle) {
-          resetForm();
-           
+    setDeletingRole(roleTitle);
+    showConfirm(
+      `Are you sure you want to delete the role "${roleTitle}"? This will also delete users with this role.`,
+      async (confirmed) => {
+        if (!confirmed) {
+          setDeletingRole(null);
+          return;
         }
-         window.location.reload();
-      } else {
-        throw new Error(data.error || 'Failed to delete role');
+
+        setIsDeleting(true);
+        try {
+          const res = await fetch('/api/superAdmin/delete-roles', {
+            method: 'DELETE',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              superadminId,
+              roleTitle,
+            }),
+          });
+
+          const data = await res.json();
+
+          if (res.ok) {
+            toast.success(`Deleted role "${roleTitle}" and ${data.deletedUsersCount || 0} associated user(s)`);
+            await fetchRoles(superadminId);
+            if (editingRole && editingRole.title === roleTitle) {
+              resetForm();
+            }
+            window.location.reload();
+          } else {
+            throw new Error(data.error || 'Failed to delete role');
+          }
+        } catch (err) {
+          console.error('Error deleting role:', err);
+          showAlert(err.message || 'An error occurred while deleting the role');
+        } finally {
+          setIsDeleting(false);
+          setDeletingRole(null);
+        }
       }
-    } catch (err) {
-      console.error('Error deleting role:', err);
-      toast.error(err.message || 'An error occurred while deleting the role');
-    } finally {
-      setIsDeleting(false);
-    }
+    );
   };
 
   const resetForm = () => {
@@ -129,61 +146,59 @@ const [popupMessage, setPopupMessage] = useState('');
     setActiveTab('create');
   };
 
-const handleSubmit = async (e) => {
-  e.preventDefault();
-  if (!superadminId || !roleTitle) return;
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    if (!superadminId || !roleTitle) return;
 
-  setIsSubmitting(true);
-  
-  try {
-    const endpoint = editingRole 
-      ? '/api/superAdmin/update-worker-roles' 
-      : '/api/superAdmin/add-worker-roles';
-    const method = editingRole ? 'PUT' : 'PUT'; // Changed to PUT for updates
+    setIsSubmitting(true);
+    
+    try {
+      const endpoint = editingRole 
+        ? '/api/superAdmin/update-worker-roles' 
+        : '/api/superAdmin/add-worker-roles';
+      const method = editingRole ? 'PUT' : 'PUT';
 
-    const body = editingRole
-      ? {
-          superadminId,
-          oldRoleTitle: editingRole.title,
-          workerRole: { 
-            title: roleTitle, 
-            task: selectedTasks 
+      const body = editingRole
+        ? {
+            superadminId,
+            oldRoleTitle: editingRole.title,
+            workerRole: { 
+              title: roleTitle, 
+              task: selectedTasks 
+            }
           }
-        }
-      : {
-          superadminId,
-          workerRole: { 
-            title: roleTitle, 
-            task: selectedTasks 
-          }
-        };
+        : {
+            superadminId,
+            workerRole: { 
+              title: roleTitle, 
+              task: selectedTasks 
+            }
+          };
 
-    const res = await fetch(endpoint, {
-      method,
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(body),
-    });
+      const res = await fetch(endpoint, {
+        method,
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(body),
+      });
 
-    const data = await res.json();
+      const data = await res.json();
 
-    if (!res.ok) {
-      throw new Error(data.message || `Failed to ${editingRole ? 'update' : 'create'} role`);
+      if (!res.ok) {
+        throw new Error(data.message || `Failed to ${editingRole ? 'update' : 'create'} role`);
+      }
+
+      toast.success(`Role ${editingRole ? 'updated' : 'created'} successfully`);
+      resetForm();
+      await fetchRoles(superadminId);
+      setActiveTab('manage');
+      window.location.reload();
+    } catch (error) {
+      console.error(`Error ${editingRole ? 'updating' : 'creating'} role:`, error);
+      showAlert(error.message || `Error ${editingRole ? 'updating' : 'creating'} role`);
+    } finally {
+      setIsSubmitting(false);
     }
-
-    toast.success(`Role ${editingRole ? 'updated' : 'created'} successfully`);
-    resetForm();
-    await fetchRoles(superadminId);
-    setActiveTab('manage');
-    window.location.reload();
-  } catch (error) {
-    console.error(`Error ${editingRole ? 'updating' : 'creating'} role:`, error);
-    toast.error(error.message || `Error ${editingRole ? 'updating' : 'creating'} role`);
-  } finally {
-    setIsSubmitting(false);
-  }
-};
-
-
+  };
 
   return (
     <div className="min-h-screen bg-gray-50 p-4 sm:p-6">
@@ -264,7 +279,7 @@ const handleSubmit = async (e) => {
                     onChange={(e) => setRoleTitle(e.target.value)}
                     className="w-full px-4 py-2 sm:py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition"
                     required
-                    disabled={!!editingRole} // Disable editing title if in edit mode
+                    disabled={!!editingRole}
                   />
                   {editingRole && (
                     <p className="mt-1 text-xs text-gray-500">
@@ -417,10 +432,10 @@ const handleSubmit = async (e) => {
                                       </button>
                                       <button 
                                         onClick={() => handleDeleteRole(role.title)}
-                                        disabled={isDeleting}
+                                        disabled={isDeleting && deletingRole === role.title}
                                         className="text-red-600 hover:text-red-900 p-1 disabled:opacity-50"
                                       >
-                                        {isDeleting ? (
+                                        {isDeleting && deletingRole === role.title ? (
                                           <svg className="animate-spin h-4 w-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
                                             <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
                                             <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
@@ -442,37 +457,62 @@ const handleSubmit = async (e) => {
                 </AnimatePresence>
               </motion.div>
             )}
-            {showPopup && (
-  <div className="fixed inset-0 backdrop-blur-md  bg-opacity-50 flex items-center justify-center z-50">
-    <motion.div 
-      initial={{ opacity: 0, scale: 0.9 }}
-      animate={{ opacity: 1, scale: 1 }}
-      className="bg-white rounded-lg shadow-xl border-gray-300 p-6 max-w-md w-full"
-    >
-      <div className="flex justify-between  items-start mb-4">
-        <h3 className="text-lg font-medium text-gray-900">Duplicate Role</h3>
-        <button 
-          onClick={() => setShowPopup(false)}
-          className="text-gray-400 hover:text-gray-500"
-        >
-          <FiX size={20} />
-        </button>
-      </div>
-   
-      <div className="flex justify-end space-x-3">
-        <button
-          onClick={() => setShowPopup(false)}
-          className="px-4 py-2 border border-gray-300 rounded-md text-gray-700 hover:bg-gray-50"
-        >
-          OK
-        </button>
-      </div>
-    </motion.div>
-  </div>
-)}
           </div>
         </div>
       </div>
+
+      {/* Popup Dialog */}
+      <AnimatePresence>
+        {showPopup && (
+          <div className="fixed inset-0 backdrop-blur-sm bg-gray-300/50 bg-opacity-30 flex items-center justify-center z-50 p-4">
+            <motion.div 
+              initial={{ opacity: 0, scale: 0.9 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.9 }}
+              className="bg-white rounded-lg shadow-xl border border-gray-200 p-6 max-w-md w-full"
+            >
+              <div className="mb-4">
+                <h3 className="text-lg font-medium text-gray-900">
+                  {popupType === 'confirm' ? 'Confirm Action' : 'Notice'}
+                </h3>
+                <p className="mt-2 text-gray-600">{popupMessage}</p>
+              </div>
+              
+              <div className="flex justify-end space-x-3">
+                {popupType === 'confirm' ? (
+                  <>
+                    <button
+                      onClick={() => {
+                        setShowPopup(false);
+                        popupCallback && popupCallback(false);
+                      }}
+                      className="px-4 py-2 border border-gray-300 rounded-md text-gray-700 hover:bg-gray-50 transition"
+                    >
+                      Cancel
+                    </button>
+                    <button
+                      onClick={() => {
+                        setShowPopup(false);
+                        popupCallback && popupCallback(true);
+                      }}
+                      className="px-4 py-2 bg-red-600 text-white rounded-md hover:bg-red-700 transition"
+                    >
+                      Confirm
+                    </button>
+                  </>
+                ) : (
+                  <button
+                    onClick={() => setShowPopup(false)}
+                    className="px-4 py-2 bg-indigo-600 text-white rounded-md hover:bg-indigo-700 transition"
+                  >
+                    OK
+                  </button>
+                )}
+              </div>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
     </div>
   );
 }

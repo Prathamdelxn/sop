@@ -778,7 +778,16 @@ export default function DynamicDashboardPage({ params }) {
     username: { checking: false, available: true, error: '' },
     phone: { checking: false, available: true, error: '' }
   });
-console.log("asdf",slug);
+  const [alertModal, setAlertModal] = useState({
+    isOpen: false,
+    title: '',
+    message: '',
+    onConfirm: null,
+    confirmText: 'Confirm'
+  });
+
+  console.log("asdf",slug);
+
   const [formData, setFormData] = useState({
     name: '',
     companyId: Id,
@@ -791,6 +800,26 @@ console.log("asdf",slug);
     status: 'active',
     location: '' 
   });
+
+  const showAlert = (title, message, onConfirm = null, confirmText = 'Confirm') => {
+    setAlertModal({
+      isOpen: true,
+      title,
+      message,
+      onConfirm,
+      confirmText
+    });
+  };
+
+  const closeAlert = () => {
+    setAlertModal({
+      isOpen: false,
+      title: '',
+      message: '',
+      onConfirm: null,
+      confirmText: 'Confirm'
+    });
+  };
 
   const slugify = (str) =>
     str.toLowerCase().replace(/\s+/g, '-').replace(/[^\w-]/g, '');
@@ -828,7 +857,8 @@ console.log("asdf",slug);
       setIsLoading(false);
     }
   };
-console.log("sss", slug)
+
+  console.log("sss", slug)
   const fetchRoleData = async () => {
     setIsLoading(true);
     setError(null);
@@ -1028,7 +1058,7 @@ console.log("sss", slug)
     e.preventDefault();
 
     if (!task || task.length === 0) {
-      alert("Cannot submit: No tasks available for this role");
+      showAlert("Error", "Cannot submit: No tasks available for this role");
       return;
     }
 
@@ -1036,7 +1066,7 @@ console.log("sss", slug)
     if (!validationStatus.email.available || 
         !validationStatus.username.available || 
         !validationStatus.phone.available) {
-      alert('Please fix the validation errors before submitting');
+      showAlert("Validation Error", "Please fix the validation errors before submitting");
       return;
     }
 
@@ -1080,38 +1110,46 @@ console.log("sss", slug)
       
       setIsModalOpen(false);
       setEditingUser(null);
-      alert(editingUser ? 'User updated successfully!' : 'User created successfully!');
+      showAlert("Success", editingUser ? 'User updated successfully!' : 'User created successfully!');
     } catch (error) {
       console.error('Error:', error);
-      alert(error.message);
+      showAlert("Error", error.message);
     } finally {
       setIsLoading(false);
     }
   };
 
-  const handleDelete = async (id) => {
-    if (window.confirm('Are you sure you want to delete this person?')) {
+ const handleStatusChange = async (user) => {
+  const isActivating = user.status === 'deactive';
+  
+  showAlert(
+    isActivating ? "Confirm Activation" : "Confirm Deactivation",
+    isActivating 
+      ? "Are you sure you want to activate this client? They will regain access to the system."
+      : "Are you sure you want to deactivate this client? They will no longer have access to the system.",
+    async () => {
       try {
         setIsLoading(true);
-        const response = await fetch(`/api/superAdmin/users/update-status/${id}`, {
+        const response = await fetch(`/api/superAdmin/users/update-status/${user._id}`, {
           method: 'PUT',
         });
 
         if (!response.ok) {
-          throw new Error('Failed to delete user');
+          throw new Error(isActivating ? 'Failed to activate user' : 'Failed to deactivate user');
         }
 
         // Refresh the user list
         await fetchPeople();
       } catch (error) {
-        console.error('Error deleting user:', error);
-        alert(error.message);
+        console.error('Error changing user status:', error);
+        showAlert("Error", error.message);
       } finally {
         setIsLoading(false);
       }
-    }
-  };
-
+    },
+    isActivating ? "Confirm Activate" : "Confirm Deactivate"
+  );
+};
   const handleCloseModal = () => {
     setIsModalOpen(false);
     setEditingUser(null);
@@ -1160,11 +1198,41 @@ console.log("sss", slug)
 
   return (
     <div className="space-y-8 p-6">
+      {/* Alert Modal */}
+      {alertModal.isOpen && (
+        <div className="fixed inset-0 bg-black/30 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-xl shadow-xl w-full max-w-md">
+            <div className="p-6">
+              <h3 className="text-lg font-semibold text-gray-900">{alertModal.title}</h3>
+              <p className="mt-2 text-gray-600">{alertModal.message}</p>
+            </div>
+            <div className="flex justify-end space-x-3 p-4 border-t border-gray-200">
+              <button
+                onClick={closeAlert}
+                className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50"
+              >
+                Ok
+              </button>
+              {alertModal.onConfirm && (
+                <button
+                  onClick={() => {
+                    alertModal.onConfirm();
+                    closeAlert();
+                  }}
+                  className="px-4 py-2 text-sm font-medium text-white bg-blue-600 border border-transparent rounded-lg hover:bg-blue-700"
+                >
+                  {alertModal.confirmText}
+                </button>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Header */}
       <div className="flex justify-between items-center">
         <div>
           <h1 className="text-2xl font-semibold text-gray-900 capitalize">Management of {slug.replace('-', ' ')}</h1>
-         
         </div>
         <button
           onClick={handleAddPerson}
@@ -1220,9 +1288,6 @@ console.log("sss", slug)
                 <tr key={person._id} className="hover:bg-gray-50">
                   <td className="py-4 px-6">
                     <div className="flex items-center space-x-3">
-                      {/* <div className="w-10 h-10 bg-gradient-to-br from-blue-500 to-purple-600 rounded-lg flex items-center justify-center text-white font-bold text-sm">
-                        {person.name?.split(' ').map(n => n[0]).join('')}
-                      </div> */}
                       <span className="font-medium text-gray-900">{person.name}</span>
                     </div>
                   </td>
@@ -1235,37 +1300,34 @@ console.log("sss", slug)
                     </span>
                   </td>
                   <td className="py-4 px-6">
-                    <span className={`px-3 py-1 rounded-full text-xs font-medium border ${getStatusColor(person.status)}`}>
+                    <span className={`px-3 py-1 rounded-full text-xs font-medium capitalize border ${getStatusColor(person.status)}`}>
                       {person.status}
                     </span>
                   </td>
                   <td className="py-4 px-6">
-                    <div className="flex justify-end space-x-2">
-                      <button
-                        onClick={() => handleEdit(person)}
-                        className="text-blue-600 hover:bg-blue-50 p-2 rounded-lg transition-colors"
-                        title="Edit"
-                        disabled={isLoading}
-                      >
-                        <Edit className="h-4 w-4" />
-                      </button>
-                      {person.status=="deactive"?<><button
-                        onClick={() => handleDelete(person._id)}
-                        className="text-green-600 hover:bg-green-50 p-2 rounded-lg transition-colors"
-                        title="Delete"
-                        disabled={isLoading}
-                      >
-                        <MonitorCheck className="h-4 w-4" />
-                      </button></>: <button
-                        onClick={() => handleDelete(person._id)}
-                        className="text-red-600 hover:bg-red-50 p-2 rounded-lg transition-colors"
-                        title="Delete"
-                        disabled={isLoading}
-                      >
-                        <Trash2 className="h-4 w-4" />
-                      </button>}
-                    </div>
-                  </td>
+  <div className="flex justify-end space-x-2">
+    <button
+      onClick={() => handleEdit(person)}
+      className="text-blue-600 hover:bg-blue-50 p-2 rounded-lg transition-colors"
+      title="Edit"
+      disabled={isLoading}
+    >
+      <Edit className="h-4 w-4" />
+    </button>
+    <button
+      onClick={() => handleStatusChange(person)}
+      className={`${person.status === 'deactive' ? 'text-green-600 hover:bg-green-50' : 'text-red-600 hover:bg-red-50'} p-2 rounded-lg transition-colors`}
+      title={person.status === 'deactive' ? 'Activate' : 'Deactivate'}
+      disabled={isLoading}
+    >
+      {person.status === 'deactive' ? (
+        <MonitorCheck className="h-4 w-4" />
+      ) : (
+        <Trash2 className="h-4 w-4" />
+      )}
+    </button>
+  </div>
+</td>
                 </tr>
               ))}
             </tbody>
@@ -1278,365 +1340,383 @@ console.log("sss", slug)
         </div>
       </div>
 
-      {/* Add/Edit Person Modal - MODERN HORIZONTAL DESIGN */}
-     {isModalOpen && (
-  <div className="fixed inset-0 bg-black/30 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-    <div className="bg-white rounded-xl shadow-xl w-full max-w-2xl max-h-[90vh] overflow-y-auto">
-      {/* Modal Header */}
-      <div className="sticky top-0 bg-white border-b border-gray-200 px-6 py-4 rounded-t-xl flex justify-between items-center z-10">
-        <div>
-          <h2 className="text-xl font-bold text-gray-900">
-            {editingUser ? 'Edit Person' : 'Add New Person'}
-          </h2>
-          <p className="text-sm text-gray-500 mt-1">
-            {editingUser ? 'Update user information' : 'Fill in the details to add a new person'}
-          </p>
-        </div>
-        <button
-          onClick={handleCloseModal}
-          className="text-gray-400 hover:text-gray-600 hover:bg-gray-100 p-1 rounded-full transition-all"
-          disabled={isLoading}
-        >
-          <X className="h-5 w-5" />
-        </button>
-      </div>
-
-      {/* Modal Content */}
-      <div className="p-6">
-        {isLoading && (
-          <div className="absolute inset-0 bg-white/70 flex items-center justify-center rounded-xl">
-            <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-blue-500"></div>
-          </div>
-        )}
-
-        {error && (
-          <div className="bg-red-50 border-l-4 border-red-500 text-red-700 p-4 rounded mb-4">
-            <div className="flex items-center">
-              <div className="flex-shrink-0">
-                <svg className="h-5 w-5 text-red-500" fill="currentColor" viewBox="0 0 20 20">
-                  <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd" />
-                </svg>
-              </div>
-              <div className="ml-3">
-                <p className="text-sm font-medium">{error}</p>
-              </div>
-            </div>
-          </div>
-        )}
-
-        {!isLoading && task.length === 0 && !error && (
-          <div className="bg-yellow-50 border-l-4 border-yellow-500 text-yellow-700 p-4 rounded mb-4">
-            <div className="flex items-center">
-              <div className="flex-shrink-0">
-                <svg className="h-5 w-5 text-yellow-500" fill="currentColor" viewBox="0 0 20 20">
-                  <path fillRule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
-                </svg>
-              </div>
-              <div className="ml-3">
-                <p className="text-sm font-medium">No tasks available for this role</p>
-              </div>
-            </div>
-          </div>
-        )}
-
-        <form onSubmit={handleSubmit} className="space-y-6">
-          {/* Personal Information */}
-          <div className="space-y-4">
-            <h3 className="text-base font-medium text-gray-900 flex items-center">
-              <User className="h-5 w-5 mr-2 text-blue-500" />
-              Personal Information
-            </h3>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+      {/* Add/Edit Person Modal */}
+      {isModalOpen && (
+        <div className="fixed inset-0 bg-black/30 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-xl shadow-xl w-full max-w-2xl max-h-[90vh] overflow-y-auto">
+            {/* Modal Header */}
+            <div className="sticky top-0 bg-white border-b border-gray-200 px-6 py-4 rounded-t-xl flex justify-between items-center z-10">
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Full Name<span className='text-red-500'>*</span></label>
-                <input
-                  type="text"
-                  value={formData.name}
-                   onChange={(e) => {
-    const value = e.target.value;
-    const onlyLettersAndSpaces = value.replace(/[^a-zA-Z\s]/g, ''); // remove numbers & special chars
-    setFormData({ ...formData, name: onlyLettersAndSpaces });
-  }}
-                  // onChange={(e) => setFormData({...formData, name: e.target.value})}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500"
-                  placeholder="Enter full name"
-                  required
-                  disabled={isLoading}
-                />
+                <h2 className="text-xl font-bold text-gray-900">
+                  {editingUser ? 'Edit Person' : 'Add New Person'}
+                </h2>
+                <p className="text-sm text-gray-500 mt-1">
+                  {editingUser ? 'Update user information' : 'Fill in the details to add a new person'}
+                </p>
               </div>
-              
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Location<span className='text-red-500'>*</span></label>
-                <input
-                  type="text"
-                  value={formData.location}
-                   onChange={(e) => {
-    const value = e.target.value;
-    const onlyLettersAndSpaces = value.replace(/[^a-zA-Z\s]/g, ''); // remove numbers & special characters
-    setFormData({ ...formData, location: onlyLettersAndSpaces });
-  }}
-                  // onChange={(e) => setFormData({...formData, location: e.target.value})}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500"
-                  placeholder="Enter location"
-                  required
-                  disabled={isLoading}
-                />
-              </div>
+              <button
+                onClick={handleCloseModal}
+                className="text-gray-400 hover:text-gray-600 hover:bg-gray-100 p-1 rounded-full transition-all"
+                disabled={isLoading}
+              >
+                <X className="h-5 w-5" />
+              </button>
             </div>
-          </div>
 
-          {/* Contact Information */}
-          <div className="space-y-4">
-            <h3 className="text-base font-medium text-gray-900">Contact Information</h3>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Email Address<span className='text-red-500'>*</span></label>
-                <input
-                  type="email"
-                  value={formData.email}
-                  onChange={async (e) => {
-                    const value = e.target.value;
-                    setFormData({...formData, email: value});
-                    await validateEmail(value);
-                  }}
-                  className={`w-full px-3 py-2 border rounded-lg focus:ring-blue-500 focus:border-blue-500 ${
-                    validationStatus.email.error ? 'border-red-500' : 
-                    validationStatus.email.available && formData.email ? 'border-green-500' : 
-                    'border-gray-300'
-                  }`}
-                  placeholder="Enter email address"
-                  required
-                  disabled={isLoading}
-                />
-                <div className="mt-1 h-5">
-                  {validationStatus.email.checking && (
-                    <p className="text-xs text-blue-600 flex items-center">
-                      <svg className="animate-spin -ml-1 mr-1 h-3 w-3 text-blue-600" fill="none" viewBox="0 0 24 24">
-                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                      </svg>
-                      Checking availability...
-                    </p>
-                  )}
-                  {validationStatus.email.error && (
-                    <p className="text-xs text-red-600 flex items-center">
-                      <svg className="h-3 w-3 mr-1 text-red-600" fill="currentColor" viewBox="0 0 20 20">
-                        <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
-                      </svg>
-                      {validationStatus.email.error}
-                    </p>
-                  )}
-                  {!validationStatus.email.checking && !validationStatus.email.error && formData.email && (
-                    <p className="text-xs text-green-600 flex items-center">
-                      <svg className="h-3 w-3 mr-1 text-green-600" fill="currentColor" viewBox="0 0 20 20">
-                        <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
-                      </svg>
-                      Email available
-                    </p>
-                  )}
+            {/* Modal Content */}
+            <div className="p-6">
+              {isLoading && (
+                <div className="absolute inset-0 bg-white/70 flex items-center justify-center rounded-xl">
+                  <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-blue-500"></div>
                 </div>
-              </div>
-              
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Phone Number <span className='text-red-500'>*</span></label>
-                <input
-                  type="tel"
-                  value={formData.phone}
-                   maxLength={10}
-                    inputMode="numeric"
-  pattern="[0-9]*"
-                  onChange={async (e) => {
-                    const value = e.target.value.replace(/\D/g, ''); 
-                    // const value = e.target.value;
-                    setFormData({...formData, phone: value});
-                    await validatePhone(value);
-                  }}
-                  className={`w-full px-3 py-2 border rounded-lg focus:ring-blue-500 focus:border-blue-500 ${
-                    validationStatus.phone.error ? 'border-red-500' : 
-                    validationStatus.phone.available && formData.phone ? 'border-green-500' : 
-                    'border-gray-300'
-                  }`}
-                  placeholder="Enter phone number"
-                  required
-                  disabled={isLoading}
-                />
-                <div className="mt-1 h-5">
-                  {validationStatus.phone.checking && (
-                    <p className="text-xs text-blue-600 flex items-center">
-                      <svg className="animate-spin -ml-1 mr-1 h-3 w-3 text-blue-600" fill="none" viewBox="0 0 24 24">
-                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+              )}
+
+              {error && (
+                <div className="bg-red-50 border-l-4 border-red-500 text-red-700 p-4 rounded mb-4">
+                  <div className="flex items-center">
+                    <div className="flex-shrink-0">
+                      <svg className="h-5 w-5 text-red-500" fill="currentColor" viewBox="0 0 20 20">
+                        <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd" />
                       </svg>
-                      Checking availability...
-                    </p>
-                  )}
-                  {validationStatus.phone.error && (
-                    <p className="text-xs text-red-600 flex items-center">
-                      <svg className="h-3 w-3 mr-1 text-red-600" fill="currentColor" viewBox="0 0 20 20">
-                        <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
-                      </svg>
-                      {validationStatus.phone.error}
-                    </p>
-                  )}
-                  {!validationStatus.phone.checking && !validationStatus.phone.error && formData.phone && (
-                    <p className="text-xs text-green-600 flex items-center">
-                      <svg className="h-3 w-3 mr-1 text-green-600" fill="currentColor" viewBox="0 0 20 20">
-                        <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
-                      </svg>
-                      Phone available
-                    </p>
-                  )}
+                    </div>
+                    <div className="ml-3">
+                      <p className="text-sm font-medium">{error}</p>
+                    </div>
+                  </div>
                 </div>
-              </div>
-            </div>
-          </div>
+              )}
 
-          {/* Account Information */}
-          <div className="space-y-4">
-            <h3 className="text-base font-medium text-gray-900">Account Information</h3>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Username<span className='text-red-500'>*</span> <span className='text-xs font-medium text-gray-400'>(Start with Aplabet)</span> </label>
-                <input
-                  type="text"
-                  value={formData.username}
-                  onChange={async (e) => {
-                    let value = e.target.value;
-                    value = value.replace(/\s/g, '');
-
-    // Remove any character that is not letter, number, or @
-    value = value.replace(/[^a-zA-Z0-9@]/g, '');
-
-    // Prevent typing if it doesn't start with a letter
-    if (value && !/^[a-zA-Z]/.test(value)) return;
-
-    // Allow only one @
-    const atMatches = value.match(/@/g);
-    if (atMatches && atMatches.length > 1) return;
-                    setFormData({...formData, username: value});
-                    await validateUsername(value);
-                  }}
-                  className={`w-full px-3 py-2 border rounded-lg focus:ring-blue-500 focus:border-blue-500 ${
-                    editingUser ? 'bg-gray-100 cursor-not-allowed' : ''
-                  } ${
-                    validationStatus.username.error ? 'border-red-500' : 
-                    validationStatus.username.available && formData.username ? 'border-green-500' : 
-                    'border-gray-300'
-                  }`}
-                  placeholder="Enter username"
-                  required
-                  disabled={isLoading || editingUser}
-                />
-                <div className="mt-1 h-5">
-                  {!editingUser && validationStatus.username.checking && (
-                    <p className="text-xs text-blue-600 flex items-center">
-                      <svg className="animate-spin -ml-1 mr-1 h-3 w-3 text-blue-600" fill="none" viewBox="0 0 24 24">
-                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+              {!isLoading && task.length === 0 && !error && (
+                <div className="bg-yellow-50 border-l-4 border-yellow-500 text-yellow-700 p-4 rounded mb-4">
+                  <div className="flex items-center">
+                    <div className="flex-shrink-0">
+                      <svg className="h-5 w-5 text-yellow-500" fill="currentColor" viewBox="0 0 20 20">
+                        <path fillRule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
                       </svg>
-                      Checking availability...
-                    </p>
-                  )}
-                  {validationStatus.username.error && (
-                    <p className="text-xs text-red-600 flex items-center">
-                      <svg className="h-3 w-3 mr-1 text-red-600" fill="currentColor" viewBox="0 0 20 20">
-                        <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
-                      </svg>
-                      {validationStatus.username.error}
-                    </p>
-                  )}
-                  {!editingUser && !validationStatus.username.checking && !validationStatus.username.error && formData.username && (
-                    <p className="text-xs text-green-600 flex items-center">
-                      <svg className="h-3 w-3 mr-1 text-green-600" fill="currentColor" viewBox="0 0 20 20">
-                        <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
-                      </svg>
-                      Username available
-                    </p>
-                  )}
-                  {editingUser && (
-                    <p className="text-xs text-gray-500">Username cannot be changed</p>
-                  )}
+                    </div>
+                    <div className="ml-3">
+                      <p className="text-sm font-medium">No tasks available for this role</p>
+                    </div>
+                  </div>
                 </div>
-              </div>
-              
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Password <span className='text-red-500'>*</span> {editingUser && '(leave blank to keep current)'}
-                </label>
-                <input
-                  type="password"
-                  value={formData.password}
-                   onChange={(e) => {
-    const value = e.target.value;
-    const noSpaces = value.replace(/\s/g, ''); // remove all spaces
-    setFormData({ ...formData, password: noSpaces });
-  }}
-                  // onChange={(e) => setFormData({...formData, password: e.target.value})}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500"
-                  placeholder={editingUser ? "Enter new password (optional)" : "Enter password"}
-                  required={!editingUser}
-                  disabled={isLoading}
-                />
-              </div>
-            </div>
+              )}
 
-            {editingUser && (
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Status</label>
-                  <select
-                    value={formData.status}
-                    onChange={(e) => setFormData({...formData, status: e.target.value})}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500"
+              <form onSubmit={handleSubmit} className="space-y-6">
+                {/* Personal Information */}
+                <div className="space-y-4">
+                  <h3 className="text-base font-medium text-gray-900 flex items-center">
+                    <User className="h-5 w-5 mr-2 text-blue-500" />
+                    Personal Information
+                  </h3>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">Full Name<span className='text-red-500'>*</span></label>
+                      <input
+                        type="text"
+                        value={formData.name}
+                        onChange={(e) => {
+                          const value = e.target.value;
+                          const onlyLettersAndSpaces = value.replace(/[^a-zA-Z\s]/g, ''); // remove numbers & special chars
+                          setFormData({ ...formData, name: onlyLettersAndSpaces });
+                        }}
+                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500"
+                        placeholder="Enter full name"
+                        required
+                        disabled={isLoading}
+                      />
+                    </div>
+                    
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">Location<span className='text-red-500'>*</span></label>
+                      <input
+                        type="text"
+                        value={formData.location}
+                        onChange={(e) => {
+                          const value = e.target.value;
+                          const onlyLettersAndSpaces = value.replace(/[^a-zA-Z\s]/g, ''); // remove numbers & special characters
+                          setFormData({ ...formData, location: onlyLettersAndSpaces });
+                        }}
+                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500"
+                        placeholder="Enter location"
+                        required
+                        disabled={isLoading}
+                      />
+                    </div>
+                  </div>
+                </div>
+
+                {/* Contact Information */}
+                <div className="space-y-4">
+                  <h3 className="text-base font-medium text-gray-900">Contact Information</h3>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">Email Address<span className='text-red-500'>*</span></label>
+                      <input
+                        type="email"
+                        value={formData.email}
+                        onChange={async (e) => {
+                          const value = e.target.value;
+                          setFormData({...formData, email: value});
+                          await validateEmail(value);
+                        }}
+                        className={`w-full px-3 py-2 border rounded-lg focus:ring-blue-500 focus:border-blue-500 ${
+                          validationStatus.email.error ? 'border-red-500' : 
+                          validationStatus.email.available && formData.email ? 'border-green-500' : 
+                          'border-gray-300'
+                        }`}
+                        placeholder="Enter email address"
+                        required
+                        disabled={isLoading}
+                      />
+                      <div className="mt-1 h-5">
+                        {validationStatus.email.checking && (
+                          <p className="text-xs text-blue-600 flex items-center">
+                            <svg className="animate-spin -ml-1 mr-1 h-3 w-3 text-blue-600" fill="none" viewBox="0 0 24 24">
+                              <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                              <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                            </svg>
+                            Checking availability...
+                          </p>
+                        )}
+                        {validationStatus.email.error && (
+                          <p className="text-xs text-red-600 flex items-center">
+                            <svg className="h-3 w-3 mr-1 text-red-600" fill="currentColor" viewBox="0 0 20 20">
+                              <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
+                            </svg>
+                            {validationStatus.email.error}
+                          </p>
+                        )}
+                        {!validationStatus.email.checking && !validationStatus.email.error && formData.email && (
+                          <p className="text-xs text-green-600 flex items-center">
+                            <svg className="h-3 w-3 mr-1 text-green-600" fill="currentColor" viewBox="0 0 20 20">
+                              <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+                            </svg>
+                            Email available
+                          </p>
+                        )}
+                      </div>
+                    </div>
+                    
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">Phone Number <span className='text-red-500'>*</span></label>
+                      <input
+                        type="tel"
+                        value={formData.phone}
+                        maxLength={10}
+                        inputMode="numeric"
+                        pattern="[0-9]*"
+                        onChange={async (e) => {
+                          const value = e.target.value.replace(/\D/g, ''); 
+                          setFormData({...formData, phone: value});
+                          await validatePhone(value);
+                        }}
+                        className={`w-full px-3 py-2 border rounded-lg focus:ring-blue-500 focus:border-blue-500 ${
+                          validationStatus.phone.error ? 'border-red-500' : 
+                          validationStatus.phone.available && formData.phone ? 'border-green-500' : 
+                          'border-gray-300'
+                        }`}
+                        placeholder="Enter phone number"
+                        required
+                        disabled={isLoading}
+                      />
+                      <div className="mt-1 h-5">
+                        {validationStatus.phone.checking && (
+                          <p className="text-xs text-blue-600 flex items-center">
+                            <svg className="animate-spin -ml-1 mr-1 h-3 w-3 text-blue-600" fill="none" viewBox="0 0 24 24">
+                              <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                              <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                            </svg>
+                            Checking availability...
+                          </p>
+                        )}
+                        {validationStatus.phone.error && (
+                          <p className="text-xs text-red-600 flex items-center">
+                            <svg className="h-3 w-3 mr-1 text-red-600" fill="currentColor" viewBox="0 0 20 20">
+                              <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
+                            </svg>
+                            {validationStatus.phone.error}
+                          </p>
+                        )}
+                        {!validationStatus.phone.checking && !validationStatus.phone.error && formData.phone && (
+                          <p className="text-xs text-green-600 flex items-center">
+                            <svg className="h-3 w-3 mr-1 text-green-600" fill="currentColor" viewBox="0 0 20 20">
+                              <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+                            </svg>
+                            Phone available
+                          </p>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Account Information */}
+                <div className="space-y-4">
+                  <h3 className="text-base font-medium text-gray-900">Account Information</h3>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">Username<span className='text-red-500'>*</span> <span className='text-xs font-medium text-gray-400'>(Start with Aplabet)</span> </label>
+                      <input
+                        type="text"
+                        value={formData.username}
+                        onChange={async (e) => {
+                          let value = e.target.value;
+                          value = value.replace(/\s/g, '');
+
+                          // Remove any character that is not letter, number, or @
+                          value = value.replace(/[^a-zA-Z0-9@]/g, '');
+
+                          // Prevent typing if it doesn't start with a letter
+                          if (value && !/^[a-zA-Z]/.test(value)) return;
+
+                          // Allow only one @
+                          const atMatches = value.match(/@/g);
+                          if (atMatches && atMatches.length > 1) return;
+                          setFormData({...formData, username: value});
+                          await validateUsername(value);
+                        }}
+                        className={`w-full px-3 py-2 border rounded-lg focus:ring-blue-500 focus:border-blue-500 ${
+                          editingUser ? 'bg-gray-100 cursor-not-allowed' : ''
+                        } ${
+                          validationStatus.username.error ? 'border-red-500' : 
+                          validationStatus.username.available && formData.username ? 'border-green-500' : 
+                          'border-gray-300'
+                        }`}
+                        placeholder="Enter username"
+                        required
+                        disabled={isLoading || editingUser}
+                      />
+                      <div className="mt-1 h-5">
+                        {!editingUser && validationStatus.username.checking && (
+                          <p className="text-xs text-blue-600 flex items-center">
+                            <svg className="animate-spin -ml-1 mr-1 h-3 w-3 text-blue-600" fill="none" viewBox="0 0 24 24">
+                              <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                              <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                            </svg>
+                            Checking availability...
+                          </p>
+                        )}
+                        {validationStatus.username.error && (
+                          <p className="text-xs text-red-600 flex items-center">
+                            <svg className="h-3 w-3 mr-1 text-red-600" fill="currentColor" viewBox="0 0 20 20">
+                             <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
+                            </svg>
+                            {validationStatus.username.error}
+                          </p>
+                        )}
+                        {!editingUser && !validationStatus.username.checking && !validationStatus.username.error && formData.username && (
+                          <p className="text-xs text-green-600 flex items-center">
+                            <svg className="h-3 w-3 mr-1 text-green-600" fill="currentColor" viewBox="0 0 20 20">
+                              <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+                            </svg>
+                            Username available
+                          </p>
+                        )}
+                        {editingUser && (
+                          <p className="text-xs text-gray-500">
+                            Username cannot be changed after creation
+                          </p>
+                        )}
+                      </div>
+                    </div>
+
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">
+                        {editingUser ? 'New Password' : 'Password'}
+                        {!editingUser && <span className='text-red-500'>*</span>}
+                      </label>
+                      <input
+                        type="password"
+                        value={formData.password}
+                        onChange={(e) => setFormData({...formData, password: e.target.value})}
+                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500"
+                        placeholder={editingUser ? 'Leave blank to keep current' : 'Enter password'}
+                        required={!editingUser}
+                        disabled={isLoading}
+                        minLength={8}
+                      />
+                      {!editingUser && (
+                        <p className="mt-1 text-xs text-gray-500">
+                          Minimum 8 characters
+                        </p>
+                      )}
+                    </div>
+                  </div>
+                </div>
+
+                {/* Status */}
+                <div className="space-y-4">
+                  <h3 className="text-base font-medium text-gray-900">Status</h3>
+                  <div className="flex items-center space-x-4">
+                    <label className="inline-flex items-center">
+                      <input
+                        type="radio"
+                        className="form-radio h-4 w-4 text-blue-600"
+                        name="status"
+                        value="active"
+                        checked={formData.status === 'active'}
+                        onChange={() => setFormData({...formData, status: 'active'})}
+                        disabled={isLoading}
+                      />
+                      <span className="ml-2 text-gray-700">Active</span>
+                    </label>
+                    <label className="inline-flex items-center">
+                      <input
+                        type="radio"
+                        className="form-radio h-4 w-4 text-blue-600"
+                        name="status"
+                        value="deactive"
+                        checked={formData.status === 'deactive'}
+                        onChange={() => setFormData({...formData, status: 'deactive'})}
+                        disabled={isLoading}
+                      />
+                      <span className="ml-2 text-gray-700">Inactive</span>
+                    </label>
+                  </div>
+                </div>
+
+                {/* Form Actions */}
+                <div className="flex justify-end space-x-3 pt-6 border-t border-gray-200">
+                  <button
+                    type="button"
+                    onClick={handleCloseModal}
+                    className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50"
                     disabled={isLoading}
                   >
-                    <option value="active">Active</option>
-                    <option value="inactive">Inactive</option>
-                  </select>
+                    Cancel
+                  </button>
+                  <button
+                    type="submit"
+                    className="px-4 py-2 text-sm font-medium text-white bg-blue-600 border border-transparent rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
+                    disabled={
+                      isLoading || 
+                      !formData.name || 
+                      !formData.email || 
+                      !formData.phone || 
+                      !formData.username || 
+                      (!editingUser && !formData.password) ||
+                      !validationStatus.email.available ||
+                      !validationStatus.username.available ||
+                      !validationStatus.phone.available ||
+                      task.length === 0
+                    }
+                  >
+                    {isLoading ? (
+                      <span className="flex items-center">
+                        <svg className="animate-spin -ml-1 mr-2 h-4 w-4 text-white" fill="none" viewBox="0 0 24 24">
+                          <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                          <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                        </svg>
+                        {editingUser ? 'Updating...' : 'Creating...'}
+                      </span>
+                    ) : editingUser ? 'Update Person' : 'Add Person'}
+                  </button>
                 </div>
-              </div>
-            )}
+              </form>
+            </div>
           </div>
-
-          {/* Modal Footer */}
-          <div className="flex justify-end space-x-3 pt-4 border-t border-gray-200">
-            <button
-              type="button"
-              onClick={handleCloseModal}
-              className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-500"
-              disabled={isLoading}
-            >
-              Cancel
-            </button>
-            <button
-              type="submit"
-              className="px-4 py-2 text-sm font-medium text-white bg-blue-600 border border-transparent rounded-lg hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed"
-              disabled={
-                isLoading || 
-                task.length === 0 ||
-                !validationStatus.email.available ||
-                !validationStatus.username.available ||
-                !validationStatus.phone.available
-              }
-            >
-              {isLoading ? (
-                <div className="flex items-center">
-                  <svg className="animate-spin -ml-1 mr-2 h-4 w-4 text-white" fill="none" viewBox="0 0 24 24">
-                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                  </svg>
-                  {editingUser ? 'Updating...' : 'Creating...'}
-                </div>
-              ) : (
-                editingUser ? 'Update Person' : 'Add Person'
-              )}
-            </button>
-          </div>
-        </form>
-      </div>
-    </div>
-  </div>
-)}
+        </div>
+      )}
     </div>
   );
 }
