@@ -271,7 +271,7 @@ function ResetPasswordComponent() {
 
       setSuccess('Password reset successfully! Redirecting to login...');
       setTimeout(() => {
-        router.push('/new-login');
+        router.push('/login');
       }, 5000);
     } catch (err) {
       setError(err.message);

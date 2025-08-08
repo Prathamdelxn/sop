@@ -37,7 +37,7 @@ export default function Layout({ children }) {
   const handleLogout = () => {
   localStorage.removeItem('token');
   localStorage.removeItem('user');
-  router.replace('/new-login'); // You can also use replace instead of push
+  router.replace('/login'); // You can also use replace instead of push
 };
 const[userDetails,setUSer]=useState();
  useEffect(()=>{
@@ -45,7 +45,7 @@ const[userDetails,setUSer]=useState();
     console.log("Data",data)
     const userData=JSON.parse(data);
     if(userData?.role!="operator"){
-        router.push("/new-login")
+        router.push("/login")
     }
    
     setUSer(userData);

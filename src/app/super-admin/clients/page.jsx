@@ -64,7 +64,7 @@ export default function ClientManagement() {
     address: '',
     username: '',
     password: '',
-    status: 'active',
+    status: 'Active',
     logo: null,
     logoPreview: ''
   });
@@ -331,13 +331,13 @@ if (name === 'email') {
       const response = await fetch(`/api/superAdmin/updateStatus`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ id: clientToDelete, status: 'Inactive' })
+        body: JSON.stringify({ id: clientToDelete, status: 'InActive' })
       });
 
       if (!response.ok) throw new Error('Failed to update status');
 
       const updatedClients = clients.map(client =>
-        client._id === clientToDelete ? { ...client, status: 'Inactive' } : client
+        client._id === clientToDelete ? { ...client, status: 'InActive' } : client
       );
       setClients(updatedClients);
       setSuccessMessage('Client deactivated successfully!');
@@ -380,7 +380,7 @@ if (name === 'email') {
       address: '',
       username: '',
       password: '',
-      status: 'active',
+      status: 'Active',
       logo: null,
       logoPreview: ''
     });
@@ -464,8 +464,8 @@ if (name === 'email') {
                 onChange={(e) => setStatusFilter(e.target.value)}
               >
                 <option value="all">All Statuses</option>
-                <option value="active">Active</option>
-                <option value="Inactive">Inactive</option>
+                <option value="Active">Active</option>
+                <option value="InActive">InActive</option>
               </select>
             </div>
           </div>
@@ -514,7 +514,7 @@ if (name === 'email') {
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap">
                           <span className={`px-3 py-1 capitalize inline-flex text-xs leading-5 font-semibold rounded-full ${
-                            client.status === 'active' ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'
+                            client.status === 'Active' ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'
                           }`}>
                             {client.status}
                           </span>
@@ -534,7 +534,7 @@ if (name === 'email') {
                             </svg>
                             Edit
                           </button>
-                          {client.status === "Inactive" ? null :
+                          {client.status === "InActive" ? null :
                             <button
                               onClick={() => handleDelete(client._id)}
                               className="text-red-600 hover:text-red-900 flex items-center"
@@ -689,8 +689,8 @@ if (name === 'email') {
                         className="w-full px-4 py-2 border border-gray-300 rounded-lg"
                         required
                       >
-                        <option value="active">Active</option>
-                        <option value="Inactive">Inactive</option>
+                        <option value="Active">Active</option>
+                        <option value="InActive">InActive</option>
                       </select>
                     </div>
                     {/* Password */}

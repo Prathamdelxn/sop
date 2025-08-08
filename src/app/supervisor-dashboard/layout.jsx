@@ -23,7 +23,7 @@ export default function Layout({ children }) {
   const handleLogout = () => {
     localStorage.removeItem('token');
     localStorage.removeItem('user');
-    router.replace('/new-login');
+    router.replace('/login');
   };
 
   const sidebarItems = [
@@ -52,7 +52,7 @@ export default function Layout({ children }) {
   const fetchUser = async () => {
     const data = localStorage.getItem('user');
     if (!data) {
-      router.push("/new-login");
+      router.push("/login");
       return;
     }
 
@@ -60,7 +60,7 @@ export default function Layout({ children }) {
     setId(userData.id);
 
     if (userData?.role !== "supervisor") {
-      router.push("/new-login");
+      router.push("/login");
       return;
     }
 
@@ -83,7 +83,7 @@ export default function Layout({ children }) {
     console.log("Data", data);
     const userData = JSON.parse(data);
     if (userData?.role != "supervisor") {
-      router.push("/new-login");
+      router.push("/login");
     }
   }, []);
 

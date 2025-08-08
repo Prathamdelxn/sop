@@ -11,7 +11,7 @@ export default function Layout({ children }) {
     const handleLogout = () => {
         localStorage.removeItem('token');
         localStorage.removeItem('user');
-        router.replace('/new-login');
+        router.replace('/login');
     };
 
     const sidebarItems = [

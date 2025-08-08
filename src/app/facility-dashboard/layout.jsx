@@ -153,7 +153,7 @@ export default function Layout({ children }) {
     const handleLogout = () => {
         localStorage.removeItem('token');
         localStorage.removeItem('user');
-        router.replace('/new-login');
+        router.replace('/login');
     };
 
     const sidebarItems = [
@@ -188,7 +188,7 @@ export default function Layout({ children }) {
         const data = localStorage.getItem('user');
         const userData = JSON.parse(data);
         if (userData?.role != "facility-admin") {
-            router.push("/new-login");
+            router.push("/login");
         }
         setUser(userData);
     }, []);

@@ -678,12 +678,12 @@ const [showDropdown, setShowDropdown] = useState(false);
     const userdata = JSON.parse(data);
     if(userdata){
              if(userdata.role!='company-admin'){
-          router.replace('/new-login'); 
+          router.replace('/login'); 
         }
 
         }
         else{
-             router.replace('/new-login'); 
+             router.replace('/login'); 
         }
     console.log("asdf", userdata)
     setId(userdata?.id);
@@ -744,7 +744,7 @@ const [showDropdown, setShowDropdown] = useState(false);
   const handleLogout = () => {
     localStorage.removeItem('token');
     localStorage.removeItem('user');
-    router.replace('/new-login');
+    router.replace('/login');
   };
 
   const toggleSidebar = () => {

@@ -798,7 +798,7 @@ export default function DashboardLayout({ children }) {
   const handleLogout = () => {
     localStorage.removeItem('token');
     localStorage.removeItem('user');
-    router.replace('/new-login');
+    router.replace('/login');
   };
 
   return (

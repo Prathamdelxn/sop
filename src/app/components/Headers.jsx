@@ -6,7 +6,7 @@ export default function Header({ setSidebarOpen }) {
     const handleLogout = () => {
   localStorage.removeItem('token');
   localStorage.removeItem('user');
-  router.replace('/new-login'); // You can also use replace instead of push
+  router.replace('/login'); // You can also use replace instead of push
 };
 
   return (

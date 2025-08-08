@@ -23,7 +23,7 @@ export async function PUT(req,{params}) {
     }
 
     // Toggle status
-    const newStatus = user.status === 'active' ? 'deactive' : 'active';
+    const newStatus = user.status === 'Active' ? 'InActive' : 'Active';
     user.status = newStatus;
     await user.save();
 

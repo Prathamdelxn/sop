@@ -797,7 +797,7 @@ export default function DynamicDashboardPage({ params }) {
     password: '',
     phone: '',
     role: slug,
-    status: 'active',
+    status: 'Active',
     location: '' 
   });
 
@@ -1026,7 +1026,7 @@ export default function DynamicDashboardPage({ params }) {
       password: '',
       phone: '',
       role: slug,
-      status: 'active',
+      status: 'Active',
       location: '' 
     });
     setIsModalOpen(true);
@@ -1120,7 +1120,7 @@ export default function DynamicDashboardPage({ params }) {
   };
 
  const handleStatusChange = async (user) => {
-  const isActivating = user.status === 'deactive';
+  const isActivating = user.status === 'InActive';
   
   showAlert(
     isActivating ? "Confirm Activation" : "Confirm Deactivation",
@@ -1167,7 +1167,7 @@ export default function DynamicDashboardPage({ params }) {
       password: '',
       phone: '',
       role: slug,
-      status: 'active',
+      status: 'Active',
       location: ''
     });
   };
@@ -1192,7 +1192,7 @@ export default function DynamicDashboardPage({ params }) {
   };
 
   const getStatusColor = (status) => 
-    status === 'active' 
+    status === 'Active' 
       ? 'bg-green-100 text-green-800 border-green-200' 
       : 'bg-red-100 text-red-800 border-red-200';
 
@@ -1316,11 +1316,11 @@ export default function DynamicDashboardPage({ params }) {
     </button>
     <button
       onClick={() => handleStatusChange(person)}
-      className={`${person.status === 'deactive' ? 'text-green-600 hover:bg-green-50' : 'text-red-600 hover:bg-red-50'} p-2 rounded-lg transition-colors`}
-      title={person.status === 'deactive' ? 'Activate' : 'Deactivate'}
+      className={`${person.status === 'InActive' ? 'text-green-600 hover:bg-green-50' : 'text-red-600 hover:bg-red-50'} p-2 rounded-lg transition-colors`}
+      title={person.status === 'InActive' ? 'Activate' : 'Deactivate'}
       disabled={isLoading}
     >
-      {person.status === 'deactive' ? (
+      {person.status === 'InActive' ? (
         <MonitorCheck className="h-4 w-4" />
       ) : (
         <Trash2 className="h-4 w-4" />
@@ -1653,9 +1653,9 @@ export default function DynamicDashboardPage({ params }) {
                         type="radio"
                         className="form-radio h-4 w-4 text-blue-600"
                         name="status"
-                        value="active"
-                        checked={formData.status === 'active'}
-                        onChange={() => setFormData({...formData, status: 'active'})}
+                        value="Active"
+                        checked={formData.status === 'Active'}
+                        onChange={() => setFormData({...formData, status: 'Active'})}
                         disabled={isLoading}
                       />
                       <span className="ml-2 text-gray-700">Active</span>
@@ -1665,12 +1665,12 @@ export default function DynamicDashboardPage({ params }) {
                         type="radio"
                         className="form-radio h-4 w-4 text-blue-600"
                         name="status"
-                        value="deactive"
-                        checked={formData.status === 'deactive'}
-                        onChange={() => setFormData({...formData, status: 'deactive'})}
+                        value="InActive"
+                        checked={formData.status === 'InActive'}
+                        onChange={() => setFormData({...formData, status: 'InActive'})}
                         disabled={isLoading}
                       />
-                      <span className="ml-2 text-gray-700">Inactive</span>
+                      <span className="ml-2 text-gray-700">InActive</span>
                     </label>
                   </div>
                 </div>

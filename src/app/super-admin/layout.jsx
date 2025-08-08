@@ -35,12 +35,12 @@ export default function SuperAdminLayout({ children }) {
         const data =JSON.parse(userdata);
         if(data){
              if(data.role!='super-manager'){
-          router.replace('/new-login'); 
+          router.replace('/login'); 
         }
 
         }
         else{
-             router.replace('/new-login'); 
+             router.replace('/login'); 
         }
        
 
@@ -48,7 +48,7 @@ export default function SuperAdminLayout({ children }) {
  const handleLogout = () => {
   localStorage.removeItem('token');
   localStorage.removeItem('user');
-  router.push('/new-login'); // You can also use replace instead of push
+  router.push('/login'); // You can also use replace instead of push
 };
     return (
         <div className="flex h-screen bg-gradient-to-br from-slate-50 via-blue-50/30 to-indigo-50/50 font-sans antialiased">
