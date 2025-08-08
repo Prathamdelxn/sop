@@ -986,7 +986,7 @@ const checkIfChecklistExists = async (name) => {
         <button className="px-4 py-2 bg-white rounded-lg border border-gray-300 hover:bg-gray-50 transition-colors duration-200 shadow-sm hover:shadow-md">
           <Link href="/dashboard/create-checklist" className="flex items-center gap-2 font-semibold text-gray-800 text-lg cursor-pointer">
             <ArrowLeft size={20} />
-            <span>Homepage</span>
+            <span>Go Back</span>
           </Link>
         </button>
 

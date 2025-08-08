@@ -24,7 +24,7 @@ export default function UpdateWorkerRoles() {
   const [selectedTasks, setSelectedTasks] = useState([]);
   const [roles, setRoles] = useState([]);
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [activeTab, setActiveTab] = useState('create');
+  const [activeTab, setActiveTab] = useState('manage');
   const [isDeleting, setIsDeleting] = useState(false);
   const [editingRole, setEditingRole] = useState(null);
   const [showPopup, setShowPopup] = useState(false);
@@ -216,19 +216,7 @@ export default function UpdateWorkerRoles() {
 
         <div className="bg-white rounded-xl shadow-sm overflow-hidden mb-8">
           <div className="flex border-b border-gray-200">
-            <button
-              onClick={() => {
-                resetForm();
-                setActiveTab('create');
-              }}
-              className={`px-4 sm:px-6 py-3 font-medium text-xs sm:text-sm ${
-                activeTab === 'create' 
-                  ? 'text-indigo-600 border-b-2 border-indigo-600' 
-                  : 'text-gray-500 hover:text-gray-700'
-              }`}
-            >
-              {editingRole ? 'Edit Role' : 'Create Role'}
-            </button>
+          
             <button
               onClick={() => {
                 resetForm();
@@ -241,6 +229,19 @@ export default function UpdateWorkerRoles() {
               }`}
             >
               Manage Roles
+            </button>
+              <button
+              onClick={() => {
+                resetForm();
+                setActiveTab('create');
+              }}
+              className={`px-4 sm:px-6 py-3 font-medium text-xs sm:text-sm ${
+                activeTab === 'create' 
+                  ? 'text-indigo-600 border-b-2 border-indigo-600' 
+                  : 'text-gray-500 hover:text-gray-700'
+              }`}
+            >
+              {editingRole ? 'Edit Role' : 'Create Role'}
             </button>
           </div>
 
