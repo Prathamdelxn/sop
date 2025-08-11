@@ -382,6 +382,10 @@ const stageSchema = new mongoose.Schema({
 const prototypeSchema = new mongoose.Schema({
   name: { type: String, required: true },
   companyId:{type:String},
+  departmentName:{type:String},
+  documentNo:{type:String},
+  effectiveDate:{type:String},
+  version:{type:String},
   userId:{type:String},
   stages: [stageSchema],
   status:{type:String},

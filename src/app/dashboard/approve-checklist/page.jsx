@@ -642,7 +642,7 @@ const ApproveChecklistPage = () => {
         setLoading(true)
         const res = await fetch("/api/task/fetchAll")
         const data = await res.json()
-        const filtered = data.data.filter(item => item.companyId === companyData?.companyId && item.status !== "created")
+        const filtered = data.data.filter(item => item.companyId === companyData?.companyId && item.status !== "InProgress")
         setData(filtered)
         setLoading(false)
       } catch (err) {
@@ -680,7 +680,7 @@ const ApproveChecklistPage = () => {
         headers: {
           "Content-Type": "application/json",
         },
-        body: JSON.stringify({ status: "approved" }),
+        body: JSON.stringify({ status: "Approved" }),
       });
 
       if (!res.ok) {
@@ -689,7 +689,7 @@ const ApproveChecklistPage = () => {
 
       setSopStatuses(prev => ({
         ...prev,
-        [sopId]: 'approved'
+        [sopId]: 'Approved'
       }));
       
       setApprovalMessage(`Checklist "${selectedSop.name}" has been approved successfully!`);
@@ -714,7 +714,7 @@ const ApproveChecklistPage = () => {
 
   const handleRejectSubmit = async () => {
     if (!rejectReason.trim()) return;
-
+console.log(rejectReason);
     try {
       setLoading(true);
       
@@ -724,7 +724,7 @@ const ApproveChecklistPage = () => {
           "Content-Type": "application/json",
         },
         body: JSON.stringify({ 
-          status: "rejected",
+          status: "Rejected",
           rejectionReason: rejectReason 
         }),
       });
@@ -735,7 +735,7 @@ const ApproveChecklistPage = () => {
 
       setSopStatuses(prev => ({
         ...prev,
-        [selectedSop._id]: 'rejected'
+        [selectedSop._id]: 'Rejected'
       }));
       
       setApprovalMessage(`Checklist "${selectedSop.name}" has been rejected. Reason: ${rejectReason}`);
@@ -782,13 +782,13 @@ const ApproveChecklistPage = () => {
 
   const getStatusBadge = (status) => {
     switch (status) {
-      case 'approved':
+      case 'Approved':
         return (
           <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
             Approved
           </span>
         )
-      case 'rejected':
+      case 'Rejected':
         return (
           <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-800">
             Rejected
@@ -797,7 +797,7 @@ const ApproveChecklistPage = () => {
       default:
         return (
           <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800">
-            Pending
+            Pending Approval
           </span>
         )
     }
@@ -919,7 +919,7 @@ const ApproveChecklistPage = () => {
   const showActionButtons = () => {
     if (!selectedSop) return false
     const status = sopStatuses[selectedSop._id] || selectedSop.status
-    return status === 'pending'
+    return status === 'Pending Approval'
   }
 
   // Skeleton loader component
@@ -995,9 +995,9 @@ const ApproveChecklistPage = () => {
                   onChange={(e) => setStatusFilter(e.target.value)}
                 >
                   <option>All Statuses</option>
-                  <option>pending</option>
-                  <option>approved</option>
-                  <option>rejected</option>
+                  <option>Pending Approval</option>
+                  <option>Approved</option>
+                  <option>Rejected</option>
                 </select>
                 <div className="absolute inset-y-0 right-0 flex items-center pr-2 pointer-events-none">
                   <svg className="h-5 w-5 text-gray-400" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
@@ -1093,7 +1093,7 @@ const ApproveChecklistPage = () => {
                             <button
                               onClick={() => handleView(sop)}
                               className="p-2 bg-blue-100 text-blue-600 rounded-lg hover:bg-blue-200"
-                              title={status === 'pending' ? "Review" : "View"}
+                              title={status === 'Pending Approval' ? "Review" : "View"}
                             >
                               <Eye className="w-4 h-4" />
                             </button>

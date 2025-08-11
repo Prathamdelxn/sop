@@ -17,6 +17,7 @@ const ImageAttachmentModal = ({
   initialPhotos = []
 }) => {
   const [title, setTitle] = useState(initialTitle);
+  
   const [description, setDescription] = useState(initialDescription);
   const [photos, setPhotos] = useState(initialPhotos);
   const [isUploading, setIsUploading] = useState(false);
@@ -141,9 +142,9 @@ const ImageAttachmentModal = ({
               type="text"
               value={title}
               onChange={(e) => {
-  const onlyLetters = e.target.value.replace(/[^a-zA-Z\s]/g, '');
-  setTitle(onlyLetters);
-}}
+
+                setTitle(e.target.value);
+              }}
 
               // onChange={(e) => setTitle(e.target.value)}
               className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
@@ -241,43 +242,46 @@ const ImageAttachmentModal = ({
   );
 };
 
-const DurationModal = ({ 
-  onClose, 
-  onSave 
+const DurationModal = ({
+  onClose,
+  onSave,
+    initialMin = { hours: 0, minutes: 0, seconds: 0 },
+ initialMax = { hours: 0, minutes: 0, seconds: 0 }
+
 }) => {
-  const [minTime, setMinTime] = useState({ hours: 0, minutes: 0, seconds: 0 });
-  const [maxTime, setMaxTime] = useState({ hours: 0, minutes: 0, seconds: 0 });
+ const [minTime, setMinTime] = useState(initialMin);
+  const [maxTime, setMaxTime] = useState(initialMax);
   const [activeInput, setActiveInput] = useState(null);
   const [showAlert, setShowAlert] = useState(false);
   const [alertMessage, setAlertMessage] = useState('');
   const [hasUserModified, setHasUserModified] = useState(false);
 
-  useEffect(() => {
-    setMinTime({ hours: 0, minutes: 0, seconds: 0 });
-    setMaxTime({ hours: 0, minutes: 0, seconds: 0 });
-  }, []);
+  // useEffect(() => {
+  //   setMinTime({ hours: 0, minutes: 0, seconds: 0 });
+  //   setMaxTime({ hours: 0, minutes: 0, seconds: 0 });
+  // }, []);
 
   const validateAndSetTime = (type, field, value) => {
     setHasUserModified(true);
     const digitsOnly = value.replace(/\D/g, '').slice(0, 2);
     let numValue = parseInt(digitsOnly, 10) || 0;
-    
+
     if (field === 'minutes' || field === 'seconds') {
       numValue = Math.min(59, numValue);
     }
-    
+
     const setter = type === 'min' ? setMinTime : setMaxTime;
     const otherTime = type === 'min' ? maxTime : minTime;
-    
+
     setter(prev => {
       const newTime = { ...prev, [field]: numValue };
       const newTotal = newTime.hours * 3600 + newTime.minutes * 60 + newTime.seconds;
       const otherTotal = otherTime.hours * 3600 + otherTime.minutes * 60 + otherTime.seconds;
-      
+
       if (type === 'min' && newTotal > otherTotal) {
         setMaxTime(newTime);
       }
-      
+
       return newTime;
     });
   };
@@ -305,16 +309,16 @@ const DurationModal = ({
   const handleSave = () => {
     const minTotal = minTime.hours * 3600 + minTime.minutes * 60 + minTime.seconds;
     const maxTotal = maxTime.hours * 3600 + maxTime.minutes * 60 + maxTime.seconds;
-    
+
     if (maxTotal < minTotal) {
       setAlertMessage('Maximum duration must be ≥ minimum duration');
       setShowAlert(true);
       return;
     }
-    
+
     const minTotalMinutes = minTime.hours * 60 + minTime.minutes;
     const maxTotalMinutes = maxTime.hours * 60 + maxTime.minutes;
-    
+
     onSave({
       minDuration: minTotalMinutes,
       maxDuration: maxTotalMinutes,
@@ -330,7 +334,7 @@ const DurationModal = ({
     const isActive = activeInput === `${type}-${field}`;
     const colorClass = type === 'min' ? 'bg-emerald-500 hover:bg-emerald-600' : 'bg-blue-500 hover:bg-blue-600';
     const ringColor = type === 'min' ? 'focus:ring-emerald-500' : 'focus:ring-blue-500';
-    
+
     return (
       <div className="flex flex-col items-center">
         <div className="relative">
@@ -388,7 +392,7 @@ const DurationModal = ({
               {alertMessage}
             </div>
           )}
-          
+
           <div className="space-y-3">
             <div className="flex items-center gap-2">
               <div className="w-3 h-3 rounded-full bg-emerald-500"></div>
@@ -461,6 +465,11 @@ const TaskComponent = React.memo(({
   taskNumber = '1.1'
 }) => {
   const hasSubtasks = task.subtasks && task.subtasks.length > 0;
+  useEffect(() => {
+    if (hasSubtasks && expandedItems[task.id] === undefined) {
+      onToggleExpansion(task.id);
+    }
+  }, [hasSubtasks, task.id, expandedItems, onToggleExpansion]);
   const [showImageModal, setShowImageModal] = useState(false);
   const [showDurationModal, setShowDurationModal] = useState(false);
   const [modalKey, setModalKey] = useState(0);
@@ -561,10 +570,10 @@ const TaskComponent = React.memo(({
             type="text"
             value={task.title}
             onChange={(e) => {
-  const input = e.target.value;
-  const onlyLetters = input.replace(/[^a-zA-Z\s]/g, ''); // removes numbers and special chars
-  handleChange('title', onlyLetters);
-}}
+              const input = e.target.value;
+              // const onlyLetters = input.replace(/[^a-zA-Z\s]/g, ''); // removes numbers and special chars
+              handleChange('title', input);
+            }}
             // onChange={(e) => handleChange('title', e.target.value)}
             className="w-full p-3 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500 transition-all duration-200 hover:border-indigo-300"
             placeholder="Enter task title"
@@ -582,7 +591,7 @@ const TaskComponent = React.memo(({
           />
         </div>
 
-        {(task.minDuration || task.maxDuration) && (
+        {/* {(task.minDuration || task.maxDuration) && (
           <div className="mt-3 p-4 bg-gray-50 rounded-xl border border-gray-200 shadow-sm">
             <div className="flex items-center gap-3 text-sm text-gray-700">
               <Clock className="w-4 sm:w-5 h-4 sm:h-5 text-gray-500" />
@@ -594,7 +603,24 @@ const TaskComponent = React.memo(({
               </span>
             </div>
           </div>
-        )}
+        )} */}
+
+        {(task.minDuration || task.maxDuration) && (
+                  <div className="mt-3 p-4 bg-gray-50 rounded-xl border border-gray-200 shadow-sm">
+                    <div className="flex flex-col justify-center gap-3 text-sm text-gray-700">
+                    
+                      <div className="font-semibold flex items-center">   <Clock className="w-4 sm:w-5 h-4 sm:h-5 text-gray-500" /> Duration:</div>
+                      
+                      <div className="font-medium flex gap-4">
+                        <span> Minimun Duration :  {task.minTime ? formatDetailedDuration(task.minTime) : formatDuration(task.minDuration)}</span>
+                         <span> Maximum Duration :    {task.maxTime ? formatDetailedDuration(task.maxTime) : formatDuration(task.maxDuration)}</span>
+                     
+                       
+                        
+                      </div>
+                    </div>
+                  </div>
+                )}
 
         <div className="flex flex-wrap gap-3">
           <button
@@ -673,6 +699,10 @@ TaskComponent.displayName = 'TaskComponent';
 
 const PrototypeManagementPage = () => {
   const [prototypeName, setPrototypeName] = useState('');
+  const [departmentName, setDepartmentName] = useState('');
+const [documentNo, setDocumentNo] = useState('');
+const [effectiveDate, setEffectiveDate] = useState('');
+const [version, setVersion] = useState('1.0');
   const [error, setError] = useState('');
   const [stages, setStages] = useState([]);
   const [expandedItems, setExpandedItems] = useState({});
@@ -691,7 +721,7 @@ const PrototypeManagementPage = () => {
       setSelectedStage(newStage.id);
     }
   }, [stages.length]);
-const showToastMessage = () => {
+  const showToastMessage = () => {
     toast.error("Checklist Name Already Exists", {
       position: "top-center"
     });
@@ -708,16 +738,16 @@ const showToastMessage = () => {
         : stage
     ));
   }, []);
-const checkIfChecklistExists = async (name) => {
-  try {
-    const res = await fetch(`/api/checklist/exist/${name}`);
-    const data = await res.json();
-    return data.exists; // true or false
-  } catch (err) {
-    console.error('Error checking checklist name:', err);
-    return false; // fallback to allow
-  }
-};
+  const checkIfChecklistExists = async (name) => {
+    try {
+      const res = await fetch(`/api/checklist/exist/${name}`);
+      const data = await res.json();
+      return data.exists; // true or false
+    } catch (err) {
+      console.error('Error checking checklist name:', err);
+      return false; // fallback to allow
+    }
+  };
 
   const addTask = useCallback((stageId) => {
     const newTask = {
@@ -756,7 +786,10 @@ const checkIfChecklistExists = async (name) => {
       imagePublicId: null,
       subtasks: []
     };
-
+    setExpandedItems(prev => ({
+      ...prev,
+      [taskId]: true
+    }));
     const updateTasks = (tasks) => {
       return tasks.map(task => {
         if (parentPath.length === 0 && task.id === taskId) {
@@ -900,7 +933,7 @@ const checkIfChecklistExists = async (name) => {
 
   const validatePrototype = () => {
     if (!prototypeName.trim()) {
-       setError('Checklist name is required');
+      setError('Checklist name is required');
       // alert('Please enter a Checklist name');
       return false;
     }
@@ -928,34 +961,42 @@ const checkIfChecklistExists = async (name) => {
     return true;
   };
 
+
   const handleSavePrototype = async () => {
+     
+    setIsSaving(true);
     if (!validatePrototype()) {
       return;
     }
- const exists = await checkIfChecklistExists(prototypeName);
-  if (exists) {
-    showToastMessage();
-    // alert("Checklist name already exists");
-    return;
-  }
-    setIsSaving(true);
+    const exists = await checkIfChecklistExists(prototypeName);
+    if (exists) {
+      showToastMessage();
+      
+      return;
+    }
+   
     try {
       const userData = JSON.parse(localStorage.getItem('user'));
-      
+
       const stagesToSave = JSON.parse(JSON.stringify(stages, (key, value) => {
         if (key === 'file') return undefined;
         if (key === 'url' && value && value.startsWith('blob:')) return undefined;
         return value;
       }));
 
+     
       const requestData = {
-        name: prototypeName,
-        stages: stagesToSave,
-        companyId: userData.companyId,
-        status:"created",
-        userId: userData.id
-      };
-      // console.log(requestData);
+  name: prototypeName,
+  departmentName,
+  documentNo,
+  effectiveDate,
+  version,
+  stages: stagesToSave,
+  companyId: userData.companyId,
+  status: "InProgress",
+  userId: userData.id
+};
+       console.log(requestData);
 
       const response = await fetch('/api/task/create', {
         method: 'POST',
@@ -970,8 +1011,8 @@ const checkIfChecklistExists = async (name) => {
       }
 
       await response.json();
-      
-       router.push('/dashboard/create-checklist');
+
+      router.push('/dashboard/create-checklist');
     } catch (error) {
       console.error("Error saving Checklist:", error);
       alert('Failed to save Checklist. Please try again.');
@@ -980,7 +1021,34 @@ const checkIfChecklistExists = async (name) => {
     }
   };
   return (
-    <div className="min-h-screen bg-gradient-to-b from-gray-50 to-gray-100 px-4 sm:p-6 md:px-8">
+    <div className="min-h-screen bg-gradient-to-b from-gray-50 to-gray-100 px-4 sm:p-6 md:px-8 relative">
+    {isSaving && (
+        <div className="absolute inset-0 z-50 flex items-center justify-center bg-black/10 backdrop-blur-sm rounded-xl">
+          <div className="bg-white p-6 rounded-xl shadow-xl flex flex-col items-center">
+            <svg
+              className="animate-spin h-8 w-8 text-indigo-600 mb-3"
+              xmlns="http://www.w3.org/2000/svg"
+              fill="none"
+              viewBox="0 0 24 24"
+            >
+              <circle
+                className="opacity-25"
+                cx="12"
+                cy="12"
+                r="10"
+                stroke="currentColor"
+                strokeWidth="4"
+              ></circle>
+              <path
+                className="opacity-75"
+                fill="currentColor"
+                d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+              ></path>
+            </svg>
+            <p className="text-gray-700 font-medium">Saving Checklist...</p>
+          </div>
+        </div>
+      )}
       <div className="max-w-full mx-auto">
 
         <button className="px-4 py-2 bg-white rounded-lg border border-gray-300 hover:bg-gray-50 transition-colors duration-200 shadow-sm hover:shadow-md">
@@ -993,38 +1061,108 @@ const checkIfChecklistExists = async (name) => {
 
         <h1 className="text-2xl sm:text-3xl md:text-4xl font-bold text-gray-900 mt-6 mb-4 sm:mb-6 tracking-tight">Checklist Creation</h1>
 
-        <div className="bg-white rounded-2xl shadow-lg p-4 sm:p-6 md:p-6 mb-6 sm:mb-8 transition-all duration-300 hover:shadow-xl">
-          <div className="w-full">
-            <label className="block text-sm font-semibold text-gray-800 mb-3 tracking-tight">Checklist Name</label>
-            <div className="flex flex-col sm:flex-row items-center justify-between gap-4 sm:gap-6">
-              <input
-                type="text"
-                required
-                value={prototypeName}
-                  onChange={(e) => {
-    const input = e.target.value;
-    const onlyLetters = input.replace(/[^a-zA-Z\s]/g, ''); // removes numbers/symbols
-    setPrototypeName(onlyLetters);
-    if (error) setError('');
-  }}
-                // onChange={(e) => setPrototypeName(e.target.value)}
-                 className={`w-full sm:flex-1 p-3 sm:p-4 border rounded-xl focus:outline-none transition-all duration-200 
-    ${error ? 'border-red-500 focus:ring-red-500' : 'border-gray-200 focus:ring-indigo-500 hover:border-indigo-300'}`}
-                // className="w-full sm:flex-1 p-3 sm:p-4 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500 transition-all duration-200 hover:border-indigo-300 text-gray-900"
-                placeholder="Enter Checklist name"
-              />
-              {error && (
-  <p className="text-red-500 text-sm mt-1">{error}</p>
-)}
-              <button
-                onClick={handleSavePrototype}
-                className="w-full sm:w-auto px-4 sm:px-6 py-2 sm:py-3 bg-gradient-to-r from-indigo-600 to-indigo-700 text-white rounded-xl hover:from-indigo-700 hover:to-indigo-800 font-semibold transition-all shadow-md hover:shadow-lg active:scale-95"
-              >
-                Save Checklist
-              </button>
-            </div>
-          </div>
-        </div>
+       
+        <div className="bg-white rounded-2xl shadow-sm p-4 sm:p-6 md:p-6 mb-6 sm:mb-8 transition-all duration-300 ">
+  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+    {/* Checklist Name */}
+    <div>
+      <label className="block text-sm font-semibold text-gray-800 mb-1">Checklist Name*</label>
+      <input
+        type="text"
+        required
+        value={prototypeName}
+        onChange={(e) => {
+          const input = e.target.value;
+          const onlyLetters = input.replace(/[^a-zA-Z\s]/g, '');
+          setPrototypeName(onlyLetters);
+          if (error) setError('');
+        }}
+        className={`w-full p-3 border rounded-xl focus:outline-none transition-all duration-200 
+          ${error ? 'border-red-500 focus:ring-red-500' : 'border-gray-200 focus:ring-indigo-500 hover:border-indigo-300'}`}
+        placeholder="Enter Checklist name"
+      />
+      {error && <p className="text-red-500 text-sm mt-1">{error}</p>}
+    </div>
+
+    {/* Department Name */}
+    <div>
+      <label className="block text-sm font-semibold text-gray-800 mb-1">Department Name*</label>
+      <input
+        type="text"
+        required
+        value={departmentName}
+        onChange={(e) => setDepartmentName(e.target.value)}
+        className="w-full p-3 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500 transition-all duration-200 hover:border-indigo-300"
+        placeholder="Enter department name"
+      />
+    </div>
+
+    {/* Document Number */}
+    <div>
+      <label className="block text-sm font-semibold text-gray-800 mb-1">Document Number</label>
+      <input
+        type="text"
+        value={documentNo}
+        onChange={(e) => setDocumentNo(e.target.value)}
+        className="w-full p-3 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500 transition-all duration-200 hover:border-indigo-300"
+        placeholder="Enter document number"
+      />
+    </div>
+
+    {/* Effective Date */}
+    <div>
+      <label className="block text-sm font-semibold text-gray-800 mb-1">Effective Date*</label>
+      <input
+        type="date"
+        required
+        value={effectiveDate}
+        onChange={(e) => setEffectiveDate(e.target.value)}
+        className="w-full p-3 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500 transition-all duration-200 hover:border-indigo-300"
+      />
+    </div>
+
+    {/* Version */}
+    <div>
+      <label className="block text-sm font-semibold text-gray-800 mb-1">Version*</label>
+      <input
+        type="text"
+        required
+        value={version}
+        onChange={(e) => setVersion(e.target.value)}
+        className="w-full p-3 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500 transition-all duration-200 hover:border-indigo-300"
+        placeholder="e.g., 1.0"
+      />
+    </div>
+
+    {/* Save Button - spans full width */}
+    <div className="md:col-span-2 flex justify-end">
+      {/* <button
+        onClick={handleSavePrototype}
+        className="px-6 py-3 bg-gradient-to-r from-indigo-600 to-indigo-700 text-white rounded-xl hover:from-indigo-700 hover:to-indigo-800 font-semibold transition-all shadow-md hover:shadow-lg active:scale-95"
+        disabled={isSaving}
+      >
+        {isSaving ? 'Saving...' : 'Save Checklist'}
+      </button> */}
+      <button
+  onClick={handleSavePrototype}
+  className="px-6 py-3 bg-gradient-to-r from-indigo-600 to-indigo-700 text-white rounded-xl hover:from-indigo-700 hover:to-indigo-800 font-semibold transition-all shadow-md hover:shadow-lg active:scale-95 flex items-center justify-center gap-2"
+  disabled={isSaving}
+>
+  {isSaving ? (
+    <>
+      <svg className="animate-spin -ml-1 mr-2 h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+      </svg>
+      Saving...
+    </>
+  ) : (
+    'Save Checklist'
+  )}
+</button>
+    </div>
+  </div>
+</div>
 
         <div className="flex flex-col md:flex-row gap-6">
           {/* Stages Sidebar - 20% width */}
@@ -1134,9 +1272,9 @@ const checkIfChecklistExists = async (name) => {
 
           </div>
         </div>
-         <ToastContainer className='mt-16 ml-16' />
+        <ToastContainer className='mt-16 ml-16' />
       </div>
-      
+
     </div>
   );
 };

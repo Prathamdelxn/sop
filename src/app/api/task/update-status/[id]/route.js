@@ -69,7 +69,7 @@ export async function PATCH(request, { params }) {
     };
 
     // If rejected, add reason
-    if (status === "rejected") {
+    if (status === "Rejected") {
       if (!rejectionReason || rejectionReason.trim() === "") {
         return NextResponse.json({ error: "Rejection reason is required for rejected status" }, { status: 400 });
       }

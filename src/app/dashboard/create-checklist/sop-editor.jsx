@@ -929,7 +929,7 @@ const SopEditor = ({
         name: prototypeName,
         stages: stagesToSave,
         companyId: userData.companyId,
-        status: "created",
+        status: "InProgress",
         userId: userData.id
       };
 
