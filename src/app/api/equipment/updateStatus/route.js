@@ -40,8 +40,8 @@ export async function PUT(request) {
   await connectToDB();
 
   try {
-    const { equipmentId, status, reason } = await request.json();
-
+    const { equipmentId, status, rejectionReason } = await request.json();
+console.log(rejectionReason);
     if (!equipmentId || !status) {
       return NextResponse.json(
         { success: false, message: 'Missing required fields: equipmentId or status' },
@@ -50,10 +50,10 @@ export async function PUT(request) {
     }
 
     const updateFields = { status };
-    if (status === 'rejected' && reason) {
-      updateFields.reason = reason;
-    } else if (status === 'approved' || status === 'pending') {
-      updateFields.reason = ''; // Clear previous reason if status is changed
+    if (status === 'Rejected' && rejectionReason) {
+      updateFields.rejectionReason = rejectionReason;
+    } else if (status === 'Approved' || status === 'Pending Approval') {
+      updateFields.rejectionReason = ''; // Clear previous reason if status is changed
     }
 
     const updatedEquipment = await Equipment.findByIdAndUpdate(
