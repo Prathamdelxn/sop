@@ -396,7 +396,7 @@ export default function AssignEquipmentPage() {
           prototypesRes.json()
         ]);
 
-        const approvedEquipments = equipmentData.data.filter(e => e.status === 'approved' && e.companyId === companyData?.companyId);
+        const approvedEquipments = equipmentData.data.filter(e => e.status === 'Approved' && e.companyId === companyData?.companyId);
         setEquipmentList(approvedEquipments);
 
         const filteredPrototypes = prototypesData.data.filter((t) => t.companyId === companyData?.companyId);
@@ -512,7 +512,7 @@ export default function AssignEquipmentPage() {
                   <option>All Statuses</option>
                   <option>created</option>
                   <option>pending</option>
-                  <option>approved</option>
+                  <option>Approved</option>
                   <option>rejected</option>
                 </select>
                 <div className="absolute inset-y-0 right-0 flex items-center pr-2 pointer-events-none">
@@ -582,7 +582,7 @@ export default function AssignEquipmentPage() {
                       
                       <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
                         <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${
-                          item.status === 'approved' 
+                          item.status === 'Approved' 
                             ? 'bg-green-100 text-green-800' 
                             : item.status === 'pending'
                               ? 'bg-blue-100 text-blue-800'
