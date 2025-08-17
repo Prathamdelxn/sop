@@ -94,7 +94,7 @@ const ActionButtons = ({ task, onAction, onView, setShowRejectModal, setTaskToRe
   <div className="flex flex-col sm:flex-row gap-2">
     <button
       onClick={() => onView(task)}
-      className="p-2 hover:from-blue-700 hover:to-indigo-700 text-white rounded-full flex items-center justify-center transition-all duration-300 hover:scale-105 shadow-sm shadow-blue-500/30"
+   className="p-2 bg-blue-100 text-blue-600 rounded-lg hover:bg-blue-200"
       aria-label="View"
     >
       <Eye className="w-4 h-4 text-blue-500" />

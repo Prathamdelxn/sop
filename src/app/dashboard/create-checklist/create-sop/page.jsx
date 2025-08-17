@@ -1,7 +1,4 @@
-
-
 "use client"
-
 import React, { useState, useCallback, useMemo, useRef, useEffect } from 'react';
 import { Plus, Trash2, Clock, Image, ChevronDown, ChevronRight, X, Camera, Minus, ArrowBigLeftDash, ArrowBigLeft } from 'lucide-react';
 import { ArrowLeft } from 'react-feather';
@@ -353,7 +350,7 @@ const DurationModal = ({
             onChange={(e) => handleInputChange(type, field, e)}
             onFocus={(e) => handleFocus(type, field, e)}
             onBlur={() => setActiveInput(null)}
-            className={`w-12 h-12 bg-gray-50 border border-gray-200 rounded-lg text-center text-lg font-medium text-gray-800 focus:outline-none focus:ring-2 ${ringColor}`}
+            className={`w-16 h-16 bg-gray-50 border border-gray-200 rounded-lg text-center text-lg font-medium text-gray-800 focus:outline-none focus:ring-2 ${ringColor}`}
           />
 
           <button
@@ -1280,3 +1277,5 @@ const [version, setVersion] = useState('1.0');
 };
 
 export default PrototypeManagementPage;
+
+

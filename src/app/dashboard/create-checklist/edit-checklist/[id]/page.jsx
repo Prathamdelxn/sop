@@ -118,7 +118,7 @@ const DurationModal = ({
             onChange={(e) => handleInputChange(type, field, e)}
             onFocus={(e) => handleFocus(type, field, e)}
             onBlur={() => setActiveInput(null)}
-            className={`w-12 h-12 bg-gray-50 border border-gray-200 rounded-lg text-center text-lg font-medium text-gray-800 focus:outline-none focus:ring-2 ${ringColor}`}
+            className={`w-16 h-16 bg-gray-50 border border-gray-200 rounded-lg text-center text-lg font-medium text-gray-800 focus:outline-none focus:ring-2 ${ringColor}`}
           />
 
           <button

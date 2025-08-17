@@ -8,7 +8,7 @@ export async function PUT(request,{ params }) {
   await connectToDB();
 
   try {
-    const {  status, reason } = await request.json();
+    const {  status, rejectionReason } = await request.json();
 const assignmentId = params.id;
 
     if (!assignmentId || !status) {
@@ -22,8 +22,8 @@ const assignmentId = params.id;
     const updateFields = { status };
 
     // Include reason if provided
-    if (reason) {
-      updateFields.reason = reason;
+    if (rejectionReason) {
+      updateFields.rejectionReason = rejectionReason;
     }
 console.log(updateFields)
     const updatedAssignment = await NewAssignment.findByIdAndUpdate(

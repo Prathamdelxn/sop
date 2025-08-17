@@ -837,7 +837,7 @@ console.log(rejectReason);
             </div>
           )}
 
-          {(task.minTime || task.maxTime) && (
+          {/* {(task.minTime || task.maxTime) && (
             <div className="bg-white p-3 rounded-lg border">
               <div className="flex items-center gap-2 text-sm mb-2">
                 <Timer className="w-4 h-4 text-gray-500" />
@@ -858,7 +858,38 @@ console.log(rejectReason);
                 </div>
               </div>
             </div>
-          )}
+          )} */}
+
+{(task.minTime || task.maxTime) && (
+  // Check if any of the time values are non-zero
+  ((task.minTime && (task.minTime.hours > 0 || task.minTime.minutes > 0 || task.minTime.seconds > 0)) || 
+   (task.maxTime && (task.maxTime.hours > 0 || task.maxTime.minutes > 0 || task.maxTime.seconds > 0))) && (
+    <div className="bg-white p-3 rounded-lg border">
+      <div className="flex items-center gap-2 text-sm mb-2">
+        <Timer className="w-4 h-4 text-gray-500" />
+        <span className="font-medium">Duration Information:</span>
+      </div>
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-2 text-sm ml-6">
+        {task.minTime && (task.minTime.hours > 0 || task.minTime.minutes > 0 || task.minTime.seconds > 0) && (
+          <div>
+            <span className="text-gray-600">Minimum Duration: </span>
+            <span className="font-medium">
+              {formatTimeObject(task.minTime)}
+            </span>
+          </div>
+        )}
+        {task.maxTime && (task.maxTime.hours > 0 || task.maxTime.minutes > 0 || task.maxTime.seconds > 0) && (
+          <div>
+            <span className="text-gray-600">Maximum Duration: </span>
+            <span className="font-medium">
+              {formatTimeObject(task.maxTime)}
+            </span>
+          </div>
+        )}
+      </div>
+    </div>
+  )
+)}
 
           {task.attachedImages?.length > 0 && (
             <div>
@@ -1125,7 +1156,7 @@ console.log(rejectReason);
       {selectedSop && (
         <div 
           onClick={closeModal}
-          className="fixed inset-0 bg-gray-900/20 backdrop-blur-sm flex items-start justify-center p-4 z-50 pt-20"
+          className="absolute inset-0 bg-gray-900/20 backdrop-blur-sm flex items-start justify-center p-4 z-50 pt-20"
         >
           <div 
             className="relative bg-white rounded-xl shadow-xl w-full max-w-4xl max-h-[80vh] overflow-y-auto mx-4"
