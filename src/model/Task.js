@@ -390,6 +390,16 @@ const prototypeSchema = new mongoose.Schema({
   stages: [stageSchema],
   status:{type:String},
    rejectionReason: { type: String, default: null },
+   reviews:[{
+    reviewerId:{type:String},
+    reviewerName:{type:String},
+    reviewerRole:{type:String},
+    status:{type:String},
+    comments:{type:String},
+    reviewDate:{type:String}
+
+
+   }],
   createdAt: { type: Date, default: Date.now },
   updatedAt: { type: Date, default: Date.now }
 }, { 

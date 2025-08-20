@@ -784,7 +784,7 @@ const DurationModal = ({
   )
 
   const SkeletonHeader = () => (
-    <div className="bg-white border-b border-gray-200 shadow-sm animate-pulse">
+    <div className="bg-white border-b border-gray-200 rounded-xl mx-6 shadow-sm animate-pulse">
       <div className="max-w-7xl mx-auto px-6 py-8 flex flex-col lg:flex-row lg:items-center lg:justify-between gap-6">
         <div className="flex items-center space-x-4">
           <div className="p-4 bg-gray-200 rounded-3xl shadow w-16 h-16"></div>

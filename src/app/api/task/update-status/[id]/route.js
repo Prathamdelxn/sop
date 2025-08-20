@@ -40,6 +40,64 @@
 
 
 
+// import { NextResponse } from "next/server";
+// import mongoose from "mongoose";
+// import connectDB from "@/utils/db";
+// import Prototype from "@/model/Task";
+
+// // PATCH /api/prototype/update-status/[id]
+// export async function PATCH(request, { params }) {
+//   await connectDB();
+
+//   const { id } =await params;
+
+//  console.log(id);
+
+//   try {
+//     const body = await request.json();
+//     const { status, rejectionReason , Reviwer } = body;
+
+//    console.log(status);
+//    console.log(body);
+
+    
+  
+
+//     const updateData = {
+//       status,
+//       updatedAt: new Date(),
+//     };
+
+//     // If rejected, add reason
+//     if (status === "Rejected") {
+//       if (!rejectionReason || rejectionReason.trim() === "") {
+//         return NextResponse.json({ error: "Rejection reason is required for rejected status" }, { status: 400 });
+//       }
+//       updateData.rejectionReason = rejectionReason;
+//     } else {
+//       // Clear rejection reason if approved or any other status
+//       updateData.rejectionReason = null;
+//     }
+// console.log(updateData);
+// console.log(id);
+//     const updatedPrototype = await Prototype.findByIdAndUpdate(
+//       id,
+//       updateData,
+//       { new: true }
+//     );
+
+//     if (!updatedPrototype) {
+//       return NextResponse.json({ error: "Prototype not found" }, { status: 404 });
+//     }
+
+//     return NextResponse.json({ message: "Status updated successfully", prototype: updatedPrototype });
+//   } catch (error) {
+//     console.error("Error updating prototype status:", error);
+//     return NextResponse.json({ error: "Internal server error" }, { status: 500 });
+//   }
+// }
+
+
 import { NextResponse } from "next/server";
 import mongoose from "mongoose";
 import connectDB from "@/utils/db";
@@ -49,19 +107,11 @@ import Prototype from "@/model/Task";
 export async function PATCH(request, { params }) {
   await connectDB();
 
-  const { id } =await params;
-
- console.log(id);
+  const { id } = params;
 
   try {
     const body = await request.json();
-    const { status, rejectionReason } = body;
-
-   console.log(status);
-   console.log(body);
-
-    
-  
+    const { status, rejectionReason, reviews } = body;
 
     const updateData = {
       status,
@@ -71,15 +121,29 @@ export async function PATCH(request, { params }) {
     // If rejected, add reason
     if (status === "Rejected") {
       if (!rejectionReason || rejectionReason.trim() === "") {
-        return NextResponse.json({ error: "Rejection reason is required for rejected status" }, { status: 400 });
+        return NextResponse.json(
+          { error: "Rejection reason is required for rejected status" },
+          { status: 400 }
+        );
       }
       updateData.rejectionReason = rejectionReason;
     } else {
       // Clear rejection reason if approved or any other status
       updateData.rejectionReason = null;
     }
+
+    // If reviews are provided in the request, update them
+    if (reviews && Array.isArray(reviews)) {
+      updateData.reviews = reviews.map(review => ({
+        reviewerId: review.reviewerId,
+        reviewerName: review.reviewerName,
+        reviewerRole:review.reviewerRole,
+        status: review.status || 'pending',
+        comments: review.comments || '',
+        reviewDate: review.reviewDate || new Date()
+      }));
+    }
 console.log(updateData);
-console.log(id);
     const updatedPrototype = await Prototype.findByIdAndUpdate(
       id,
       updateData,
@@ -87,12 +151,21 @@ console.log(id);
     );
 
     if (!updatedPrototype) {
-      return NextResponse.json({ error: "Prototype not found" }, { status: 404 });
+      return NextResponse.json(
+        { error: "Prototype not found" },
+        { status: 404 }
+      );
     }
 
-    return NextResponse.json({ message: "Status updated successfully", prototype: updatedPrototype });
+    return NextResponse.json({
+      message: "Status updated successfully",
+      prototype: updatedPrototype
+    });
   } catch (error) {
     console.error("Error updating prototype status:", error);
-    return NextResponse.json({ error: "Internal server error" }, { status: 500 });
+    return NextResponse.json(
+      { error: "Internal server error" },
+      { status: 500 }
+    );
   }
 }

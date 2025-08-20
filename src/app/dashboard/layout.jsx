@@ -694,6 +694,7 @@ const allNavigationItems = [
   { name: 'Approve Equipment', href: '/dashboard/approve-equipment', icon: CheckCircle2, current: false },
   { name: 'Approve Task', href: '/dashboard/approve-task', icon: UserCheck, current: false },
   { name: 'Approve Checklist', href: '/dashboard/approve-checklist', icon: PlayCircle, current: false },
+    { name: 'Review Access', href: '/dashboard/review-page', icon: PlayCircle, current: false },
   { name: 'Approve Tagged Chechlist with Equipment', href: '/dashboard/approve-assign-checklist-to-equipment', icon: PlayCircle, current: false },
 ];
 

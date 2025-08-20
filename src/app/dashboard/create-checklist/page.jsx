@@ -1,13 +1,13 @@
 
 "use client"
 import { useEffect, useState, useRef } from "react"
-import { startTransition } from "react";
 import {
   Plus,
   Sparkles,
   Trash2,
   CheckCircle,
   Activity,
+  Search ,
   AlertCircle,
   Zap,
   TrendingUp,
@@ -34,15 +34,13 @@ import {
   Circle,
 } from "lucide-react"
 import { SendHorizontal } from 'lucide-react';
-import { useRouter } from "next/navigation"
-import Image from "next/image"
-
-
+import { useRouter } from "next/navigation";
+import Image from "next/image";
 const SOPDashboard = () => {
   const router = useRouter()
   const [activeDurationPath, setActiveDurationPath] = useState('')
   const [deleteLoading, setDeleteLoading] = useState(false);
-
+const [reviewLoading, setReviewLoading] = useState(false);
   const [showImageModal, setShowImageModal] = useState(false);
   const [activeImagePath, setActiveImagePath] = useState('');
   const [sopData, setSopData] = useState([])
@@ -53,11 +51,15 @@ const SOPDashboard = () => {
   const [sopToApprove, setSopToApprove] = useState(null);
   const [approvalLoading, setApprovalLoading] = useState(false);
   const [navigatingToCreate, setNavigatingToCreate] = useState(false);
-
+  const [showReviewModal, setShowReviewModal] = useState(false);
+  const [selectedWorkers, setSelectedWorkers] = useState([]);
+  const [workersList, setWorkersList] = useState([]);
+  const [loadingWorkers, setLoadingWorkers] = useState(false);
   // New state for filtering
   const [selectedSop, setSelectedSop] = useState(null)
+  const [reviewSop, setReviewSop] = useState(null);
   const [expandedTasks, setExpandedTasks] = useState({})
-  const [editModalOpen, setEditModalOpen] = useState(false);
+
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [sopToDelete, setSopToDelete] = useState(null);
   const [editingSop, setEditingSop] = useState({
@@ -473,8 +475,8 @@ const SOPDashboard = () => {
         <div
           key={taskId}
           className={`border-2 ${level % 2 === 0
-              ? "border-blue-200 bg-blue-50 rounded-xl m-2"
-              : "border-purple-200 rounded-xl bg-purple-50"
+            ? "border-blue-200 bg-blue-50 rounded-xl m-2"
+            : "border-purple-200 rounded-xl bg-purple-50"
             } p-4 mb-3`}
         >
           {/* Task Header */}
@@ -754,6 +756,319 @@ const SOPDashboard = () => {
       </div>
     );
   };
+
+  const fetchWorkers = async (param) => {
+   
+    setLoadingWorkers(true);
+    try {
+     const res = await fetch(`/api/fetch-worker/${param}`, {
+      method: "GET",
+    });// You'll need to create this API endpoint
+      const data = await res.json();
+      setWorkersList(data.data);
+    } catch (err) {
+      console.error("Failed to fetch workers:", err);
+    } finally {
+      setLoadingWorkers(false);
+    }
+  };
+
+ 
+const ReviewModal = ({
+  onClose,
+  onSend,
+  workers,
+  loading,
+  selectedWorkers,
+  setSelectedWorkers,
+  sopStatus,
+   reviewLoading,
+  existingReviews = []
+}) => {
+  const isUnderReview = sopStatus === "Under Review" || sopStatus === "Approved Review" || sopStatus === "Rejected Review";
+  const [searchTerm, setSearchTerm] = useState("");
+
+  const toggleWorkerSelection = (workerId) => {
+    setSelectedWorkers(prev =>
+      prev.includes(workerId)
+        ? prev.filter(id => id !== workerId)
+        : [...prev, workerId]
+    );
+  };
+
+  const filteredWorkers = workers.filter(worker =>
+    worker.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    worker.role.toLowerCase().includes(searchTerm.toLowerCase())
+  );
+
+  return (
+    <div className="fixed inset-0 bg-black/30 backdrop-blur-sm flex items-center justify-center z-50 p-4 transition-opacity duration-300">
+      <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md transform transition-all duration-300 scale-100">
+        {/* Header */}
+        <div className="p-6 border-b border-gray-100 flex justify-between items-center">
+          <div>
+            <h2 className="text-xl font-bold text-gray-900">
+              {isUnderReview ? "Review Status" : "Assign Reviewers"}
+            </h2>
+            <p className="text-sm text-gray-500 mt-1">
+              {isUnderReview ? "Current review progress" : "Select team members to review"}
+            </p>
+          </div>
+          <button
+            onClick={onClose}
+            className="text-gray-400 hover:text-gray-600 p-1 rounded-full hover:bg-gray-100 transition-colors"
+          >
+            <X className="w-5 h-5" />
+          </button>
+        </div>
+
+        {/* Content */}
+        <div className="p-6">
+          {isUnderReview ? (
+            <div className="space-y-4">
+              <h3 className="text-sm font-semibold text-gray-700 uppercase tracking-wider">
+                Assigned Reviewers
+              </h3>
+              <div className="space-y-3 max-h-96 overflow-y-auto pr-2">
+                {existingReviews.length > 0 ? (
+                  existingReviews.map((review, index) => (
+                    <div
+                      key={index}
+                      className="p-4 bg-white rounded-xl border border-gray-100 shadow-sm hover:shadow-md transition-shadow"
+                    >
+                      <div className="flex items-start justify-between">
+                        <div className="flex items-center space-x-3">
+                          <div className="flex-shrink-0 h-10 w-10 rounded-full bg-gradient-to-br from-blue-50 to-purple-50 flex items-center justify-center">
+                            <span className="text-lg font-medium text-blue-600">
+                              {review.reviewerName.charAt(0)}
+                            </span>
+                          </div>
+                          <div>
+                            <p className="font-medium text-gray-900">{review.reviewerName}</p>
+                            <p className="text-xs text-gray-500 capitalize">{review.reviewerRole}</p>
+                          </div>
+                        </div>
+                        <span className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-medium ${review.status === 'Approved' ? 'bg-green-50 text-green-700' :
+                            review.status === 'Rejected' ? 'bg-red-50 text-red-700' :
+                              'bg-yellow-50 text-yellow-700'
+                          }`}>
+                          {review.status === 'Approved' ? (
+                            <Check className="w-3 h-3 mr-1.5" />
+                          ) : review.status === 'Rejected' ? (
+                            <X className="w-3 h-3 mr-1.5" />
+                          ) : (
+                            <Clock className="w-3 h-3 mr-1.5" />
+                          )}
+                          {review.status}
+                        </span>
+                      </div>
+                      
+                      {review.comments && (
+                        <div className="mt-3 pt-3 border-t border-gray-100">
+                          <p className="text-xs font-medium text-gray-500 mb-1">Comments</p>
+                          <p className="text-sm text-gray-700 bg-gray-50 p-3 rounded-lg">
+                            {review.comments}
+                          </p>
+                        </div>
+                      )}
+                    </div>
+                  ))
+                ) : (
+                  <div className="p-8 text-center">
+                    <div className="mx-auto h-12 w-12 text-gray-400">
+                      <Users className="w-full h-full" />
+                    </div>
+                    <h3 className="mt-2 text-sm font-medium text-gray-900">No reviewers assigned</h3>
+                    <p className="mt-1 text-sm text-gray-500">Assign team members to review this document</p>
+                  </div>
+                )}
+              </div>
+            </div>
+          ) : (
+            <>
+              <div className="mb-6">
+                <div className="flex justify-between items-center mb-3">
+                  <label className="block text-sm font-medium text-gray-700">
+                    Select Reviewers
+                  </label>
+                  <span className="text-xs text-gray-500">
+                    {selectedWorkers.length} selected
+                  </span>
+                </div>
+
+                {/* Search Input */}
+                <div className="relative mb-4">
+                  <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                    <Search className="h-4 w-4 text-gray-400" />
+                  </div>
+                  <input
+                    type="text"
+                    placeholder="Search by name or role..."
+                    className="block w-full pl-10 pr-3 py-2 border border-gray-300 rounded-lg bg-gray-50 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm"
+                    value={searchTerm}
+                    onChange={(e) => setSearchTerm(e.target.value)}
+                  />
+                  {searchTerm && (
+                    <button
+                      onClick={() => setSearchTerm("")}
+                      className="absolute inset-y-0 right-0 pr-3 flex items-center"
+                    >
+                      <X className="h-4 w-4 text-gray-400 hover:text-gray-600" />
+                    </button>
+                  )}
+                </div>
+
+                {loading ? (
+                  <div className="flex justify-center py-8">
+                    <div className="w-8 h-8 border-4 border-blue-100 border-t-blue-500 rounded-full animate-spin"></div>
+                  </div>
+                ) : (
+                  <div className="space-y-2 max-h-64 overflow-y-auto pr-2">
+                    {filteredWorkers.length > 0 ? (
+                      filteredWorkers.map(worker => (
+                        <div
+                          key={worker._id}
+                          className={`p-3 rounded-lg flex items-center cursor-pointer transition-all ${selectedWorkers.includes(worker._id)
+                              ? 'bg-blue-50 border border-blue-200'
+                              : 'bg-white border border-gray-100 hover:border-blue-100'
+                            }`}
+                          onClick={() => toggleWorkerSelection(worker._id)}
+                        >
+                          <div className={`w-5 h-5 rounded-full border-2 mr-3 flex items-center justify-center transition-colors ${selectedWorkers.includes(worker._id)
+                              ? 'bg-blue-500 border-blue-500'
+                              : 'border-gray-300'
+                            }`}>
+                            {selectedWorkers.includes(worker._id) && (
+                              <Check className="w-3 h-3 text-white" />
+                            )}
+                          </div>
+                          <div className="flex items-center space-x-3">
+                            <div className="flex-shrink-0 h-8 w-8 rounded-full bg-gradient-to-br from-blue-50 to-purple-50 flex items-center justify-center">
+                              <span className="text-sm font-medium text-blue-600">
+                                {worker.name.charAt(0)}
+                              </span>
+                            </div>
+                            <div>
+                              <p className="font-medium text-gray-900">{worker.name}</p>
+                              <p className="text-xs text-gray-500 capitalize">{worker.role}</p>
+                            </div>
+                          </div>
+                        </div>
+                      ))
+                    ) : (
+                      <div className="p-6 text-center">
+                        <div className="mx-auto h-10 w-10 text-gray-400">
+                          <Search className="w-full h-full" />
+                        </div>
+                        <h3 className="mt-2 text-sm font-medium text-gray-900">No matching reviewers</h3>
+                        <p className="mt-1 text-sm text-gray-500">Try a different search term</p>
+                      </div>
+                    )}
+                  </div>
+                )}
+              </div>
+
+              <div className="flex justify-end space-x-3 pt-4 border-t border-gray-100">
+                <button
+                  onClick={onClose}
+                  className="px-5 py-2.5 text-sm font-medium rounded-lg border border-gray-300 text-gray-700 hover:bg-gray-50 transition-colors"
+                >
+                  Cancel
+                </button>
+                 <button
+              onClick={() => onSend(selectedWorkers)}
+              disabled={selectedWorkers.length === 0 || reviewLoading}
+              className={`px-5 py-2.5 text-sm font-medium rounded-lg text-white transition-colors flex items-center justify-center ${
+                selectedWorkers.length === 0 || reviewLoading
+                  ? 'bg-gray-300 cursor-not-allowed'
+                  : 'bg-gradient-to-br from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700'
+              }`}
+            >
+              {reviewLoading ? (
+                <>
+                  <svg className="animate-spin -ml-1 mr-2 h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                  </svg>
+                  Sending...
+                </>
+              ) : (
+                'Send for Review'
+              )}
+            </button>
+              
+              </div>
+            </>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+};
+
+  const handleSendForReview = (id) => {
+    setSopToApprove(id);
+    console.log(workersList)
+    const sop = sopData.find(item => item._id === id);
+    setReviewSop(sop);
+    setShowReviewModal(true);
+    fetchWorkers("Review Access"); // Fetch workers when modal opens
+  };
+
+  const confirmReview = async (selectedWorkerIds) => {
+    console.log(selectedWorkerIds)
+    if (sopToApprove && selectedWorkerIds.length > 0) {
+       setReviewLoading(true);
+      setApprovalLoading(true);
+      try {
+
+        // Create review objects for each selected worker
+        const reviews = selectedWorkerIds.map(workerId => {
+          const worker = workersList.find(w => w._id === workerId);
+          return {
+            reviewerId: workerId,
+            reviewerName: worker ? worker.name : 'Unknown',
+            reviewerRole: worker ? worker.role : 'undefined',
+            status: 'Pending Review',
+            reviewDate: new Date().toISOString(),
+
+          };
+        });
+        console.log(reviews);
+        console.log(sopToApprove);
+
+        const res = await fetch(`/api/task/update-status/${sopToApprove}`, {
+          method: "PATCH",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            status: "Under Review",
+            reviews
+          }),
+        });
+
+        if (res.ok) {
+          setSopData(sopData.map(item =>
+            item._id === sopToApprove ? {
+              ...item,
+              status: "Under Review",
+              approvalSent: true,
+              reviews
+            } : item
+          ));
+          setShowReviewModal(false);
+          setSopToApprove(null);
+          setSelectedWorkers([]);
+        }
+      } catch (err) {
+        console.error("Failed to send for review:", err);
+      } finally {
+        setReviewLoading(false);
+        setApprovalLoading(false);
+      }
+    }
+  };
   // Skeleton Loading Components
   const SkeletonTableRow = () => (
     <tr className="animate-pulse">
@@ -788,8 +1103,8 @@ const SOPDashboard = () => {
   )
 
   const SkeletonHeader = () => (
-    <div className="bg-white border-b border-gray-200 shadow-sm animate-pulse">
-      <div className="max-w-7xl mx-auto px-6 py-8 flex flex-col lg:flex-row lg:items-center lg:justify-between gap-6">
+    <div className="bg-white border-b border-gray-200 rounded-xl mx-6 shadow-sm animate-pulse">
+      <div className="max-w-7xl mx-auto px-6 py-6 rounded-xl flex flex-col lg:flex-row lg:items-center lg:justify-between gap-6">
         <div className="flex items-center space-x-4">
           <div className="p-4 bg-gray-200 rounded-3xl shadow w-16 h-16"></div>
           <div className="space-y-3">
@@ -802,15 +1117,7 @@ const SOPDashboard = () => {
     </div>
   )
 
-  const SkeletonEmptyState = () => (
-    <div className="text-center py-20 animate-pulse">
-      <div className="max-w-md mx-auto space-y-4">
-        <div className="h-8 bg-gray-200 rounded w-48 mx-auto"></div>
-        <div className="h-4 bg-gray-200 rounded w-64 mx-auto"></div>
-        <div className="h-10 bg-gray-200 rounded-2xl w-40 mx-auto"></div>
-      </div>
-    </div>
-  )
+
 
   const handleCreate = () => {
     setNavigatingToCreate(true); // Show loading state
@@ -888,8 +1195,6 @@ const SOPDashboard = () => {
                 </button>
               </div>
             </div>
-
-            {/* Task Description */}
             <div>
               <textarea
                 value={task.description || ""}
@@ -1040,57 +1345,12 @@ const SOPDashboard = () => {
       </div>
     )
   }
-
-
-
   const handleEdit = (sop) => {
-
     router.push(`/dashboard/create-checklist/edit-checklist/${sop._id}`)
-
     console.log(sop._id);
-    // setEditingSop({
-    //   ...sop,
-    //   stages: sop.stages?.map(stage => ({
-    //     ...stage,
-    //     tasks: stage.tasks?.map(task => ({
-    //       ...task,
-    //       minTime: task.minTime || { hours: 0, minutes: 0, seconds: 0 },
-    //       maxTime: task.maxTime || { hours: 0, minutes: 0, seconds: 0 },
-    //       attachedImages: task.attachedImages || [],
-    //       subtasks: task.subtasks?.map(subtask => ({
-    //         ...subtask,
-    //         minTime: subtask.minTime || { hours: 0, minutes: 0, seconds: 0 },
-    //         maxTime: subtask.maxTime || { hours: 0, minutes: 0, seconds: 0 }
-    //       })) || []
-    //     })) || []
-    //   })) || []
-    // })
-    // setEditModalOpen(true)
-  }
-
-  const handleSaveEdit = async () => {
-    try {
-      const res = await fetch(`/api/task/update/${editingSop._id}`, {
-        method: "PUT",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify(editingSop),
-      })
-
-      if (res.ok) {
-        setSopData(sopData.map(item =>
-          item._id === editingSop._id ? editingSop : item
-        ))
-        setEditModalOpen(false)
-      }
-    } catch (err) {
-      console.error("Failed to update SOP:", err)
-    }
   }
   const handleDelete = (id) => {
     setSopToDelete(id);
-
     setShowDeleteConfirm(true);
   };
   const confirmDelete = async () => {
@@ -1126,7 +1386,7 @@ const SOPDashboard = () => {
   const closeModal = () => {
     setSelectedSop(null)
   }
-
+  console.log(selectedSop)
   const toggleTaskExpansion = (taskId) => {
     setExpandedTasks((prev) => ({
       ...prev,
@@ -1181,9 +1441,6 @@ const SOPDashboard = () => {
       })
     }
   }
-
-
-
   const renderTask = (task, level = 0, taskNumber = "1") => {
     const hasSubtasks = task.subtasks && task.subtasks.length > 0
     const isExpanded = expandedTasks[task.id || task._id] || false
@@ -1341,8 +1598,6 @@ const SOPDashboard = () => {
         setFiltering(true)
         const res = await fetch("/api/task/fetchAll")
         const data = await res.json()
-
-        // Simulate filtering delay
         setTimeout(() => {
           const filtered = data.data.filter(item => item.companyId === companyData?.companyId)
           setSopData(filtered)
@@ -1383,6 +1638,11 @@ const SOPDashboard = () => {
         icon: <Check className="w-3 h-3" />,
         text: "InProgress"
       },
+      'Approved Review': {
+        color: "bg-green-100 text-green-800",
+        icon: <Check className="w-3 h-3" />,
+        text: "Approved Review"
+      },
       Approved: {
         color: "bg-green-100 text-green-800",
         icon: <Check className="w-3 h-3" />,
@@ -1392,6 +1652,16 @@ const SOPDashboard = () => {
         color: "bg-yellow-100 text-yellow-800",
         icon: <Circle className="w-3 h-3" />,
         text: "Pending Approval"
+      },
+      'Under Review': {
+        color: "bg-yellow-100 text-orange-800",
+        icon: <Circle className="w-3 h-3" />,
+        text: "Under Review"
+      },
+      'Rejected Review': {
+        color: "bg-red-100 text-red-800",
+        icon: <X className="w-3 h-3" />,
+        text: "Rejected Review"
       },
       Rejected: {
         color: "bg-red-100 text-red-800",
@@ -1409,7 +1679,6 @@ const SOPDashboard = () => {
       </span>
     )
   }
-
   return (
     <div className="min-h-screen bg-gray-50 relative">
       {/* Show skeleton header while loading or filtering */}
@@ -1447,17 +1716,10 @@ const SOPDashboard = () => {
                 </>
               )}
             </button>
-            {/* <button
-              onClick={handleCreate}
-              className="bg-blue-600 text-white font-bold py-4 px-8 rounded-2xl flex items-center space-x-3 shadow hover:bg-blue-700 transition-colors duration-200"
-            >
-              <Plus className="w-5 h-5" />
-              <span>Create New</span>
-            </button> */}
+
           </div>
         </div>
       )}
-
       {/* Main Content */}
       <div className="max-w-7xl mx-auto px-6 py-8">
         {/* Search and Filter Bar */}
@@ -1474,10 +1736,8 @@ const SOPDashboard = () => {
                 type="text"
                 placeholder="Search checklists..."
                 className="block w-full pl-10 pr-3 py-2 border border-gray-300 rounded-lg bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-
               />
             </div>
-
             {/* Status Filter */}
             <div className="flex items-center space-x-2">
               <label htmlFor="status-filter" className="text-sm font-medium text-gray-700 whitespace-nowrap">
@@ -1497,7 +1757,6 @@ const SOPDashboard = () => {
             </div>
           </div>
         </div>
-
         {loading || filtering ? (
           <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
             <div className="overflow-x-auto">
@@ -1516,7 +1775,6 @@ const SOPDashboard = () => {
                     <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                       Created At
                     </th>
-
                     <th scope="col" className="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">
                       Actions
                     </th>
@@ -1576,27 +1834,33 @@ const SOPDashboard = () => {
                       <td className="px-6 py-4 whitespace-nowrap">
                         <div className="text-sm text-gray-500">{sop.formattedDate}</div>
                       </td>
-
-
-
-
                       <td className="px-6 py-4 whitespace-nowrap text-center text-sm font-medium">
                         <div className="flex h-8 items-center justify-center gap-6">
-                          {sop.status === "InProgress" ? (
-
-                            <div className=" py-4 whitespace-nowrap text-center">
+                          {sop.status === "InProgress" || sop.status === "Under Review" || sop.status === "Rejected Review"?
+                            (<div className=" py-4 whitespace-nowrap text-center">
                               <button
-                                onClick={() => handleApprove(sop.id)}
-                                className="px-3 py-1.5 border border-transparent text-xs font-medium rounded-full shadow-sm text-white bg-blue-500 hover:bg-[#2791b8]"
-                                title="Send for Approval"
+                                  onClick={() => handleSendForReview(sop.id)}
+                                className={`px-3 py-1.5 border border-transparent text-xs font-medium rounded-full shadow-sm text-white  hover:bg-[#2791b8] ${ sop.status === "Under Review" ? "bg-orange-400":sop.status === "Rejected Review" ?"bg-red-400": "bg-green-500" }`}
+                                title="Send for Review"
                               >
-                                Send for Approval
-                              </button></div>
-                          ) : (<></>
+                                { sop.status === "Under Review" || sop.status === "Rejected Review" ? "View Reviewer's":  "Send for Review"}
+                              </button>
+                            </div>
+                            ) : sop.status === "Approved Review" ? (
 
-                          )}
+                              <div className=" py-4 whitespace-nowrap text-center">
+                                <button
+                                  onClick={() => handleApprove(sop.id)}
+                                  className="px-3 py-1.5 border border-transparent text-xs font-medium rounded-full shadow-sm text-white bg-blue-500 hover:bg-[#2791b8]"
+                                  title="Send for Approval"
+                                >
+                                  Send for Approval
+                                </button></div>
+                            ) : (<></>
+
+                            )}
                           <div className="flex justify-center space-x-2">
-                            {sop.status == 'InProgress' || sop.status == 'Rejected' ? <button
+                            {sop.status == 'InProgress' || sop.status == 'Rejected' || sop.status == 'Rejected Review' ? <button
                               onClick={() => handleEdit(sop)}
                               className="p-2 bg-yellow-100 text-yellow-600 rounded-lg hover:bg-yellow-200"
                               title="Edit"
@@ -1620,8 +1884,6 @@ const SOPDashboard = () => {
                             </button>
                           </div>
                         </div>
-
-
                       </td>
                     </tr>
                   ))}
@@ -1632,13 +1894,10 @@ const SOPDashboard = () => {
         ) : (
           <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-8 text-center">
             <div className="flex flex-col items-center justify-center space-y-4">
-              <div className="p-4 bg-gray-100 rounded-full">
-                {/* You can use any icon library icon or emoji here */}
+              <div className="p-4 bg-gray-100 rounded-full">        
                 <svg className="w-12 h-12 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
                 </svg>
-                {/* Or using an emoji: */}
-                {/* <span className="text-4xl">📋</span> */}
               </div>
               <h3 className="text-lg font-medium text-gray-900">No checklists available</h3>
               <p className="text-gray-500 max-w-md">
@@ -1728,213 +1987,6 @@ const SOPDashboard = () => {
           </div>
         </div>
       )}
-
-      {/* Edit Modal */}
-      {editModalOpen && (
-        <div
-          onClick={() => setEditModalOpen(false)}
-          className="fixed inset-0 bg-gray-900/40 backdrop-blur-sm flex items-center justify-center p-4 z-50 transition-all duration-200"
-        >
-          <div
-            className="relative bg-white rounded-2xl shadow-xl w-full max-w-4xl max-h-[90vh] overflow-y-auto mx-4 hide-scrollbar"
-            onClick={(e) => e.stopPropagation()}
-          >
-            {/* Modal Header */}
-            <div className="sticky top-0 bg-white p-6 pb-4 border-b z-10">
-              <div className="flex items-start justify-between gap-4">
-                <div>
-                  <h2 className="text-2xl font-bold text-gray-900">Edit {editingSop.name}</h2>
-                  <div className="flex flex-wrap items-center gap-x-4 gap-y-2 mt-2 text-sm text-gray-600">
-                    {editingSop.stages && (
-                      <span className="flex items-center">
-                        <Layers className="w-4 h-4 mr-1.5" />
-                        {editingSop.stages.length} Stages
-                      </span>
-                    )}
-                    <span className="flex items-center">
-                      {getStatusBadge(editingSop.status)}
-                    </span>
-                  </div>
-                </div>
-                <button
-                  onClick={() => setEditModalOpen(false)}
-                  className="p-2 rounded-full hover:bg-gray-100 transition-colors text-gray-500 hover:text-gray-700"
-                >
-                  <X className="w-5 h-5" />
-                </button>
-              </div>
-            </div>
-
-            {/* Main Content */}
-            <div className="p-6 space-y-8">
-              {/* Basic Information Section */}
-              <div className="space-y-4 bg-gray-50 p-5 rounded-xl border border-gray-200">
-                <h3 className="text-lg font-semibold text-gray-700 flex items-center gap-2">
-                  <Info className="w-5 h-5 text-indigo-500" />
-                  Basic Information
-                </h3>
-                <div className="grid grid-cols-1 gap-4">
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
-                      Checklist Name
-                    </label>
-                    <input
-                      type="text"
-                      value={editingSop.name}
-                      onChange={(e) => handleFormChange('name', e.target.value)}
-                      className="w-full px-3 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-300 focus:border-blue-400 bg-white"
-                    />
-                  </div>
-
-                </div>
-              </div>
-
-              {/* Stages Section */}
-              <div className="space-y-6">
-                <div className="flex items-center justify-between">
-                  <h3 className="text-lg font-semibold text-gray-700 flex items-center gap-2">
-                    <Layers2 className="w-5 h-5 text-indigo-500" />
-                    Stages
-                  </h3>
-                  <button
-                    onClick={() => {
-                      const newStage = {
-                        _id: `stage-${Date.now()}`,
-                        name: `Stage ${editingSop.stages.length + 1}`,
-                        description: '',
-                        tasks: []
-                      }
-                      handleFormChange('stages', [...editingSop.stages, newStage])
-                    }}
-                    className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-xl hover:bg-blue-700 transition-colors"
-                  >
-                    <Plus className="w-4 h-4" />
-                    Add Stage
-                  </button>
-                </div>
-
-                {editingSop.stages?.map((stage, stageIndex) => (
-                  <div key={stage._id} className="border border-gray-200 rounded-lg overflow-hidden">
-                    {/* Stage Header */}
-                    <div className="bg-gray-50 px-5 py-4 border-b border-gray-200 flex items-center justify-between">
-                      <div className="flex items-center gap-3">
-                        <span className="flex-shrink-0 bg-blue-600 text-white rounded-full w-7 h-7 flex items-center justify-center text-sm font-medium">
-                          {stageIndex + 1}
-                        </span>
-                        <div className="flex-1">
-                          <span className="text-lg font-semibold text-gray-800 bg-transparent border-gray-400 focus:border-blue-500 focus:outline-none w-full">{stage.name}</span>
-
-
-                        </div>
-                      </div>
-                      <div className="flex gap-2">
-                        <button
-                          onClick={() => {
-                            const newTask = {
-                              _id: `task-${Date.now()}`,
-                              title: `Task ${stage.tasks.length + 1}`,
-                              description: '',
-                              minTime: { hours: 0, minutes: 0, seconds: 0 },
-                              maxTime: { hours: 0, minutes: 0, seconds: 0 },
-                              attachedImages: [],
-                              subtasks: []
-                            }
-                            const updatedStages = [...editingSop.stages]
-                            updatedStages[stageIndex].tasks = [...updatedStages[stageIndex].tasks, newTask]
-                            handleFormChange('stages', updatedStages)
-                          }}
-                          className="flex items-center gap-1 px-3 py-1.5 bg-green-600 text-white rounded-lg hover:bg-green-700 text-sm"
-                        >
-                          <Plus className="w-3 h-3" />
-                          Add Task
-                        </button>
-                        {editingSop.stages.length > 1 && (
-                          <button
-                            onClick={() => {
-                              const updatedStages = editingSop.stages.filter((_, i) => i !== stageIndex)
-                              handleFormChange('stages', updatedStages)
-                            }}
-                            className="p-1.5 text-red-500 hover:bg-red-50 rounded-full"
-                          >
-                            <Trash2 className="w-4 h-4" />
-                          </button>
-                        )}
-                      </div>
-                    </div>
-
-                    {/* Recursive Task Renderer */}
-                    {stage.tasks?.length > 0 ? (
-                      <div className="divide-y divide-gray-100">
-                        {stage.tasks.map((task, taskIndex) => (
-                          <TaskEditor
-                            key={task._id}
-                            task={task}
-                            path={`stages.${stageIndex}.tasks.${taskIndex}`}
-                            taskNumber={`${stageIndex + 1}.${taskIndex + 1}`}
-                            level={0}
-                            onUpdate={handleFormChange}
-                            onDelete={() => {
-                              const updatedStages = [...editingSop.stages]
-                              updatedStages[stageIndex].tasks = updatedStages[stageIndex].tasks.filter((_, i) => i !== taskIndex)
-                              handleFormChange('stages', updatedStages)
-                            }}
-                            onSetDuration={(path) => {
-                              setActiveDurationPath(path)
-                              setShowDurationModal(true)
-                            }}
-                          />
-                        ))}
-                      </div>
-                    ) : (
-                      <div className="text-center py-8 text-gray-500 bg-gray-50">
-                        <FileText className="w-8 h-8 mx-auto mb-2 text-gray-400" />
-                        <p>No tasks in this stage</p>
-                        <button
-                          onClick={() => {
-                            const newTask = {
-                              _id: `task-${Date.now()}`,
-                              title: `Task 1`,
-                              description: '',
-                              minTime: { hours: 0, minutes: 0, seconds: 0 },
-                              maxTime: { hours: 0, minutes: 0, seconds: 0 },
-                              attachedImages: [],
-                              subtasks: []
-                            }
-                            const updatedStages = [...editingSop.stages]
-                            updatedStages[stageIndex].tasks = [newTask]
-                            handleFormChange('stages', updatedStages)
-                          }}
-                          className="mt-3 flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 mx-auto"
-                        >
-                          <Plus className="w-4 h-4" />
-                          Add First Task
-                        </button>
-                      </div>
-                    )}
-                  </div>
-                ))}
-              </div>
-            </div>
-
-            {/* Modal Footer */}
-            <div className="sticky bottom-0 bg-white p-4 border-t border-gray-200 flex justify-end gap-3">
-              <button
-                onClick={() => setEditModalOpen(false)}
-                className="px-4 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50"
-              >
-                Cancel
-              </button>
-              <button
-                onClick={handleSaveEdit}
-                className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
-              >
-                Save Changes
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-
       {showDurationModal && (
         <DurationModal
           onClose={() => setShowDurationModal(false)}
@@ -1976,33 +2028,6 @@ const SOPDashboard = () => {
           }
         />
       )}
-      {/* Delete Confirmation Modal */}
-      {/* {showDeleteConfirm && (
-  <div className="absolute inset-0 z-50  bg-gray-900/20 backdrop-blur-sm flex items-center justify-center p-4 z-50 transition-all duration-200">
-    <div className="relative bg-white rounded-xl shadow-xl w-full max-w-md mx-4 p-6">
-      <div className="text-center">
-        <AlertCircle className="w-12 h-12 text-red-500 mx-auto mb-4" />
-        <h3 className="text-lg font-medium text-gray-900 mb-2">Delete Checklist</h3>
-        <p className="text-gray-600 mb-6">Are you sure you want to delete this checklist? This action cannot be undone.</p>
-        
-        <div className="flex justify-center gap-4">
-          <button
-            onClick={cancelDelete}
-            className="px-4 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
-          >
-            Cancel
-          </button>
-          <button
-            onClick={confirmDelete}
-            className="px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-red-600 hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500"
-          >
-            Delete
-          </button>
-        </div>
-      </div>
-    </div>
-  </div>
-)} */}
       {showDeleteConfirm && (
         <div className="absolute inset-0 z-50 bg-gray-900/20 backdrop-blur-sm flex items-center justify-center p-4 z-50 transition-all duration-200">
           <div className="relative bg-white rounded-xl shadow-xl w-full max-w-md mx-4 p-6">
@@ -2101,6 +2126,22 @@ const SOPDashboard = () => {
             }
             return current.attachedImages || [];
           })()}
+        />
+      )}
+      {showReviewModal && (
+        <ReviewModal
+          onClose={() => {
+            setShowReviewModal(false);
+            setSelectedWorkers([]);
+          }}
+          onSend={confirmReview}
+          workers={workersList}
+          loading={loadingWorkers}
+          selectedWorkers={selectedWorkers}
+          setSelectedWorkers={setSelectedWorkers}
+          sopStatus={reviewSop?.status}
+          existingReviews={reviewSop?.reviews || []}
+           reviewLoading={reviewLoading}
         />
       )}
     </div>
