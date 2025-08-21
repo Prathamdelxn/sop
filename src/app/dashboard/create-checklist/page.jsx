@@ -52,6 +52,7 @@ const [reviewLoading, setReviewLoading] = useState(false);
   const [approvalLoading, setApprovalLoading] = useState(false);
   const [navigatingToCreate, setNavigatingToCreate] = useState(false);
   const [showReviewModal, setShowReviewModal] = useState(false);
+  const[showApproveModal,setShowApproveModal]=useState(false);
   const [selectedWorkers, setSelectedWorkers] = useState([]);
   const [workersList, setWorkersList] = useState([]);
   const [loadingWorkers, setLoadingWorkers] = useState(false);
@@ -59,7 +60,7 @@ const [reviewLoading, setReviewLoading] = useState(false);
   const [selectedSop, setSelectedSop] = useState(null)
   const [reviewSop, setReviewSop] = useState(null);
   const [expandedTasks, setExpandedTasks] = useState({})
-
+const [modalActionType, setModalActionType] = useState('');
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [sopToDelete, setSopToDelete] = useState(null);
   const [editingSop, setEditingSop] = useState({
@@ -761,8 +762,9 @@ const [reviewLoading, setReviewLoading] = useState(false);
    
     setLoadingWorkers(true);
     try {
-     const res = await fetch(`/api/fetch-worker/${param}`, {
+     const res = await fetch(`/api/fetch-worker/${param}?companyId=${companyData?.companyId}`, {
       method: "GET",
+     
     });// You'll need to create this API endpoint
       const data = await res.json();
       setWorkersList(data.data);
@@ -1006,69 +1008,454 @@ const ReviewModal = ({
   );
 };
 
-  const handleSendForReview = (id) => {
-    setSopToApprove(id);
-    console.log(workersList)
-    const sop = sopData.find(item => item._id === id);
-    setReviewSop(sop);
-    setShowReviewModal(true);
-    fetchWorkers("Review Access"); // Fetch workers when modal opens
+
+
+
+
+
+
+
+const ReviewApprovalModal = ({
+  onClose,
+  onSend,
+  workers,
+  loading,
+  selectedWorkers,
+  setSelectedWorkers,
+  sopStatus,
+  actionLoading,
+  existingReviews = [],
+  actionType = 'review' // 'review' or 'approval'
+}) => {
+  const isUnderReview = sopStatus === "Under Review" || sopStatus === "Approved Review" || sopStatus === "Rejected Review";
+  const isPendingApproval = sopStatus === "Pending Approval" || sopStatus === "Approved" || sopStatus === "Rejected";
+  const [searchTerm, setSearchTerm] = useState("");
+
+  const toggleWorkerSelection = (workerId) => {
+    setSelectedWorkers(prev =>
+      prev.includes(workerId)
+        ? prev.filter(id => id !== workerId)
+        : [...prev, workerId]
+    );
   };
 
-  const confirmReview = async (selectedWorkerIds) => {
-    console.log(selectedWorkerIds)
-    if (sopToApprove && selectedWorkerIds.length > 0) {
-       setReviewLoading(true);
-      setApprovalLoading(true);
-      try {
+  const filteredWorkers = workers.filter(worker =>
+    worker.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    worker.role.toLowerCase().includes(searchTerm.toLowerCase())
+  );
 
-        // Create review objects for each selected worker
-        const reviews = selectedWorkerIds.map(workerId => {
-          const worker = workersList.find(w => w._id === workerId);
-          return {
-            reviewerId: workerId,
-            reviewerName: worker ? worker.name : 'Unknown',
-            reviewerRole: worker ? worker.role : 'undefined',
-            status: 'Pending Review',
-            reviewDate: new Date().toISOString(),
-
-          };
-        });
-        console.log(reviews);
-        console.log(sopToApprove);
-
-        const res = await fetch(`/api/task/update-status/${sopToApprove}`, {
-          method: "PATCH",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({
-            status: "Under Review",
-            reviews
-          }),
-        });
-
-        if (res.ok) {
-          setSopData(sopData.map(item =>
-            item._id === sopToApprove ? {
-              ...item,
-              status: "Under Review",
-              approvalSent: true,
-              reviews
-            } : item
-          ));
-          setShowReviewModal(false);
-          setSopToApprove(null);
-          setSelectedWorkers([]);
-        }
-      } catch (err) {
-        console.error("Failed to send for review:", err);
-      } finally {
-        setReviewLoading(false);
-        setApprovalLoading(false);
-      }
+  const getModalTitle = () => {
+    if (actionType === 'review') {
+      return isUnderReview ? "Review Status" : "Assign Reviewers";
+    } else {
+      return isPendingApproval ? "Approval Status" : "Assign Approvers";
     }
   };
+
+  const getModalDescription = () => {
+    if (actionType === 'review') {
+      return isUnderReview ? "Current review progress" : "Select team members to review";
+    } else {
+      return isPendingApproval ? "Current approval progress" : "Select team members to approve";
+    }
+  };
+
+  const getButtonText = () => {
+    if (actionType === 'review') {
+      return isUnderReview ? 'View Reviewers' : 'Send for Review';
+    } else {
+      return isPendingApproval ? 'View Approvers' : 'Send for Approval';
+    }
+  };
+
+  const getStatusLabel = () => {
+    if (actionType === 'review') {
+      return isUnderReview ? "Assigned Reviewers" : "Select Reviewers";
+    } else {
+      return isPendingApproval ? "Assigned Approvers" : "Select Approvers";
+    }
+  };
+
+  return (
+    <div className="fixed inset-0 bg-black/30 backdrop-blur-sm flex items-center justify-center z-50 p-4 transition-opacity duration-300">
+      <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md transform transition-all duration-300 scale-100">
+        {/* Header */}
+        <div className="p-6 border-b border-gray-100 flex justify-between items-center">
+          <div>
+            <h2 className="text-xl font-bold text-gray-900">
+              {getModalTitle()}
+            </h2>
+            <p className="text-sm text-gray-500 mt-1">
+              {getModalDescription()}
+            </p>
+          </div>
+          <button
+            onClick={onClose}
+            className="text-gray-400 hover:text-gray-600 p-1 rounded-full hover:bg-gray-100 transition-colors"
+          >
+            <X className="w-5 h-5" />
+          </button>
+        </div>
+
+        {/* Content */}
+        <div className="p-6">
+          {(actionType === 'review' && isUnderReview) || (actionType === 'approval' && isPendingApproval) ? (
+            <div className="space-y-4">
+              <h3 className="text-sm font-semibold text-gray-700 uppercase tracking-wider">
+                {getStatusLabel()}
+              </h3>
+              <div className="space-y-3 max-h-96 overflow-y-auto pr-2">
+                {existingReviews.length > 0 ? (
+                  existingReviews.map((review, index) => (
+                    <div
+                      key={index}
+                      className="p-4 bg-white rounded-xl border border-gray-100 shadow-sm hover:shadow-md transition-shadow"
+                    >
+                      <div className="flex items-start justify-between">
+                        <div className="flex items-center space-x-3">
+                          <div className="flex-shrink-0 h-10 w-10 rounded-full bg-gradient-to-br from-blue-50 to-purple-50 flex items-center justify-center">
+                            <span className="text-lg font-medium text-blue-600">
+                              {(actionType === 'review' ? review.reviewerName : review.approverName)?.charAt(0)}
+                            </span>
+                          </div>
+                          <div>
+                            <p className="font-medium text-gray-900">
+                              {actionType === 'review' ? review.reviewerName : review.approverName}
+                            </p>
+                            <p className="text-xs text-gray-500 capitalize">
+                              {actionType === 'review' ? review.reviewerRole : review.approverRole}
+                            </p>
+                          </div>
+                        </div>
+                        <span className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-medium ${review.status === 'Approved' ? 'bg-green-50 text-green-700' :
+                            review.status === 'Rejected' ? 'bg-red-50 text-red-700' :
+                              'bg-yellow-50 text-yellow-700'
+                          }`}>
+                          {review.status === 'Approved' ? (
+                            <Check className="w-3 h-3 mr-1.5" />
+                          ) : review.status === 'Rejected' ? (
+                            <X className="w-3 h-3 mr-1.5" />
+                          ) : (
+                            <Clock className="w-3 h-3 mr-1.5" />
+                          )}
+                          {review.status}
+                        </span>
+                      </div>
+                      
+                      {review.comments && (
+                        <div className="mt-3 pt-3 border-t border-gray-100">
+                          <p className="text-xs font-medium text-gray-500 mb-1">Comments</p>
+                          <p className="text-sm text-gray-700 bg-gray-50 p-3 rounded-lg">
+                            {review.comments}
+                          </p>
+                        </div>
+                      )}
+                    </div>
+                  ))
+                ) : (
+                  <div className="p-8 text-center">
+                    <div className="mx-auto h-12 w-12 text-gray-400">
+                      <Users className="w-full h-full" />
+                    </div>
+                    <h3 className="mt-2 text-sm font-medium text-gray-900">
+                      {actionType === 'review' ? "No reviewers assigned" : "No approvers assigned"}
+                    </h3>
+                    <p className="mt-1 text-sm text-gray-500">
+                      {actionType === 'review' 
+                        ? "Assign team members to review this document" 
+                        : "Assign team members to approve this document"}
+                    </p>
+                  </div>
+                )}
+              </div>
+            </div>
+          ) : (
+            <>
+              <div className="mb-6">
+                <div className="flex justify-between items-center mb-3">
+                  <label className="block text-sm font-medium text-gray-700">
+                    {getStatusLabel()}
+                  </label>
+                  <span className="text-xs text-gray-500">
+                    {selectedWorkers.length} selected
+                  </span>
+                </div>
+
+                {/* Search Input */}
+                <div className="relative mb-4">
+                  <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                    <Search className="h-4 w-4 text-gray-400" />
+                  </div>
+                  <input
+                    type="text"
+                    placeholder="Search by name or role..."
+                    className="block w-full pl-10 pr-3 py-2 border border-gray-300 rounded-lg bg-gray-50 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm"
+                    value={searchTerm}
+                    onChange={(e) => setSearchTerm(e.target.value)}
+                  />
+                  {searchTerm && (
+                    <button
+                      onClick={() => setSearchTerm("")}
+                      className="absolute inset-y-0 right-0 pr-3 flex items-center"
+                    >
+                      <X className="h-4 w-4 text-gray-400 hover:text-gray-600" />
+                    </button>
+                  )}
+                </div>
+
+                {loading ? (
+                  <div className="flex justify-center py-8">
+                    <div className="w-8 h-8 border-4 border-blue-100 border-t-blue-500 rounded-full animate-spin"></div>
+                  </div>
+                ) : (
+                  <div className="space-y-2 max-h-64 overflow-y-auto pr-2">
+                    {filteredWorkers.length > 0 ? (
+                      filteredWorkers.map(worker => (
+                        <div
+                          key={worker._id}
+                          className={`p-3 rounded-lg flex items-center cursor-pointer transition-all ${selectedWorkers.includes(worker._id)
+                              ? 'bg-blue-50 border border-blue-200'
+                              : 'bg-white border border-gray-100 hover:border-blue-100'
+                            }`}
+                          onClick={() => toggleWorkerSelection(worker._id)}
+                        >
+                          <div className={`w-5 h-5 rounded-full border-2 mr-3 flex items-center justify-center transition-colors ${selectedWorkers.includes(worker._id)
+                              ? 'bg-blue-500 border-blue-500'
+                              : 'border-gray-300'
+                            }`}>
+                            {selectedWorkers.includes(worker._id) && (
+                              <Check className="w-3 h-3 text-white" />
+                            )}
+                          </div>
+                          <div className="flex items-center space-x-3">
+                            <div className="flex-shrink-0 h-8 w-8 rounded-full bg-gradient-to-br from-blue-50 to-purple-50 flex items-center justify-center">
+                              <span className="text-sm font-medium text-blue-600">
+                                {worker.name.charAt(0)}
+                              </span>
+                            </div>
+                            <div>
+                              <p className="font-medium text-gray-900">{worker.name}</p>
+                              <p className="text-xs text-gray-500 capitalize">{worker.role}</p>
+                            </div>
+                          </div>
+                        </div>
+                      ))
+                    ) : (
+                      <div className="p-6 text-center">
+                        <div className="mx-auto h-10 w-10 text-gray-400">
+                          <Search className="w-full h-full" />
+                        </div>
+                        <h3 className="mt-2 text-sm font-medium text-gray-900">
+                          No matching {actionType === 'review' ? 'reviewers' : 'approvers'}
+                        </h3>
+                        <p className="mt-1 text-sm text-gray-500">Try a different search term</p>
+                      </div>
+                    )}
+                  </div>
+                )}
+              </div>
+
+              <div className="flex justify-end space-x-3 pt-4 border-t border-gray-100">
+                <button
+                  onClick={onClose}
+                  className="px-5 py-2.5 text-sm font-medium rounded-lg border border-gray-300 text-gray-700 hover:bg-gray-50 transition-colors"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={() => onSend(selectedWorkers)}
+                  disabled={selectedWorkers.length === 0 || actionLoading}
+                  className={`px-5 py-2.5 text-sm font-medium rounded-lg text-white transition-colors flex items-center justify-center ${
+                    selectedWorkers.length === 0 || actionLoading
+                      ? 'bg-gray-300 cursor-not-allowed'
+                      : 'bg-gradient-to-br from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700'
+                  }`}
+                >
+                  {actionLoading ? (
+                    <>
+                      <svg className="animate-spin -ml-1 mr-2 h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                      </svg>
+                      Sending...
+                    </>
+                  ) : (
+                    getButtonText()
+                  )}
+                </button>
+              </div>
+            </>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+};
+
+const handleSendForReview = (id) => {
+  setSopToApprove(id);
+  setModalActionType('review');
+  const sop = sopData.find(item => item._id === id);
+  setReviewSop(sop);
+  setShowReviewModal(true);
+  fetchWorkers("Review Access"); // Fetch review workers
+};
+
+  const handleSendForApproval = (id) => {
+  setSopToApprove(id);
+  setModalActionType('approval');
+  const sop = sopData.find(item => item._id === id);
+  setReviewSop(sop);
+  setShowReviewModal(true);
+  fetchWorkers("Approve Checklist"); // Fetch approval workers
+};
+
+const confirmAction = async (selectedWorkerIds) => {
+  if (!sopToApprove || selectedWorkerIds.length === 0) return;
+
+  if (modalActionType === 'review') {
+    setReviewLoading(true);
+    try {
+      const reviews = selectedWorkerIds.map(workerId => {
+        const worker = workersList.find(w => w._id === workerId);
+        return {
+          reviewerId: workerId,
+          reviewerName: worker ? worker.name : 'Unknown',
+          reviewerRole: worker ? worker.role : 'undefined',
+          status: 'Pending Review',
+          reviewDate: new Date().toISOString(),
+        };
+      });
+      console.log("Reviewers list",reviews)
+
+      const res = await fetch(`/api/task/update-status/${sopToApprove}`, {
+        method: "PATCH",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          status: "Under Review",
+          reviews
+        }),
+      });
+
+      if (res.ok) {
+        setSopData(sopData.map(item =>
+          item._id === sopToApprove ? {
+            ...item,
+            status: "Under Review",
+            approvalSent: true,
+            reviews
+          } : item
+        ));
+        setShowReviewModal(false);
+        setSopToApprove(null);
+        setSelectedWorkers([]);
+      }
+    } catch (err) {
+      console.error("Failed to send for review:", err);
+    } finally {
+      setReviewLoading(false);
+    }
+  } else if (modalActionType === 'approval') {
+    setApprovalLoading(true);
+    try {
+      const approvers = selectedWorkerIds.map(workerId => {
+        const worker = workersList.find(w => w._id === workerId);
+        return {
+          approverId: workerId,
+          approverName: worker ? worker.name : 'Unknown',
+          approverRole: worker ? worker.role : 'undefined',
+          status: 'Pending Approval',
+          approvalDate: new Date().toISOString(),
+        };
+      });
+console.log("Approvers list",approvers)
+      const res = await fetch(`/api/task/update-status/${sopToApprove}`, {
+        method: "PATCH",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          status: "Pending Approval",
+          approvers
+        }),
+      });
+
+      if (res.ok) {
+        setSopData(sopData.map(item =>
+          item._id === sopToApprove ? {
+            ...item,
+            status: "Pending Approval",
+            approvalSent: true,
+            approvers
+          } : item
+        ));
+        setShowReviewModal(false);
+        setSopToApprove(null);
+        setSelectedWorkers([]);
+      }
+    } catch (err) {
+      console.error("Failed to send for approval:", err);
+    } finally {
+      setApprovalLoading(false);
+    }
+  }
+};
+  // const confirmAction = async (selectedWorkerIds) => {
+  //   console.log(selectedWorkerIds)
+  //   if (sopToApprove && selectedWorkerIds.length > 0) {
+  //      setReviewLoading(true);
+  //     setApprovalLoading(true);
+  //     try {
+
+  //       // Create review objects for each selected worker
+  //       const reviews = selectedWorkerIds.map(workerId => {
+  //         const worker = workersList.find(w => w._id === workerId);
+  //         return {
+  //           reviewerId: workerId,
+  //           reviewerName: worker ? worker.name : 'Unknown',
+  //           reviewerRole: worker ? worker.role : 'undefined',
+  //           status: 'Pending Review',
+  //           reviewDate: new Date().toISOString(),
+
+  //         };
+  //       });
+  //       console.log(reviews);
+  //       console.log(sopToApprove);
+
+  //       const res = await fetch(`/api/task/update-status/${sopToApprove}`, {
+  //         method: "PATCH",
+  //         headers: {
+  //           "Content-Type": "application/json",
+  //         },
+  //         body: JSON.stringify({
+  //           status: "Under Review",
+  //           reviews
+  //         }),
+  //       });
+
+  //       if (res.ok) {
+  //         setSopData(sopData.map(item =>
+  //           item._id === sopToApprove ? {
+  //             ...item,
+  //             status: "Under Review",
+  //             approvalSent: true,
+  //             reviews
+  //           } : item
+  //         ));
+  //         setShowReviewModal(false);
+  //         setSopToApprove(null);
+  //         setSelectedWorkers([]);
+  //       }
+  //     } catch (err) {
+  //       console.error("Failed to send for review:", err);
+  //     } finally {
+  //       setReviewLoading(false);
+  //       setApprovalLoading(false);
+  //     }
+  //   }
+  // };
   // Skeleton Loading Components
   const SkeletonTableRow = () => (
     <tr className="animate-pulse">
@@ -1590,7 +1977,7 @@ const ReviewModal = ({
     const data = JSON.parse(userData)
     setCompanyData(data)
   }, [])
-
+console.log(companyData);
   useEffect(() => {
     const fetchSops = async () => {
       try {
@@ -1846,15 +2233,17 @@ const ReviewModal = ({
                                 { sop.status === "Under Review" || sop.status === "Rejected Review" ? "View Reviewer's":  "Send for Review"}
                               </button>
                             </div>
-                            ) : sop.status === "Approved Review" ? (
+                            ) : sop.status === "Approved Review" || sop.status=="Pending Approval" ? (
 
                               <div className=" py-4 whitespace-nowrap text-center">
                                 <button
-                                  onClick={() => handleApprove(sop.id)}
+                                 onClick={() => handleSendForApproval(sop.id)}
+                                  // onClick={() => handleApprove(sop.id)}
                                   className="px-3 py-1.5 border border-transparent text-xs font-medium rounded-full shadow-sm text-white bg-blue-500 hover:bg-[#2791b8]"
                                   title="Send for Approval"
                                 >
-                                  Send for Approval
+                                  { sop.status=="Pending Approval" ? "View Approver's":" Send for Approval" }
+                                 
                                 </button></div>
                             ) : (<></>
 
@@ -2128,7 +2517,7 @@ const ReviewModal = ({
           })()}
         />
       )}
-      {showReviewModal && (
+      {/* {showReviewModal && (
         <ReviewModal
           onClose={() => {
             setShowReviewModal(false);
@@ -2143,7 +2532,24 @@ const ReviewModal = ({
           existingReviews={reviewSop?.reviews || []}
            reviewLoading={reviewLoading}
         />
-      )}
+      )} */}
+      {showReviewModal && (
+  <ReviewApprovalModal
+    onClose={() => {
+      setShowReviewModal(false);
+      setSelectedWorkers([]);
+    }}
+    onSend={confirmAction}
+    workers={workersList}
+    loading={loadingWorkers}
+    selectedWorkers={selectedWorkers}
+    setSelectedWorkers={setSelectedWorkers}
+    sopStatus={reviewSop?.status}
+    actionLoading={modalActionType === 'review' ? reviewLoading : approvalLoading}
+    existingReviews={modalActionType === 'review' ? reviewSop?.reviews || [] : reviewSop?.approvers || []}
+    actionType={modalActionType}
+  />
+)}
     </div>
   )
 }

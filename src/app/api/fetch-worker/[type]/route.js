@@ -7,10 +7,11 @@ export async function GET(req,{ params }) {
     await dbConnect();
 
   const { type } = params;
+const { searchParams } = new URL(req.url);
+const companyId = searchParams.get("companyId");
     console.log("dddeeeddd",type);
 
-    // Find users where the task array contains "Review Access"
-    const users = await User.find({ task: type });
+    const users = await User.find({ companyId: companyId, task: type });
 
     return NextResponse.json({
       success: true,

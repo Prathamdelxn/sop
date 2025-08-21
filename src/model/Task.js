@@ -400,6 +400,16 @@ const prototypeSchema = new mongoose.Schema({
 
 
    }],
+   approvers:[{
+    approverId:{type:String},
+    approverName:{type:String},
+    approverRole:{type:String},
+    status:{type:String},
+    comments:{type:String},
+    approvalDate:{type:String}
+
+
+   }],
   createdAt: { type: Date, default: Date.now },
   updatedAt: { type: Date, default: Date.now }
 }, { 
