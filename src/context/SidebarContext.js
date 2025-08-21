@@ -1,12 +1,23 @@
 'use client';
 
-import { createContext, useContext, useState, useEffect } from 'react';
+import { createContext, useContext, useState } from 'react';
 
 const SidebarContext = createContext();
+
+const iconPool = [
+  '👥', '📈', '💼', '🎯', '📋', '⚙️', '🔍', '📊', '💡', '🚀',
+  '📝', '🎨', '💰', '📞', '🏢', '🔧', '📱', '💻', '🌟', '🎪',
+  '🎭', '🎪', '🎨', '🎯', '🎲', '🎵', '🎬', '🎮', '🎯', '🎪'
+];
 
 export function SidebarProvider({ children }) {
   const [dynamicSidebarItems, setDynamicSidebarItems] = useState([]);
   const [isLoadingItems, setIsLoadingItems] = useState(true);
+
+  // Function to get random icon
+  const getRandomIcon = (index) => {
+    return iconPool[index % iconPool.length];
+  };
 
   // Function to update sidebar items
   const updateSidebarItems = (newItems) => {
@@ -40,7 +51,8 @@ export function SidebarProvider({ children }) {
       addSidebarItem,
       removeSidebarItem,
       updateSidebarItem,
-      setIsLoadingItems
+      setIsLoadingItems,
+      getRandomIcon
     }}>
       {children}
     </SidebarContext.Provider>

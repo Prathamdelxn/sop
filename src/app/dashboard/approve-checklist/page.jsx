@@ -1342,7 +1342,7 @@ import {
   X,
   FileText,
   Layers,
-  Search,
+  Search,Loader2 
 } from "lucide-react"
 import Image from "next/image"
 
@@ -1359,6 +1359,7 @@ const ApprovePage = () => {
   const [data, setData] = useState([])
   const [searchTerm, setSearchTerm] = useState('')
   const [statusFilter, setStatusFilter] = useState('All Statuses')
+  const [approvingSopId, setApprovingSopId] = useState(null) 
 
   useEffect(() => {
     const userData = localStorage.getItem('user')
@@ -1418,7 +1419,7 @@ const getReviewStatus = (sop) => {
     return reviewerReview ? reviewerReview.status : 'Pending Approval';
   }
   const handleApprove = async (sopId) => {
-    try {
+    try {  setApprovingSopId(sopId);
       setLoading(true);
       
       const res = await fetch(`/api/task/update-approve-status`, {
@@ -1458,6 +1459,7 @@ const getReviewStatus = (sop) => {
         setShowApprovalFeedback(false);
       }, 3000);
     } finally {
+      setApprovingSopId(null); 
       setLoading(false);
     }
   }
@@ -2006,10 +2008,17 @@ console.log(rejectReason);
                 </button>
                 <button
                   onClick={() => handleApprove(selectedSop._id)}
-                  className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 flex items-center gap-2"
+                  className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 flex items-center justify-center gap-2 min-w-[100px]"
+                  disabled={loading} // Disable while loading
                 >
-                  <Check className="w-5 h-5" />
-                  Approve
+                  {approvingSopId === selectedSop._id ? (
+                    <Loader2 className="w-5 h-5 animate-spin" />
+                  ) : (
+                    <>
+                      <Check className="w-5 h-5" />
+                      Approve
+                    </>
+                  )}
                 </button>
               </div>
             )}

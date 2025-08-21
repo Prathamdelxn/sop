@@ -5,6 +5,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { FiCheck, FiPlus, FiTrash2, FiEdit2, FiX } from 'react-icons/fi';
 import { toast } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
+import { useSidebar } from '@/context/SidebarContext';
 
 const predefinedTasks = [
   'Create Checklist',
@@ -34,7 +35,7 @@ export default function UpdateWorkerRoles() {
   const [popupType, setPopupType] = useState('alert'); // 'alert' or 'confirm'
   const [popupCallback, setPopupCallback] = useState(null);
   const [deletingRole, setDeletingRole] = useState(null);
-
+ const { addSidebarItem, removeSidebarItem, updateSidebarItem, getRandomIcon } = useSidebar();
   useEffect(() => {
     const fetchUserData = async () => {
       try {
@@ -116,11 +117,12 @@ export default function UpdateWorkerRoles() {
 
           if (res.ok) {
             toast.success(`Deleted role "${roleTitle}" and ${data.deletedUsersCount || 0} associated user(s)`);
+             removeSidebarItem(roleTitle);
             await fetchRoles(superadminId);
             if (editingRole && editingRole.title === roleTitle) {
               resetForm();
             }
-            window.location.reload();
+            // window.location.reload();
           } else {
             throw new Error(data.error || 'Failed to delete role');
           }
@@ -190,10 +192,21 @@ export default function UpdateWorkerRoles() {
       }
 
       toast.success(`Role ${editingRole ? 'updated' : 'created'} successfully`);
+       const newItem = {
+        title: roleTitle,
+        task: selectedTasks,
+        icon: getRandomIcon(roles.length)
+      };
+      
+      if (editingRole) {
+        updateSidebarItem(editingRole.title, newItem);
+      } else {
+        addSidebarItem(newItem);
+      }
       resetForm();
       await fetchRoles(superadminId);
       setActiveTab('manage');
-      window.location.reload();
+      // window.location.reload();
     } catch (error) {
       console.error(`Error ${editingRole ? 'updating' : 'creating'} role:`, error);
       showAlert(error.message || `Error ${editingRole ? 'updating' : 'creating'} role`);

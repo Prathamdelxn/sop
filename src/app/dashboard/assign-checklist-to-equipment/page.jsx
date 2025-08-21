@@ -169,7 +169,7 @@ const confirmDeleteAssignment = async () => {
         const approvedEquipments = equipmentData.data.filter(e => e.status === 'Approved' && e.companyId === companyData?.companyId);
         setEquipmentList(approvedEquipments);
 
-        const filteredPrototypes = prototypesData.data.filter((t) => t.companyId === companyData?.companyId);
+        const filteredPrototypes = prototypesData.data.filter((t) => t.status === 'Approved' && t.companyId === companyData?.companyId);
         setPrototypeList(filteredPrototypes);
 
         await fetchAssignment();
@@ -238,7 +238,7 @@ const confirmDeleteAssignment = async () => {
         <div className="flex flex-col md:flex-row md:items-center md:justify-between mb-8 gap-4">
           <div>
             <h1 className="text-3xl font-bold text-gray-800">
-              Assign Prototype to Equipment
+              Assign Checklist to Equipment
             </h1>
             <p className="text-gray-600">Assign and track your equipment with checklist efficiently</p>
           </div>
@@ -247,7 +247,7 @@ const confirmDeleteAssignment = async () => {
             className="bg-blue-600 text-white font-medium py-3 px-6 rounded-lg hover:bg-blue-700 transition-colors flex items-center gap-2 w-full md:w-auto justify-center"
           >
             <Plus className="w-5 h-5" />
-            <span>Assign Prototype to Equipment</span>
+            <span>Assign Checklist to Equipment</span>
           </button>
         </div>
 
@@ -305,7 +305,7 @@ const confirmDeleteAssignment = async () => {
                     Sr.No.
                   </th>
                   <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Prototype Name
+                    Checklist Name
                   </th>
                   <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                     Equipment Name
@@ -431,16 +431,16 @@ const confirmDeleteAssignment = async () => {
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Prototype</label>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Checklist</label>
                 <select
                   value={assignee?._id || ''}
                   onChange={(e) => setAssignee(prototypeList.find(proto => proto._id === e.target.value))}
                   className="w-full p-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
                 >
-                  <option value="">Select prototype</option>
+                  <option value="">Select checklist</option>
                   {prototypeList.map((item) => (
                     <option key={item._id} value={item._id}>
-                      {item.name || item.title || `Prototype ${item._id.slice(-4)}`}
+                      {item.name || item.title || `Checklist ${item._id.slice(-4)}`}
                     </option>
                   ))}
                 </select>
