@@ -103,7 +103,7 @@ export async function PUT(req, { params }) {
 
     const updatedPrototype = await Prototype.findByIdAndUpdate(
       id,
-      { ...body, status: "InProgress",  rejectionReason: null, reviews:[],   updatedAt: new Date() },
+      { ...body, status: "InProgress",  rejectionReason: null, reviews:[],approvers:[],   updatedAt: new Date() },
       { new: true, runValidators: true }
     );
 

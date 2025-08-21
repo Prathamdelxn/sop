@@ -1468,14 +1468,14 @@ console.log(rejectReason);
     try {
       setLoading(true);
       
-      const res = await fetch(`/api/task/update-review-status`, {
+      const res = await fetch(`/api/task/update-approve-status`, {
         method: "PUT",
         headers: {
           "Content-Type": "application/json",
         },
         body: JSON.stringify({ 
              prototypeId:selectedSop?._id,
-            reviewerId:companyData?.id,
+            approverId:companyData?.id,
           status: "Rejected",
           comments: rejectReason 
         }),

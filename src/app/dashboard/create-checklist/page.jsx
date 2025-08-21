@@ -867,7 +867,7 @@ const ReviewModal = ({
                       
                       {review.comments && (
                         <div className="mt-3 pt-3 border-t border-gray-100">
-                          <p className="text-xs font-medium text-gray-500 mb-1">Comments</p>
+                          <p className="text-xs font-medium text-gray-500 mb-1">Rejection Reason</p>
                           <p className="text-sm text-gray-700 bg-gray-50 p-3 rounded-lg">
                             {review.comments}
                           </p>
@@ -1144,7 +1144,7 @@ const ReviewApprovalModal = ({
                       
                       {review.comments && (
                         <div className="mt-3 pt-3 border-t border-gray-100">
-                          <p className="text-xs font-medium text-gray-500 mb-1">Comments</p>
+                          <p className="text-xs font-medium text-gray-500 mb-1">Rejection Reason</p>
                           <p className="text-sm text-gray-700 bg-gray-50 p-3 rounded-lg">
                             {review.comments}
                           </p>
@@ -2233,7 +2233,7 @@ console.log(companyData);
                                 { sop.status === "Under Review" || sop.status === "Rejected Review" ? "View Reviewer's":  "Send for Review"}
                               </button>
                             </div>
-                            ) : sop.status === "Approved Review" || sop.status=="Pending Approval" ? (
+                            ) : sop.status === "Approved Review" || sop.status=="Pending Approval" ||  sop.status=="Rejected"? (
 
                               <div className=" py-4 whitespace-nowrap text-center">
                                 <button
@@ -2242,7 +2242,7 @@ console.log(companyData);
                                   className="px-3 py-1.5 border border-transparent text-xs font-medium rounded-full shadow-sm text-white bg-blue-500 hover:bg-[#2791b8]"
                                   title="Send for Approval"
                                 >
-                                  { sop.status=="Pending Approval" ? "View Approver's":" Send for Approval" }
+                                  { sop.status=="Pending Approval" ||  sop.status=="Rejected" ? "View Approver's":" Send for Approval" }
                                  
                                 </button></div>
                             ) : (<></>
