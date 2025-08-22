@@ -360,7 +360,7 @@ const DurationModal = ({
             <Minus className="w-2.5 h-2.5" />
           </button>
         </div>
-        <span className="text-xs font-medium text-gray-500 mt-1 uppercase">
+        <span className="text-xs mt-4 font-medium text-gray-500 mt-1 uppercase">
           {field.slice(0, 3)}
         </span>
       </div>

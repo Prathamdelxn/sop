@@ -44,8 +44,8 @@ const LoginPage = () => {
       // Optional: Save token to localStorage or context
       login(data.token, data.user); // <-- from AuthContext
 
-      toast.success("Login successful!");
-      console.log(data.user);
+      // toast.success("Login successful!");
+      // console.log(data.user);
       if (data.user.role == "super-manager") {
         router.push("/super-admin");
       } else if (data.user.role == "company-admin") {

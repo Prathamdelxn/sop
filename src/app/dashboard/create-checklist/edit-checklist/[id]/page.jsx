@@ -3,6 +3,7 @@
 "use client"
 
 import React, { useState, useCallback, useMemo, useRef, useEffect } from 'react';
+import { ObjectId } from 'bson';
 import { Plus, Trash2, Clock, Image, ChevronDown, ChevronRight, X, Camera, Minus } from 'lucide-react';
 import { ArrowLeft } from 'react-feather';
 import { ToastContainer, toast } from 'react-toastify';
@@ -128,7 +129,7 @@ const DurationModal = ({
             <Minus className="w-2.5 h-2.5" />
           </button>
         </div>
-        <span className="text-xs font-medium text-gray-500 mt-1 uppercase">
+        <span className="text-xs mt-4 font-medium text-gray-500 mt-1 uppercase">
           {field.slice(0, 3)}
         </span>
       </div>
@@ -588,23 +589,22 @@ const TaskComponent = React.memo(({
             placeholder="Enter task description"
           />
         </div>
+        
 
-        {(task.minDuration || task.maxDuration) && (
-          <div className="mt-3 p-4 bg-gray-50 rounded-xl border border-gray-200 shadow-sm">
-            <div className="flex flex-col justify-center gap-3 text-sm text-gray-700">
-            
-              <div className="font-semibold flex items-center">   <Clock className="w-4 sm:w-5 h-4 sm:h-5 text-gray-500" /> Duration:</div>
-              
-              <div className="font-medium flex gap-4">
-                <span> Minimun Duration :  {task.minTime ? formatDetailedDuration(task.minTime) : formatDuration(task.minDuration)}</span>
-                 <span> Maximum Duration :    {task.maxTime ? formatDetailedDuration(task.maxTime) : formatDuration(task.maxDuration)}</span>
-             
-               
-                
-              </div>
-            </div>
-          </div>
-        )}
+       {(task.minDuration > 0 || task.maxDuration > 0) && (
+  <div className="mt-3 p-4 bg-gray-50 rounded-xl border border-gray-200 shadow-sm">
+    <div className="flex flex-col justify-center gap-3 text-sm text-gray-700">
+      <div className="font-semibold flex items-center">
+        <Clock className="w-4 sm:w-5 h-4 sm:h-5 text-gray-500" /> Duration:
+      </div>
+      
+      <div className="font-medium flex gap-4">
+        <span>Minimum Duration: {task.minTime ? formatDetailedDuration(task.minTime) : formatDuration(task.minDuration)}</span>
+        <span>Maximum Duration: {task.maxTime ? formatDetailedDuration(task.maxTime) : formatDuration(task.maxDuration)}</span>
+      </div>
+    </div>
+  </div>
+)}
 
         <div className="flex flex-wrap gap-3">
           <button
@@ -702,8 +702,9 @@ const EditChecklistPage = () => {
       try {
         const response = await fetch(`/api/task/fetch-by-id/${checklistId}`);
         if (!response.ok) throw new Error('Failed to fetch checklist');
-        
+       
         const data = await response.json();
+         console.log(data);
         setPrototypeName(data.name);
         setDepartmentName(data.departmentName);
         setDocumentNo(data.documentNo);
@@ -817,7 +818,7 @@ const deleteTask = useCallback((stageId, taskId, parentPath = []) => {
 
   const addSubtask = useCallback((stageId, taskId, parentPath = []) => {
     const newSubtask = {
-      _id: Date.now().toString(),
+    _id: new ObjectId().toString(),
       title: '',
       description: '',
       minDuration: '',

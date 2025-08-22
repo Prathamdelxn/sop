@@ -17,7 +17,7 @@ const predefinedTasks = [
   'Approve Task',
   'Approve Checklist',
   'Review Access',
-  
+
   'Approve Tagged Chechlist with Equipment'
 ];
 
@@ -35,7 +35,7 @@ export default function UpdateWorkerRoles() {
   const [popupType, setPopupType] = useState('alert'); // 'alert' or 'confirm'
   const [popupCallback, setPopupCallback] = useState(null);
   const [deletingRole, setDeletingRole] = useState(null);
- const { addSidebarItem, removeSidebarItem, updateSidebarItem, getRandomIcon } = useSidebar();
+  const { addSidebarItem, removeSidebarItem, updateSidebarItem, getRandomIcon } = useSidebar();
   useEffect(() => {
     const fetchUserData = async () => {
       try {
@@ -92,7 +92,7 @@ export default function UpdateWorkerRoles() {
 
   const handleDeleteRole = async (roleTitle) => {
     if (!superadminId) return;
-    
+
     setDeletingRole(roleTitle);
     showConfirm(
       `Are you sure you want to delete the role "${roleTitle}"? This will also delete users with this role.`,
@@ -117,7 +117,7 @@ export default function UpdateWorkerRoles() {
 
           if (res.ok) {
             toast.success(`Deleted role "${roleTitle}" and ${data.deletedUsersCount || 0} associated user(s)`);
-             removeSidebarItem(roleTitle);
+            removeSidebarItem(roleTitle);
             await fetchRoles(superadminId);
             if (editingRole && editingRole.title === roleTitle) {
               resetForm();
@@ -153,31 +153,43 @@ export default function UpdateWorkerRoles() {
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (!superadminId || !roleTitle) return;
+    const newRoleTitle = roleTitle.trim().toLowerCase();
 
+  // ✅ Duplicate check only on create
+  if (!editingRole) {
+    const roleExists = roles.some(
+      (r) => r.title?.trim().toLowerCase() === newRoleTitle
+    );
+console.log("reason",roleExists);
+    if (roleExists) {
+      showAlert(`Role "${roleTitle}" already exists. Please choose another name.`);
+      return; // stop form submit
+    }
+  }
     setIsSubmitting(true);
-    
+
     try {
-      const endpoint = editingRole 
-        ? '/api/superAdmin/update-worker-roles' 
+      const endpoint = editingRole
+        ? '/api/superAdmin/update-worker-roles'
         : '/api/superAdmin/add-worker-roles';
       const method = editingRole ? 'PUT' : 'PUT';
 
       const body = editingRole
         ? {
-            superadminId,
-            oldRoleTitle: editingRole.title,
-            workerRole: { 
-              title: roleTitle, 
-              task: selectedTasks 
-            }
+          superadminId,
+          oldRoleTitle: editingRole.title,
+          workerRole: {
+            title: roleTitle,
+            task: selectedTasks
           }
+        }
         : {
-            superadminId,
-            workerRole: { 
-              title: roleTitle, 
-              task: selectedTasks 
-            }
-          };
+          superadminId,
+          workerRole: {
+            title: roleTitle,
+            task: selectedTasks
+          }
+        };
 
       const res = await fetch(endpoint, {
         method,
@@ -192,12 +204,12 @@ export default function UpdateWorkerRoles() {
       }
 
       toast.success(`Role ${editingRole ? 'updated' : 'created'} successfully`);
-       const newItem = {
+      const newItem = {
         title: roleTitle,
         task: selectedTasks,
         icon: getRandomIcon(roles.length)
       };
-      
+
       if (editingRole) {
         updateSidebarItem(editingRole.title, newItem);
       } else {
@@ -218,7 +230,7 @@ export default function UpdateWorkerRoles() {
   return (
     <div className="min-h-screen bg-gray-50 p-4 sm:p-6">
       <div className="max-w-6xl mx-auto">
-        <motion.div 
+        <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           className="mb-8"
@@ -231,30 +243,28 @@ export default function UpdateWorkerRoles() {
 
         <div className="bg-white rounded-xl shadow-sm overflow-hidden mb-8">
           <div className="flex border-b border-gray-200">
-          
+
             <button
               onClick={() => {
                 resetForm();
                 setActiveTab('manage');
               }}
-              className={`px-4 sm:px-6 py-3 font-medium text-xs sm:text-sm ${
-                activeTab === 'manage' 
-                  ? 'text-indigo-600 border-b-2 border-indigo-600' 
+              className={`px-4 sm:px-6 py-3 font-medium text-xs sm:text-sm ${activeTab === 'manage'
+                  ? 'text-indigo-600 border-b-2 border-indigo-600'
                   : 'text-gray-500 hover:text-gray-700'
-              }`}
+                }`}
             >
               Manage Roles
             </button>
-              <button
+            <button
               onClick={() => {
                 resetForm();
                 setActiveTab('create');
               }}
-              className={`px-4 sm:px-6 py-3 font-medium text-xs sm:text-sm ${
-                activeTab === 'create' 
-                  ? 'text-indigo-600 border-b-2 border-indigo-600' 
+              className={`px-4 sm:px-6 py-3 font-medium text-xs sm:text-sm ${activeTab === 'create'
+                  ? 'text-indigo-600 border-b-2 border-indigo-600'
                   : 'text-gray-500 hover:text-gray-700'
-              }`}
+                }`}
             >
               {editingRole ? 'Edit Role' : 'Create Role'}
             </button>
@@ -318,17 +328,15 @@ export default function UpdateWorkerRoles() {
                         <button
                           type="button"
                           onClick={() => handleTaskToggle(task)}
-                          className={`w-full text-left p-2 sm:p-3 rounded-lg border transition-all flex items-center ${
-                            selectedTasks.includes(task)
+                          className={`w-full text-left p-2 sm:p-3 rounded-lg border transition-all flex items-center ${selectedTasks.includes(task)
                               ? 'bg-indigo-50 border-indigo-200 text-indigo-700'
                               : 'bg-gray-50 hover:bg-gray-100 border-gray-200'
-                          }`}
+                            }`}
                         >
-                          <span className={`w-5 h-5 flex items-center justify-center mr-2 sm:mr-3 rounded border ${
-                            selectedTasks.includes(task)
+                          <span className={`w-5 h-5 flex items-center justify-center mr-2 sm:mr-3 rounded border ${selectedTasks.includes(task)
                               ? 'bg-indigo-600 border-indigo-600 text-white'
                               : 'bg-white border-gray-300'
-                          }`}>
+                            }`}>
                             {selectedTasks.includes(task) && <FiCheck size={14} />}
                           </span>
                           <span className="text-sm sm:text-base">{task}</span>
@@ -342,11 +350,10 @@ export default function UpdateWorkerRoles() {
                   <button
                     type="submit"
                     disabled={isSubmitting || !roleTitle}
-                    className={`w-full py-2 sm:py-3 px-4 rounded-lg font-medium text-white transition flex justify-center items-center ${
-                      isSubmitting || !roleTitle
+                    className={`w-full py-2 sm:py-3 px-4 rounded-lg font-medium text-white transition flex justify-center items-center ${isSubmitting || !roleTitle
                         ? 'bg-indigo-400 cursor-not-allowed'
                         : 'bg-indigo-600 hover:bg-indigo-700'
-                    }`}
+                      }`}
                   >
                     {isSubmitting ? (
                       <>
@@ -427,8 +434,8 @@ export default function UpdateWorkerRoles() {
                                       <div className="flex flex-wrap gap-1 sm:gap-2">
                                         {role.task && role.task.length > 0 ? (
                                           role.task.map((task, i) => (
-                                            <span 
-                                              key={i} 
+                                            <span
+                                              key={i}
                                               className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-indigo-100 text-indigo-800"
                                             >
                                               {task}
@@ -440,13 +447,13 @@ export default function UpdateWorkerRoles() {
                                       </div>
                                     </td>
                                     <td className="px-4 sm:px-6 py-4 whitespace-nowrap text-right text-sm font-medium space-x-2">
-                                      <button 
+                                      <button
                                         className="text-indigo-600 hover:text-indigo-900 p-1"
                                         onClick={() => handleEditRole(role)}
                                       >
                                         <FiEdit2 size={16} />
                                       </button>
-                                      <button 
+                                      <button
                                         onClick={() => handleDeleteRole(role.title)}
                                         disabled={isDeleting && deletingRole === role.title}
                                         className="text-red-600 hover:text-red-900 p-1 disabled:opacity-50"
@@ -481,7 +488,7 @@ export default function UpdateWorkerRoles() {
       <AnimatePresence>
         {showPopup && (
           <div className="fixed inset-0 backdrop-blur-sm bg-gray-300/50 bg-opacity-30 flex items-center justify-center z-50 p-4">
-            <motion.div 
+            <motion.div
               initial={{ opacity: 0, scale: 0.9 }}
               animate={{ opacity: 1, scale: 1 }}
               exit={{ opacity: 0, scale: 0.9 }}
@@ -493,7 +500,7 @@ export default function UpdateWorkerRoles() {
                 </h3>
                 <p className="mt-2 text-gray-600">{popupMessage}</p>
               </div>
-              
+
               <div className="flex justify-end space-x-3">
                 {popupType === 'confirm' ? (
                   <>

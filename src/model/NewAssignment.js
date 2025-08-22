@@ -26,12 +26,6 @@
 
 import mongoose from 'mongoose';
 
-// Sub-schema for equipment
-
-
-// Sub-schema for prototype
-
-// Main Assignment Schema
 const assignmentSchema = new mongoose.Schema({
   generatedId: {
     type: String,
