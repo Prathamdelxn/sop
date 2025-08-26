@@ -332,6 +332,7 @@ export default function DynamicDashboardPage({ params }) {
           body: JSON.stringify(userData),
         });
       } else {
+        console.log("new data is",userData);
         // Create new user
         response = await fetch('/api/superAdmin/users/create', {
           method: 'POST',
