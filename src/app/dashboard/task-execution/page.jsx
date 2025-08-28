@@ -53,7 +53,8 @@ const TaskExecutionPage = () => {
 
   const handleExecuteTask = (taskId) => {
     console.log('Executing task:', taskId);
-    router.push('/dashboard/task-execution/execution/1');
+        router.push('/dashboard/task-execution/demo');
+    // router.push('/dashboard/task-execution/execution/1');
     // Router navigation would go here
   };
 

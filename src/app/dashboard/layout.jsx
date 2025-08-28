@@ -1352,11 +1352,11 @@ export default function DashboardLayout({ children }) {
         </div>
       
         {/* Page content */}
-        <main className="py-8 relative z-0">
-          <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+        {/* <main className="py-2 relative z-0"> */}
+          <div className="mx-auto max-w-7xl px-2 h-full lg:px-2">
             {children}
           </div>
-        </main>
+        {/* </main> */}
       </div>
 
       <style jsx>{`
