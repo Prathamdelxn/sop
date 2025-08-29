@@ -53,10 +53,48 @@ const TaskExecutionPage = () => {
 
   const handleExecuteTask = (taskId) => {
     console.log('Executing task:', taskId);
-        router.push('/dashboard/task-execution/demo');
-    // router.push('/dashboard/task-execution/execution/1');
+        // router.push('/dashboard/task-execution/demo');
+     router.push(`/dashboard/task-execution/execution/${taskId}`);
     // Router navigation would go here
   };
+  const [userData,setUser]=useState();
+ useEffect(() => {
+  const storedUser = localStorage.getItem("user");
+  if (storedUser) {
+    const data = JSON.parse(storedUser);
+    setUser(data);
+
+    // ✅ call fetch here after setting
+    fetch(`/api/assignment/execution/${data.companyId}/${data.id}`)
+      .then((res) => res.json())
+      .then((data) => {
+        console.log("Assignments:", data);
+        setTasks(data);
+      })
+      .catch((err) => console.error("Error:", err));
+  }
+}, []);
+
+
+//  const fetchAssignment = async () => {
+//   try {
+//     const res = await fetch(`/api/assignments/${userData?.companyId}/${userData?.id}`);
+//     if (!res.ok) {
+//       throw new Error("Failed to fetch assignments");
+//     }
+//     const data = await res.json();
+//     console.log("Assignments:", data);
+//     return data;
+//   } catch (error) {
+//     console.error("Error:", error);
+//   }
+// };
+
+//   useEffect(()=>{
+//     fetchAssignment();
+//   },[userData])
+
+
 
   const handleViewTask = (taskId) => {
     console.log('Viewing task:', taskId);
@@ -65,7 +103,7 @@ const TaskExecutionPage = () => {
 
   const getStatusConfig = (status) => {
     switch (status) {
-      case 'completed':
+      case 'Completed':
         return {
           bg: 'bg-emerald-50',
           text: 'text-emerald-700',
@@ -73,7 +111,7 @@ const TaskExecutionPage = () => {
           icon: '✅',
           label: 'Completed'
         };
-      case 'in-progress':
+      case 'Under Execution':
         return {
           bg: 'bg-blue-50',
           text: 'text-blue-700',
@@ -161,7 +199,7 @@ const TaskExecutionPage = () => {
               </thead>
               <tbody>
                 {tasks.map((task, index) => {
-                  const statusConfig = getStatusConfig(task.prototypeData.status);
+                  const statusConfig = getStatusConfig(task.status);
                   return (
                     <tr 
                       key={task._id} 
@@ -180,9 +218,7 @@ const TaskExecutionPage = () => {
                             <div className="text-sm font-medium text-gray-900">
                               {task.equipment.name}
                             </div>
-                            <div className="text-sm text-gray-500">
-                              {task.equipment.barcode}
-                            </div>
+                            
                           </div>
                         </div>
                       </td>
