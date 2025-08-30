@@ -1103,10 +1103,11 @@ const hasDuplicateTitle = useCallback((stageId, taskId, parentPath = []) => {
 
   const handleSavePrototype = async () => {
 
-    setIsSaving(true);
+   
     if (!validatePrototype()) {
       return;
     }
+     setIsSaving(true);
     const exists = await checkIfChecklistExists(prototypeName);
     if (exists) {
       showToastMessage();
