@@ -1,7 +1,7 @@
 "use client";
 import { useRouter } from 'next/navigation';
 import React, { useState, useEffect } from 'react';
-import { Play, Eye, Clock, User, Package, Hash, Zap } from 'lucide-react';
+import { Play, Eye, Clock, User, Package, Hash, Zap,Sparkles } from 'lucide-react';
 
 const TaskExecutionPage = () => {
   const router = useRouter();
@@ -122,7 +122,7 @@ const TaskExecutionPage = () => {
       default:
         return {
           bg: 'bg-amber-50',
-          text: 'text-amber-700',
+          text: 'text-amber-600',
           border: 'border-amber-200',
           icon: '⏳',
           label: 'Pending'
@@ -131,23 +131,28 @@ const TaskExecutionPage = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 p-4 ">
+      <div className="max-w-7xl mx-auto px-4 sm:px-4 lg:px-2 py-2">
+        <div className="bg-white border-b border-gray-200 rounded-xl  mt-4 shadow-sm">
+                <div className="max-w-7xl mx-auto px-6 py-6 rounded-xl flex flex-col lg:flex-row lg:items-center lg:justify-between gap-6">
+                  <div className="flex items-center space-x-4">
+                    <div className="p-4 bg-gradient-to-br from-blue-500 via-purple-500 to-pink-500 rounded-2xl shadow">
+                      <Sparkles className="w-6 h-6 text-white" />
+                    </div>
+                    <div>
+                      <h1 className="text-2xl font-bold text-gray-900">Task Execution Workspace</h1>
+                      <p className="text-gray-600 mt-2 text-md">Manage and Execute your assigned task </p>
+                    </div>
+                  </div>
+                 
+        
+                </div>
+              </div>
         {/* Header */}
-        <div className="mb-8">
-          <div className="flex items-center gap-3 mb-2">
-            <div className="p-2 bg-white rounded-lg shadow-sm border">
-              <Zap className="h-6 w-6 text-blue-600" />
-            </div>
-            <h1 className="text-3xl font-bold text-gray-900">
-              Task Execution
-            </h1>
-          </div>
-          <p className="text-gray-600 text-lg">Manage and execute your assigned laboratory tasks</p>
-        </div>
+       
 
         {/* Modern Card Container */}
-        <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
+        <div className="bg-white mt-4 rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
           {/* Card Header */}
           <div className="px-6 py-4 border-b border-gray-100 bg-gray-50/50">
             <div className="flex items-center justify-between">
@@ -234,8 +239,8 @@ const TaskExecutionPage = () => {
                       </td>
                      
                       <td className="px-6 py-5">
-                        <span className={`inline-flex items-center gap-2 px-3 py-1 rounded-lg text-sm font-medium border ${statusConfig.bg} ${statusConfig.text} ${statusConfig.border}`}>
-                          <span>{statusConfig.icon}</span>
+                        <span className={`inline-flex items-center gap-2 px-3 py-1 rounded-xl text-sm font-medium  ${statusConfig.bg} ${statusConfig.text}`}>
+                          {/* <span>{statusConfig.icon}</span> */}
                           {statusConfig.label}
                         </span>
                       </td>

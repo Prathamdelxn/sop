@@ -7,7 +7,7 @@ import {
   Trash2,
   CheckCircle,
   Activity,
-  Search ,
+  Search,
   AlertCircle,
   Zap,
   TrendingUp,
@@ -40,7 +40,7 @@ const SOPDashboard = () => {
   const router = useRouter()
   const [activeDurationPath, setActiveDurationPath] = useState('')
   const [deleteLoading, setDeleteLoading] = useState(false);
-const [reviewLoading, setReviewLoading] = useState(false);
+  const [reviewLoading, setReviewLoading] = useState(false);
   const [showImageModal, setShowImageModal] = useState(false);
   const [activeImagePath, setActiveImagePath] = useState('');
   const [sopData, setSopData] = useState([])
@@ -52,7 +52,7 @@ const [reviewLoading, setReviewLoading] = useState(false);
   const [approvalLoading, setApprovalLoading] = useState(false);
   const [navigatingToCreate, setNavigatingToCreate] = useState(false);
   const [showReviewModal, setShowReviewModal] = useState(false);
-  const[showApproveModal,setShowApproveModal]=useState(false);
+  const [showApproveModal, setShowApproveModal] = useState(false);
   const [selectedWorkers, setSelectedWorkers] = useState([]);
   const [workersList, setWorkersList] = useState([]);
   const [loadingWorkers, setLoadingWorkers] = useState(false);
@@ -60,7 +60,7 @@ const [reviewLoading, setReviewLoading] = useState(false);
   const [selectedSop, setSelectedSop] = useState(null)
   const [reviewSop, setReviewSop] = useState(null);
   const [expandedTasks, setExpandedTasks] = useState({})
-const [modalActionType, setModalActionType] = useState('');
+  const [modalActionType, setModalActionType] = useState('');
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [sopToDelete, setSopToDelete] = useState(null);
   const [editingSop, setEditingSop] = useState({
@@ -759,13 +759,13 @@ const [modalActionType, setModalActionType] = useState('');
   };
 
   const fetchWorkers = async (param) => {
-   
+
     setLoadingWorkers(true);
     try {
-     const res = await fetch(`/api/fetch-worker/${param}?companyId=${companyData?.companyId}`, {
-      method: "GET",
-     
-    });// You'll need to create this API endpoint
+      const res = await fetch(`/api/fetch-worker/${param}?companyId=${companyData?.companyId}`, {
+        method: "GET",
+
+      });// You'll need to create this API endpoint
       const data = await res.json();
       setWorkersList(data.data);
     } catch (err) {
@@ -775,633 +775,631 @@ const [modalActionType, setModalActionType] = useState('');
     }
   };
 
- 
-const ReviewModal = ({
-  onClose,
-  onSend,
-  workers,
-  loading,
-  selectedWorkers,
-  setSelectedWorkers,
-  sopStatus,
-   reviewLoading,
-  existingReviews = []
-}) => {
-  const isUnderReview = sopStatus === "Under Review" || sopStatus === "Approved Review" || sopStatus === "Rejected Review";
-  const [searchTerm, setSearchTerm] = useState("");
 
-  const toggleWorkerSelection = (workerId) => {
-    setSelectedWorkers(prev =>
-      prev.includes(workerId)
-        ? prev.filter(id => id !== workerId)
-        : [...prev, workerId]
+  const ReviewModal = ({
+    onClose,
+    onSend,
+    workers,
+    loading,
+    selectedWorkers,
+    setSelectedWorkers,
+    sopStatus,
+    reviewLoading,
+    existingReviews = []
+  }) => {
+    const isUnderReview = sopStatus === "Under Review" || sopStatus === "Approved Review" || sopStatus === "Rejected Review";
+    const [searchTerm, setSearchTerm] = useState("");
+
+    const toggleWorkerSelection = (workerId) => {
+      setSelectedWorkers(prev =>
+        prev.includes(workerId)
+          ? prev.filter(id => id !== workerId)
+          : [...prev, workerId]
+      );
+    };
+
+    const filteredWorkers = workers.filter(worker =>
+      worker.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      worker.role.toLowerCase().includes(searchTerm.toLowerCase())
     );
-  };
 
-  const filteredWorkers = workers.filter(worker =>
-    worker.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    worker.role.toLowerCase().includes(searchTerm.toLowerCase())
-  );
-
-  return (
-    <div className="fixed inset-0 bg-black/30 backdrop-blur-sm flex items-center justify-center z-50 p-4 transition-opacity duration-300">
-      <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md transform transition-all duration-300 scale-100">
-        {/* Header */}
-        <div className="p-6 border-b border-gray-100 flex justify-between items-center">
-          <div>
-            <h2 className="text-xl font-bold text-gray-900">
-              {isUnderReview ? "Review Status" : "Assign Reviewers"}
-            </h2>
-            <p className="text-sm text-gray-500 mt-1">
-              {isUnderReview ? "Current review progress" : "Select team members to review"}
-            </p>
-          </div>
-          <button
-            onClick={onClose}
-            className="text-gray-400 hover:text-gray-600 p-1 rounded-full hover:bg-gray-100 transition-colors"
-          >
-            <X className="w-5 h-5" />
-          </button>
-        </div>
-
-        {/* Content */}
-        <div className="p-6">
-          {isUnderReview ? (
-            <div className="space-y-4">
-              <h3 className="text-sm font-semibold text-gray-700 uppercase tracking-wider">
-                Assigned Reviewers
-              </h3>
-              <div className="space-y-3 max-h-96 overflow-y-auto pr-2">
-                {existingReviews.length > 0 ? (
-                  existingReviews.map((review, index) => (
-                    <div
-                      key={index}
-                      className="p-4 bg-white rounded-xl border border-gray-100 shadow-sm hover:shadow-md transition-shadow"
-                    >
-                      <div className="flex items-start justify-between">
-                        <div className="flex items-center space-x-3">
-                          <div className="flex-shrink-0 h-10 w-10 rounded-full bg-gradient-to-br from-blue-50 to-purple-50 flex items-center justify-center">
-                            <span className="text-lg font-medium text-blue-600">
-                              {review.reviewerName.charAt(0)}
-                            </span>
-                          </div>
-                          <div>
-                            <p className="font-medium text-gray-900">{review.reviewerName}</p>
-                            <p className="text-xs text-gray-500 capitalize">{review.reviewerRole}</p>
-                          </div>
-                        </div>
-                        <span className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-medium ${review.status === 'Approved' ? 'bg-green-50 text-green-700' :
-                            review.status === 'Rejected' ? 'bg-red-50 text-red-700' :
-                              'bg-yellow-50 text-yellow-700'
-                          }`}>
-                          {review.status === 'Approved' ? (
-                            <Check className="w-3 h-3 mr-1.5" />
-                          ) : review.status === 'Rejected' ? (
-                            <X className="w-3 h-3 mr-1.5" />
-                          ) : (
-                            <Clock className="w-3 h-3 mr-1.5" />
-                          )}
-                          {review.status}
-                        </span>
-                      </div>
-                      
-                      {review.comments && (
-                        <div className="mt-3 pt-3 border-t border-gray-100">
-                          <p className="text-xs font-medium text-gray-500 mb-1">Rejection Reason</p>
-                          <p className="text-sm text-gray-700 bg-gray-50 p-3 rounded-lg">
-                            {review.comments}
-                          </p>
-                        </div>
-                      )}
-                    </div>
-                  ))
-                ) : (
-                  <div className="p-8 text-center">
-                    <div className="mx-auto h-12 w-12 text-gray-400">
-                      <Users className="w-full h-full" />
-                    </div>
-                    <h3 className="mt-2 text-sm font-medium text-gray-900">No reviewers assigned</h3>
-                    <p className="mt-1 text-sm text-gray-500">Assign team members to review this document</p>
-                  </div>
-                )}
-              </div>
+    return (
+      <div className="fixed inset-0 bg-black/30 backdrop-blur-sm flex items-center justify-center z-50 p-4 transition-opacity duration-300">
+        <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md transform transition-all duration-300 scale-100">
+          {/* Header */}
+          <div className="p-6 border-b border-gray-100 flex justify-between items-center">
+            <div>
+              <h2 className="text-xl font-bold text-gray-900">
+                {isUnderReview ? "Review Status" : "Assign Reviewers"}
+              </h2>
+              <p className="text-sm text-gray-500 mt-1">
+                {isUnderReview ? "Current review progress" : "Select team members to review"}
+              </p>
             </div>
-          ) : (
-            <>
-              <div className="mb-6">
-                <div className="flex justify-between items-center mb-3">
-                  <label className="block text-sm font-medium text-gray-700">
-                    Select Reviewers
-                  </label>
-                  <span className="text-xs text-gray-500">
-                    {selectedWorkers.length} selected
-                  </span>
-                </div>
-
-                {/* Search Input */}
-                <div className="relative mb-4">
-                  <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                    <Search className="h-4 w-4 text-gray-400" />
-                  </div>
-                  <input
-                    type="text"
-                    placeholder="Search by name or role..."
-                    className="block w-full pl-10 pr-3 py-2 border border-gray-300 rounded-lg bg-gray-50 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm"
-                    value={searchTerm}
-                    onChange={(e) => setSearchTerm(e.target.value)}
-                  />
-                  {searchTerm && (
-                    <button
-                      onClick={() => setSearchTerm("")}
-                      className="absolute inset-y-0 right-0 pr-3 flex items-center"
-                    >
-                      <X className="h-4 w-4 text-gray-400 hover:text-gray-600" />
-                    </button>
-                  )}
-                </div>
-
-                {loading ? (
-                  <div className="flex justify-center py-8">
-                    <div className="w-8 h-8 border-4 border-blue-100 border-t-blue-500 rounded-full animate-spin"></div>
-                  </div>
-                ) : (
-                  <div className="space-y-2 max-h-64 overflow-y-auto pr-2">
-                    {filteredWorkers.length > 0 ? (
-                      filteredWorkers.map(worker => (
-                        <div
-                          key={worker._id}
-                          className={`p-3 rounded-lg flex items-center cursor-pointer transition-all ${selectedWorkers.includes(worker._id)
-                              ? 'bg-blue-50 border border-blue-200'
-                              : 'bg-white border border-gray-100 hover:border-blue-100'
-                            }`}
-                          onClick={() => toggleWorkerSelection(worker._id)}
-                        >
-                          <div className={`w-5 h-5 rounded-full border-2 mr-3 flex items-center justify-center transition-colors ${selectedWorkers.includes(worker._id)
-                              ? 'bg-blue-500 border-blue-500'
-                              : 'border-gray-300'
-                            }`}>
-                            {selectedWorkers.includes(worker._id) && (
-                              <Check className="w-3 h-3 text-white" />
-                            )}
-                          </div>
-                          <div className="flex items-center space-x-3">
-                            <div className="flex-shrink-0 h-8 w-8 rounded-full bg-gradient-to-br from-blue-50 to-purple-50 flex items-center justify-center">
-                              <span className="text-sm font-medium text-blue-600">
-                                {worker.name.charAt(0)}
-                              </span>
-                            </div>
-                            <div>
-                              <p className="font-medium text-gray-900">{worker.name}</p>
-                              <p className="text-xs text-gray-500 capitalize">{worker.role}</p>
-                            </div>
-                          </div>
-                        </div>
-                      ))
-                    ) : (
-                      <div className="p-6 text-center">
-                        <div className="mx-auto h-10 w-10 text-gray-400">
-                          <Search className="w-full h-full" />
-                        </div>
-                        <h3 className="mt-2 text-sm font-medium text-gray-900">No matching reviewers</h3>
-                        <p className="mt-1 text-sm text-gray-500">Try a different search term</p>
-                      </div>
-                    )}
-                  </div>
-                )}
-              </div>
-
-              <div className="flex justify-end space-x-3 pt-4 border-t border-gray-100">
-                <button
-                  onClick={onClose}
-                  className="px-5 py-2.5 text-sm font-medium rounded-lg border border-gray-300 text-gray-700 hover:bg-gray-50 transition-colors"
-                >
-                  Cancel
-                </button>
-                 <button
-              onClick={() => onSend(selectedWorkers)}
-              disabled={selectedWorkers.length === 0 || reviewLoading}
-              className={`px-5 py-2.5 text-sm font-medium rounded-lg text-white transition-colors flex items-center justify-center ${
-                selectedWorkers.length === 0 || reviewLoading
-                  ? 'bg-gray-300 cursor-not-allowed'
-                  : 'bg-gradient-to-br from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700'
-              }`}
+            <button
+              onClick={onClose}
+              className="text-gray-400 hover:text-gray-600 p-1 rounded-full hover:bg-gray-100 transition-colors"
             >
-              {reviewLoading ? (
-                <>
-                  <svg className="animate-spin -ml-1 mr-2 h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                  </svg>
-                  Sending...
-                </>
-              ) : (
-                'Send for Review'
-              )}
+              <X className="w-5 h-5" />
             </button>
-              
-              </div>
-            </>
-          )}
-        </div>
-      </div>
-    </div>
-  );
-};
-
-
-
-
-
-
-
-
-const ReviewApprovalModal = ({
-  onClose,
-  onSend,
-  workers,
-  loading,
-  selectedWorkers,
-  setSelectedWorkers,
-  sopStatus,
-  actionLoading,
-  existingReviews = [],
-  actionType = 'review' // 'review' or 'approval'
-}) => {
-  const isUnderReview = sopStatus === "Under Review" || sopStatus === "Approved Review" || sopStatus === "Rejected Review";
-  const isPendingApproval = sopStatus === "Pending Approval" || sopStatus === "Approved" || sopStatus === "Rejected";
-  const [searchTerm, setSearchTerm] = useState("");
-
-  const toggleWorkerSelection = (workerId) => {
-    setSelectedWorkers(prev =>
-      prev.includes(workerId)
-        ? prev.filter(id => id !== workerId)
-        : [...prev, workerId]
-    );
-  };
-
-  const filteredWorkers = workers.filter(worker =>
-    worker.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    worker.role.toLowerCase().includes(searchTerm.toLowerCase())
-  );
-
-  const getModalTitle = () => {
-    if (actionType === 'review') {
-      return isUnderReview ? "Review Status" : "Assign Reviewers";
-    } else {
-      return isPendingApproval ? "Approval Status" : "Assign Approvers";
-    }
-  };
-
-  const getModalDescription = () => {
-    if (actionType === 'review') {
-      return isUnderReview ? "Current review progress" : "Select team members to review";
-    } else {
-      return isPendingApproval ? "Current approval progress" : "Select team members to approve";
-    }
-  };
-
-  const getButtonText = () => {
-    if (actionType === 'review') {
-      return isUnderReview ? 'View Reviewers' : 'Send for Review';
-    } else {
-      return isPendingApproval ? 'View Approvers' : 'Send for Approval';
-    }
-  };
-
-  const getStatusLabel = () => {
-    if (actionType === 'review') {
-      return isUnderReview ? "Assigned Reviewers" : "Select Reviewers";
-    } else {
-      return isPendingApproval ? "Assigned Approvers" : "Select Approvers";
-    }
-  };
-
-  return (
-    <div className="fixed inset-0 bg-black/30 backdrop-blur-sm flex items-center justify-center z-50 p-4 transition-opacity duration-300">
-      <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md transform transition-all duration-300 scale-100">
-        {/* Header */}
-        <div className="p-6 border-b border-gray-100 flex justify-between items-center">
-          <div>
-            <h2 className="text-xl font-bold text-gray-900">
-              {getModalTitle()}
-            </h2>
-            <p className="text-sm text-gray-500 mt-1">
-              {getModalDescription()}
-            </p>
           </div>
-          <button
-            onClick={onClose}
-            className="text-gray-400 hover:text-gray-600 p-1 rounded-full hover:bg-gray-100 transition-colors"
-          >
-            <X className="w-5 h-5" />
-          </button>
-        </div>
 
-        {/* Content */}
-        <div className="p-6">
-          {(actionType === 'review' && isUnderReview) || (actionType === 'approval' && isPendingApproval) ? (
-            <div className="space-y-4">
-              <h3 className="text-sm font-semibold text-gray-700 uppercase tracking-wider">
-                {getStatusLabel()}
-              </h3>
-              <div className="space-y-3 max-h-96 overflow-y-auto pr-2">
-                {existingReviews.length > 0 ? (
-                  existingReviews.map((review, index) => (
-                    <div
-                      key={index}
-                      className="p-4 bg-white rounded-xl border border-gray-100 shadow-sm hover:shadow-md transition-shadow"
-                    >
-                      <div className="flex items-start justify-between">
-                        <div className="flex items-center space-x-3">
-                          <div className="flex-shrink-0 h-10 w-10 rounded-full bg-gradient-to-br from-blue-50 to-purple-50 flex items-center justify-center">
-                            <span className="text-lg font-medium text-blue-600">
-                              {(actionType === 'review' ? review.reviewerName : review.approverName)?.charAt(0)}
-                            </span>
-                          </div>
-                          <div>
-                            <p className="font-medium text-gray-900">
-                              {actionType === 'review' ? review.reviewerName : review.approverName}
-                            </p>
-                            <p className="text-xs text-gray-500 capitalize">
-                              {actionType === 'review' ? review.reviewerRole : review.approverRole}
-                            </p>
-                          </div>
-                        </div>
-                        <span className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-medium ${review.status === 'Approved' ? 'bg-green-50 text-green-700' :
-                            review.status === 'Rejected' ? 'bg-red-50 text-red-700' :
-                              'bg-yellow-50 text-yellow-700'
-                          }`}>
-                          {review.status === 'Approved' ? (
-                            <Check className="w-3 h-3 mr-1.5" />
-                          ) : review.status === 'Rejected' ? (
-                            <X className="w-3 h-3 mr-1.5" />
-                          ) : (
-                            <Clock className="w-3 h-3 mr-1.5" />
-                          )}
-                          {review.status}
-                        </span>
-                      </div>
-                      
-                      {review.comments && (
-                        <div className="mt-3 pt-3 border-t border-gray-100">
-                          <p className="text-xs font-medium text-gray-500 mb-1">Rejection Reason</p>
-                          <p className="text-sm text-gray-700 bg-gray-50 p-3 rounded-lg">
-                            {review.comments}
-                          </p>
-                        </div>
-                      )}
-                    </div>
-                  ))
-                ) : (
-                  <div className="p-8 text-center">
-                    <div className="mx-auto h-12 w-12 text-gray-400">
-                      <Users className="w-full h-full" />
-                    </div>
-                    <h3 className="mt-2 text-sm font-medium text-gray-900">
-                      {actionType === 'review' ? "No reviewers assigned" : "No approvers assigned"}
-                    </h3>
-                    <p className="mt-1 text-sm text-gray-500">
-                      {actionType === 'review' 
-                        ? "Assign team members to review this document" 
-                        : "Assign team members to approve this document"}
-                    </p>
-                  </div>
-                )}
-              </div>
-            </div>
-          ) : (
-            <>
-              <div className="mb-6">
-                <div className="flex justify-between items-center mb-3">
-                  <label className="block text-sm font-medium text-gray-700">
-                    {getStatusLabel()}
-                  </label>
-                  <span className="text-xs text-gray-500">
-                    {selectedWorkers.length} selected
-                  </span>
-                </div>
-
-                {/* Search Input */}
-                <div className="relative mb-4">
-                  <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                    <Search className="h-4 w-4 text-gray-400" />
-                  </div>
-                  <input
-                    type="text"
-                    placeholder="Search by name or role..."
-                    className="block w-full pl-10 pr-3 py-2 border border-gray-300 rounded-lg bg-gray-50 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm"
-                    value={searchTerm}
-                    onChange={(e) => setSearchTerm(e.target.value)}
-                  />
-                  {searchTerm && (
-                    <button
-                      onClick={() => setSearchTerm("")}
-                      className="absolute inset-y-0 right-0 pr-3 flex items-center"
-                    >
-                      <X className="h-4 w-4 text-gray-400 hover:text-gray-600" />
-                    </button>
-                  )}
-                </div>
-
-                {loading ? (
-                  <div className="flex justify-center py-8">
-                    <div className="w-8 h-8 border-4 border-blue-100 border-t-blue-500 rounded-full animate-spin"></div>
-                  </div>
-                ) : (
-                  <div className="space-y-2 max-h-64 overflow-y-auto pr-2">
-                    {filteredWorkers.length > 0 ? (
-                      filteredWorkers.map(worker => (
-                        <div
-                          key={worker._id}
-                          className={`p-3 rounded-lg flex items-center cursor-pointer transition-all ${selectedWorkers.includes(worker._id)
-                              ? 'bg-blue-50 border border-blue-200'
-                              : 'bg-white border border-gray-100 hover:border-blue-100'
-                            }`}
-                          onClick={() => toggleWorkerSelection(worker._id)}
-                        >
-                          <div className={`w-5 h-5 rounded-full border-2 mr-3 flex items-center justify-center transition-colors ${selectedWorkers.includes(worker._id)
-                              ? 'bg-blue-500 border-blue-500'
-                              : 'border-gray-300'
-                            }`}>
-                            {selectedWorkers.includes(worker._id) && (
-                              <Check className="w-3 h-3 text-white" />
-                            )}
-                          </div>
+          {/* Content */}
+          <div className="p-6">
+            {isUnderReview ? (
+              <div className="space-y-4">
+                <h3 className="text-sm font-semibold text-gray-700 uppercase tracking-wider">
+                  Assigned Reviewers
+                </h3>
+                <div className="space-y-3 max-h-96 overflow-y-auto pr-2">
+                  {existingReviews.length > 0 ? (
+                    existingReviews.map((review, index) => (
+                      <div
+                        key={index}
+                        className="p-4 bg-white rounded-xl border border-gray-100 shadow-sm hover:shadow-md transition-shadow"
+                      >
+                        <div className="flex items-start justify-between">
                           <div className="flex items-center space-x-3">
-                            <div className="flex-shrink-0 h-8 w-8 rounded-full bg-gradient-to-br from-blue-50 to-purple-50 flex items-center justify-center">
-                              <span className="text-sm font-medium text-blue-600">
-                                {worker.name.charAt(0)}
+                            <div className="flex-shrink-0 h-10 w-10 rounded-full bg-gradient-to-br from-blue-50 to-purple-50 flex items-center justify-center">
+                              <span className="text-lg font-medium text-blue-600">
+                                {review.reviewerName.charAt(0)}
                               </span>
                             </div>
                             <div>
-                              <p className="font-medium text-gray-900">{worker.name}</p>
-                              <p className="text-xs text-gray-500 capitalize">{worker.role}</p>
+                              <p className="font-medium text-gray-900">{review.reviewerName}</p>
+                              <p className="text-xs text-gray-500 capitalize">{review.reviewerRole}</p>
                             </div>
                           </div>
+                          <span className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-medium ${review.status === 'Approved' ? 'bg-green-50 text-green-700' :
+                            review.status === 'Rejected' ? 'bg-red-50 text-red-700' :
+                              'bg-yellow-50 text-yellow-700'
+                            }`}>
+                            {review.status === 'Approved' ? (
+                              <Check className="w-3 h-3 mr-1.5" />
+                            ) : review.status === 'Rejected' ? (
+                              <X className="w-3 h-3 mr-1.5" />
+                            ) : (
+                              <Clock className="w-3 h-3 mr-1.5" />
+                            )}
+                            {review.status}
+                          </span>
                         </div>
-                      ))
-                    ) : (
-                      <div className="p-6 text-center">
-                        <div className="mx-auto h-10 w-10 text-gray-400">
-                          <Search className="w-full h-full" />
-                        </div>
-                        <h3 className="mt-2 text-sm font-medium text-gray-900">
-                          No matching {actionType === 'review' ? 'reviewers' : 'approvers'}
-                        </h3>
-                        <p className="mt-1 text-sm text-gray-500">Try a different search term</p>
+
+                        {review.comments && (
+                          <div className="mt-3 pt-3 border-t border-gray-100">
+                            <p className="text-xs font-medium text-gray-500 mb-1">Rejection Reason</p>
+                            <p className="text-sm text-gray-700 bg-gray-50 p-3 rounded-lg">
+                              {review.comments}
+                            </p>
+                          </div>
+                        )}
                       </div>
+                    ))
+                  ) : (
+                    <div className="p-8 text-center">
+                      <div className="mx-auto h-12 w-12 text-gray-400">
+                        <Users className="w-full h-full" />
+                      </div>
+                      <h3 className="mt-2 text-sm font-medium text-gray-900">No reviewers assigned</h3>
+                      <p className="mt-1 text-sm text-gray-500">Assign team members to review this document</p>
+                    </div>
+                  )}
+                </div>
+              </div>
+            ) : (
+              <>
+                <div className="mb-6">
+                  <div className="flex justify-between items-center mb-3">
+                    <label className="block text-sm font-medium text-gray-700">
+                      Select Reviewers
+                    </label>
+                    <span className="text-xs text-gray-500">
+                      {selectedWorkers.length} selected
+                    </span>
+                  </div>
+
+                  {/* Search Input */}
+                  <div className="relative mb-4">
+                    <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                      <Search className="h-4 w-4 text-gray-400" />
+                    </div>
+                    <input
+                      type="text"
+                      placeholder="Search by name or role..."
+                      className="block w-full pl-10 pr-3 py-2 border border-gray-300 rounded-lg bg-gray-50 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm"
+                      value={searchTerm}
+                      onChange={(e) => setSearchTerm(e.target.value)}
+                    />
+                    {searchTerm && (
+                      <button
+                        onClick={() => setSearchTerm("")}
+                        className="absolute inset-y-0 right-0 pr-3 flex items-center"
+                      >
+                        <X className="h-4 w-4 text-gray-400 hover:text-gray-600" />
+                      </button>
                     )}
                   </div>
-                )}
-              </div>
 
-              <div className="flex justify-end space-x-3 pt-4 border-t border-gray-100">
-                <button
-                  onClick={onClose}
-                  className="px-5 py-2.5 text-sm font-medium rounded-lg border border-gray-300 text-gray-700 hover:bg-gray-50 transition-colors"
-                >
-                  Cancel
-                </button>
-                <button
-                  onClick={() => onSend(selectedWorkers)}
-                  disabled={selectedWorkers.length === 0 || actionLoading}
-                  className={`px-5 py-2.5 text-sm font-medium rounded-lg text-white transition-colors flex items-center justify-center ${
-                    selectedWorkers.length === 0 || actionLoading
-                      ? 'bg-gray-300 cursor-not-allowed'
-                      : 'bg-gradient-to-br from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700'
-                  }`}
-                >
-                  {actionLoading ? (
-                    <>
-                      <svg className="animate-spin -ml-1 mr-2 h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                      </svg>
-                      Sending...
-                    </>
+                  {loading ? (
+                    <div className="flex justify-center py-8">
+                      <div className="w-8 h-8 border-4 border-blue-100 border-t-blue-500 rounded-full animate-spin"></div>
+                    </div>
                   ) : (
-                    getButtonText()
+                    <div className="space-y-2 max-h-64 overflow-y-auto pr-2">
+                      {filteredWorkers.length > 0 ? (
+                        filteredWorkers.map(worker => (
+                          <div
+                            key={worker._id}
+                            className={`p-3 rounded-lg flex items-center cursor-pointer transition-all ${selectedWorkers.includes(worker._id)
+                              ? 'bg-blue-50 border border-blue-200'
+                              : 'bg-white border border-gray-100 hover:border-blue-100'
+                              }`}
+                            onClick={() => toggleWorkerSelection(worker._id)}
+                          >
+                            <div className={`w-5 h-5 rounded-full border-2 mr-3 flex items-center justify-center transition-colors ${selectedWorkers.includes(worker._id)
+                              ? 'bg-blue-500 border-blue-500'
+                              : 'border-gray-300'
+                              }`}>
+                              {selectedWorkers.includes(worker._id) && (
+                                <Check className="w-3 h-3 text-white" />
+                              )}
+                            </div>
+                            <div className="flex items-center space-x-3">
+                              <div className="flex-shrink-0 h-8 w-8 rounded-full bg-gradient-to-br from-blue-50 to-purple-50 flex items-center justify-center">
+                                <span className="text-sm font-medium text-blue-600">
+                                  {worker.name.charAt(0)}
+                                </span>
+                              </div>
+                              <div>
+                                <p className="font-medium text-gray-900">{worker.name}</p>
+                                <p className="text-xs text-gray-500 capitalize">{worker.role}</p>
+                              </div>
+                            </div>
+                          </div>
+                        ))
+                      ) : (
+                        <div className="p-6 text-center">
+                          <div className="mx-auto h-10 w-10 text-gray-400">
+                            <Search className="w-full h-full" />
+                          </div>
+                          <h3 className="mt-2 text-sm font-medium text-gray-900">No matching reviewers</h3>
+                          <p className="mt-1 text-sm text-gray-500">Try a different search term</p>
+                        </div>
+                      )}
+                    </div>
                   )}
-                </button>
-              </div>
-            </>
-          )}
+                </div>
+
+                <div className="flex justify-end space-x-3 pt-4 border-t border-gray-100">
+                  <button
+                    onClick={onClose}
+                    className="px-5 py-2.5 text-sm font-medium rounded-lg border border-gray-300 text-gray-700 hover:bg-gray-50 transition-colors"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    onClick={() => onSend(selectedWorkers)}
+                    disabled={selectedWorkers.length === 0 || reviewLoading}
+                    className={`px-5 py-2.5 text-sm font-medium rounded-lg text-white transition-colors flex items-center justify-center ${selectedWorkers.length === 0 || reviewLoading
+                        ? 'bg-gray-300 cursor-not-allowed'
+                        : 'bg-gradient-to-br from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700'
+                      }`}
+                  >
+                    {reviewLoading ? (
+                      <>
+                        <svg className="animate-spin -ml-1 mr-2 h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                          <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                          <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                        </svg>
+                        Sending...
+                      </>
+                    ) : (
+                      'Send for Review'
+                    )}
+                  </button>
+
+                </div>
+              </>
+            )}
+          </div>
         </div>
       </div>
-    </div>
-  );
-};
+    );
+  };
 
-const handleSendForReview = (id) => {
-  setSopToApprove(id);
-  setModalActionType('review');
-  const sop = sopData.find(item => item._id === id);
-  setReviewSop(sop);
-  setShowReviewModal(true);
-  fetchWorkers("Review Access"); // Fetch review workers
-};
+
+
+
+
+
+
+
+  const ReviewApprovalModal = ({
+    onClose,
+    onSend,
+    workers,
+    loading,
+    selectedWorkers,
+    setSelectedWorkers,
+    sopStatus,
+    actionLoading,
+    existingReviews = [],
+    actionType = 'review' // 'review' or 'approval'
+  }) => {
+    const isUnderReview = sopStatus === "Under Review" || sopStatus === "Approved Review" || sopStatus === "Rejected Review";
+    const isPendingApproval = sopStatus === "Pending Approval" || sopStatus === "Approved" || sopStatus === "Rejected";
+    const [searchTerm, setSearchTerm] = useState("");
+
+    const toggleWorkerSelection = (workerId) => {
+      setSelectedWorkers(prev =>
+        prev.includes(workerId)
+          ? prev.filter(id => id !== workerId)
+          : [...prev, workerId]
+      );
+    };
+
+    const filteredWorkers = workers.filter(worker =>
+      worker.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      worker.role.toLowerCase().includes(searchTerm.toLowerCase())
+    );
+
+    const getModalTitle = () => {
+      if (actionType === 'review') {
+        return isUnderReview ? "Review Status" : "Assign Reviewers";
+      } else {
+        return isPendingApproval ? "Approval Status" : "Assign Approvers";
+      }
+    };
+
+    const getModalDescription = () => {
+      if (actionType === 'review') {
+        return isUnderReview ? "Current review progress" : "Select team members to review";
+      } else {
+        return isPendingApproval ? "Current approval progress" : "Select team members to approve";
+      }
+    };
+
+    const getButtonText = () => {
+      if (actionType === 'review') {
+        return isUnderReview ? 'View Reviewers' : 'Send for Review';
+      } else {
+        return isPendingApproval ? 'View Approvers' : 'Send for Approval';
+      }
+    };
+
+    const getStatusLabel = () => {
+      if (actionType === 'review') {
+        return isUnderReview ? "Assigned Reviewers" : "Select Reviewers";
+      } else {
+        return isPendingApproval ? "Assigned Approvers" : "Select Approvers";
+      }
+    };
+
+    return (
+      <div className="fixed pl-64 inset-0 bg-black/30 backdrop-blur-sm flex items-center justify-center z-50 p-4 transition-opacity duration-300">
+        <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md transform transition-all duration-300 scale-100">
+          {/* Header */}
+          <div className="p-6 border-b border-gray-100 flex justify-between items-center">
+            <div>
+              <h2 className="text-xl font-bold text-gray-900">
+                {getModalTitle()}
+              </h2>
+              <p className="text-sm text-gray-500 mt-1">
+                {getModalDescription()}
+              </p>
+            </div>
+            <button
+              onClick={onClose}
+              className="text-gray-400 hover:text-gray-600 p-1 rounded-full hover:bg-gray-100 transition-colors"
+            >
+              <X className="w-5 h-5" />
+            </button>
+          </div>
+
+          {/* Content */}
+          <div className="p-6">
+            {(actionType === 'review' && isUnderReview) || (actionType === 'approval' && isPendingApproval) ? (
+              <div className="space-y-4">
+                <h3 className="text-sm font-semibold text-gray-700 uppercase tracking-wider">
+                  {getStatusLabel()}
+                </h3>
+                <div className="space-y-3 max-h-96 overflow-y-auto pr-2">
+                  {existingReviews.length > 0 ? (
+                    existingReviews.map((review, index) => (
+                      <div
+                        key={index}
+                        className="p-4 bg-white rounded-xl border border-gray-100 shadow-sm hover:shadow-md transition-shadow"
+                      >
+                        <div className="flex items-start justify-between">
+                          <div className="flex items-center space-x-3">
+                            <div className="flex-shrink-0 h-10 w-10 rounded-full bg-gradient-to-br from-blue-50 to-purple-50 flex items-center justify-center">
+                              <span className="text-lg font-medium text-blue-600">
+                                {(actionType === 'review' ? review.reviewerName : review.approverName)?.charAt(0)}
+                              </span>
+                            </div>
+                            <div>
+                              <p className="font-medium text-gray-900">
+                                {actionType === 'review' ? review.reviewerName : review.approverName}
+                              </p>
+                              <p className="text-xs text-gray-500 capitalize">
+                                {actionType === 'review' ? review.reviewerRole : review.approverRole}
+                              </p>
+                            </div>
+                          </div>
+                          <span className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-medium ${review.status === 'Approved' ? 'bg-green-50 text-green-700' :
+                            review.status === 'Rejected' ? 'bg-red-50 text-red-700' :
+                              'bg-yellow-50 text-yellow-700'
+                            }`}>
+                            {review.status === 'Approved' ? (
+                              <Check className="w-3 h-3 mr-1.5" />
+                            ) : review.status === 'Rejected' ? (
+                              <X className="w-3 h-3 mr-1.5" />
+                            ) : (
+                              <Clock className="w-3 h-3 mr-1.5" />
+                            )}
+                            {review.status}
+                          </span>
+                        </div>
+
+                        {review.comments && (
+                          <div className="mt-3 pt-3 border-t border-gray-100">
+                            <p className="text-xs font-medium text-gray-500 mb-1">Rejection Reason</p>
+                            <p className="text-sm text-gray-700 bg-gray-50 p-3 rounded-lg">
+                              {review.comments}
+                            </p>
+                          </div>
+                        )}
+                      </div>
+                    ))
+                  ) : (
+                    <div className="p-8 text-center">
+                      <div className="mx-auto h-12 w-12 text-gray-400">
+                        <Users className="w-full h-full" />
+                      </div>
+                      <h3 className="mt-2 text-sm font-medium text-gray-900">
+                        {actionType === 'review' ? "No reviewers assigned" : "No approvers assigned"}
+                      </h3>
+                      <p className="mt-1 text-sm text-gray-500">
+                        {actionType === 'review'
+                          ? "Assign team members to review this document"
+                          : "Assign team members to approve this document"}
+                      </p>
+                    </div>
+                  )}
+                </div>
+              </div>
+            ) : (
+              <>
+                <div className="mb-6">
+                  <div className="flex justify-between items-center mb-3">
+                    <label className="block text-sm font-medium text-gray-700">
+                      {getStatusLabel()}
+                    </label>
+                    <span className="text-xs text-gray-500">
+                      {selectedWorkers.length} selected
+                    </span>
+                  </div>
+
+                  {/* Search Input */}
+                  <div className="relative mb-4">
+                    <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                      <Search className="h-4 w-4 text-gray-400" />
+                    </div>
+                    <input
+                      type="text"
+                      placeholder="Search by name or role..."
+                      className="block w-full pl-10 pr-3 py-2 border border-gray-300 rounded-lg bg-gray-50 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm"
+                      value={searchTerm}
+                      onChange={(e) => setSearchTerm(e.target.value)}
+                    />
+                    {searchTerm && (
+                      <button
+                        onClick={() => setSearchTerm("")}
+                        className="absolute inset-y-0 right-0 pr-3 flex items-center"
+                      >
+                        <X className="h-4 w-4 text-gray-400 hover:text-gray-600" />
+                      </button>
+                    )}
+                  </div>
+
+                  {loading ? (
+                    <div className="flex justify-center py-8">
+                      <div className="w-8 h-8 border-4 border-blue-100 border-t-blue-500 rounded-full animate-spin"></div>
+                    </div>
+                  ) : (
+                    <div className="space-y-2 max-h-64 overflow-y-auto pr-2">
+                      {filteredWorkers.length > 0 ? (
+                        filteredWorkers.map(worker => (
+                          <div
+                            key={worker._id}
+                            className={`p-3 rounded-lg flex items-center cursor-pointer transition-all ${selectedWorkers.includes(worker._id)
+                              ? 'bg-blue-50 border border-blue-200'
+                              : 'bg-white border border-gray-100 hover:border-blue-100'
+                              }`}
+                            onClick={() => toggleWorkerSelection(worker._id)}
+                          >
+                            <div className={`w-5 h-5 rounded-full border-2 mr-3 flex items-center justify-center transition-colors ${selectedWorkers.includes(worker._id)
+                              ? 'bg-blue-500 border-blue-500'
+                              : 'border-gray-300'
+                              }`}>
+                              {selectedWorkers.includes(worker._id) && (
+                                <Check className="w-3 h-3 text-white" />
+                              )}
+                            </div>
+                            <div className="flex items-center space-x-3">
+                              <div className="flex-shrink-0 h-8 w-8 rounded-full bg-gradient-to-br from-blue-50 to-purple-50 flex items-center justify-center">
+                                <span className="text-sm font-medium text-blue-600">
+                                  {worker.name.charAt(0)}
+                                </span>
+                              </div>
+                              <div>
+                                <p className="font-medium text-gray-900">{worker.name}</p>
+                                <p className="text-xs text-gray-500 capitalize">{worker.role}</p>
+                              </div>
+                            </div>
+                          </div>
+                        ))
+                      ) : (
+                        <div className="p-6 text-center">
+                          <div className="mx-auto h-10 w-10 text-gray-400">
+                            <Search className="w-full h-full" />
+                          </div>
+                          <h3 className="mt-2 text-sm font-medium text-gray-900">
+                            No matching {actionType === 'review' ? 'reviewers' : 'approvers'}
+                          </h3>
+                          <p className="mt-1 text-sm text-gray-500">Try a different search term</p>
+                        </div>
+                      )}
+                    </div>
+                  )}
+                </div>
+
+                <div className="flex justify-end space-x-3 pt-4 border-t border-gray-100">
+                  <button
+                    onClick={onClose}
+                    className="px-5 py-2.5 text-sm font-medium rounded-lg border border-gray-300 text-gray-700 hover:bg-gray-50 transition-colors"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    onClick={() => onSend(selectedWorkers)}
+                    disabled={selectedWorkers.length === 0 || actionLoading}
+                    className={`px-5 py-2.5 text-sm font-medium rounded-lg text-white transition-colors flex items-center justify-center ${selectedWorkers.length === 0 || actionLoading
+                        ? 'bg-gray-300 cursor-not-allowed'
+                        : 'bg-gradient-to-br from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700'
+                      }`}
+                  >
+                    {actionLoading ? (
+                      <>
+                        <svg className="animate-spin -ml-1 mr-2 h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                          <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                          <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                        </svg>
+                        Sending...
+                      </>
+                    ) : (
+                      getButtonText()
+                    )}
+                  </button>
+                </div>
+              </>
+            )}
+          </div>
+        </div>
+      </div>
+    );
+  };
+
+  const handleSendForReview = (id) => {
+    setSopToApprove(id);
+    setModalActionType('review');
+    const sop = sopData.find(item => item._id === id);
+    setReviewSop(sop);
+    setShowReviewModal(true);
+    fetchWorkers("Review Access"); // Fetch review workers
+  };
 
   const handleSendForApproval = (id) => {
-  setSopToApprove(id);
-  setModalActionType('approval');
-  const sop = sopData.find(item => item._id === id);
-  setReviewSop(sop);
-  setShowReviewModal(true);
-  fetchWorkers("Approve Checklist"); // Fetch approval workers
-};
+    setSopToApprove(id);
+    setModalActionType('approval');
+    const sop = sopData.find(item => item._id === id);
+    setReviewSop(sop);
+    setShowReviewModal(true);
+    fetchWorkers("Approve Checklist"); // Fetch approval workers
+  };
 
-const confirmAction = async (selectedWorkerIds) => {
-  if (!sopToApprove || selectedWorkerIds.length === 0) return;
+  const confirmAction = async (selectedWorkerIds) => {
+    if (!sopToApprove || selectedWorkerIds.length === 0) return;
 
-  if (modalActionType === 'review') {
-    setReviewLoading(true);
-    try {
-      const reviews = selectedWorkerIds.map(workerId => {
-        const worker = workersList.find(w => w._id === workerId);
-        return {
-          reviewerId: workerId,
-          reviewerName: worker ? worker.name : 'Unknown',
-          reviewerRole: worker ? worker.role : 'undefined',
-          status: 'Pending Review',
-          reviewDate: new Date().toISOString(),
-        };
-      });
-      console.log("Reviewers list",reviews)
+    if (modalActionType === 'review') {
+      setReviewLoading(true);
+      try {
+        const reviews = selectedWorkerIds.map(workerId => {
+          const worker = workersList.find(w => w._id === workerId);
+          return {
+            reviewerId: workerId,
+            reviewerName: worker ? worker.name : 'Unknown',
+            reviewerRole: worker ? worker.role : 'undefined',
+            status: 'Pending Review',
+            reviewDate: new Date().toISOString(),
+          };
+        });
+        console.log("Reviewers list", reviews)
 
-      const res = await fetch(`/api/task/update-status/${sopToApprove}`, {
-        method: "PATCH",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          status: "Under Review",
-          reviews
-        }),
-      });
-
-      if (res.ok) {
-        setSopData(sopData.map(item =>
-          item._id === sopToApprove ? {
-            ...item,
+        const res = await fetch(`/api/task/update-status/${sopToApprove}`, {
+          method: "PATCH",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
             status: "Under Review",
-            approvalSent: true,
             reviews
-          } : item
-        ));
-        setShowReviewModal(false);
-        setSopToApprove(null);
-        setSelectedWorkers([]);
-      }
-    } catch (err) {
-      console.error("Failed to send for review:", err);
-    } finally {
-      setReviewLoading(false);
-    }
-  } else if (modalActionType === 'approval') {
-    setApprovalLoading(true);
-    try {
-      const approvers = selectedWorkerIds.map(workerId => {
-        const worker = workersList.find(w => w._id === workerId);
-        return {
-          approverId: workerId,
-          approverName: worker ? worker.name : 'Unknown',
-          approverRole: worker ? worker.role : 'undefined',
-          status: 'Pending Approval',
-          approvalDate: new Date().toISOString(),
-        };
-      });
-console.log("Approvers list",approvers)
-      const res = await fetch(`/api/task/update-status/${sopToApprove}`, {
-        method: "PATCH",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          status: "Pending Approval",
-          approvers
-        }),
-      });
+          }),
+        });
 
-      if (res.ok) {
-        setSopData(sopData.map(item =>
-          item._id === sopToApprove ? {
-            ...item,
-            status: "Pending Approval",
-            approvalSent: true,
-            approvers
-          } : item
-        ));
-        setShowReviewModal(false);
-        setSopToApprove(null);
-        setSelectedWorkers([]);
+        if (res.ok) {
+          setSopData(sopData.map(item =>
+            item._id === sopToApprove ? {
+              ...item,
+              status: "Under Review",
+              approvalSent: true,
+              reviews
+            } : item
+          ));
+          setShowReviewModal(false);
+          setSopToApprove(null);
+          setSelectedWorkers([]);
+        }
+      } catch (err) {
+        console.error("Failed to send for review:", err);
+      } finally {
+        setReviewLoading(false);
       }
-    } catch (err) {
-      console.error("Failed to send for approval:", err);
-    } finally {
-      setApprovalLoading(false);
+    } else if (modalActionType === 'approval') {
+      setApprovalLoading(true);
+      try {
+        const approvers = selectedWorkerIds.map(workerId => {
+          const worker = workersList.find(w => w._id === workerId);
+          return {
+            approverId: workerId,
+            approverName: worker ? worker.name : 'Unknown',
+            approverRole: worker ? worker.role : 'undefined',
+            status: 'Pending Approval',
+            approvalDate: new Date().toISOString(),
+          };
+        });
+        console.log("Approvers list", approvers)
+        const res = await fetch(`/api/task/update-status/${sopToApprove}`, {
+          method: "PATCH",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            status: "Pending Approval",
+            approvers
+          }),
+        });
+
+        if (res.ok) {
+          setSopData(sopData.map(item =>
+            item._id === sopToApprove ? {
+              ...item,
+              status: "Pending Approval",
+              approvalSent: true,
+              approvers
+            } : item
+          ));
+          setShowReviewModal(false);
+          setSopToApprove(null);
+          setSelectedWorkers([]);
+        }
+      } catch (err) {
+        console.error("Failed to send for approval:", err);
+      } finally {
+        setApprovalLoading(false);
+      }
     }
-  }
-};
+  };
   // const confirmAction = async (selectedWorkerIds) => {
   //   console.log(selectedWorkerIds)
   //   if (sopToApprove && selectedWorkerIds.length > 0) {
@@ -1489,20 +1487,7 @@ console.log("Approvers list",approvers)
     </tr>
   )
 
-  const SkeletonHeader = () => (
-    <div className="bg-white border-b border-gray-200 rounded-xl mx-6 shadow-sm animate-pulse">
-      <div className="max-w-7xl mx-auto px-6 py-6 rounded-xl flex flex-col lg:flex-row lg:items-center lg:justify-between gap-6">
-        <div className="flex items-center space-x-4">
-          <div className="p-4 bg-gray-200 rounded-3xl shadow w-16 h-16"></div>
-          <div className="space-y-3">
-            <div className="h-8 bg-gray-200 rounded w-64"></div>
-            <div className="h-4 bg-gray-200 rounded w-80"></div>
-          </div>
-        </div>
-        <div className="bg-gray-200 text-white font-bold py-4 px-8 rounded-2xl h-12 w-40"></div>
-      </div>
-    </div>
-  )
+
 
 
 
@@ -1977,7 +1962,7 @@ console.log("Approvers list",approvers)
     const data = JSON.parse(userData)
     setCompanyData(data)
   }, [])
-console.log(companyData);
+  console.log(companyData);
   useEffect(() => {
     const fetchSops = async () => {
       try {
@@ -2067,50 +2052,46 @@ console.log(companyData);
     )
   }
   return (
-    <div className="min-h-screen bg-gray-50 relative">
-      {/* Show skeleton header while loading or filtering */}
-      {loading || filtering ? (
-        <SkeletonHeader />
-      ) : (
-        <div className="bg-white border-b border-gray-200 rounded-xl mx-6 shadow-sm">
-          <div className="max-w-7xl mx-auto px-6 py-6 rounded-xl flex flex-col lg:flex-row lg:items-center lg:justify-between gap-6">
-            <div className="flex items-center space-x-4">
-              <div className="p-4 bg-gradient-to-br from-blue-500 via-purple-500 to-pink-500 rounded-2xl shadow">
-                <Sparkles className="w-6 h-6 text-white" />
-              </div>
-              <div>
-                <h1 className="text-2xl font-bold text-gray-900">Checklist Workspace</h1>
-                <p className="text-gray-600 mt-2 text-md">Manage and track your development processes</p>
-              </div>
-            </div>
-            <button
-              onClick={handleCreate}
-              disabled={navigatingToCreate}
-              className="bg-blue-600 text-white font-bold py-4 px-8 rounded-2xl flex items-center space-x-3 shadow hover:bg-blue-700 transition-colors duration-200 disabled:opacity-70 disabled:cursor-not-allowed"
-            >
-              {navigatingToCreate ? (
-                <>
-                  <svg className="animate-spin h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                  </svg>
-                  <span>Creating...</span>
-                </>
-              ) : (
-                <>
-                  <Plus className="w-5 h-5" />
-                  <span>Create New</span>
-                </>
-              )}
-            </button>
+    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 p-4 relative">
 
+      <div className="bg-white border-b border-gray-200 rounded-xl mx-2 mt-4 shadow-sm">
+        <div className="max-w-7xl mx-auto px-6 py-6 rounded-xl flex flex-col lg:flex-row lg:items-center lg:justify-between gap-6">
+          <div className="flex items-center space-x-4">
+            <div className="p-4 bg-gradient-to-br from-blue-500 via-purple-500 to-pink-500 rounded-2xl shadow">
+              <Sparkles className="w-6 h-6 text-white" />
+            </div>
+            <div>
+              <h1 className="text-2xl font-bold text-gray-900">Checklist Workspace</h1>
+              <p className="text-gray-600 mt-2 text-md">Manage and track your development processes</p>
+            </div>
           </div>
+          <button
+            onClick={handleCreate}
+            disabled={navigatingToCreate}
+            className="bg-blue-600 text-white font-bold py-4 px-8 rounded-2xl flex items-center space-x-3 shadow hover:bg-blue-700 transition-colors duration-200 disabled:opacity-70 disabled:cursor-not-allowed"
+          >
+            {navigatingToCreate ? (
+              <>
+                <svg className="animate-spin h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                </svg>
+                <span>Creating...</span>
+              </>
+            ) : (
+              <>
+                <Plus className="w-5 h-5" />
+                <span>Create New</span>
+              </>
+            )}
+          </button>
+
         </div>
-      )}
+      </div>
       {/* Main Content */}
-      <div className="max-w-7xl mx-auto px-6 py-8">
+      <div className="max-w-7xl mx-auto px-2 py-4">
         {/* Search and Filter Bar */}
-        <div className="mb-6 bg-white p-4 rounded-xl shadow-sm border border-gray-200">
+        <div className="mb-4 bg-white p-4 rounded-xl shadow-sm border border-gray-200">
           <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
             {/* Search Bar */}
             <div className="relative flex-1">
@@ -2162,6 +2143,9 @@ console.log(companyData);
                     <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                       Created At
                     </th>
+                    <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Approval / Review
+                    </th>
                     <th scope="col" className="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">
                       Actions
                     </th>
@@ -2193,6 +2177,9 @@ console.log(companyData);
                     <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                       Created At
                     </th>
+                    <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Approval / Review
+                    </th>
 
                     <th scope="col" className="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">
                       Actions
@@ -2208,7 +2195,7 @@ console.log(companyData);
                             {sop.icon}
                           </div>
                           <div className="ml-4">
-                            <div className="text-sm font-medium text-gray-900">{sop.name}</div>
+                            <div className="text-sm font-medium text-gray-900 truncate max-w-[180px]" title={sop.name} >{sop.name}</div>
                           </div>
                         </div>
                       </td>
@@ -2222,8 +2209,35 @@ console.log(companyData);
                         <div className="text-sm text-gray-500">{sop.formattedDate}</div>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-center text-sm font-medium">
+                        {sop.status === "InProgress" || sop.status === "Under Review" || sop.status === "Rejected Review" ?
+                          (<div className=" py-4 whitespace-nowrap text-center">
+                            <button
+                              onClick={() => handleSendForReview(sop.id)}
+                              className={`px-3 py-1.5 border border-transparent text-xs font-medium rounded-full shadow-sm text-white  hover:bg-[#2791b8] ${sop.status === "Under Review" ? "bg-orange-400" : sop.status === "Rejected Review" ? "bg-red-400" : "bg-green-500"}`}
+                              title="Send for Review"
+                            >
+                              {sop.status === "Under Review" || sop.status === "Rejected Review" ? "View Reviewer's" : "Send for Review"}
+                            </button>
+                          </div>
+                          ) : sop.status === "Approved Review" || sop.status == "Pending Approval" || sop.status == "Rejected" ? (
+
+                            <div className=" py-4 whitespace-nowrap text-center">
+                              <button
+                                onClick={() => handleSendForApproval(sop.id)}
+                                // onClick={() => handleApprove(sop.id)}
+                                className="px-3 py-1.5 border border-transparent text-xs font-medium rounded-full shadow-sm text-white bg-blue-500 hover:bg-[#2791b8]"
+                                title="Send for Approval"
+                              >
+                                {sop.status == "Pending Approval" || sop.status == "Rejected" ? "View Approver's" : " Send for Approval"}
+
+                              </button></div>
+                          ) : (<></>
+
+                          )}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-center text-sm font-medium">
                         <div className="flex h-8 items-center justify-end gap-6">
-                          {sop.status === "InProgress" || sop.status === "Under Review" || sop.status === "Rejected Review"?
+                          {/* {sop.status === "InProgress" || sop.status === "Under Review" || sop.status === "Rejected Review"?
                             (<div className=" py-4 whitespace-nowrap text-center">
                               <button
                                   onClick={() => handleSendForReview(sop.id)}
@@ -2247,7 +2261,7 @@ console.log(companyData);
                                 </button></div>
                             ) : (<></>
 
-                            )}
+                            )} */}
                           <div className="flex justify-end space-x-2">
                             {sop.status == 'InProgress' || sop.status == 'Rejected' || sop.status == 'Rejected Review' ? <button
                               onClick={() => handleEdit(sop)}
@@ -2283,7 +2297,7 @@ console.log(companyData);
         ) : (
           <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-8 text-center">
             <div className="flex flex-col items-center justify-center space-y-4">
-              <div className="p-4 bg-gray-100 rounded-full">        
+              <div className="p-4 bg-gray-100 rounded-full">
                 <svg className="w-12 h-12 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
                 </svg>
@@ -2299,49 +2313,47 @@ console.log(companyData);
       </div>
       {/* View Modal */}
       {selectedSop && (
-        <div
-          onClick={closeModal}
-          className="absolute right-0 overflow-hidden top-0 w-full h-screen bg-gray-900/20 backdrop-blur-sm  flex items-center justify-center p-4 z-50 transition-all duration-200"
-        >
+        <div className="fixed pl-64 inset-0 z-50 overflow-auto bg-gray-900/20 backdrop-blur-sm flex items-center justify-center p-4">
           <div
-            className="relative bg-white rounded-xl shadow-xl w-full max-w-5xl max-h-[90vh] overflow-y-auto mx-4 hide-scrollbar"
+            className="relative  bg-white rounded-xl shadow-xl w-full max-w-5xl max-h-[90vh] overflow-y-auto mx-4 hide-scrollbar"
             onClick={(e) => e.stopPropagation()}
           >
-            <button
-              onClick={closeModal}
-              className="absolute top-4 right-4 z-10 p-2 rounded-full bg-white shadow-md hover:bg-gray-100 transition-colors"
-            >
-              <X className="w-5 h-5 text-gray-600" />
-            </button>
 
-            <div className="sticky top-0 bg-white p-6 pb-4 border-b">
-              <div className="flex items-start justify-between gap-4">
-                <div>
-                  <h2 className="text-2xl font-bold text-gray-900">{selectedSop.name}</h2>
-                  <div className="flex flex-wrap items-center gap-x-4 gap-y-2 mt-2 text-sm text-gray-600">
-
-                    {selectedSop.stages && (
-                      <span className="flex items-center">
-                        <Layers className="w-4 h-4 mr-1.5" />
-                        {selectedSop.stages.length} Stages
-                      </span>
-                    )}
+            <div className="sticky top-0 bg-white p-6 pb-4 border-b flex items-start justify-between z-20">
+              <div>
+                <h2 className="text-2xl font-bold text-gray-900">{selectedSop.name}</h2>
+                <div className="flex flex-wrap items-center gap-x-4 gap-y-2 mt-2 text-sm text-gray-600">
+                  {selectedSop.stages && (
                     <span className="flex items-center">
-                      {getStatusBadge(selectedSop.status)}
+                      <Layers className="w-4 h-4 mr-1.5" />
+                      {selectedSop.stages.length} Stages
                     </span>
-                    {selectedSop.rejectionReason ? <div className="font-semibold capitalize">reason: {selectedSop.rejectionReason}</div> : <></>}
-
-                  </div>
+                  )}
+                  <span className="flex items-center">
+                    {getStatusBadge(selectedSop.status)}
+                  </span>
+                  {selectedSop.rejectionReason && (
+                    <div className="font-semibold capitalize">
+                      reason: {selectedSop.rejectionReason}
+                    </div>
+                  )}
                 </div>
               </div>
+
+              {/* Close button aligned to top-right */}
+              <button
+                onClick={closeModal}
+                className="p-2 rounded-full bg-white shadow hover:bg-gray-100 transition-colors"
+              >
+                <X className="w-5 h-5 text-gray-600" />
+              </button>
             </div>
 
+
             <div className="p-6 space-y-8">
-
-
               <div className="space-y-6">
                 {selectedSop.stages?.map((stage, stageIndex) => (
-                  <div key={stage._id} className="border border-gray-300 overflow-hidden rounded-xl  overflow-hidden">
+                  <div key={stage._id} className="border border-gray-300 overflow-hidden rounded-xl">
                     <div className="bg-gray-50 px-5 py-3 border-b border-gray-200">
                       <div className="flex items-center">
                         <span className="flex-shrink-0 bg-blue-600 text-white rounded-full w-6 h-6 flex items-center justify-center mr-3">
@@ -2418,7 +2430,7 @@ console.log(companyData);
         />
       )}
       {showDeleteConfirm && (
-        <div className="absolute inset-0 z-50 bg-gray-900/20 backdrop-blur-sm flex items-center justify-center p-4 z-50 transition-all duration-200">
+        <div className="fixed pl-64 inset-0 z-50 bg-gray-900/20 backdrop-blur-sm flex items-center justify-center p-4 z-50 transition-all duration-200">
           <div className="relative bg-white rounded-xl shadow-xl w-full max-w-md mx-4 p-6">
             <div className="text-center">
               <AlertCircle className="w-12 h-12 text-red-500 mx-auto mb-4" />
@@ -2453,7 +2465,7 @@ console.log(companyData);
         </div>
       )}
       {showApprovalConfirm && (
-        <div className="absolute inset-0 z-50 bg-gray-900/20 backdrop-blur-sm flex items-center justify-center p-4 z-50 transition-all duration-200">
+        <div className="fixed pl-64 inset-0 z-50 bg-gray-900/20 backdrop-blur-sm flex items-center justify-center p-4 z-50 transition-all duration-200">
           <div className="relative bg-white rounded-xl shadow-xl w-full max-w-md mx-4 p-6">
             <div className="text-center">
               <CheckCircle className="w-12 h-12 text-blue-500 mx-auto mb-4" />
@@ -2517,39 +2529,24 @@ console.log(companyData);
           })()}
         />
       )}
-      {/* {showReviewModal && (
-        <ReviewModal
+
+      {showReviewModal && (
+        <ReviewApprovalModal
           onClose={() => {
             setShowReviewModal(false);
             setSelectedWorkers([]);
           }}
-          onSend={confirmReview}
+          onSend={confirmAction}
           workers={workersList}
           loading={loadingWorkers}
           selectedWorkers={selectedWorkers}
           setSelectedWorkers={setSelectedWorkers}
           sopStatus={reviewSop?.status}
-          existingReviews={reviewSop?.reviews || []}
-           reviewLoading={reviewLoading}
+          actionLoading={modalActionType === 'review' ? reviewLoading : approvalLoading}
+          existingReviews={modalActionType === 'review' ? reviewSop?.reviews || [] : reviewSop?.approvers || []}
+          actionType={modalActionType}
         />
-      )} */}
-      {showReviewModal && (
-  <ReviewApprovalModal
-    onClose={() => {
-      setShowReviewModal(false);
-      setSelectedWorkers([]);
-    }}
-    onSend={confirmAction}
-    workers={workersList}
-    loading={loadingWorkers}
-    selectedWorkers={selectedWorkers}
-    setSelectedWorkers={setSelectedWorkers}
-    sopStatus={reviewSop?.status}
-    actionLoading={modalActionType === 'review' ? reviewLoading : approvalLoading}
-    existingReviews={modalActionType === 'review' ? reviewSop?.reviews || [] : reviewSop?.approvers || []}
-    actionType={modalActionType}
-  />
-)}
+      )}
     </div>
   )
 }

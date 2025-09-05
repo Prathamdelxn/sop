@@ -531,14 +531,14 @@ export default function DynamicDashboardPage({ params }) {
                 <tr key={person._id} className="hover:bg-gray-50">
                   <td className="py-4 px-6">
                     <div className="flex items-center space-x-3">
-                      <span className="font-medium text-gray-900">{person.name}</span>
+                      <span className="font-medium text-gray-900 truncate max-w-[180px]">{person.name}</span>
                     </div>
                   </td>
-                  <td className="py-4 px-6 text-gray-600">{person.email}</td>
-                  <td className="py-4 px-6 text-gray-600">{person.username}</td>
-                  <td className="py-4 px-6 text-gray-600">{person.phone}</td>
+                  <td className="py-4 px-6 text-gray-600 truncate max-w-[180px]">{person.email}</td>
+                  <td className="py-4 px-6 text-gray-600 truncate max-w-[180px]">{person.username}</td>
+                  <td className="py-4 px-6 text-gray-600 ">{person.phone}</td>
                   <td className="py-4 px-6">
-                    <span className={`px-3 py-1 rounded-full text-xs font-medium ${getRoleColor(person.role)}`}>
+                    <span className={`px-3 py-1 truncate max-w-[180px] rounded-full text-xs font-medium ${getRoleColor(person.role)}`}>
                       {person.role}
                     </span>
                   </td>

@@ -1367,7 +1367,7 @@ const DurationModal = ({
   };
 
   return (
-    <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-end justify-center z-50 p-4 pb-20">
+    <div className="fixed pl-64 inset-0 bg-black/50 backdrop-blur-sm flex items-end justify-center z-50 p-4 pb-20">
       <div className="bg-white rounded-xl shadow-xl w-full max-w-sm">
         <div className="p-4 border-b flex justify-between items-center">
           <div className="flex items-center gap-2">
@@ -1561,7 +1561,7 @@ const ImageAttachmentModal = ({
   }, [photos]);
 
   return (
-    <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-end justify-center z-50 p-4 pb-20">
+    <div className="fixed pl-64 inset-0 bg-black/50 backdrop-blur-sm flex items-end justify-center z-50 p-4 pb-20">
       <div className="bg-white rounded-xl shadow-xl w-full max-w-md">
         <div className="p-4 border-b flex justify-between items-center">
           <h2 className="text-lg font-semibold text-gray-900">Attach Photos</h2>
@@ -2062,116 +2062,238 @@ const EditChecklistPage = () => {
       return stage;
     }));
   }, []);
-
-  const updateTaskField = useCallback((stageId, taskId, field, value, parentPath = []) => {
-    const updateNestedTasks = (tasks, [currentId, ...remainingPath]) => {
-      return tasks.map(task => {
-        if (task._id !== currentId) return task;
-        
-        if (remainingPath.length === 0) {
-          return { ...task, [field]: value };
-        }
-        
-        return {
-          ...task,
-          subtasks: updateNestedTasks(task.subtasks || [], remainingPath)
-        };
-      });
-    };
-
-    setStages(prev => prev.map(stage => {
-      if (stage._id !== stageId) return stage;
+const updateTaskField = useCallback((stageId, taskId, field, value, parentPath = []) => {
+  const updateNestedTasks = (tasks, path, targetId) => {
+    if (path.length === 0) {
+      // We're at the level where the task should be updated
+      return tasks.map(task => 
+        task._id === targetId ? { ...task, [field]: value } : task
+      );
+    }
+    
+    const [currentId, ...remainingPath] = path;
+    
+    return tasks.map(task => {
+      if (task._id !== currentId) return task;
+      
       return {
-        ...stage,
-        tasks: parentPath.length === 0 
-          ? stage.tasks.map(t => 
-              t._id === taskId ? { ...t, [field]: value } : t
-            )
-          : updateNestedTasks(stage.tasks, [...parentPath, taskId])
+        ...task,
+        subtasks: updateNestedTasks(task.subtasks || [], remainingPath, targetId)
       };
-    }));
-  }, []);
+    });
+  };
+
+  setStages(prev => prev.map(stage => {
+    if (stage._id !== stageId) return stage;
+    
+    return {
+      ...stage,
+      tasks: parentPath.length === 0 
+        ? stage.tasks.map(task => 
+            task._id === taskId ? { ...task, [field]: value } : task
+          )
+        : updateNestedTasks(stage.tasks, parentPath, taskId)
+    };
+  }));
+}, []);
+  // const updateTaskField = useCallback((stageId, taskId, field, value, parentPath = []) => {
+  //   const updateNestedTasks = (tasks, [currentId, ...remainingPath]) => {
+  //     return tasks.map(task => {
+  //       if (task._id !== currentId) return task;
+        
+  //       if (remainingPath.length === 0) {
+  //         return { ...task, [field]: value };
+  //       }
+        
+  //       return {
+  //         ...task,
+  //         subtasks: updateNestedTasks(task.subtasks || [], remainingPath)
+  //       };
+  //     });
+  //   };
+
+  //   setStages(prev => prev.map(stage => {
+  //     if (stage._id !== stageId) return stage;
+  //     return {
+  //       ...stage,
+  //       tasks: parentPath.length === 0 
+  //         ? stage.tasks.map(t => 
+  //             t._id === taskId ? { ...t, [field]: value } : t
+  //           )
+  //         : updateNestedTasks(stage.tasks, [...parentPath, taskId])
+  //     };
+  //   }));
+  // }, []);
 
   const deleteTask = useCallback((stageId, taskId, parentPath = []) => {
-    setStages(prev => prev.map(stage => {
-      if (stage._id !== stageId) return stage;
+  const deleteTaskRecursive = (tasks, path, targetId) => {
+    if (path.length === 0) {
+      // We're at the level where the task should be deleted
+      return tasks.filter(task => task._id !== targetId);
+    }
+    
+    const [currentId, ...remainingPath] = path;
+    
+    return tasks.map(task => {
+      if (task._id !== currentId) return task;
       
-      // Function to recursively delete the task
-      const deleteTaskRecursive = (tasks, path, targetId) => {
-        if (path.length === 0) {
-          // We're at the level where the task should be deleted
-          return tasks.filter(task => task._id !== targetId);
-        }
-        
-        const [currentId, ...remainingPath] = path;
-        
-        return tasks.map(task => {
-          if (task._id !== currentId) return task;
-          
-          return {
-            ...task,
-            subtasks: deleteTaskRecursive(task.subtasks || [], remainingPath, targetId)
-          };
-        });
-      };
-
       return {
-        ...stage,
-        tasks: deleteTaskRecursive(stage.tasks, parentPath, taskId)
+        ...task,
+        subtasks: deleteTaskRecursive(task.subtasks || [], remainingPath, targetId)
       };
-    }));
-  }, []);
+    });
+  };
+
+  setStages(prev => prev.map(stage => {
+    if (stage._id !== stageId) return stage;
+    
+    return {
+      ...stage,
+      tasks: parentPath.length === 0 
+        ? stage.tasks.filter(task => task._id !== taskId)
+        : deleteTaskRecursive(stage.tasks, parentPath, taskId)
+    };
+  }));
+}, []);
+  // const deleteTask = useCallback((stageId, taskId, parentPath = []) => {
+  //   setStages(prev => prev.map(stage => {
+  //     if (stage._id !== stageId) return stage;
+      
+  //     // Function to recursively delete the task
+  //     const deleteTaskRecursive = (tasks, path, targetId) => {
+  //       if (path.length === 0) {
+  //         // We're at the level where the task should be deleted
+  //         return tasks.filter(task => task._id !== targetId);
+  //       }
+        
+  //       const [currentId, ...remainingPath] = path;
+        
+  //       return tasks.map(task => {
+  //         if (task._id !== currentId) return task;
+          
+  //         return {
+  //           ...task,
+  //           subtasks: deleteTaskRecursive(task.subtasks || [], remainingPath, targetId)
+  //         };
+  //       });
+  //     };
+
+  //     return {
+  //       ...stage,
+  //       tasks: deleteTaskRecursive(stage.tasks, parentPath, taskId)
+  //     };
+  //   }));
+  // }, []);
+
 
   const addSubtask = useCallback((stageId, taskId, parentPath = []) => {
-    const newSubtask = {
-      _id: new ObjectId().toString(),
-      title: '',
-      description: '',
-      minDuration: '',
-      maxDuration: '',
-      minTime: { hours: 0, minutes: 0, seconds: 0 },
-      maxTime: { hours: 0, minutes: 0, seconds: 0 },
-      attachedImages: [],
-      imageTitle: '',
-      imageDescription: '',
-      imagePublicId: null,
-      subtasks: []
-    };
+  const newSubtask = {
+    _id: new ObjectId().toString(),
+    title: '',
+    description: '',
+    minDuration: '',
+    maxDuration: '',
+    minTime: { hours: 0, minutes: 0, seconds: 0 },
+    maxTime: { hours: 0, minutes: 0, seconds: 0 },
+    attachedImages: [],
+    imageTitle: '',
+    imageDescription: '',
+    imagePublicId: null,
+    subtasks: []
+  };
 
-    setExpandedItems(prev => ({ ...prev, [taskId]: true }));
+  setExpandedItems(prev => ({ ...prev, [taskId]: true }));
 
-    const updateNestedTasks = (tasks, [currentId, ...remainingPath]) => {
+  const addSubtaskRecursive = (tasks, path, targetId) => {
+    if (path.length === 0) {
+      // We're at the level where the subtask should be added
       return tasks.map(task => {
-        if (task._id !== currentId) return task;
-        
-        if (remainingPath.length === 0) {
-          return {
-            ...task,
-            subtasks: [...(task.subtasks || []), newSubtask]
-          };
-        }
+        if (task._id !== targetId) return task;
         
         return {
           ...task,
-          subtasks: updateNestedTasks(task.subtasks || [], remainingPath)
+          subtasks: [...(task.subtasks || []), newSubtask]
         };
       });
-    };
-
-    setStages(prev => prev.map(stage => {
-      if (stage._id !== stageId) return stage;
+    }
+    
+    const [currentId, ...remainingPath] = path;
+    
+    return tasks.map(task => {
+      if (task._id !== currentId) return task;
+      
       return {
-        ...stage,
-        tasks: parentPath.length === 0 
-          ? stage.tasks.map(t => 
-              t._id === taskId 
-                ? { ...t, subtasks: [...(t.subtasks || []), newSubtask] }
-                : t
-            )
-          : updateNestedTasks(stage.tasks, [...parentPath, taskId])
+        ...task,
+        subtasks: addSubtaskRecursive(task.subtasks || [], remainingPath, targetId)
       };
-    }));
-  }, []);
+    });
+  };
+
+  setStages(prev => prev.map(stage => {
+    if (stage._id !== stageId) return stage;
+    
+    return {
+      ...stage,
+      tasks: parentPath.length === 0 
+        ? stage.tasks.map(task => 
+            task._id === taskId 
+              ? { ...task, subtasks: [...(task.subtasks || []), newSubtask] }
+              : task
+          )
+        : addSubtaskRecursive(stage.tasks, parentPath, taskId)
+    };
+  }));
+}, []);
+  // const addSubtask = useCallback((stageId, taskId, parentPath = []) => {
+  //   const newSubtask = {
+  //     _id: new ObjectId().toString(),
+  //     title: '',
+  //     description: '',
+  //     minDuration: '',
+  //     maxDuration: '',
+  //     minTime: { hours: 0, minutes: 0, seconds: 0 },
+  //     maxTime: { hours: 0, minutes: 0, seconds: 0 },
+  //     attachedImages: [],
+  //     imageTitle: '',
+  //     imageDescription: '',
+  //     imagePublicId: null,
+  //     subtasks: []
+  //   };
+
+  //   setExpandedItems(prev => ({ ...prev, [taskId]: true }));
+
+  //   const updateNestedTasks = (tasks, [currentId, ...remainingPath]) => {
+  //     return tasks.map(task => {
+  //       if (task._id !== currentId) return task;
+        
+  //       if (remainingPath.length === 0) {
+  //         return {
+  //           ...task,
+  //           subtasks: [...(task.subtasks || []), newSubtask]
+  //         };
+  //       }
+        
+  //       return {
+  //         ...task,
+  //         subtasks: updateNestedTasks(task.subtasks || [], remainingPath)
+  //       };
+  //     });
+  //   };
+
+  //   setStages(prev => prev.map(stage => {
+  //     if (stage._id !== stageId) return stage;
+  //     return {
+  //       ...stage,
+  //       tasks: parentPath.length === 0 
+  //         ? stage.tasks.map(t => 
+  //             t._id === taskId 
+  //               ? { ...t, subtasks: [...(t.subtasks || []), newSubtask] }
+  //               : t
+  //           )
+  //         : updateNestedTasks(stage.tasks, [...parentPath, taskId])
+  //     };
+  //   }));
+  // }, []);
 
   const toggleExpansion = useCallback((id) => {
     setExpandedItems(prev => ({
@@ -2292,55 +2414,75 @@ const EditChecklistPage = () => {
   };
 
   const handleUpdateChecklist = async () => {
-    setIsSaving(true);
-    
-    if (!validatePrototype()) {
-      setIsSaving(false);
-      return;
-    }
+  setIsSaving(true);
+  
+  if (!validatePrototype()) {
+    setIsSaving(false);
+    return;
+  }
 
-    try {
-      const userData = JSON.parse(localStorage.getItem('user'));
+  try {
+    const userData = JSON.parse(localStorage.getItem('user'));
 
-      const stagesToSave = JSON.parse(JSON.stringify(stages, (key, value) => {
-        if (key === 'file') return undefined;
-        if (key === 'url' && value && value.startsWith('blob:')) return undefined;
-        return value;
-      }));
+    // Create a proper deep copy of stages with all nested subtasks
+    const stagesToSave = stages.map(stage => ({
+      ...stage,
+      tasks: stage.tasks.map(task => deepCopyTask(task))
+    }));
 
-      const requestData = {
-        name: prototypeName,
-        departmentName,
-        documentNo,
-        effectiveDate,
-        version,
-        stages: stagesToSave,
-        companyId: userData.companyId,
-        userId: userData.id
+    // Helper function to recursively copy tasks and subtasks
+    function deepCopyTask(task) {
+      return {
+        ...task,
+        // Ensure _id is preserved as string
+        _id: task._id.toString(),
+        subtasks: task.subtasks ? task.subtasks.map(subtask => deepCopyTask(subtask)) : [],
+        // Remove file objects and blob URLs but keep the structure
+        attachedImages: task.attachedImages ? task.attachedImages.map(image => ({
+          name: image.name,
+          size: image.size,
+          url: image.url && !image.url.startsWith('blob:') ? image.url : null,
+          public_id: image.public_id
+        })) : []
       };
-
-      const response = await fetch(`/api/task/${checklistId}`, {
-        method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(requestData),
-      });
-
-      if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
-      }
-
-      await response.json();
-      toast.success('Checklist updated successfully');
-      router.push('/dashboard/create-checklist');
-    } catch (error) {
-      console.error("Error updating checklist:", error);
-      toast.error('Failed to update checklist. Please try again.');
-    } finally {
-      setIsSaving(false);
     }
-  };
+
+    const requestData = {
+      name: prototypeName,
+      departmentName,
+      documentNo,
+      effectiveDate,
+      version,
+      stages: stagesToSave,
+      companyId: userData.companyId,
+      userId: userData.id
+    };
+    console.log("data",requestData);
+
+    const response = await fetch(`/api/task/${checklistId}`, {
+      method: 'PUT',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(requestData),
+    });
+
+    if (!response.ok) {
+      throw new Error(`HTTP error! status: ${response.status}`);
+    }
+
+    await response.json();
+    toast.success('Checklist updated successfully');
+    router.push('/dashboard/create-checklist');
+  } catch (error) {
+    console.error("Error updating checklist:", error);
+    toast.error('Failed to update checklist. Please try again.');
+  } finally {
+    setIsSaving(false);
+  }
+};
+
+  
 
   if (isLoading) {
     return (
@@ -2356,7 +2498,7 @@ const EditChecklistPage = () => {
   return (
     <div className="min-h-screen bg-gradient-to-b from-gray-50 to-gray-100 px-4 sm:p-6 md:px-8 relative">
       {isSaving && (
-        <div className="absolute inset-0 z-50 flex items-center justify-center bg-black/10 backdrop-blur-sm rounded-xl">
+        <div className="fixed pl-64 inset-0 z-50 flex items-center justify-center bg-black/10 backdrop-blur-sm rounded-xl">
           <div className="bg-white p-6 rounded-xl shadow-xl flex flex-col items-center">
             <svg
               className="animate-spin h-8 w-8 text-indigo-600 mb-3"

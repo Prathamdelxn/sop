@@ -1046,9 +1046,9 @@ export default function AssignWorkerPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 relative">
-      <div className="bg-white border-b border-gray-200 rounded-xl mx-6 shadow-sm">
-        <div className="max-w-7xl mx-auto px-6 py-6 rounded-xl flex flex-col lg:flex-row lg:items-center lg:justify-between gap-6">
+    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 p-4 relative">
+      <div className="bg-white border-b border-gray-200 rounded-xl m-4 shadow-sm">
+        <div className="max-w-7xl mx-auto px-6  py-6 rounded-xl flex flex-col lg:flex-row lg:items-center lg:justify-between gap-6">
           <div className="flex items-center space-x-4">
             <div className="p-4 bg-gradient-to-br from-blue-500 via-purple-500 to-pink-500 rounded-2xl shadow">
               <Sparkles className="w-6 h-6 text-white" />
@@ -1061,8 +1061,8 @@ export default function AssignWorkerPage() {
         </div>
       </div>
       
-      <div className="mx-6 mt-6">
-        <div className="mb-6 bg-white p-4 rounded-xl shadow-sm border border-gray-200">
+      <div className="mx-4 mt-2">
+        <div className="mb-6 bg-white p-4 rounded-xl shadow-sm ">
           <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
             {/* Search Bar */}
             <div className="relative flex-1">

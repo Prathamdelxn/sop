@@ -78,13 +78,13 @@ const SearchBar = ({ searchQuery, onSearchChange, onFilter, onTypeFilterChange, 
 
 const StatusBadge = ({ status, type }) => {
   const badges = {
-    Approved: 'bg-gradient-to-r from-green-500 to-emerald-500 text-white shadow-sm shadow-green-500/30',
-    'Pending Approval': 'bg-gradient-to-r from-orange-500 to-amber-500 text-white shadow-sm shadow-orange-500/30',
-    Rejected: 'bg-gradient-to-r from-red-500 to-rose-500 text-white shadow-sm shadow-red-500/30',
-    ongoing: 'bg-gradient-to-r from-blue-500 to-indigo-500 text-white shadow-sm shadow-blue-500/30',
+    Approved: 'bg-green-200 text-green-700 ',
+    'Pending Approval': 'bg-orange-200 text-orange-700 ',
+    Rejected: 'bg-red-200 text-red-700 ',
+    ongoing: 'bg-blue-200 text-blue-700 ',
   };
   return (
-    <span className={`px-4 py-2 rounded-full text-sm font-medium ${badges[type]} border-0`}>
+    <span className={`px-4 py-1 rounded-full text-xs font-medium ${badges[type]} border-0`}>
       {status}
     </span>
   );
@@ -103,7 +103,7 @@ const ActionButtons = ({ task, onAction, onView, setShowRejectModal, setTaskToRe
       <>
         <button
           onClick={() => onAction(task._id, 'Approved')}
-          className="p-2 bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700 text-white rounded-full flex items-center justify-center transition-all duration-300 hover:scale-105 shadow-sm shadow-green-500/30"
+          className="p-2 bg-green-200 text-green-500 rounded-lg flex items-center justify-center transition-all duration-300"
           aria-label="Approve"
         >
           <Check className="w-4 h-4" />
@@ -113,7 +113,7 @@ const ActionButtons = ({ task, onAction, onView, setShowRejectModal, setTaskToRe
             setTaskToReject(task);
             setShowRejectModal(true);
           }}
-          className="p-2 bg-gradient-to-r from-red-600 to-rose-600 hover:from-red-700 hover:to-rose-700 text-white rounded-full flex items-center justify-center transition-all duration-300 hover:scale-105 shadow-sm shadow-red-500/30"
+          className="p-2 bg-red-200 text-red-500 rounded-lg flex items-center justify-center transition-all duration-300 "
           aria-label="Reject"
         >
           <X className="w-4 h-4" />
@@ -592,12 +592,22 @@ const Dashboard = () => {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-100">
+    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 p-4">
       <div className="max-w-7xl mx-auto p-4">
-        <div className="mb-6">
-          <h1 className="text-4xl font-bold text-slate-800 mb-2">Approve/Reject Equipment Dashboard</h1>
-          <p className="text-slate-600">Manage and monitor your equipment </p>
-        </div>
+        <div className="bg-white border-b border-gray-200 rounded-xl my-2 shadow-sm">
+                <div className="max-w-7xl mx-auto px-6  py-6 rounded-xl flex flex-col lg:flex-row lg:items-center lg:justify-between gap-6">
+                  <div className="flex items-center space-x-4">
+                    <div className="p-4 bg-gradient-to-br from-blue-500 via-purple-500 to-pink-500 rounded-2xl shadow">
+                      <Sparkles className="w-6 h-6 text-white" />
+                    </div>
+                    <div>
+                      <h1 className="text-2xl font-bold text-gray-900">Approve/Reject Equipment Workspace</h1>
+                      <p className="text-gray-600 mt-2 text-md">Manage and monitor your equipment</p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+        
 
         <SearchBar
           searchQuery={searchQuery}

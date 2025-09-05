@@ -2,7 +2,7 @@
 'use client';
 
 import React, { useEffect, useState } from 'react';
-import { Plus, Package, Users, X, Trash2, Eye, Search, CheckCircle } from 'lucide-react';
+import { Plus, Package, Users, X, Trash2, Eye, Search, CheckCircle, Sparkles } from 'lucide-react';
 
 export default function AssignEquipmentPage() {
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -15,10 +15,10 @@ export default function AssignEquipmentPage() {
   const [companyData, setCompanyData] = useState();
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState('All Statuses');
-const [deleteModal, setDeleteModal] = useState({
-  isOpen: false,
-  assignmentId: null,
-});
+  const [deleteModal, setDeleteModal] = useState({
+    isOpen: false,
+    assignmentId: null,
+  });
   const [approvalModal, setApprovalModal] = useState({
     isOpen: false,
     assignment: null,
@@ -37,32 +37,32 @@ const [deleteModal, setDeleteModal] = useState({
 
     return matchesSearch && matchesStatus;
   });
-const handleDeleteClick = (assignmentId) => {
-  setDeleteModal({
-    isOpen: true,
-    assignmentId,
-  });
-};
-
-const confirmDeleteAssignment = async () => {
-  if (!deleteModal.assignmentId) return;
-
-  try {
-    setIsLoading(true);
-    const res = await fetch(`/api/assignment/delete/${deleteModal.assignmentId}`, {
-      method: 'DELETE',
+  const handleDeleteClick = (assignmentId) => {
+    setDeleteModal({
+      isOpen: true,
+      assignmentId,
     });
+  };
 
-    if (res.ok) {
-      await fetchAssignment(); // Refresh the list
+  const confirmDeleteAssignment = async () => {
+    if (!deleteModal.assignmentId) return;
+
+    try {
+      setIsLoading(true);
+      const res = await fetch(`/api/assignment/delete/${deleteModal.assignmentId}`, {
+        method: 'DELETE',
+      });
+
+      if (res.ok) {
+        await fetchAssignment(); // Refresh the list
+      }
+    } catch (error) {
+      console.error('Error deleting assignment:', error);
+    } finally {
+      setIsLoading(false);
+      setDeleteModal({ isOpen: false, assignmentId: null });
     }
-  } catch (error) {
-    console.error('Error deleting assignment:', error);
-  } finally {
-    setIsLoading(false);
-    setDeleteModal({ isOpen: false, assignmentId: null });
-  }
-};
+  };
   const handleAssign = async () => {
     const generatedId = `A-${Date.now()}`;
     const payload = {
@@ -232,24 +232,30 @@ const confirmDeleteAssignment = async () => {
   );
 
   return (
-    <div className="min-h-screen bg-gray-50 p-6">
+    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 p-4">
       <div className="max-w-7xl mx-auto">
-        {/* Header Section */}
-        <div className="flex flex-col md:flex-row md:items-center md:justify-between mb-8 gap-4">
-          <div>
-            <h1 className="text-3xl font-bold text-gray-800">
-              Assign Checklist to Equipment
-            </h1>
-            <p className="text-gray-600">Assign and track your equipment with checklist efficiently</p>
+        <div className="bg-white border-b border-gray-200 rounded-xl my-4 shadow-sm">
+          <div className="max-w-7xl mx-auto px-6  py-6 rounded-xl flex flex-col lg:flex-row lg:items-center lg:justify-between gap-6">
+            <div className="flex items-center space-x-4">
+              <div className="p-4 bg-gradient-to-br from-blue-500 via-purple-500 to-pink-500 rounded-2xl shadow">
+                <Sparkles className="w-6 h-6 text-white" />
+              </div>
+              <div>
+                <h1 className="text-2xl font-bold text-gray-900">Assign Checklist to Equipment</h1>
+                <p className="text-gray-600 mt-2 text-md">Manage and tagged equipment with checklist</p>
+              </div>
+
+            </div>
+            <button
+              onClick={() => setIsModalOpen(true)}
+              className="bg-blue-600 text-white font-medium py-3 px-6 rounded-lg hover:bg-blue-700 transition-colors flex items-center gap-2 w-full md:w-auto justify-center"
+            >
+              <Plus className="w-5 h-5" />
+              <span>Assign Checklist to Equipment</span>
+            </button>
           </div>
-          <button
-            onClick={() => setIsModalOpen(true)}
-            className="bg-blue-600 text-white font-medium py-3 px-6 rounded-lg hover:bg-blue-700 transition-colors flex items-center gap-2 w-full md:w-auto justify-center"
-          >
-            <Plus className="w-5 h-5" />
-            <span>Assign Checklist to Equipment</span>
-          </button>
         </div>
+
 
         {/* Search and Filter Section */}
         <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4 mb-6">
@@ -342,8 +348,8 @@ const confirmDeleteAssignment = async () => {
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
                         <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${item.status === 'assigned'
-                            ? 'bg-green-100 text-green-800'
-                            : 'bg-yellow-100 text-yellow-800'
+                          ? 'bg-green-100 text-green-800'
+                          : 'bg-yellow-100 text-yellow-800'
                           }`}>
                           {item.generatedId}
                         </span>
@@ -351,12 +357,12 @@ const confirmDeleteAssignment = async () => {
 
                       <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
                         <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${item.status === 'Approved'
-                            ? 'bg-green-100 text-green-800'
-                            : item.status === 'pending'
-                              ? 'bg-blue-100 text-blue-800'
-                              : item.status === 'rejected'
-                                ? 'bg-red-100 text-red-800'
-                                : 'bg-yellow-100 text-yellow-800'
+                          ? 'bg-green-100 text-green-800'
+                          : item.status === 'pending'
+                            ? 'bg-blue-100 text-blue-800'
+                            : item.status === 'rejected'
+                              ? 'bg-red-100 text-red-800'
+                              : 'bg-yellow-100 text-yellow-800'
                           }`}>
                           {item.status}
                         </span>
@@ -467,7 +473,7 @@ const confirmDeleteAssignment = async () => {
         </div>
       )}
       {/* Confirmation Modal */}
-     
+
       {/* Approval Confirmation Modal */}
       {approvalModal.isOpen && (
         <div className="absolute inset-0 bg-black/30 backdrop-blur-sm flex items-center justify-center z-50 p-4">
@@ -512,47 +518,47 @@ const confirmDeleteAssignment = async () => {
         </div>
       )}
       {/* Delete Confirmation Modal */}
-{deleteModal.isOpen && (
-  <div className="absolute inset-0 bg-black/30 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-    <div className="bg-white rounded-xl shadow-xl max-w-md w-full overflow-hidden">
-      <div className="p-6">
-        <div className="flex items-center gap-3 mb-4">
-          <div className="p-2 rounded-full bg-red-100">
-            <Trash2 className="text-red-600" size={24} />
-          </div>
-          <h3 className="text-lg font-semibold text-gray-900">Delete Assignment</h3>
-        </div>
-        <p className="text-gray-600 mb-6">
-          Are you sure you want to delete this assignment? This action cannot be undone.
-        </p>
-        <div className="flex justify-end gap-3">
-          <button
-            onClick={() => setDeleteModal({ isOpen: false, assignmentId: null })}
-            disabled={isLoading}
-            className="px-4 py-2 rounded-lg border border-gray-300 text-gray-700 hover:bg-gray-50 transition-colors disabled:opacity-50"
-          >
-            Cancel
-          </button>
-          <button
-            onClick={confirmDeleteAssignment}
-            disabled={isLoading}
-            className="px-4 py-2 rounded-lg bg-red-600 text-white hover:bg-red-700 transition-colors flex items-center justify-center min-w-[100px] disabled:opacity-50"
-          >
-            {isLoading ? (
-              <div className="flex items-center gap-2">
-                <svg className="animate-spin -ml-1 mr-2 h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                </svg>
-                Deleting...
+      {deleteModal.isOpen && (
+        <div className="absolute inset-0 bg-black/30 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-xl shadow-xl max-w-md w-full overflow-hidden">
+            <div className="p-6">
+              <div className="flex items-center gap-3 mb-4">
+                <div className="p-2 rounded-full bg-red-100">
+                  <Trash2 className="text-red-600" size={24} />
+                </div>
+                <h3 className="text-lg font-semibold text-gray-900">Delete Assignment</h3>
               </div>
-            ) : 'Delete'}
-          </button>
+              <p className="text-gray-600 mb-6">
+                Are you sure you want to delete this assignment? This action cannot be undone.
+              </p>
+              <div className="flex justify-end gap-3">
+                <button
+                  onClick={() => setDeleteModal({ isOpen: false, assignmentId: null })}
+                  disabled={isLoading}
+                  className="px-4 py-2 rounded-lg border border-gray-300 text-gray-700 hover:bg-gray-50 transition-colors disabled:opacity-50"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={confirmDeleteAssignment}
+                  disabled={isLoading}
+                  className="px-4 py-2 rounded-lg bg-red-600 text-white hover:bg-red-700 transition-colors flex items-center justify-center min-w-[100px] disabled:opacity-50"
+                >
+                  {isLoading ? (
+                    <div className="flex items-center gap-2">
+                      <svg className="animate-spin -ml-1 mr-2 h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                      </svg>
+                      Deleting...
+                    </div>
+                  ) : 'Delete'}
+                </button>
+              </div>
+            </div>
+          </div>
         </div>
-      </div>
-    </div>
-  </div>
-)}
+      )}
     </div>
   );
 }

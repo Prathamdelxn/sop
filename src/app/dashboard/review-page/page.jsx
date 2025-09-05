@@ -588,7 +588,7 @@ console.log(rejectReason);
       {selectedSop && (
         <div 
           onClick={closeModal}
-          className="absolute inset-0 bg-gray-900/20 backdrop-blur-sm flex items-start justify-center p-4 z-50 pt-20"
+          className="fixed pl-64 inset-0 bg-gray-900/20 backdrop-blur-sm flex items-start justify-center p-4 z-50 pt-20"
         >
           <div 
             className="relative bg-white rounded-xl shadow-xl w-full max-w-4xl max-h-[80vh] overflow-y-auto mx-4"
@@ -701,7 +701,7 @@ console.log(rejectReason);
       )}
 
       {showRejectModal && (
-        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+        <div className="fixed inset-0 pl-64 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
           <div className="bg-white rounded-xl shadow-xl w-full max-w-md p-6">
             <h3 className="text-xl font-bold text-gray-900 mb-4">Reason for Rejection</h3>
             <p className="text-gray-600 mb-4">Please provide a reason for rejecting this checklist:</p>

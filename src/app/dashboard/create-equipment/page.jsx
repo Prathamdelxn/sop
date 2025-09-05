@@ -1,7 +1,7 @@
 
 'use client';
 import { useState, useEffect } from 'react';
-import { Package, Plus, X, Edit, Trash2, Search, CheckCircle, Clock,AlertCircle, XCircle, Eye } from 'lucide-react';
+import { Package, Plus, X, Edit, Trash2, Search, CheckCircle, Clock, AlertCircle, Sparkles, XCircle, Eye } from 'lucide-react';
 
 export default function FacilityAdminDashboard() {
   const [equipmentList, setEquipmentList] = useState([]);
@@ -15,37 +15,37 @@ export default function FacilityAdminDashboard() {
   const [equipmentToApprove, setEquipmentToApprove] = useState(null);
   const [companyData, setCompanyData] = useState();
   const [statusFilter, setStatusFilter] = useState('All Statuses');
-   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
-   const [equipmentToDelete, setEquipmentToDelete] = useState(null);
-   const [isLoading, setIsLoading] = useState(true);
-const [deleteLoading, setDeleteLoading] = useState(false);
-const [createLoading, setCreateLoading] = useState(false);
-const [updateLoading, setUpdateLoading] = useState(false);
-const [approvalLoading, setApprovalLoading] = useState(false);
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [equipmentToDelete, setEquipmentToDelete] = useState(null);
+  const [isLoading, setIsLoading] = useState(true);
+  const [deleteLoading, setDeleteLoading] = useState(false);
+  const [createLoading, setCreateLoading] = useState(false);
+  const [updateLoading, setUpdateLoading] = useState(false);
+  const [approvalLoading, setApprovalLoading] = useState(false);
 
-const handleDeleteClick = (equipment) => {
-  setEquipmentToDelete(equipment);
-  setShowDeleteConfirm(true);
-};
+  const handleDeleteClick = (equipment) => {
+    setEquipmentToDelete(equipment);
+    setShowDeleteConfirm(true);
+  };
 
-const cancelDelete = () => {
-  setShowDeleteConfirm(false);
-  setEquipmentToDelete(null);
-};
+  const cancelDelete = () => {
+    setShowDeleteConfirm(false);
+    setEquipmentToDelete(null);
+  };
 
   useEffect(() => {
     const fetchEquipment = async () => {
       try {
-        setIsLoading(true); 
+        setIsLoading(true);
         const res = await fetch('/api/equipment/fetchAll');
         const result = await res.json();
- 
+
         if (res.ok && result.success) {
           const filtered = result.data.filter(item => item.companyId === companyData?.companyId);
           setEquipmentList(filtered);
-         
+
         } else {
-         
+
           console.error('Failed to fetch equipment:', result.message);
         }
       } catch (err) {
@@ -53,9 +53,9 @@ const cancelDelete = () => {
         setIsLoading(false);
       }
       finally {
-      // Always set loading to false in finally block
-      setIsLoading(false);
-    }
+        // Always set loading to false in finally block
+        setIsLoading(false);
+      }
     };
 
     fetchEquipment();
@@ -101,8 +101,8 @@ const cancelDelete = () => {
     } catch (err) {
       console.error('Error updating status:', err);
     } finally {
-    setApprovalLoading(false);
-  }
+      setApprovalLoading(false);
+    }
   };
 
   const [formData, setFormData] = useState({
@@ -195,30 +195,55 @@ const cancelDelete = () => {
 
 
   const handleSubmit = async () => {
-     console.log(editingEquipment);
-     if(editingEquipment){
-      console.log("ggo")
-     }
-  const validationErrors = validate();
-  if (Object.keys(validationErrors).length > 0) {
-    setErrors(validationErrors);
-    return;
-  }
-
-  try {
-    let result;
-   
+    console.log(editingEquipment);
     if (editingEquipment) {
       console.log("ggo")
-      setUpdateLoading(true);
-      // Update existing equipment
-      const res = await fetch('/api/equipment/update', {
-        method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({
-          equipmentId: editingEquipment._id,
+    }
+    const validationErrors = validate();
+    if (Object.keys(validationErrors).length > 0) {
+      setErrors(validationErrors);
+      return;
+    }
+
+    try {
+      let result;
+
+      if (editingEquipment) {
+        console.log("ggo")
+        setUpdateLoading(true);
+        // Update existing equipment
+        const res = await fetch('/api/equipment/update', {
+          method: 'PUT',
+          headers: {
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({
+            equipmentId: editingEquipment._id,
+            name: formData.name,
+            type: formData.type,
+            manufacturer: formData.manufacturer,
+            supplier: formData.supplier,
+            model: formData.model,
+            serial: formData.serial,
+            assetTag: formData.assetTag,
+            status: "InProgress"
+          })
+        });
+
+        result = await res.json();
+        setUpdateLoading(false);
+
+        if (res.ok) {
+          setEquipmentList(prev =>
+            prev.map(eq =>
+              eq._id === editingEquipment._id ? result.data : eq
+            )
+          );
+        }
+      } else {
+        setCreateLoading(true);
+        // Create new equipment
+        const newData = {
           name: formData.name,
           type: formData.type,
           manufacturer: formData.manufacturer,
@@ -226,59 +251,34 @@ const cancelDelete = () => {
           model: formData.model,
           serial: formData.serial,
           assetTag: formData.assetTag,
-          status:"InProgress"
-        })
-      });
-      
-      result = await res.json();
-       setUpdateLoading(false); 
+          companyId: companyData.companyId,
+          userId: companyData.id
+        };
 
-      if (res.ok) {
-        setEquipmentList(prev =>
-          prev.map(eq =>
-            eq._id === editingEquipment._id ? result.data : eq
-          )
-        );
+        const res = await fetch('/api/equipment/create', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify(newData)
+        });
+
+        result = await res.json();
+        setCreateLoading(false);
+        if (res.ok) {
+          setEquipmentList(prev => [...prev, result.data]);
+        }
       }
-    } else {
-       setCreateLoading(true); 
-      // Create new equipment
-      const newData = {
-        name: formData.name,
-        type: formData.type,
-        manufacturer: formData.manufacturer,
-        supplier: formData.supplier,
-        model: formData.model,
-        serial: formData.serial,
-        assetTag: formData.assetTag,
-        companyId: companyData.companyId,
-        userId: companyData.id
-      };
 
-      const res = await fetch('/api/equipment/create', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify(newData)
-      });
-
-      result = await res.json();
- setCreateLoading(false); 
-      if (res.ok) {
-        setEquipmentList(prev => [...prev, result.data]);
+      if (result.success) {
+        closePopup();
+      } else {
+        console.error('API error:', result.message);
       }
+    } catch (err) {
+      console.error('Internal Server Error', err);
     }
-
-    if (result.success) {
-      closePopup();
-    } else {
-      console.error('API error:', result.message);
-    }
-  } catch (err) {
-    console.error('Internal Server Error', err);
-  }
-};
+  };
   const handleReset = () => {
     setFormData({
       name: '',
@@ -295,29 +295,29 @@ const cancelDelete = () => {
   };
 
   const confirmDelete = async () => {
-  if (!equipmentToDelete) return;
-  
-  setDeleteLoading(true);
-  try {
-    const res = await fetch(`/api/equipment/delete/${equipmentToDelete._id}`, {
-      method: 'DELETE',
-    });
+    if (!equipmentToDelete) return;
 
-    const data = await res.json();
+    setDeleteLoading(true);
+    try {
+      const res = await fetch(`/api/equipment/delete/${equipmentToDelete._id}`, {
+        method: 'DELETE',
+      });
 
-    if (res.ok && data.success) {
-      setEquipmentList(prev => prev.filter(eq => eq._id !== equipmentToDelete._id));
-      setShowDeleteConfirm(false);
-      setEquipmentToDelete(null);
-    } else {
-      console.error('Failed to delete equipment:', data.message);
+      const data = await res.json();
+
+      if (res.ok && data.success) {
+        setEquipmentList(prev => prev.filter(eq => eq._id !== equipmentToDelete._id));
+        setShowDeleteConfirm(false);
+        setEquipmentToDelete(null);
+      } else {
+        console.error('Failed to delete equipment:', data.message);
+      }
+    } catch (error) {
+      console.error('Error deleting equipment:', error);
+    } finally {
+      setDeleteLoading(false);
     }
-  } catch (error) {
-    console.error('Error deleting equipment:', error);
-  } finally {
-    setDeleteLoading(false);
-  }
-};
+  };
 
 
   // const deleteEquipment = async (id) => {
@@ -345,7 +345,7 @@ const cancelDelete = () => {
 
   const DetailItem = ({ label, value }) => (
     <div className='bg-red-500 p-2 rounded-xl bg-slate-200'>
-      <p className={`text-sm font-medium  ${label=="Rejection Reason" ? "text-red-500" :"text-gray-500"}  `}>{label}</p>
+      <p className={`text-sm font-medium  ${label == "Rejection Reason" ? "text-red-500" : "text-gray-500"}  `}>{label}</p>
       <p className="text-gray-900 mt-1">
         {value || <span className="text-gray-400">N/A</span>}
       </p>
@@ -416,30 +416,35 @@ const cancelDelete = () => {
   const rejectedCount = equipmentList.filter(eq => eq.status === 'rejected').length;
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 p-4">
+    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 p-4 relative">
       <div className="max-w-7xl mx-auto">
         {/* Header */}
-        <div className="bg-white rounded-2xl shadow-lg p-4 mb-4">
-          <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
-            <div>
-              <h1 className="text-3xl font-bold text-gray-900">User Facility Admin Dashboard</h1>
-              <p className="text-gray-600 mt-1">Manage your equipment inventory and information</p>
+        <div className="bg-white border-b border-gray-200 rounded-xl mx-2 mt-4 shadow-sm">
+          <div className="max-w-7xl mx-auto px-6 py-6 rounded-xl flex flex-col lg:flex-row lg:items-center lg:justify-between gap-6">
+            <div className="flex items-center space-x-4">
+              <div className="p-4 bg-gradient-to-br from-blue-500 via-purple-500 to-pink-500 rounded-2xl shadow">
+                <Sparkles className="w-6 h-6 text-white" />
+              </div>
+              <div>
+                <h1 className="text-2xl font-bold text-gray-900">Equipment Workspace</h1>
+                <p className="text-gray-600 mt-2 text-md">Manage and track your equipment processes</p>
+              </div>
             </div>
-            <div className="flex gap-3">
-              <button
-                onClick={() => openPopup()}
-                className="flex items-center gap-2 bg-blue-600 text-white px-6 py-3 rounded-xl hover:bg-blue-700 transition-colors font-semibold"
-              >
-                <Plus size={20} />
-                Add Equipment
-              </button>
-            </div>
+            <button
+              onClick={() => openPopup()}
+              className="flex items-center gap-2 bg-blue-600 text-white px-6 py-3 rounded-xl hover:bg-blue-700 transition-colors font-semibold"
+            >
+              <Plus size={20} />
+              Add Equipment
+            </button>
+
           </div>
         </div>
 
+
         {/* Stats Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-4">
-          <div className="bg-white rounded-2xl shadow-lg p-4">
+        <div className="grid grid-cols-1 md:grid-cols-4 mx-2 gap-4 mt-4 mb-4">
+          <div className="bg-white rounded-2xl shadow-sm p-4">
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-gray-600 text-sm">Total Equipment</p>
@@ -448,7 +453,7 @@ const cancelDelete = () => {
               <Package className="text-blue-600" size={32} />
             </div>
           </div>
-          <div className="bg-white rounded-2xl shadow-lg p-4">
+          <div className="bg-white rounded-2xl shadow-sm p-4">
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-gray-600 text-sm">Approved</p>
@@ -457,7 +462,7 @@ const cancelDelete = () => {
               {getStatusIcon('Approved')}
             </div>
           </div>
-          <div className="bg-white rounded-2xl shadow-lg p-4">
+          <div className="bg-white rounded-2xl shadow-sm p-4">
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-gray-600 text-sm">Pending</p>
@@ -466,7 +471,7 @@ const cancelDelete = () => {
               {getStatusIcon('Pending Approval')}
             </div>
           </div>
-          <div className="bg-white rounded-2xl shadow-lg p-4">
+          <div className="bg-white rounded-2xl shadow-sm p-4">
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-gray-600 text-sm">Created</p>
@@ -478,7 +483,7 @@ const cancelDelete = () => {
         </div>
 
         {/* Filters and Search */}
-        <div className="bg-white rounded-2xl shadow-lg p-4 mb-4">
+        <div className="bg-white rounded-2xl shadow-sm p-4 mb-4">
           <div className="flex flex-col lg:flex-row gap-4 items-center">
             <div className="flex-1 relative">
               <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" size={20} />
@@ -517,7 +522,7 @@ const cancelDelete = () => {
         </div>
 
         {/* Equipment Table */}
-        <div className="bg-white rounded-2xl shadow-lg p-4">
+        <div className="bg-white rounded-2xl shadow-sm p-4">
           <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6 gap-4">
             <h2 className="text-2xl font-bold text-gray-800">Equipment Inventory</h2>
             <div className="text-sm text-gray-500">
@@ -526,11 +531,11 @@ const cancelDelete = () => {
           </div>
 
           {isLoading ? (
-  <div className="text-center py-12">
-    <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-500 mx-auto mb-4"></div>
-    <p className="text-gray-500 text-lg">Loading equipment...</p>
-  </div>
-) : filteredEquipment.length === 0 ? (
+            <div className="text-center py-12">
+              <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-500 mx-auto mb-4"></div>
+              <p className="text-gray-500 text-lg">Loading equipment...</p>
+            </div>
+          ) : filteredEquipment.length === 0 ? (
             <div className="text-center py-12">
               <Package className="mx-auto text-gray-400 mb-4" size={64} />
               <p className="text-gray-500 text-lg">No equipment found</p>
@@ -571,7 +576,7 @@ const cancelDelete = () => {
                             <Package className="text-blue-600" size={20} />
                           </div>
                           <div className="ml-4">
-                            <div className="text-sm font-medium text-gray-900">{equipment.name}</div>
+                            <div className="text-sm font-medium text-gray-900 truncate max-w-[180px]" title={equipment.name}>{equipment.name}</div>
                             <div className="text-sm text-gray-500">{equipment.model || 'N/A'}</div>
                           </div>
                         </div>
@@ -580,7 +585,7 @@ const cancelDelete = () => {
                         <div className="text-sm text-gray-900 font-mono">{equipment._id}</div>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
-                        <span className="px-2 py-1 inline-flex text-xs leading-5 font-semibold rounded-full bg-blue-100 text-blue-800">
+                        <span className="px-2 py-1 inline-flex text-xs leading-5 font-semibold rounded-full bg-blue-100 truncate max-w-[180px] text-blue-800">
                           {equipment.type}
                         </span>
                       </td>
@@ -596,7 +601,7 @@ const cancelDelete = () => {
                       </td> */}
                       <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
                         <div className="flex justify-end space-x-2">
-                        
+
                           {equipment.status === 'InProgress' && (
                             <>
 
@@ -608,7 +613,7 @@ const cancelDelete = () => {
                                 <CheckCircle size={18} />
                               </button> */}
                               <button
-                              onClick={() => handleSendForApproval(equipment)}
+                                onClick={() => handleSendForApproval(equipment)}
                                 className="px-3 py-1.5 border border-transparent text-xs font-medium rounded-full shadow-sm text-white bg-blue-500 hover:bg-[#2791b8]"
                                 title="Send for Approval"
                               >
@@ -650,14 +655,14 @@ const cancelDelete = () => {
 
         {/* Equipment Details Modal */}
         {isInfoModalOpen && viewingEquipment && (
-          <div className="fixed inset-0 bg-black/30 backdrop-blur-sm flex items-center justify-center z-50 p-4 transition-opacity duration-300">
+          <div className="absolute inset-0 bg-black/30 backdrop-blur-sm flex items-center justify-center z-50 p-4 transition-opacity duration-300">
             <div className="bg-white rounded-xl shadow-xl max-w-2xl w-full overflow-hidden transform transition-all duration-300 scale-[0.98] hover:scale-100">
               {/* Header */}
               <div className="bg-gradient-to-r from-blue-600 to-blue-500 px-6 py-4 flex justify-between items-center">
                 <div>
                   <h2 className="text-xl font-bold text-white">Equipment Details</h2>
                   <p className="text-blue-100 text-sm">{viewingEquipment.type} • ID: {viewingEquipment._id}</p>
-               
+
 
                 </div>
                 <button
@@ -691,8 +696,8 @@ const cancelDelete = () => {
                     <DetailItem label="Supplier" value={viewingEquipment.supplier} />
                     <DetailItem label="Serial" value={viewingEquipment.serial} />
                     <DetailItem label="Asset Tag" value={viewingEquipment.assetTag} />
-                    {viewingEquipment.rejectionReason? <DetailItem label="Rejection Reason" value={viewingEquipment.rejectionReason} />:<></>}
-                    
+                    {viewingEquipment.rejectionReason ? <DetailItem label="Rejection Reason" value={viewingEquipment.rejectionReason} /> : <></>}
+
                   </div>
                 </div>
 
@@ -729,7 +734,7 @@ const cancelDelete = () => {
 
         {/* Add/Edit Equipment Popup */}
         {isPopupOpen && (
-          <div className="absolute inset-0 backdrop-blur-sm bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="absolute inset-0 -top-10 backdrop-blur-sm bg-opacity-50 flex items-center justify-center z-50 p-4">
             <div className="bg-white rounded-2xl shadow-2xl max-w-4xl w-full max-h-[90vh] overflow-y-auto">
               <div className="p-6 border-b border-gray-200 flex items-center justify-between">
                 <h2 className="text-2xl font-bold text-blue-600 flex items-center gap-2">
@@ -864,23 +869,23 @@ const cancelDelete = () => {
                     {editingEquipment ? 'Update' : 'Submit'}
                   </button> */}
                   <button
-  type="button"
-  onClick={handleSubmit}
-  className="bg-blue-600 text-white px-6 py-3 rounded-xl font-semibold hover:bg-blue-700 transition-all flex items-center justify-center min-w-[100px]"
-  disabled={createLoading || updateLoading}
->
-  {createLoading || updateLoading ? (
-    <div className="flex items-center gap-2">
-      <svg className="animate-spin -ml-1 mr-2 h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-      </svg>
-      {updateLoading ? 'Updating...' : 'Creating...'}
-    </div>
-  ) : (
-    editingEquipment ? 'Update' : 'Submit'
-  )}
-</button>
+                    type="button"
+                    onClick={handleSubmit}
+                    className="bg-blue-600 text-white px-6 py-3 rounded-xl font-semibold hover:bg-blue-700 transition-all flex items-center justify-center min-w-[100px]"
+                    disabled={createLoading || updateLoading}
+                  >
+                    {createLoading || updateLoading ? (
+                      <div className="flex items-center gap-2">
+                        <svg className="animate-spin -ml-1 mr-2 h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                          <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                          <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                        </svg>
+                        {updateLoading ? 'Updating...' : 'Creating...'}
+                      </div>
+                    ) : (
+                      editingEquipment ? 'Update' : 'Submit'
+                    )}
+                  </button>
                 </div>
               </div>
             </div>
@@ -889,47 +894,47 @@ const cancelDelete = () => {
 
         {/* Confirmation Popup */}
         {isConfirmationOpen && (
-  <div className="fixed inset-0 bg-black/30 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-    <div className="bg-white rounded-xl shadow-xl max-w-md w-full overflow-hidden">
-      <div className="p-6">
-        <div className="flex items-center gap-3 mb-4">
-          <div className="p-2 rounded-full bg-blue-100">
-            <CheckCircle className="text-blue-600" size={24} />
-          </div>
-          <h3 className="text-lg font-semibold text-gray-900">Send for Approval</h3>
-        </div>
-        <p className="text-gray-600 mb-6">
-          Are you sure you want to send <span className="font-semibold">{equipmentToApprove?.name}</span> for approval?
-          This action cannot be undone.
-        </p>
-        <div className="flex justify-end gap-3">
-          <button
-            onClick={() => setIsConfirmationOpen(false)}
-            disabled={approvalLoading}
-            className="px-4 py-2 rounded-lg border border-gray-300 text-gray-700 hover:bg-gray-50 transition-colors disabled:opacity-50"
-          >
-            Cancel
-          </button>
-          <button
-            onClick={confirmApproval}
-            disabled={approvalLoading}
-            className="px-4 py-2 rounded-lg bg-blue-600 text-white hover:bg-blue-700 transition-colors flex items-center justify-center min-w-[100px] disabled:opacity-50"
-          >
-            {approvalLoading ? (
-              <div className="flex items-center gap-2">
-                <svg className="animate-spin -ml-1 mr-2 h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                </svg>
-                Processing...
+          <div className="fixed inset-0 bg-black/30 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+            <div className="bg-white rounded-xl shadow-xl max-w-md w-full overflow-hidden">
+              <div className="p-6">
+                <div className="flex items-center gap-3 mb-4">
+                  <div className="p-2 rounded-full bg-blue-100">
+                    <CheckCircle className="text-blue-600" size={24} />
+                  </div>
+                  <h3 className="text-lg font-semibold text-gray-900">Send for Approval</h3>
+                </div>
+                <p className="text-gray-600 mb-6">
+                  Are you sure you want to send <span className="font-semibold">{equipmentToApprove?.name}</span> for approval?
+                  This action cannot be undone.
+                </p>
+                <div className="flex justify-end gap-3">
+                  <button
+                    onClick={() => setIsConfirmationOpen(false)}
+                    disabled={approvalLoading}
+                    className="px-4 py-2 rounded-lg border border-gray-300 text-gray-700 hover:bg-gray-50 transition-colors disabled:opacity-50"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    onClick={confirmApproval}
+                    disabled={approvalLoading}
+                    className="px-4 py-2 rounded-lg bg-blue-600 text-white hover:bg-blue-700 transition-colors flex items-center justify-center min-w-[100px] disabled:opacity-50"
+                  >
+                    {approvalLoading ? (
+                      <div className="flex items-center gap-2">
+                        <svg className="animate-spin -ml-1 mr-2 h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                          <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                          <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                        </svg>
+                        Processing...
+                      </div>
+                    ) : 'Confirm'}
+                  </button>
+                </div>
               </div>
-            ) : 'Confirm'}
-          </button>
-        </div>
-      </div>
-    </div>
-  </div>
-)}
+            </div>
+          </div>
+        )}
         {showDeleteConfirm && (
           <div className="absolute inset-0 z-50 bg-gray-900/20 backdrop-blur-sm flex items-center justify-center p-4 z-50 transition-all duration-200">
             <div className="relative bg-white rounded-xl shadow-xl w-full max-w-md mx-4 p-6">
@@ -937,7 +942,7 @@ const cancelDelete = () => {
                 <AlertCircle className="w-12 h-12 text-red-500 mx-auto mb-4" />
                 <h3 className="text-lg font-medium text-gray-900 mb-2">Delete Checklist</h3>
                 <p className="text-gray-600 mb-6">Are you sure you want to delete this checklist? This action cannot be undone.</p>
-                
+
                 <div className="flex justify-center gap-4">
                   <button
                     onClick={cancelDelete}
@@ -965,7 +970,7 @@ const cancelDelete = () => {
             </div>
           </div>
         )}
-        
+
       </div>
     </div>
   );

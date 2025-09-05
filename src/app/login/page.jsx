@@ -69,7 +69,7 @@ const LoginPage = () => {
     } catch (error) {
       setErrorMessage(error.message);
       setShowErrorModal(true);
-      toast.error("Login failed.");
+      // toast.error("Login failed.");
     } finally {
       setIsLoading(false);
     }

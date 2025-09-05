@@ -303,16 +303,185 @@
 
 
 
+// import mongoose from "mongoose";
+
+// // Duration Sub-Schema
+// const durationSchema = new mongoose.Schema({
+//   hours: { type: Number, default: 0 },
+//   minutes: { type: Number, default: 0 },
+//   seconds: { type: Number, default: 0 }
+// }, { _id: false });
+
+// // Image Attachment Sub-Schema
+// const imageAttachmentSchema = new mongoose.Schema({
+//   name: String,
+//   description: String,
+//   url: String,
+//   public_id: String,
+//   size: Number,
+//   isUploading: { type: Boolean, default: false }
+// }, { _id: false });
+
+// // ✅ Define a standalone subtask schema (no recursive subtasks to avoid infinite nesting)
+// const subtaskSchema = new mongoose.Schema({
+//   _id: { 
+//     type: mongoose.Schema.Types.ObjectId, 
+//     default: () => new mongoose.Types.ObjectId() 
+//   },
+//   title: String,
+//   description: String,
+//   minDuration: Number,
+//   maxDuration: Number,
+//   minTime: durationSchema,
+//   maxTime: durationSchema,
+//   attachedImages: [imageAttachmentSchema],
+//   imageTitle: String,
+//   imageDescription: String,
+//   imagePublicId: String,
+//   level: { type: Number, default: 0 },
+//   order: { type: Number, default: 0 },
+//   createdAt: { type: Date, default: Date.now }
+// }, { _id: true });
+
+// // ✅ Main Task Schema using embedded subtasks
+// const taskSchema = new mongoose.Schema({
+//   _id: { 
+//     type: mongoose.Schema.Types.ObjectId, 
+//     default: () => new mongoose.Types.ObjectId() 
+//   },
+//   title: String,
+//   description: String,
+//   minDuration: Number,
+//   maxDuration: Number,
+//   minTime: durationSchema,
+//   maxTime: durationSchema,
+//   attachedImages: [imageAttachmentSchema],
+//   imageTitle: String,
+//   imageDescription: String,
+//   imagePublicId: String,
+//   // ✅ Use the subtaskSchema here instead of recursive taskSchema
+//   subtasks: [subtaskSchema],
+//   level: { type: Number, default: 0 },
+//   order: { type: Number, default: 0 },
+//   createdAt: { type: Date, default: Date.now }
+// }, { _id: true });
+
+// // Stage Schema
+// const stageSchema = new mongoose.Schema({
+//   _id: { 
+//     type: mongoose.Schema.Types.ObjectId, 
+//     default: () => new mongoose.Types.ObjectId() 
+//   },
+//   name: { type: String, required: true },
+//   tasks: [taskSchema],
+//   order: { type: Number, default: 0 },
+//   createdAt: { type: Date, default: Date.now }
+// }, { _id: true });
+
+// // Main Prototype Schema
+// const prototypeSchema = new mongoose.Schema({
+//   name: { type: String, required: true },
+//   companyId:{type:String},
+//   departmentName:{type:String},
+//   documentNo:{type:String},
+//   effectiveDate:{type:String},
+//   version:{type:String},
+//   userId:{type:String},
+//   stages: [stageSchema],
+//   status:{type:String},
+//    rejectionReason: { type: String, default: null },
+//    reviews:[{
+//     reviewerId:{type:String},
+//     reviewerName:{type:String},
+//     reviewerRole:{type:String},
+//     status:{type:String},
+//     comments:{type:String},
+//     reviewDate:{type:String}
+
+
+//    }],
+//    approvers:[{
+//     approverId:{type:String},
+//     approverName:{type:String},
+//     approverRole:{type:String},
+//     status:{type:String},
+//     comments:{type:String},
+//     approvalDate:{type:String}
+
+
+//    }],
+//   createdAt: { type: Date, default: Date.now },
+//   updatedAt: { type: Date, default: Date.now }
+// }, { 
+//   timestamps: true,
+//   toJSON: { 
+//     virtuals: true,
+//     transform: function(doc, ret) {
+//       delete ret.__v;
+//       return ret;
+//     }
+//   },
+//   toObject: { 
+//     virtuals: true,
+//     transform: function(doc, ret) {
+//       delete ret.__v;
+//       return ret;
+//     }
+//   }
+// });
+
+// // Middleware to convert numeric `id` to ObjectId before saving
+// prototypeSchema.pre('save', function(next) {
+//   const convertIds = (obj) => {
+//     if (obj.id && typeof obj.id === 'number') {
+//       obj._id = new mongoose.Types.ObjectId();
+//       delete obj.id;
+//     }
+//     return obj;
+//   };
+
+//   if (this.stages && Array.isArray(this.stages)) {
+//     this.stages = this.stages.map(stage => {
+//       stage = convertIds(stage);
+//       if (stage.tasks && Array.isArray(stage.tasks)) {
+//         stage.tasks = stage.tasks.map(task => {
+//           task = convertIds(task);
+//           if (task.subtasks && Array.isArray(task.subtasks)) {
+//             task.subtasks = task.subtasks.map(subtask => convertIds(subtask));
+//           }
+//           return task;
+//         });
+//       }
+//       return stage;
+//     });
+//   }
+
+//   next();
+// });
+
+// // Delete existing model if it exists (for hot reload)
+// delete mongoose.models.Prototype;
+
+// // Create and export the model
+// export default mongoose.models.Prototype || mongoose.model("Prototype", prototypeSchema);
+
+
+
+
 import mongoose from "mongoose";
 
-// Duration Sub-Schema
+/**
+ * Duration Sub-Schema
+ */
 const durationSchema = new mongoose.Schema({
   hours: { type: Number, default: 0 },
   minutes: { type: Number, default: 0 },
   seconds: { type: Number, default: 0 }
 }, { _id: false });
 
-// Image Attachment Sub-Schema
+/**
+ * Image Attachment Sub-Schema
+ */
 const imageAttachmentSchema = new mongoose.Schema({
   name: String,
   description: String,
@@ -322,145 +491,88 @@ const imageAttachmentSchema = new mongoose.Schema({
   isUploading: { type: Boolean, default: false }
 }, { _id: false });
 
-// ✅ Define a standalone subtask schema (no recursive subtasks to avoid infinite nesting)
-const subtaskSchema = new mongoose.Schema({
-  _id: { 
-    type: mongoose.Schema.Types.ObjectId, 
-    default: () => new mongoose.Types.ObjectId() 
-  },
-  title: String,
-  description: String,
-  minDuration: Number,
-  maxDuration: Number,
-  minTime: durationSchema,
-  maxTime: durationSchema,
-  attachedImages: [imageAttachmentSchema],
-  imageTitle: String,
-  imageDescription: String,
-  imagePublicId: String,
-  level: { type: Number, default: 0 },
-  order: { type: Number, default: 0 },
-  createdAt: { type: Date, default: Date.now }
-}, { _id: true });
-
-// ✅ Main Task Schema using embedded subtasks
+/**
+ * Task Schema (Recursive)
+ */
 const taskSchema = new mongoose.Schema({
   _id: { 
     type: mongoose.Schema.Types.ObjectId, 
     default: () => new mongoose.Types.ObjectId() 
   },
-  title: String,
-  description: String,
-  minDuration: Number,
-  maxDuration: Number,
-  minTime: durationSchema,
-  maxTime: durationSchema,
-  attachedImages: [imageAttachmentSchema],
-  imageTitle: String,
-  imageDescription: String,
-  imagePublicId: String,
-  // ✅ Use the subtaskSchema here instead of recursive taskSchema
-  subtasks: [subtaskSchema],
+  title: { type: String, default: "" },
+  description: { type: String, default: "" },
+  minDuration: { type: Number, default: 0 },
+  maxDuration: { type: Number, default: 0 },
+  minTime: { type: durationSchema, default: () => ({}) },
+  maxTime: { type: durationSchema, default: () => ({}) },
+  attachedImages: { type: [imageAttachmentSchema], default: [] },
+  imageTitle: { type: String, default: "" },
+  imageDescription: { type: String, default: "" },
+  imagePublicId: { type: String, default: "" },
+  subtasks: [], // recursive placeholder
   level: { type: Number, default: 0 },
   order: { type: Number, default: 0 },
   createdAt: { type: Date, default: Date.now }
 }, { _id: true });
 
-// Stage Schema
+// ✅ Enable recursion: a task can have subtasks of type taskSchema
+taskSchema.add({ subtasks: [taskSchema] });
+
+/**
+ * Stage Schema
+ */
 const stageSchema = new mongoose.Schema({
   _id: { 
     type: mongoose.Schema.Types.ObjectId, 
     default: () => new mongoose.Types.ObjectId() 
   },
   name: { type: String, required: true },
-  tasks: [taskSchema],
+  tasks: { type: [taskSchema], default: [] },
   order: { type: Number, default: 0 },
   createdAt: { type: Date, default: Date.now }
 }, { _id: true });
 
-// Main Prototype Schema
+/**
+ * Main Prototype Schema
+ */
 const prototypeSchema = new mongoose.Schema({
   name: { type: String, required: true },
-  companyId:{type:String},
-  departmentName:{type:String},
-  documentNo:{type:String},
-  effectiveDate:{type:String},
-  version:{type:String},
-  userId:{type:String},
-  stages: [stageSchema],
-  status:{type:String},
-   rejectionReason: { type: String, default: null },
-   reviews:[{
-    reviewerId:{type:String},
-    reviewerName:{type:String},
-    reviewerRole:{type:String},
-    status:{type:String},
-    comments:{type:String},
-    reviewDate:{type:String}
-
-
-   }],
-   approvers:[{
-    approverId:{type:String},
-    approverName:{type:String},
-    approverRole:{type:String},
-    status:{type:String},
-    comments:{type:String},
-    approvalDate:{type:String}
-
-
-   }],
+  companyId: { type: String },
+  departmentName: { type: String },
+  documentNo: { type: String },
+  effectiveDate: { type: String },
+  version: { type: String },
+  userId: { type: String },
+  stages: { type: [stageSchema], default: [] },
+  status: { type: String },
+  rejectionReason: { type: String, default: null },
+  reviews: [{
+    reviewerId: { type: String },
+    reviewerName: { type: String },
+    reviewerRole: { type: String },
+    status: { type: String },
+    comments: { type: String },
+    reviewDate: { type: String }
+  }],
+  approvers: [{
+    approverId: { type: String },
+    approverName: { type: String },
+    approverRole: { type: String },
+    status: { type: String },
+    comments: { type: String },
+    approvalDate: { type: String }
+  }],
   createdAt: { type: Date, default: Date.now },
   updatedAt: { type: Date, default: Date.now }
 }, { 
   timestamps: true,
-  toJSON: { 
-    virtuals: true,
-    transform: function(doc, ret) {
-      delete ret.__v;
-      return ret;
-    }
-  },
-  toObject: { 
-    virtuals: true,
-    transform: function(doc, ret) {
-      delete ret.__v;
-      return ret;
-    }
-  }
+  toJSON: { virtuals: true },
+  toObject: { virtuals: true }
 });
 
-// Middleware to convert numeric `id` to ObjectId before saving
-prototypeSchema.pre('save', function(next) {
-  const convertIds = (obj) => {
-    if (obj.id && typeof obj.id === 'number') {
-      obj._id = new mongoose.Types.ObjectId();
-      delete obj.id;
-    }
-    return obj;
-  };
-
-  if (this.stages && Array.isArray(this.stages)) {
-    this.stages = this.stages.map(stage => {
-      stage = convertIds(stage);
-      if (stage.tasks && Array.isArray(stage.tasks)) {
-        stage.tasks = stage.tasks.map(task => {
-          task = convertIds(task);
-          if (task.subtasks && Array.isArray(task.subtasks)) {
-            task.subtasks = task.subtasks.map(subtask => convertIds(subtask));
-          }
-          return task;
-        });
-      }
-      return stage;
-    });
-  }
-
-  next();
-});
-
-// Delete existing model if it exists (for hot reload)
+/**
+ * Hot reload fix (Next.js)
+ */
 delete mongoose.models.Prototype;
 
-// Create and export the model
 export default mongoose.models.Prototype || mongoose.model("Prototype", prototypeSchema);

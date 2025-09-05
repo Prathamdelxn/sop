@@ -184,7 +184,7 @@ export default function SuperAdminLayout({ children }) {
             <div className="flex-1 flex flex-col overflow-hidden">
                 {/* Enhanced Header */}
                 <header className="bg-white/80 backdrop-blur-xl shadow-sm z-10 border-b border-slate-200/60">
-                    <div className="flex items-center justify-between px-8 py-4">
+                    <div className="flex items-center justify-between px-8 py-2">
                         <div className="flex items-center space-x-4">
                             <div>
                                 <h2 className="text-xl font-bold text-slate-800 capitalize">
@@ -244,15 +244,15 @@ export default function SuperAdminLayout({ children }) {
                 </header>
 
                 {/* Enhanced Main Content */}
-                <main className="flex-1 overflow-y-auto bg-gradient-to-br from-slate-50 via-blue-50/30 to-indigo-50/50">
-                    <div className="p-8">
+                <div className="flex-1 overflow-y-auto bg-gradient-to-br from-slate-50 via-blue-50/30 to-indigo-50/50">
+                    
                         <div className="max-w-7xl mx-auto">
-                            <div className="bg-white/60 backdrop-blur-xl rounded-2xl shadow-xl border border-white/20 overflow-hidden">
+                            <div className="bg-white/60 backdrop-blur-xl   overflow-hidden">
                                 {children}
                             </div>
                         </div>
-                    </div>
-                </main>
+                 
+                </div>
             </div>
         </div>
     );

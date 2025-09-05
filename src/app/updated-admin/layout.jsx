@@ -370,6 +370,7 @@
 
 'use client';
 import { useState, useEffect, useRef } from 'react';
+import {Disc} from 'lucide-react'
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useSidebar } from '@/context/SidebarContext';
@@ -586,7 +587,7 @@ export default function RootLayout({ children }) {
               >
                 <div className="flex items-center space-x-4 w-full">
                   <span className={`text-2xl transition-all duration-300 ${activeItemId === staticDashboardItem.id ? 'animate-pulse' : 'group-hover:scale-110'}`}>
-                    {staticDashboardItem.icon}
+                    {staticDashboardItem.icon} 
                   </span>
                   {!isSidebarCollapsed && (
                     <>
@@ -639,6 +640,7 @@ export default function RootLayout({ children }) {
                   <div className="flex items-center space-x-4 w-full">
                     <span className={`text-2xl transition-all duration-300 ${activeItemId === item._id ? 'animate-pulse' : 'group-hover:scale-110'}`}>
                       {item.icon}
+                      {/* <Disc /> */}
                     </span>
                     {!isSidebarCollapsed && (
                       <>

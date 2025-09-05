@@ -334,7 +334,7 @@
 'use client';
 
 import React, { useEffect, useState } from 'react';
-import { Plus, Package, Users, X, Trash2, Eye, Check, Search, Filter, Loader2, ChevronDown, ChevronUp } from 'lucide-react';
+import { Plus, Package, Users, X, Trash2,Sparkles, Eye, Check, Search, Filter, Loader2, ChevronDown, ChevronUp } from 'lucide-react';
 
 export default function ApproveAssignEquipmentPage() {
   const [assigndata, setAssignData] = useState([]);
@@ -483,20 +483,27 @@ export default function ApproveAssignEquipmentPage() {
   });
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 p-4 md:p-8">
+    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100  p-4 md:p-8">
       <div className="max-w-7xl mx-auto">
+        <div className="bg-white border-b border-gray-200 rounded-xl my-2 shadow-sm">
+                        <div className="max-w-7xl mx-auto px-6  py-6 rounded-xl flex flex-col lg:flex-row lg:items-center lg:justify-between gap-6">
+                          <div className="flex items-center space-x-4">
+                            <div className="p-4 bg-gradient-to-br from-blue-500 via-purple-500 to-pink-500 rounded-2xl shadow">
+                              <Sparkles className="w-6 h-6 text-white" />
+                            </div>
+                            <div>
+                               <h1 className="text-2xl font-bold text-gray-900">Equipment Assignment Approvals</h1>
+                        <p className="text-gray-600 mt-2 text-md">Review and approve pending equipment assignments</p>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+      
         {/* Header Section */}
-        <div className="flex flex-col md:flex-row md:items-center md:justify-between mb-8 gap-4">
-          <div>
-            <h1 className="text-2xl md:text-3xl font-bold text-gray-800">
-              Equipment Assignment Approvals
-            </h1>
-            <p className="text-gray-600 mt-1">Review and approve pending equipment assignments</p>
-          </div>
-        </div>
+       
 
         {/* Search and Filter Section */}
-        <div className="mb-8 bg-white p-5 rounded-2xl shadow-sm border border-gray-100">
+        <div className="mb-4 mt-4 bg-white p-5 rounded-2xl shadow-sm border border-gray-100">
           <div className="flex flex-col md:flex-row gap-4">
             <div className="relative flex-1">
               <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">

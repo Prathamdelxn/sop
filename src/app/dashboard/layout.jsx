@@ -1393,6 +1393,9 @@ import {
   X,
   Search,
   ChevronRight,
+  ListChecks ,
+  Eye,
+  Layers ,
   LogOut,
   ClipboardList,
   PlayCircle,
@@ -1408,11 +1411,11 @@ const allNavigationItems = [
   { name: 'Assign Task', href: '/dashboard/assign-task', icon: ClipboardList, current: false },
   { name: 'Task Execution', href: '/dashboard/task-execution', icon: PlayCircle, current: false },
   { name: 'Assign Checklist to Equipment', href: '/dashboard/assign-checklist-to-equipment', icon: Link, current: false },
-  { name: 'Approve Equipment', href: '/dashboard/approve-equipment', icon: CheckCircle2, current: false },
-  { name: 'Approve Task', href: '/dashboard/approve-task', icon: UserCheck, current: false },
-  { name: 'Approve Checklist', href: '/dashboard/approve-checklist', icon: PlayCircle, current: false },
-  { name: 'Review Access', href: '/dashboard/review-page', icon: PlayCircle, current: false },
-  { name: 'Approve Tagged Chechlist with Equipment', href: '/dashboard/approve-assign-checklist-to-equipment', icon: PlayCircle, current: false },
+  { name: 'Approve Equipment', href: '/dashboard/approve-equipment',  icon: CheckCircle2, current: false },
+  { name: 'Approve Task', href: '/dashboard/approve-task',  icon: UserCheck, current: false },
+  { name: 'Approve Checklist', href: '/dashboard/approve-checklist', icon: ListChecks, current: false },
+  { name: 'Review Access', href: '/dashboard/review-page', icon: Eye, current: false },
+  { name: 'Approve Tagged Chechlist with Equipment', href: '/dashboard/approve-assign-checklist-to-equipment', icon: Layers, current: false },
 ];
 
 // Loading skeleton component for sidebar items
@@ -1515,18 +1518,27 @@ export default function DashboardLayout({ children }) {
     }
   };
 
-  useEffect(() => {
+  // useEffect(() => {
+  //   if (userData?.id) {
+  //     fetchUser();
+  //   } else {
+  //     // If no user data, still show the dashboard item
+  //     setNavigation([{
+  //       ...allNavigationItems[0],
+  //       current: isActiveRoute(allNavigationItems[0].href, pathname)
+  //     }]);
+  //     setIsSidebarLoading(false);
+  //   }
+  // }, [userData, pathname]);
+
+ useEffect(() => {
     if (userData?.id) {
-      fetchUser();
+      fetchUser(true);
     } else {
-      // If no user data, still show the dashboard item
-      setNavigation([{
-        ...allNavigationItems[0],
-        current: isActiveRoute(allNavigationItems[0].href, pathname)
-      }]);
+      setNavigation([{ ...allNavigationItems[0], current: isActiveRoute(allNavigationItems[0].href, pathname) }]);
       setIsSidebarLoading(false);
     }
-  }, [userData, pathname]);
+  }, [userData]);
 
   useEffect(() => {
     setNavigation(prevNav =>
@@ -1612,7 +1624,7 @@ export default function DashboardLayout({ children }) {
       </div>
 
       {/* Desktop sidebar */}
-      <div className="hidden lg:fixed lg:inset-y-0 lg:z-30 lg:flex lg:w-72 lg:flex-col">
+      <div className="hidden lg:fixed lg:inset-y-0 lg:z-30 lg:flex lg:w-64 lg:flex-col">
         <div className="flex grow flex-col gap-y-5 overflow-y-auto bg-white/80 backdrop-blur-xl border-r border-white/20 px-6 pb-4 shadow-xl">
           <div className="flex h-16 shrink-0 items-center space-x-3">
             <div className="w-10 h-10 overflow-hidden to-pink-600 rounded-xl flex items-center justify-center shadow-lg rotate-3 hover:rotate-0 transition-transform duration-300">
@@ -1658,7 +1670,7 @@ export default function DashboardLayout({ children }) {
       </div>
 
       {/* Main content */}
-      <div className="lg:pl-72 relative z-10 flex flex-col h-screen">
+      <div className="lg:pl-64  relative z-10 flex flex-col h-screen">
         {/* Top bar - Made sticky */}
         <div className="sticky top-0 z-20 flex h-16 shrink-0 items-center gap-x-4 bg-white/80 backdrop-blur-xl border-b border-white/20 px-4 sm:gap-x-6 sm:px-6 lg:px-8 shadow-sm">
           <button
