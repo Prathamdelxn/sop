@@ -128,47 +128,114 @@ export default function DynamicDashboardPage({ params }) {
       setIsLoading(false);
     }
   };
+const isValidEmail = (email) => {
+  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+  return emailRegex.test(email);
+};
 
-  const validateEmail = async (email) => {
-    if (!email) return;
+const validateEmail = async (email) => {
+  if (!email) return;
+  
+  // Check email format first
+  if (!isValidEmail(email)) {
+    setValidationStatus(prev => ({
+      ...prev,
+      email: { 
+        checking: false, 
+        available: false,
+        error: 'Please enter a valid email address'
+      }
+    }));
+    return;
+  }
+  
+  setValidationStatus(prev => ({
+    ...prev,
+    email: { ...prev.email, checking: true, available: false, error: '' }
+  }));
+
+  try {
+    const response = await fetch('/api/check-username', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ 
+        email,
+        idToExclude: editingUser?._id,
+        role: slug
+      })
+    });
+
+    const data = await response.json();
     
     setValidationStatus(prev => ({
       ...prev,
-      email: { ...prev.email, checking: true, available: false, error: '' }
+      email: { 
+        checking: false, 
+        available: !data.emailExists,
+        error: data.emailExists ? 'Email already in use' : ''
+      }
     }));
+  } catch (error) {
+    setValidationStatus(prev => ({
+      ...prev,
+      email: { 
+        checking: false, 
+        available: false,
+        error: 'Error checking email availability'
+      }
+    }));
+  }
+};
+  // const validateEmail = async (email) => {
+  //   if (!email) return;
+  //     if (!isValidEmail(email)) {
+  //   setValidationStatus(prev => ({
+  //     ...prev,
+  //     email: { 
+  //       checking: false, 
+  //       available: false,
+  //       error: 'Please enter a valid email address'
+  //     }
+  //   }));
+  //   return;
+  // }
+  //   setValidationStatus(prev => ({
+  //     ...prev,
+  //     email: { ...prev.email, checking: true, available: false, error: '' }
+  //   }));
 
-    try {
-      const response = await fetch('/api/check-username', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ 
-          email,
-          idToExclude: editingUser?._id,
-          role: slug
-        })
-      });
+  //   try {
+  //     const response = await fetch('/api/check-username', {
+  //       method: 'POST',
+  //       headers: { 'Content-Type': 'application/json' },
+  //       body: JSON.stringify({ 
+  //         email,
+  //         idToExclude: editingUser?._id,
+  //         role: slug
+  //       })
+  //     });
 
-      const data = await response.json();
+  //     const data = await response.json();
       
-      setValidationStatus(prev => ({
-        ...prev,
-        email: { 
-          checking: false, 
-          available: !data.emailExists,
-          error: data.emailExists ? 'Email already in use' : ''
-        }
-      }));
-    } catch (error) {
-      setValidationStatus(prev => ({
-        ...prev,
-        email: { 
-          checking: false, 
-          available: false,
-          error: 'Error checking email availability'
-        }
-      }));
-    }
-  };
+  //     setValidationStatus(prev => ({
+  //       ...prev,
+  //       email: { 
+  //         checking: false, 
+  //         available: !data.emailExists,
+  //         error: data.emailExists ? 'Email already in use' : ''
+  //       }
+  //     }));
+  //   } catch (error) {
+  //     setValidationStatus(prev => ({
+  //       ...prev,
+  //       email: { 
+  //         checking: false, 
+  //         available: false,
+  //         error: 'Error checking email availability'
+  //       }
+  //     }));
+  //   }
+  // };
 
   const validateUsername = async (username) => {
     if (!username || editingUser) return;

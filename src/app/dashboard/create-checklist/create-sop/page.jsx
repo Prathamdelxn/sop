@@ -2429,7 +2429,11 @@ const PrototypeManagementPage = () => {
   const [documentNo, setDocumentNo] = useState('');
   const [effectiveDate, setEffectiveDate] = useState('');
   const [version, setVersion] = useState('1.0');
-  const [error, setError] = useState('');
+const [errors, setErrors] = useState({
+    prototypeName: '',
+    departmentName: '',
+    effectiveDate: ''
+  });
   const [stages, setStages] = useState([]);
   const [expandedItems, setExpandedItems] = useState({});
   const [selectedStage, setSelectedStage] = useState(null);
@@ -2817,15 +2821,68 @@ const PrototypeManagementPage = () => {
     return duplicates.has(taskKey);
   }, [checkForDuplicateTitles]);
   
-  const validatePrototype = () => {
+  // const validatePrototype = () => {
+  //   if (!prototypeName.trim()) {
+  //     setError('Checklist name is required');
+  //     return false;
+  //   }
+
+  //   if (stages.length === 0) {
+  //     showToastStageMessage()
+  //     return false;
+  //   }
+    
+  //   const duplicates = checkForDuplicateTitles();
+  //   if (duplicates.size > 0) {
+  //     toast.error("Please fix duplicate task titles before saving", {
+  //       position: "top-center"
+  //     });
+  //     return false;
+  //   }
+    
+  //   for (const stage of stages) {
+  //     if (stage.tasks.length === 0) {
+  //       alert(`Stage "${stage.name}" has no tasks. Please add at least one task.`);
+  //       return false;
+  //     }
+
+  //     for (const task of stage.tasks) {
+  //       if (!task.title.trim()) {
+  //         alert(`Please enter a title for all tasks`);
+  //         return false;
+  //       }
+  //     }
+  //   }
+
+  //   return true;
+  // };
+const validatePrototype = () => {
+    const newErrors = {
+      prototypeName: '',
+      departmentName: '',
+      effectiveDate: ''
+    };
+    
+    let isValid = true;
+
     if (!prototypeName.trim()) {
-      setError('Checklist name is required');
-      return false;
+      newErrors.prototypeName = 'Checklist name is required';
+      isValid = false;
+    }
+
+    if (!departmentName.trim()) {
+      newErrors.departmentName = 'Department name is required';
+      isValid = false;
+    }
+
+    if (!effectiveDate) {
+      newErrors.effectiveDate = 'Effective date is required';
+      isValid = false;
     }
 
     if (stages.length === 0) {
       showToastStageMessage()
-      return false;
+      isValid = false;
     }
     
     const duplicates = checkForDuplicateTitles();
@@ -2833,26 +2890,30 @@ const PrototypeManagementPage = () => {
       toast.error("Please fix duplicate task titles before saving", {
         position: "top-center"
       });
-      return false;
+      isValid = false;
     }
     
     for (const stage of stages) {
       if (stage.tasks.length === 0) {
         alert(`Stage "${stage.name}" has no tasks. Please add at least one task.`);
-        return false;
+        isValid = false;
+        break;
       }
 
       for (const task of stage.tasks) {
         if (!task.title.trim()) {
           alert(`Please enter a title for all tasks`);
-          return false;
+          isValid = false;
+          break;
         }
       }
+      
+      if (!isValid) break;
     }
 
-    return true;
+    setErrors(newErrors);
+    return isValid;
   };
-
   const handleSavePrototype = async () => {
     if (!validatePrototype()) {
       return;
@@ -2964,13 +3025,13 @@ const PrototypeManagementPage = () => {
                   const input = e.target.value;
                   const onlyLetters = input.replace(/[^a-zA-Z\s]/g, '');
                   setPrototypeName(onlyLetters);
-                  if (error) setError('');
+                  if (errors.prototypeName) setErrors({...errors, prototypeName: ''});
                 }}
                 className={`w-full p-3 border rounded-xl focus:outline-none transition-all duration-200 
-          ${error ? 'border-red-500 focus:ring-red-500' : 'border-gray-200 focus:ring-indigo-500 hover:border-indigo-300'}`}
+          ${errors.prototypeName ? 'border-red-500 focus:ring-red-500' : 'border-gray-200 focus:ring-indigo-500 hover:border-indigo-300'}`}
                 placeholder="Enter Checklist name"
               />
-              {error && <p className="text-red-500 text-sm mt-1">{error}</p>}
+              {errors.prototypeName && <p className="text-red-500 text-sm mt-1">{errors.prototypeName}</p>}
             </div>
 
             {/* Department Name */}
@@ -2980,14 +3041,19 @@ const PrototypeManagementPage = () => {
                 type="text"
                 required
                 value={departmentName}
-                onChange={(e) => setDepartmentName(e.target.value)}
-                className="w-full p-3 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500 transition-all duration-200 hover:border-indigo-300"
+                onChange={(e) => {
+                  setDepartmentName(e.target.value);
+                  if (errors.departmentName) setErrors({...errors, departmentName: ''});
+                }}
+                className={`w-full p-3 border rounded-xl focus:outline-none transition-all duration-200 
+          ${errors.departmentName ? 'border-red-500 focus:ring-red-500' : 'border-gray-200 focus:ring-indigo-500 hover:border-indigo-300'}`}
                 placeholder="Enter department name"
               />
+              {errors.departmentName && <p className="text-red-500 text-sm mt-1">{errors.departmentName}</p>}
             </div>
 
             {/* Document Number */}
-            <div>
+           <div>
               <label className="block text-sm font-semibold text-gray-800 mb-1">Document Number</label>
               <input
                 type="text"
@@ -3005,9 +3071,14 @@ const PrototypeManagementPage = () => {
                 type="date"
                 required
                 value={effectiveDate}
-                onChange={(e) => setEffectiveDate(e.target.value)}
-                className="w-full p-3 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500 transition-all duration-200 hover:border-indigo-300"
+                onChange={(e) => {
+                  setEffectiveDate(e.target.value);
+                  if (errors.effectiveDate) setErrors({...errors, effectiveDate: ''});
+                }}
+                className={`w-full p-3 border rounded-xl focus:outline-none transition-all duration-200 
+          ${errors.effectiveDate ? 'border-red-500 focus:ring-red-500' : 'border-gray-200 focus:ring-indigo-500 hover:border-indigo-300'}`}
               />
+              {errors.effectiveDate && <p className="text-red-500 text-sm mt-1">{errors.effectiveDate}</p>}
             </div>
 
             {/* Version */}
