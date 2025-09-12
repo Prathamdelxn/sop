@@ -537,7 +537,7 @@ console.log(rejectReason);
                               <Layers className="w-5 h-5 text-blue-600" />
                             </div>
                             <div className="ml-4">
-                              <div className="text-sm font-medium text-gray-900">{sop.name}</div>
+                              <div className="text-sm font-medium text-gray-900 truncate max-w-[180px]">{sop.name}</div>
                               <div className="text-sm text-gray-500 line-clamp-1">{sop.description}</div>
                             </div>
                           </div>
