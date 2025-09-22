@@ -1890,11 +1890,6 @@ const DurationModal = ({
   const [alertMessage, setAlertMessage] = useState('');
   const [hasUserModified, setHasUserModified] = useState(false);
 
-  // useEffect(() => {
-  //   setMinTime({ hours: 0, minutes: 0, seconds: 0 });
-  //   setMaxTime({ hours: 0, minutes: 0, seconds: 0 });
-  // }, []);
-
   const validateAndSetTime = (type, field, value) => {
     setHasUserModified(true);
     const digitsOnly = value.replace(/\D/g, '').slice(0, 2);
@@ -2114,6 +2109,10 @@ const TaskComponent = React.memo(({
   const [showImageModal, setShowImageModal] = useState(false);
   const [showDurationModal, setShowDurationModal] = useState(false);
   const [modalKey, setModalKey] = useState(0);
+  const [localErrors, setLocalErrors] = useState({
+  title: false,
+  description: false,
+});
 
   const depthStyles = useMemo(() => {
     const colors = ['border-indigo-200', 'border-blue-200', 'border-emerald-200', 'border-purple-200', 'border-rose-200', 'border-amber-200'];
@@ -2126,6 +2125,12 @@ const TaskComponent = React.memo(({
 
   const handleChange = (field, value) => {
     onUpdateTask(stageId, task.id, field, value, parentPath);
+     if (field === 'title' && value.trim()) {
+    setLocalErrors(prev => ({ ...prev, title: false }));
+  }
+  if (field === 'description' && value.trim()) {
+    setLocalErrors(prev => ({ ...prev, description: false }));
+  }
   };
 
   const handleImageSave = (imageData) => {
@@ -2183,30 +2188,14 @@ const handleDragOver = (e) => {
   e.dataTransfer.dropEffect = 'move';
   onDragOver(index, [...parentPath], level);
 };
-// const handleDragOver = (e) => {
-//   e.preventDefault();
-  
-//   try {
-//     // Get the data and parse it safely
-//     const dragDataText = e.dataTransfer.getData('application/json');
-//     if (!dragDataText) return;
-    
-//     const dragData = JSON.parse(dragDataText);
-    
-//     // Allow drop if it's the same parent path and same level
-//     if (JSON.stringify(dragData.parentPath) === JSON.stringify(parentPath) && 
-//         dragData.level === level) {
-//       e.dataTransfer.dropEffect = 'move';
-//       onDragOver(index, [...parentPath], level);
-//     } else {
-//       e.dataTransfer.dropEffect = 'none';
-//     }
-//   } catch (error) {
-//     console.error('Error parsing drag data:', error);
-//     e.dataTransfer.dropEffect = 'none';
-//   }
-// };
-
+useEffect(() => {
+  if (!task.title.trim()) {
+    setLocalErrors(prev => ({ ...prev, title: true }));
+  }
+  if (!task.description.trim()) {
+    setLocalErrors(prev => ({ ...prev, description: true }));
+  }
+}, [task.title, task.description]);
  const handleDrop = (e) => {
   e.preventDefault();
   
@@ -2295,37 +2284,48 @@ const handleDragOver = (e) => {
       <div className="space-y-4">
        
         <div>
-          <label className="block text-sm font-semibold text-gray-800 mb-2">Title</label>
-          <input
-            type="text"
-            value={task.title}
-            onChange={(e) => {
-              const input = e.target.value;
-              handleChange('title', input);
-            }}
-            className={`w-full p-3 border rounded-xl focus:outline-none transition-all duration-200 hover:border-indigo-300 ${
-              hasDuplicateTitle 
-                ? 'border-red-500 focus:ring-red-500' 
-                : 'border-gray-200 focus:ring-indigo-500'
-            }`}
-            placeholder="Enter task title"
-          />
+          <label className="block text-sm font-semibold text-gray-800 mb-2">Title*</label>
+         <input
+  type="text"
+  value={task.title}
+  onChange={(e) => handleChange('title', e.target.value)}
+  onBlur={() => {
+    if (!task.title.trim()) setLocalErrors(prev => ({ ...prev, title: true }));
+  }}
+  className={`w-full p-3 border rounded-xl focus:outline-none transition-all duration-200 ${
+    localErrors.title || hasDuplicateTitle
+      ? 'border-red-500 focus:ring-red-500'
+      : 'border-gray-200 focus:ring-indigo-500'
+  }`}
+  placeholder="Enter task title"
+/>
+{localErrors.title && (
+  <p className="text-red-500 text-sm mt-1">Task title is required</p>
+)}
           {hasDuplicateTitle && (
-            <div className="flex items-center gap-1 mt-1 text-red-500 text-sm">
-              <AlertCircle size={14} />
-              <span>Duplicate title at this level</span>
-            </div>
-          )}
+  <div className="flex items-center gap-1 mt-1 text-red-500 text-sm">
+    <AlertCircle size={14} />
+    <span>Duplicate title at this level (case-insensitive)</span>
+  </div>
+)}
         </div>
         <div>
-          <label className="block text-sm font-semibold text-gray-800 mb-2">Description</label>
-          <textarea
-            value={task.description}
-            onChange={(e) => handleChange('description', e.target.value)}
-            rows={3}
-            className="w-full p-3 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500 transition-all duration-200 hover:border-indigo-300"
-            placeholder="Enter task description"
-          />
+          <label className="block text-sm font-semibold text-gray-800 mb-2">Description*</label>
+         <textarea
+  value={task.description}
+  onChange={(e) => handleChange('description', e.target.value)}
+  onBlur={() => {
+    if (!task.description.trim()) setLocalErrors(prev => ({ ...prev, description: true }));
+  }}
+  rows={3}
+  className={`w-full p-3 border rounded-xl focus:outline-none transition-all duration-200 ${
+    localErrors.description
+      ? 'border-red-500 focus:ring-red-500'
+      : 'border-gray-200 focus:ring-indigo-500'
+  }`}
+  placeholder="Enter task description"
+/>
+{localErrors.description && <p className="text-red-500 text-sm mt-1">Task description is required</p>}
         </div>
 
         {(task.minDuration || task.maxDuration) && (
@@ -2400,6 +2400,7 @@ const handleDragOver = (e) => {
               expandedItems={expandedItems}
               onCopyTask={onCopyTask}
               taskNumber={`${taskNumber}.${index + 1}`}
+             
               onDragStart={onDragStart}
               onDragOver={onDragOver}
               onDrop={onDrop}
@@ -2432,7 +2433,8 @@ const PrototypeManagementPage = () => {
 const [errors, setErrors] = useState({
     prototypeName: '',
     departmentName: '',
-    effectiveDate: ''
+    effectiveDate: '',
+    version:''
   });
   const [stages, setStages] = useState([]);
   const [expandedItems, setExpandedItems] = useState({});
@@ -2441,7 +2443,18 @@ const [errors, setErrors] = useState({
   const [dragIndex, setDragIndex] = useState(null);
   const [isDragging, setIsDragging] = useState(false);
   const router = useRouter();
-
+const validateAllTasks = (tasks) => {
+  for (const task of tasks) {
+    if (!task.title.trim() || !task.description.trim()) {
+      return false;
+    }
+    if (task.subtasks && task.subtasks.length > 0) {
+      const valid = validateAllTasks(task.subtasks);
+      if (!valid) return false;
+    }
+  }
+  return true;
+};
   const addStage = useCallback(() => {
     const newStage = {
       id: Date.now(),
@@ -2775,92 +2788,102 @@ const [errors, setErrors] = useState({
     }));
   }, []);
   
-  const checkForDuplicateTitles = useCallback(() => {
-    const duplicates = new Set();
+  // const checkForDuplicateTitles = useCallback(() => {
+  //   const duplicates = new Set();
     
-    const checkTasksForDuplicates = (tasks, levelPath = []) => {
-      const titleCounts = {};
+  //   const checkTasksForDuplicates = (tasks, levelPath = []) => {
+  //     const titleCounts = {};
       
-      // Count titles at this level
-      tasks.forEach(task => {
-        if (task.title && task.title.trim()) {
-          titleCounts[task.title] = (titleCounts[task.title] || 0) + 1;
-        }
-      });
+  //     // Count titles at this level
+  //     tasks.forEach(task => {
+  //       if (task.title && task.title.trim()) {
+  //         titleCounts[task.title] = (titleCounts[task.title] || 0) + 1;
+  //       }
+  //     });
       
-      // Mark tasks with duplicate titles
-      tasks.forEach(task => {
-        const taskKey = [...levelPath, task.id].join('-');
-        if (task.title && task.title.trim() && titleCounts[task.title] > 1) {
-          duplicates.add(taskKey);
-        }
+  //     // Mark tasks with duplicate titles
+  //     tasks.forEach(task => {
+  //       const taskKey = [...levelPath, task.id].join('-');
+  //       if (task.title && task.title.trim() && titleCounts[task.title] > 1) {
+  //         duplicates.add(taskKey);
+  //       }
         
-        // Recursively check subtasks
-        if (task.subtasks && task.subtasks.length > 0) {
-          const subtaskDuplicates = checkTasksForDuplicates(task.subtasks, [...levelPath, task.id]);
-          subtaskDuplicates.forEach(dup => duplicates.add(dup));
-        }
-      });
+  //       // Recursively check subtasks
+  //       if (task.subtasks && task.subtasks.length > 0) {
+  //         const subtaskDuplicates = checkTasksForDuplicates(task.subtasks, [...levelPath, task.id]);
+  //         subtaskDuplicates.forEach(dup => duplicates.add(dup));
+  //       }
+  //     });
       
-      return duplicates;
-    };
+  //     return duplicates;
+  //   };
     
-    stages.forEach(stage => {
-      if (stage.tasks && stage.tasks.length > 0) {
-        const stageDuplicates = checkTasksForDuplicates(stage.tasks, [stage.id]);
-        stageDuplicates.forEach(dup => duplicates.add(dup));
+  //   stages.forEach(stage => {
+  //     if (stage.tasks && stage.tasks.length > 0) {
+  //       const stageDuplicates = checkTasksForDuplicates(stage.tasks, [stage.id]);
+  //       stageDuplicates.forEach(dup => duplicates.add(dup));
+  //     }
+  //   });
+    
+  //   return duplicates;
+  // }, [stages]);
+const checkForDuplicateTitles = useCallback(() => {
+  const duplicates = new Set();
+  
+  const checkTasksForDuplicates = (tasks, levelPath = []) => {
+    const titleCounts = {};
+    
+    // Count titles only at this level (case-insensitive)
+    tasks.forEach(task => {
+      if (task.title && task.title.trim()) {
+        const normalizedTitle = task.title.toLowerCase().trim();
+        titleCounts[normalizedTitle] = (titleCounts[normalizedTitle] || 0) + 1;
       }
     });
     
-    return duplicates;
-  }, [stages]);
-
-  const hasDuplicateTitle = useCallback((stageId, taskId, parentPath = []) => {
-    const duplicates = checkForDuplicateTitles();
-    const taskKey = [...parentPath, stageId, taskId].join('-');
-    return duplicates.has(taskKey);
-  }, [checkForDuplicateTitles]);
+    // Mark tasks with duplicate titles only at this level
+    tasks.forEach(task => {
+      if (task.title && task.title.trim()) {
+        const normalizedTitle = task.title.toLowerCase().trim();
+        const taskKey = [...levelPath, task.id].join('-');
+        
+        if (titleCounts[normalizedTitle] > 1) {
+          duplicates.add(taskKey);
+        }
+      }
+      
+      // Recursively check subtasks (but they'll be validated at their own level)
+      if (task.subtasks && task.subtasks.length > 0) {
+        checkTasksForDuplicates(task.subtasks, [...levelPath, task.id]);
+      }
+    });
+  };
   
-  // const validatePrototype = () => {
-  //   if (!prototypeName.trim()) {
-  //     setError('Checklist name is required');
-  //     return false;
-  //   }
+  stages.forEach(stage => {
+    if (stage.tasks && stage.tasks.length > 0) {
+      checkTasksForDuplicates(stage.tasks, [stage.id]);
+    }
+  });
+  
+  return duplicates;
+}, [stages]);
 
-  //   if (stages.length === 0) {
-  //     showToastStageMessage()
-  //     return false;
-  //   }
-    
-  //   const duplicates = checkForDuplicateTitles();
-  //   if (duplicates.size > 0) {
-  //     toast.error("Please fix duplicate task titles before saving", {
-  //       position: "top-center"
-  //     });
-  //     return false;
-  //   }
-    
-  //   for (const stage of stages) {
-  //     if (stage.tasks.length === 0) {
-  //       alert(`Stage "${stage.name}" has no tasks. Please add at least one task.`);
-  //       return false;
-  //     }
+const hasDuplicateTitle = useCallback((stageId, taskId, parentPath = []) => {
+  const duplicates = checkForDuplicateTitles();
+  const taskKey = [...parentPath, stageId, taskId].join('-');
+  return duplicates.has(taskKey);
+}, [checkForDuplicateTitles]);
 
-  //     for (const task of stage.tasks) {
-  //       if (!task.title.trim()) {
-  //         alert(`Please enter a title for all tasks`);
-  //         return false;
-  //       }
-  //     }
-  //   }
-
-  //   return true;
-  // };
+ const validateVersion = (version) => {
+  const versionRegex = /^\d+(\.\d+)*$/; // Allows numbers with dots (e.g., 1, 1.0, 1.2.3)
+  return versionRegex.test(version);
+};
 const validatePrototype = () => {
     const newErrors = {
       prototypeName: '',
       departmentName: '',
-      effectiveDate: ''
+      effectiveDate: '',
+       version: ''
     };
     
     let isValid = true;
@@ -2879,7 +2902,13 @@ const validatePrototype = () => {
       newErrors.effectiveDate = 'Effective date is required';
       isValid = false;
     }
-
+if (!version.trim()) {
+    newErrors.version = 'Version is required';
+    isValid = false;
+  } else if (!validateVersion(version)) {
+    newErrors.version = 'Please enter a valid version number (e.g., 1.0 or 2.1.3)';
+    isValid = false;
+  }
     if (stages.length === 0) {
       showToastStageMessage()
       isValid = false;
@@ -2895,19 +2924,23 @@ const validatePrototype = () => {
     
     for (const stage of stages) {
       if (stage.tasks.length === 0) {
-        alert(`Stage "${stage.name}" has no tasks. Please add at least one task.`);
+        toast.error(`Stage "${stage.name}" has no tasks. Please add at least one task.`);
         isValid = false;
         break;
       }
 
-      for (const task of stage.tasks) {
-        if (!task.title.trim()) {
-          alert(`Please enter a title for all tasks`);
-          isValid = false;
-          break;
-        }
-      }
-      
+      // for (const task of stage.tasks) {
+      //   if (!task.title.trim()) {
+      //     toast.error(`Please enter a title for all tasks`);
+      //     isValid = false;
+      //     break;
+      //   }
+      // }
+      if (!validateAllTasks(stage.tasks)) {
+  toast.error(`Please fill in title and description for all tasks and subtasks`);
+  isValid = false;
+  break;
+}
       if (!isValid) break;
     }
 
@@ -3023,8 +3056,8 @@ const validatePrototype = () => {
                 value={prototypeName}
                 onChange={(e) => {
                   const input = e.target.value;
-                  const onlyLetters = input.replace(/[^a-zA-Z\s]/g, '');
-                  setPrototypeName(onlyLetters);
+                  // const onlyLetters = input.replace(/[^a-zA-Z\s]/g, '');
+                  setPrototypeName(input);
                   if (errors.prototypeName) setErrors({...errors, prototypeName: ''});
                 }}
                 className={`w-full p-3 border rounded-xl focus:outline-none transition-all duration-200 
@@ -3082,17 +3115,22 @@ const validatePrototype = () => {
             </div>
 
             {/* Version */}
-            <div>
-              <label className="block text-sm font-semibold text-gray-800 mb-1">Version*</label>
-              <input
-                type="text"
-                required
-                value={version}
-                onChange={(e) => setVersion(e.target.value)}
-                className="w-full p-3 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500 transition-all duration-200 hover:border-indigo-300"
-                placeholder="e.g., 1.0"
-              />
-            </div>
+           <div>
+  <label className="block text-sm font-semibold text-gray-800 mb-1">Version*</label>
+  <input
+    type="text"
+    required
+    value={version}
+    onChange={(e) => {
+      setVersion(e.target.value);
+      if (errors.version) setErrors({...errors, version: ''});
+    }}
+    className={`w-full p-3 border rounded-xl focus:outline-none transition-all duration-200 
+      ${errors.version ? 'border-red-500 focus:ring-red-500' : 'border-gray-200 focus:ring-indigo-500 hover:border-indigo-300'}`}
+    placeholder="e.g., 1.0 or 2.1.3"
+  />
+  {errors.version && <p className="text-red-500 text-sm mt-1">{errors.version}</p>}
+</div>
 
             {/* Save Button - spans full width */}
             <div className="md:col-span-2 flex justify-end">
