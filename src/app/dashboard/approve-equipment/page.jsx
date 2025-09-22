@@ -328,12 +328,34 @@ const TaskDetailsModal = ({ task, onClose, onBarcodeUpload }) => {
                   <span className="text-slate-600 font-medium">Asset Tag:</span>
                   <span className="text-slate-800 font-semibold font-mono text-right">{task.assetTag}</span>
                 </div>
+               
+                 <div className="flex justify-between items-center">
+                  <span className="text-slate-600 font-medium">Qualification Date:</span>
+                  <span className="text-slate-800 font-semibold text-right"> {new Date(task.qualificationDoneDate).toLocaleDateString()}</span>
+                </div>
+                 <div className="flex justify-between items-center">
+                  <span className="text-slate-600 font-medium">Qualification Due Date:</span>
+                  <span className="text-slate-800 font-semibold text-right"> {new Date(task.qualificationDueDate).toLocaleDateString()}</span>
+                </div>
+              </div>
+            </div>
+             <div className="bg-gradient-to-r from-green-50 to-emerald-50 p-6 rounded-2xl border border-green-100 h-full">
+              <h4 className="font-semibold text-slate-800 mb-4 flex items-center">
+                <Award className="w-5 h-5 mr-2 text-green-600" />
+                Additional Details
+              </h4>
+              <div className="space-y-4">
+                <div className="flex justify-between items-center pb-2 border-b border-green-100">
+                  <span className="text-slate-600 font-medium">Equipent Id:</span>
+                  <span className="text-slate-800 font-semibold text-right">{task.equipmentId}</span>
+                </div>
+                <div className="flex justify-between items-center pb-2 border-b border-green-100">
+                  <span className="text-slate-600 font-medium">QMS Number:</span>
+                  <span className="text-slate-800 font-semibold text-right">{task.qmsNumber}</span>
+                </div>
                 <div className="flex justify-between items-center">
-                  <span className="text-slate-600 font-medium">Created:</span>
-                  <span className="text-slate-800 font-semibold flex items-center justify-end">
-                    <Clock className="w-4 h-4 mr-1 text-slate-500" />
-                    {new Date(task.createdAt).toLocaleDateString()}
-                  </span>
+                  <span className="text-slate-600 font-medium">PO Number:</span>
+                  <span className="text-slate-800 font-semibold text-right">{task.poNumber}</span>
                 </div>
               </div>
             </div>

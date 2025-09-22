@@ -6,10 +6,10 @@ export async function PUT(req) {
   try {
     await connectDB();
 
-    const { equipmentId, ...updateData } = await req.json();
-    console.log(equipmentId);
+    const { equipmentIds, ...updateData } = await req.json();
+    console.log(equipmentIds);
 
-    if (!equipmentId) {
+    if (!equipmentIds) {
       return NextResponse.json(
         { success: false, message: 'Equipment ID is required' },
         { status: 400 }
@@ -18,7 +18,7 @@ export async function PUT(req) {
 
     // Find the equipment and update it
     const updatedEquipment = await Equipment.findByIdAndUpdate(
-      equipmentId,
+      equipmentIds,
       updateData,
       { new: true } // Return the updated document
     );
