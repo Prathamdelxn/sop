@@ -16,6 +16,7 @@ export async function POST(req) {
         { status: 400 }
       );
     }
+    console.log("asdfasdf",data);
  
     // ✅ create new checklist
     const newChecklist = await Checklist.create(data);

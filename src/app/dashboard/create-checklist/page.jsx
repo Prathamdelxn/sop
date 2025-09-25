@@ -767,7 +767,11 @@ const SOPDashboard = () => {
 
       });// You'll need to create this API endpoint
       const data = await res.json();
-      setWorkersList(data.data);
+      const dd=data.data.filter((i)=>i._id !==companyData.id);
+      console.log(dd);
+
+      setWorkersList(dd);
+      console.log(data.data);
     } catch (err) {
       console.error("Failed to fetch workers:", err);
     } finally {
@@ -1734,6 +1738,7 @@ const SOPDashboard = () => {
         });
         setSopData(sopData.filter((item) => item._id !== sopToDelete));
         setShowDeleteConfirm(false);
+         setDeleteLoading(false)
         setSopToDelete(null);
       } catch (err) {
 
@@ -1815,6 +1820,7 @@ const SOPDashboard = () => {
   }
   const renderTask = (task, level = 0, taskNumber = "1") => {
     const hasSubtasks = task.subtasks && task.subtasks.length > 0
+    console.log("asdfasdf",task);
     const isExpanded = expandedTasks[task.id || task._id] || false
     const taskId = task.id || task._id
     const isZeroTime = (time) =>
@@ -1854,6 +1860,7 @@ const SOPDashboard = () => {
                 <span className="font-medium">Description:</span>
               </div>
               <p className="text-sm text-gray-700 ml-6">{task.description}</p>
+              {task.maxTime}asdfasdf
             </div>
           )}
 
@@ -2547,3 +2554,4 @@ const SOPDashboard = () => {
 }
 
 export default SOPDashboard
+

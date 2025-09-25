@@ -12,8 +12,8 @@ const checklistStageSchema = new mongoose.Schema({
   title: { type: String, required: true },
   description :{type: String , required:true},
   galleryDescription:{type:String},
- minTime: {String},
- maxTime: {String},
+ minTime: {type:String},
+ maxTime: {type:String},
   galleryTitle:{type:String},
 
    
