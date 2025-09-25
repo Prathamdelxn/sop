@@ -1,11 +1,6 @@
 import mongoose from "mongoose";
  
-// ---------------- Duration Schema ----------------
-const checklistDurationSchema = new mongoose.Schema({
-  hours: { type: Number, default: 0 },
-  minutes: { type: Number, default: 0 },
-  seconds: { type: Number, default: 0 },
-});
+
  
 // ---------------- Stage Schema ----------------
 const checklistStageSchema = new mongoose.Schema({
