@@ -1326,7 +1326,7 @@ const SOPDashboard = () => {
         });
         console.log("Reviewers list", reviews)
 
-        const res = await fetch(`/api/checklistapi/update-status/${sopToApprove}`, {
+        const res = await fetch(`/api/task/update-status/${sopToApprove}`, {
           method: "PATCH",
           headers: {
             "Content-Type": "application/json",
@@ -1369,7 +1369,7 @@ const SOPDashboard = () => {
           };
         });
         console.log("Approvers list", approvers)
-        const res = await fetch(`/api/checklistapi/update-status/${sopToApprove}`, {
+        const res = await fetch(`/api/task/update-status/${sopToApprove}`, {
           method: "PATCH",
           headers: {
             "Content-Type": "application/json",
@@ -1493,7 +1493,7 @@ const SOPDashboard = () => {
 
   const handleCreate = () => {
     setNavigatingToCreate(true); // Show loading state
-    router.push("/dashboard/create-checklist/creation")
+    router.push("/dashboard/create-checklist/create-sop")
 
   }
 
@@ -1508,7 +1508,7 @@ const SOPDashboard = () => {
     if (sopToApprove) {
       setApprovalLoading(true);
       try {
-        const res = await fetch(`/api/checklistapi/update-status/${sopToApprove}`, {
+        const res = await fetch(`/api/task/update-status/${sopToApprove}`, {
           method: "PATCH",
           headers: {
             "Content-Type": "application/json",
@@ -1729,7 +1729,7 @@ const SOPDashboard = () => {
     if (sopToDelete) {
       setDeleteLoading(true);
       try {
-        await fetch(`/api/checklistapi/delete/${sopToDelete}`, {
+        await fetch(`/api/task/delete/${sopToDelete}`, {
           method: "DELETE",
         });
         setSopData(sopData.filter((item) => item._id !== sopToDelete));
@@ -1968,9 +1968,8 @@ const SOPDashboard = () => {
       try {
         setLoading(true)
         setFiltering(true)
-        const res = await fetch("/api/checklistapi/fetchAll")
+        const res = await fetch("/api/task/fetchAll")
         const data = await res.json()
-        console.log(data);
         setTimeout(() => {
           const filtered = data.data.filter(item => item.companyId === companyData?.companyId)
           setSopData(filtered)
@@ -2141,7 +2140,9 @@ const SOPDashboard = () => {
                     <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                       Status
                     </th>
-                   
+                    <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Created At
+                    </th>
                     <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                       Approval / Review
                     </th>
@@ -2173,8 +2174,10 @@ const SOPDashboard = () => {
                     <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                       Status
                     </th>
-                   
-                    <th scope="col" className="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Created At
+                    </th>
+                    <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                       Approval / Review
                     </th>
 
@@ -2202,7 +2205,9 @@ const SOPDashboard = () => {
                       <td className="px-6 py-4 whitespace-nowrap">
                         {getStatusBadge(sop.status)}
                       </td>
-                      
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <div className="text-sm text-gray-500">{sop.formattedDate}</div>
+                      </td>
                       <td className="px-6 py-4 whitespace-nowrap text-center text-sm font-medium">
                         {sop.status === "InProgress" || sop.status === "Under Review" || sop.status === "Rejected Review" ?
                           (<div className=" py-4 whitespace-nowrap text-center">

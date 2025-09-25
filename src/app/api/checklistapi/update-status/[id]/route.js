@@ -2,7 +2,7 @@
 import { NextResponse } from "next/server";
 import mongoose from "mongoose";
 import connectDB from "@/utils/db";
-import Prototype from "@/model/Task";
+import Checklist from "@/model/ChecklistNew";
 
 // PATCH /api/prototype/update-status/[id]
 export async function PATCH(request, { params }) {
@@ -55,7 +55,7 @@ export async function PATCH(request, { params }) {
       }));
     }
 console.log(updateData);
-    const updatedPrototype = await Prototype.findByIdAndUpdate(
+    const updatedPrototype = await Checklist.findByIdAndUpdate(
       id,
       updateData,
       { new: true }
@@ -70,7 +70,7 @@ console.log(updateData);
 
     return NextResponse.json({
       message: "Status updated successfully",
-      prototype: updatedPrototype
+      checklist: updatedPrototype
     });
   } catch (error) {
     console.error("Error updating prototype status:", error);

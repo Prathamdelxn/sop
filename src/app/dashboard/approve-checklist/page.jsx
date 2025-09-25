@@ -1372,7 +1372,7 @@ const ApprovePage = () => {
     const fetchSops = async () => {
       try {
         setLoading(true)
-        const res = await fetch("/api/task/fetch-for-approve",{
+        const res = await fetch("/api/checklistapi/fetch-for-approve",{
             method:"POST",
              headers: {
         "Content-Type": "application/json",
@@ -1422,7 +1422,7 @@ const getReviewStatus = (sop) => {
     try {  setApprovingSopId(sopId);
       setLoading(true);
       
-      const res = await fetch(`/api/task/update-approve-status`, {
+      const res = await fetch(`/api/checklistapi/update-approve-status`, {
         method: "PUT",
         headers: {
           "Content-Type": "application/json",
@@ -1470,7 +1470,7 @@ console.log(rejectReason);
     try {
       setLoading(true);
       
-      const res = await fetch(`/api/task/update-approve-status`, {
+      const res = await fetch(`/api/checklistapi/update-approve-status`, {
         method: "PUT",
         headers: {
           "Content-Type": "application/json",

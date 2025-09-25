@@ -46,7 +46,7 @@ const ReviewPage = () => {
     const fetchSops = async () => {
       try {
         setLoading(true)
-        const res = await fetch("/api/task/fetch-for-review",{
+        const res = await fetch("/api/checklistapi/fetch-for-review",{
             method:"POST",
              headers: {
         "Content-Type": "application/json",
@@ -97,7 +97,7 @@ const getReviewStatus = (sop) => {
        setApprovingSopId(sopId);
       setLoading(true);
       
-      const res = await fetch(`/api/task/update-review-status`, {
+      const res = await fetch(`/api/checklistapi/update-review-status`, {
         method: "PUT",
         headers: {
           "Content-Type": "application/json",
@@ -145,7 +145,7 @@ console.log(rejectReason);
     try {
       setLoading(true);
       
-      const res = await fetch(`/api/task/update-review-status`, {
+      const res = await fetch(`/api/checklistapi/update-review-status`, {
         method: "PUT",
         headers: {
           "Content-Type": "application/json",
