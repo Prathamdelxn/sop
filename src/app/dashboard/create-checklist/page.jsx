@@ -1630,7 +1630,8 @@ const SOPDashboard = () => {
                 <div>
                   <span className="text-gray-600">Minimum Time: </span>
                   <span className="font-medium">
-                    {formatTimeObject(task.minTime)}
+                    {task.minTime}
+                    {/* {formatTimeObject(task.minTime)} */}
                   </span>
                 </div>
                 <div>
@@ -1875,19 +1876,19 @@ const SOPDashboard = () => {
                 <span className="font-medium">Duration Information:</span>
               </div>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-2 text-sm ml-6">
-                {(task.minDuration || task.maxDuration) && (
+                {(task.minTime || task.maxTime) && (
                   <div>
                     <span className="text-gray-600">Minimum Duration: </span>
                     <span className="font-medium">
-                      {task.minTime ? formatTimeObject(task.minTime) : formatDuration(task.minDuration)}
+                      {task.minTime}
                     </span>
                   </div>
                 )}
-                {(task.minDuration || task.maxDuration) && (
+                {(task.minTime || task.maxTime) && (
                   <div>
                     <span className="text-gray-600">Maximum Duration: </span>
                     <span className="font-medium">
-                      {task.maxTime ? formatTimeObject(task.maxTime) : formatDuration(task.maxDuration)}
+                      {task.maxTime}
                     </span>
                   </div>
                 )}
@@ -1895,7 +1896,7 @@ const SOPDashboard = () => {
             </div>
           )}
 
-          {(task.imageTitle || task.imageDescription || task.imagePublicId) && (
+          {(task.galleryTitle || task.galleryDescription || task.imagePublicId) && (
             <div className="bg-slate-200 p-3 rounded-lg border">
               <div className="flex items-center gap-2 text-sm mb-2">
                 <ImageIcon className="w-4 h-4 text-gray-500" />
@@ -1905,24 +1906,24 @@ const SOPDashboard = () => {
                 {task.imageTitle && (
                   <div>
                     <span className="text-gray-600">Title: </span>
-                    <span className="font-medium">{task.imageTitle}</span>
+                    <span className="font-medium">{task.galleryTitle}</span>
                   </div>
                 )}
-                {task.imageDescription && (
+                {task.galleryDescription && (
                   <div>
                     <span className="text-gray-600">Description: </span>
-                    <span className="font-medium">{task.imageDescription}</span>
+                    <span className="font-medium">{task.galleryDescription}</span>
                   </div>
                 )}
               </div>
-              {task.attachedImages?.length > 0 && (
+              {task.images?.length > 0 && (
                 <div>
                   <div className="flex items-center gap-2 text-sm mb-2">
                     <Layers className="w-4 h-4 text-gray-500" />
-                    <span className="font-base">Attached Images ({task.attachedImages.length}):</span>
+                    <span className="font-base">Attached Images ({task.images.length}):</span>
                   </div>
                   <div className="grid grid-cols-2 md:grid-cols-3 gap-3 ml-6">
-                    {task.attachedImages.map((image, idx) =>
+                    {task.images.map((image, idx) =>
                       image?.url ? (
                         <div key={idx} className="border rounded-lg overflow-hidden bg-white">
                           <Image

@@ -5483,7 +5483,7 @@ setAddedmodalnew(true);
           {showTaskImageModal[selectedStageId] && (
   <div className="fixed inset-0 pl-64 z-50 flex items-center justify-center p-4">
     <div
-      className="absolute inset-0 bg-black bg-opacity-50 backdrop-blur-sm"
+      className="absolute inset-0  bg-opacity-50 backdrop-blur-sm"
       onClick={() => handleCloseTaskImageModal(selectedStageId)}
     />
     <div className="relative bg-white rounded-2xl shadow-2xl w-full max-w-4xl max-h-[90vh] overflow-hidden transform transition-all duration-300 scale-100">
@@ -5698,7 +5698,7 @@ setAddedmodalnew(true);
             showSubtaskImageModal[parentId] ? (
               <div key={parentId} className="fixed inset-0 pl-64 z-50 flex items-center justify-center p-4">
                 <div
-                  className="absolute inset-0 bg-black bg-opacity-50 backdrop-blur-sm"
+                  className="absolute inset-0  bg-opacity-50 backdrop-blur-sm"
                   onClick={() => handleCloseSubtaskImageModal(parentId)}
                 />
                 <div className="relative bg-white rounded-2xl shadow-2xl w-full max-w-4xl max-h-[90vh] overflow-hidden transform transition-all duration-300 scale-100">
@@ -5913,7 +5913,7 @@ setAddedmodalnew(true);
           {showImageModal && (
             <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
               <div
-                className="absolute inset-0 bg-black bg-opacity-50 backdrop-blur-sm"
+                className="absolute inset-0  bg-opacity-50 backdrop-blur-sm"
                 onClick={() => setShowImageModal(false)}
               />
               <div className="relative bg-white rounded-2xl shadow-2xl w-full max-w-4xl max-h-[90vh] overflow-hidden transform transition-all duration-300 scale-100">
