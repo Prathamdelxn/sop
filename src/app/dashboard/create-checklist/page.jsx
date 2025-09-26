@@ -1861,7 +1861,7 @@ const SOPDashboard = () => {
                 <span className="font-medium">Description:</span>
               </div>
               <p className="text-sm text-gray-700 ml-6">{task.description}</p>
-              {task.maxTime}asdfasdf
+             
             </div>
           )}
 
