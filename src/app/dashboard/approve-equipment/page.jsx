@@ -390,8 +390,9 @@ const Dashboard = () => {
     const userData = localStorage.getItem('user');
     const data = JSON.parse(userData);
     setCompanyData(data);
+    
   }, []);
-
+console.log("companydat",companyData);
   useEffect(() => {
     const fetchData = async () => {
       try {
@@ -401,8 +402,9 @@ const Dashboard = () => {
           throw new Error('Failed to fetch equipment data');
         }
         const data = await res.json();
+        console.log("this is fetchall",data.data);
         const pendingTasks = data.data.filter(
-          (t) => t.companyId === companyData?.companyId && t.status !== "InProgress"
+          (t) => t.companyId === companyData?.companyId && t.status !== "InProgress" && t.userId != companyData.id
         );
         setTasks(pendingTasks);
        
