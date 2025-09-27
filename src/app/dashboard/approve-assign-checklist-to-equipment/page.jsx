@@ -354,7 +354,9 @@ export default function ApproveAssignEquipmentPage() {
       setLoading(true);
       const res = await fetch('/api/assignment/fetchAll');
       const data = await res.json();
-      const filteredData = data.data.filter((t) => t.companyId === companyData?.companyId && t.status != "InProgress");
+      console.log("asdf",data);
+      
+      const filteredData = data.data.filter((t) => t.companyId === companyData?.companyId && t.status != "InProgress" && t.userId != companyData.id);
       setAssignData(filteredData);
     } catch (error) {
       console.error('Error fetching assignments:', error);
