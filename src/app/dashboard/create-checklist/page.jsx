@@ -767,7 +767,7 @@ const SOPDashboard = () => {
 
       });// You'll need to create this API endpoint
       const data = await res.json();
-      const dd=data.data.filter((i)=>i._id !==companyData.id);
+      const dd = data.data.filter((i) => i._id !== companyData.id);
       console.log(dd);
 
       setWorkersList(dd);
@@ -985,8 +985,8 @@ const SOPDashboard = () => {
                     onClick={() => onSend(selectedWorkers)}
                     disabled={selectedWorkers.length === 0 || reviewLoading}
                     className={`px-5 py-2.5 text-sm font-medium rounded-lg text-white transition-colors flex items-center justify-center ${selectedWorkers.length === 0 || reviewLoading
-                        ? 'bg-gray-300 cursor-not-allowed'
-                        : 'bg-gradient-to-br from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700'
+                      ? 'bg-gray-300 cursor-not-allowed'
+                      : 'bg-gradient-to-br from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700'
                       }`}
                   >
                     {reviewLoading ? (
@@ -1269,8 +1269,8 @@ const SOPDashboard = () => {
                     onClick={() => onSend(selectedWorkers)}
                     disabled={selectedWorkers.length === 0 || actionLoading}
                     className={`px-5 py-2.5 text-sm font-medium rounded-lg text-white transition-colors flex items-center justify-center ${selectedWorkers.length === 0 || actionLoading
-                        ? 'bg-gray-300 cursor-not-allowed'
-                        : 'bg-gradient-to-br from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700'
+                      ? 'bg-gray-300 cursor-not-allowed'
+                      : 'bg-gradient-to-br from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700'
                       }`}
                   >
                     {actionLoading ? (
@@ -1739,7 +1739,7 @@ const SOPDashboard = () => {
         });
         setSopData(sopData.filter((item) => item._id !== sopToDelete));
         setShowDeleteConfirm(false);
-         setDeleteLoading(false)
+        setDeleteLoading(false)
         setSopToDelete(null);
       } catch (err) {
 
@@ -1821,7 +1821,7 @@ const SOPDashboard = () => {
   }
   const renderTask = (task, level = 0, taskNumber = "1") => {
     const hasSubtasks = task.subtasks && task.subtasks.length > 0
-    console.log("asdfasdf",task);
+    console.log("asdfasdf", task);
     const isExpanded = expandedTasks[task.id || task._id] || false
     const taskId = task.id || task._id
     const isZeroTime = (time) =>
@@ -1861,7 +1861,7 @@ const SOPDashboard = () => {
                 <span className="font-medium">Description:</span>
               </div>
               <p className="text-sm text-gray-700 ml-6">{task.description}</p>
-             
+
             </div>
           )}
 
@@ -2149,7 +2149,10 @@ const SOPDashboard = () => {
                     <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                       Status
                     </th>
-                   
+                    <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Created At
+                    </th>
+
                     <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                       Approval / Review
                     </th>
@@ -2181,7 +2184,9 @@ const SOPDashboard = () => {
                     <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                       Status
                     </th>
-                   
+                    <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Created At
+                    </th>
                     <th scope="col" className="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">
                       Approval / Review
                     </th>
@@ -2210,7 +2215,16 @@ const SOPDashboard = () => {
                       <td className="px-6 py-4 whitespace-nowrap">
                         {getStatusBadge(sop.status)}
                       </td>
-                      
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <div className="text-sm text-gray-900"> {new Date(sop.createdAt).toLocaleString("en-IN", {
+                          day: "2-digit",
+                          month: "short",
+                          year: "numeric",
+                          hour: "2-digit",
+                          minute: "2-digit",
+                          hour12: true,
+                        })}</div>
+                      </td>
                       <td className="px-6 py-4 whitespace-nowrap text-center text-sm font-medium">
                         {sop.status === "InProgress" || sop.status === "Under Review" || sop.status === "Rejected Review" ?
                           (<div className=" py-4 whitespace-nowrap text-center">

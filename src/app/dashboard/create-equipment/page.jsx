@@ -1585,7 +1585,7 @@ export default function FacilityAdminDashboard() {
           <div className="bg-gradient-to-r from-indigo-600 to-indigo-500 px-6 py-4 flex justify-between items-center">
             <div>
               <h2 className="text-xl font-semibold text-white tracking-tight">Equipment Details</h2>
-              <p className="text-indigo-100 text-sm font-medium">{viewingEquipment.type} • ID: {viewingEquipment._id}</p>
+              <p className="text-indigo-100 text-sm font-medium capitalize">{viewingEquipment.name} • Equipment ID: {viewingEquipment.equipmentId}</p>
             </div>
             <button
               onClick={() => {
@@ -1642,7 +1642,7 @@ export default function FacilityAdminDashboard() {
                     ? new Date(viewingEquipment.qualificationDueDate).toLocaleDateString()
                     : 'N/A'
                 } />
-                <DetailItem label="Equipment ID" value={viewingEquipment.equipmentId} />
+                {/* <DetailItem label="Equipment ID" value={viewingEquipment.equipmentId} /> */}
                 {viewingEquipment.rejectionReason && (
                   <DetailItem label="Rejection Reason" value={viewingEquipment.rejectionReason} />
                 )}
@@ -1916,8 +1916,8 @@ export default function FacilityAdminDashboard() {
             <div className="relative bg-white rounded-xl shadow-xl w-full max-w-md mx-4 p-6">
               <div className="text-center">
                 <AlertCircle className="w-12 h-12 text-red-500 mx-auto mb-4" />
-                <h3 className="text-lg font-medium text-gray-900 mb-2">Delete Checklist</h3>
-                <p className="text-gray-600 mb-6">Are you sure you want to delete this checklist? This action cannot be undone.</p>
+                <h3 className="text-lg font-medium text-gray-900 mb-2">Delete Equipment</h3>
+                <p className="text-gray-600 mb-6">Are you sure you want to delete this equipment? This action cannot be undone.</p>
                 <div className="flex justify-center gap-4">
                   <button
                     onClick={cancelDelete}
