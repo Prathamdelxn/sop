@@ -7593,7 +7593,7 @@
 // }
 
 "use client";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import {
   DndContext,
   closestCenter,
@@ -7687,7 +7687,9 @@ const InputField = ({
   return (
     <div
       className={`space-y-1 ${
-        hasDuplicate ? "border-l-4 border-yellow-500 bg-yellow-50 p-3 rounded-lg" : ""
+        hasDuplicate
+          ? "border-l-4 border-yellow-500 bg-yellow-50 p-3 rounded-lg"
+          : ""
       }`}
     >
       <label className="block text-xs font-medium text-slate-700 mb-1">
@@ -7703,7 +7705,12 @@ const InputField = ({
         {...props}
       />
       <ErrorMessage message={error} />
-      <DuplicateWarning items={items} value={value} excludeId={excludeId} itemType={itemType} />
+      <DuplicateWarning
+        items={items}
+        value={value}
+        excludeId={excludeId}
+        itemType={itemType}
+      />
     </div>
   );
 };
@@ -7774,217 +7781,6 @@ const ConfirmationModal = ({ isOpen, onClose, onConfirm, title, message }) => {
             className="px-4 py-2 text-sm font-medium text-white bg-red-600 rounded-lg hover:bg-red-700"
           >
             Confirm
-          </button>
-        </div>
-      </div>
-    </div>
-  );
-};
-
-// Visual Representation Modal Component
-const VisualRepresentationModal = ({ isOpen, onClose, stages }) => {
-  const [tableData, setTableData] = useState([]);
- 
-  // Initialize tableData with stages data when modal opens
-  useState(() => {
-    if (isOpen) {
-      const initialData = stages.flatMap((stage) =>
-        stage.tasks?.flatMap((task) => [
-          {
-            id: task.id,
-            checkPoint: task.title,
-            checkPointImage: null, // Initialize image field
-            cleaningStatus: "Active",
-            production: task.description || "-",
-            qa: task.galleryTitle || "-",
-          },
-          ...(task.subtasks?.map((subtask) => ({
-            id: subtask.id,
-            checkPoint: subtask.title,
-            checkPointImage: null, // Initialize image field
-            cleaningStatus: "Active",
-            production: subtask.description || "-",
-            qa: subtask.galleryTitle || "-",
-          })) || []),
-        ]) || []
-      );
-      setTableData(initialData);
-    }
-  }, [isOpen, stages]);
-
-  // Handle input change for checkPoint
-  const handleCheckPointChange = (id, value) => {
-    setTableData((prev) =>
-      prev.map((row) =>
-        row.id === id ? { ...row, checkPoint: value } : row
-      )
-    );
-  };
-
-  // Handle image upload for checkPoint
-  const handleImageUpload = (id, event) => {
-    const file = event.target.files[0];
-    if (!file) return;
-
-    const maxSize = 10 * 1024 * 1024; // 10MB
-    if (file.size > maxSize) {
-      toast.error("Image size exceeds 10MB limit.");
-      return;
-    }
-
-    const reader = new FileReader();
-    reader.onload = (e) => {
-      setTableData((prev) =>
-        prev.map((row) =>
-          row.id === id
-            ? {
-                ...row,
-                checkPointImage: {
-                  url: e.target.result,
-                  file,
-                  title: file.name.replace(/\.[^/.]+$/, ""),
-                },
-              }
-            : row
-        )
-      );
-      toast.success("Image uploaded successfully!");
-    };
-    reader.onerror = () => {
-      toast.error("Failed to upload image.");
-    };
-    reader.readAsDataURL(file);
-    event.target.value = ""; // Reset input
-  };
-
-  // Remove image for checkPoint
-  const handleRemoveImage = (id) => {
-    setTableData((prev) =>
-      prev.map((row) =>
-        row.id === id ? { ...row, checkPointImage: null } : row
-      )
-    );
-    toast.success("Image removed successfully!");
-  };
-
-  // Add a new row
-  const addNewRow = () => {
-    const newRow = {
-      id: `new-${Date.now()}-${Math.floor(Math.random() * 1000)}`,
-      checkPoint: "",
-      checkPointImage: null,
-      cleaningStatus: "Visually Clean",
-      production: "-",
-      qa: "-",
-    };
-    setTableData((prev) => [...prev, newRow]);
-  };
-
-  const renderTableRows = () => {
-    return tableData.map((item) => (
-      <tr key={item.id} className="border-b border-gray-200 hover:bg-gray-50">
-        <td className="py-3 px-4 text-sm text-gray-700">
-          <div className="flex items-center gap-3">
-            <input
-              type="text"
-              value={item.checkPoint}
-              onChange={(e) => handleCheckPointChange(item.id, e.target.value)}
-              className="w-full px-2 py-1 text-sm border rounded-lg focus:ring-2 focus:ring-blue-500 transition-colors border-slate-300 focus:border-blue-500"
-              placeholder="Enter check point"
-            />
-            <div className="relative">
-              {item.checkPointImage ? (
-                <div className="relative w-12 h-12">
-                  <img
-                    src={item.checkPointImage.url}
-                    alt={item.checkPointImage.title}
-                    className="w-full h-full object-cover rounded-lg"
-                  />
-                  <button
-                    onClick={() => handleRemoveImage(item.id)}
-                    className="absolute top-0 right-0 p-1 bg-red-500 text-white rounded-full hover:bg-red-600 transition-colors"
-                    title="Remove image"
-                  >
-                    <X className="w-3 h-3" />
-                  </button>
-                </div>
-              ) : (
-                <>
-                  <input
-                    type="file"
-                    accept="image/*"
-                    onChange={(e) => handleImageUpload(item.id, e)}
-                    className="hidden"
-                    id={`image-upload-${item.id}`}
-                  />
-                  <label
-                    htmlFor={`image-upload-${item.id}`}
-                    className="cursor-pointer p-1 bg-green-100 text-green-700 hover:bg-green-200 rounded-lg flex items-center gap-1 text-xs"
-                    title="Upload image"
-                  >
-                    <ImageIcon className="w-4 h-4" />
-                    Upload
-                  </label>
-                </>
-              )}
-            </div>
-          </div>
-        </td>
-        <td className="py-3 px-4 text-sm text-gray-700">{item.cleaningStatus}</td>
-        <td className="py-3 px-4 text-sm text-gray-600">{item.production}</td>
-        <td className="py-3 px-4 text-sm text-gray-600">{item.qa}</td>
-      </tr>
-    ));
-  };
-
-  if (!isOpen) return null;
-
-  return (
-    <div className="fixed inset-0 pl-64 z-50 flex items-center justify-center p-4">
-      <div
-        className="absolute inset-0 bg-black/40 backdrop-blur-sm"
-        onClick={onClose}
-      />
-      <div className="relative bg-white rounded-2xl shadow-2xl w-full max-w-6xl p-6 max-h-[90vh] overflow-y-auto">
-        <div className="flex items-center justify-between mb-4">
-          <h4 className="text-lg font-semibold text-gray-900">
-            Checklist Visual Representation
-          </h4>
-          <button
-            onClick={onClose}
-            className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
-          >
-            <X className="w-5 h-5 text-gray-600" />
-          </button>
-        </div>
-        <div className="mb-4">
-          <button
-            onClick={addNewRow}
-            className="px-4 py-2 bg-blue-600 text-white text-sm font-medium rounded-lg hover:bg-blue-700 transition-colors flex items-center gap-2"
-          >
-            <Plus className="w-4 h-4" />
-            Add Record
-          </button>
-        </div>
-        <div className="overflow-x-auto">
-          <table className="min-w-full bg-white border border-gray-200">
-            <thead>
-              <tr className="bg-gray-100">
-                <th className="py-3 px-4 text-left text-sm font-semibold text-gray-900">Check Point</th>
-                <th className="py-3 px-4 text-left text-sm font-semibold text-gray-900">Cleaning Status</th>
-                <th className="py-3 px-4 text-left text-sm font-semibold text-gray-900">Production</th>
-                <th className="py-3 px-4 text-left text-sm font-semibold text-gray-900">QA</th>
-              </tr>
-            </thead>
-            <tbody>{renderTableRows()}</tbody>
-          </table>
-        </div>
-        <div className="flex justify-end gap-3 mt-6">
-          <button
-            onClick={onClose}
-            className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50"
-          >
-            Close
           </button>
         </div>
       </div>
@@ -8064,7 +7860,9 @@ const SortableItem = ({
                   </h3>
                 </div>
                 {description && (
-                  <p className="text-xs text-slate-600 mb-1 truncate">{description}</p>
+                  <p className="text-xs text-slate-600 mb-1 truncate">
+                    {description}
+                  </p>
                 )}
                 <div className="flex justify-between">
                   {(minTime || maxTime) && (
@@ -8137,7 +7935,12 @@ const SortableItem = ({
           </div>
         </div>
       </div>
-      <DuplicateWarning items={items} value={title} excludeId={id} itemType={itemType} />
+      <DuplicateWarning
+        items={items}
+        value={title}
+        excludeId={id}
+        itemType={itemType}
+      />
     </div>
   );
 };
@@ -8147,7 +7950,7 @@ export default function NestedDragDrop() {
   const [stages, setStages] = useState([]);
   const [selectedStageId, setSelectedStageId] = useState(null);
   const [showGoBackConfirmModal, setShowGoBackConfirmModal] = useState(false);
-  const [showVisualRepresentationModal, setShowVisualRepresentationModal] = useState(false);
+  const [showVisualTable, setShowVisualTable] = useState(false);
   const [checklistData, setChecklistData] = useState({
     name: "",
     department: "",
@@ -8218,6 +8021,201 @@ export default function NestedDragDrop() {
     message: "",
     onConfirm: () => {},
   });
+  const [tableData, setTableData] = useState([]);
+
+  // Initialize tableData with useEffect
+  useEffect(() => {
+    if (showVisualTable) {
+      const initialData = stages.flatMap((stage) =>
+        stage.tasks?.flatMap((task) => [
+          {
+            id: task.id,
+            checkPoint: task.title,
+            checkPointImages: task.images || [], // Changed to array
+            cleaningStatus: "Active",
+            production: task.description || "-",
+            qa: task.galleryTitle || "-",
+          },
+          ...(task.subtasks?.map((subtask) => ({
+            id: subtask.id,
+            checkPoint: subtask.title,
+            checkPointImages: subtask.images || [], // Changed to array
+            cleaningStatus: "Active",
+            production: subtask.description || "-",
+            qa: subtask.galleryTitle || "-",
+          })) || []),
+        ]) || []
+      );
+      setTableData(initialData);
+    }
+  }, [showVisualTable, stages]);
+
+  const handleCheckPointChange = (id, value) => {
+    setTableData((prev) =>
+      prev.map((row) => (row.id === id ? { ...row, checkPoint: value } : row))
+    );
+  };
+
+  const handleImageUpload = (id, event) => {
+    const files = Array.from(event.target.files);
+    if (!files.length) return;
+
+    const maxSize = 10 * 1024 * 1024; // 10MB
+    const maxImages = 10; // Maximum images per row
+
+    const validFiles = files.filter((file) => file.size <= maxSize);
+    if (validFiles.length < files.length) {
+      toast.error("Some images exceed the 10MB limit.");
+    }
+
+    const imagePromises = validFiles.map((file) => {
+      return new Promise((resolve) => {
+        const reader = new FileReader();
+        reader.onload = (e) => {
+          resolve({
+            url: e.target.result,
+            file,
+            title: file.name.replace(/\.[^/.]+$/, ""),
+          });
+        };
+        reader.readAsDataURL(file);
+      });
+    });
+
+    Promise.all(imagePromises)
+      .then((newImages) => {
+        setTableData((prev) =>
+          prev.map((row) => {
+            if (row.id === id) {
+              const currentImages = row.checkPointImages || [];
+              if (currentImages.length + newImages.length > maxImages) {
+                toast.error(`Maximum ${maxImages} images allowed per row.`);
+                return row;
+              }
+              return {
+                ...row,
+                checkPointImages: [...currentImages, ...newImages],
+              };
+            }
+            return row;
+          })
+        );
+        toast.success(`Successfully uploaded ${validFiles.length} image(s)!`);
+      })
+      .catch(() => {
+        toast.error("Failed to upload images.");
+      });
+
+    event.target.value = "";
+  };
+
+  const handleRemoveImage = (id, imageIndex) => {
+    setTableData((prev) =>
+      prev.map((row) =>
+        row.id === id
+          ? {
+              ...row,
+              checkPointImages: row.checkPointImages.filter((_, idx) => idx !== imageIndex),
+            }
+          : row
+      )
+    );
+    toast.success("Image removed successfully!");
+  };
+
+  const handleDeleteRow = (id) => {
+    setConfirmModalData({
+      title: "Confirm Delete Row",
+      message: "Are you sure you want to delete this row? This action cannot be undone.",
+      onConfirm: () => {
+        setTableData((prev) => prev.filter((row) => row.id !== id));
+        setShowConfirmModal(false);
+        toast.success("Row deleted successfully!");
+      },
+    });
+    setShowConfirmModal(true);
+  };
+
+  const addNewRow = () => {
+    const newRow = {
+      id: `new-${Date.now()}-${Math.floor(Math.random() * 1000)}`,
+      checkPoint: "",
+      checkPointImages: [],
+      cleaningStatus: "Visually Clean",
+      production: "-",
+      qa: "-",
+    };
+    setTableData((prev) => [...prev, newRow]);
+  };
+
+  const renderTableRows = () => {
+    return tableData.map((item) => (
+      <tr key={item.id} className="border-b border-gray-200 hover:bg-gray-50">
+        <td className="py-3 px-4 text-sm text-gray-700">
+          <div className="flex items-center gap-3">
+            <input
+              type="text"
+              value={item.checkPoint}
+              onChange={(e) => handleCheckPointChange(item.id, e.target.value)}
+              className="w-full px-2 py-1 text-sm border rounded-lg focus:ring-2 focus:ring-blue-500 transition-colors border-slate-300 focus:border-blue-500"
+              placeholder="Enter check point"
+            />
+            <div className="flex flex-wrap gap-2">
+              {item.checkPointImages && item.checkPointImages.length > 0 ? (
+                item.checkPointImages.map((image, index) => (
+                  <div key={`${item.id}-${index}`} className="relative">
+                    <div className="relative w-12 h-12">
+                      <img
+                        src={image.url}
+                        alt={image.title}
+                        className="w-full h-full object-cover rounded-lg"
+                      />
+                      <button
+                        onClick={() => handleRemoveImage(item.id, index)}
+                        className="absolute top-0 right-0 p-1 bg-red-500 text-white rounded-full hover:bg-red-600 transition-colors"
+                        title="Remove image"
+                      >
+                        <X className="w-3 h-3" />
+                      </button>
+                    </div>
+                  </div>
+                ))
+              ) : null}
+              <input
+                type="file"
+                accept="image/*"
+                multiple
+                onChange={(e) => handleImageUpload(item.id, e)}
+                className="hidden"
+                id={`image-upload-${item.id}`}
+              />
+              <label
+                htmlFor={`image-upload-${item.id}`}
+                className="cursor-pointer p-1 bg-green-100 text-green-700 hover:bg-green-200 rounded-lg flex items-center gap-1 text-xs"
+                title="Upload images"
+              >
+                <ImageIcon className="w-4 h-4" />
+                Upload
+              </label>
+            </div>
+          </div>
+        </td>
+        <td className="py-3 px-4 text-sm text-gray-700">{item.cleaningStatus}</td>
+        <td className="py-3 px-4 text-sm text-gray-600">{item.production}</td>
+        <td className="py-3 px-4 text-sm text-gray-600">{item.qa}</td>
+        <td className="py-3 px-4 text-sm text-gray-700">
+          <button
+            onClick={() => handleDeleteRow(item.id)}
+            className="p-1.5 text-slate-500 hover:text-red-600 hover:bg-red-50 rounded-md transition-colors"
+            title="Delete Row"
+          >
+            <Trash className="w-4 h-4" />
+          </button>
+        </td>
+      </tr>
+    ));
+  };
+
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 5 } }),
     useSensor(TouchSensor, {
@@ -8238,7 +8236,9 @@ export default function NestedDragDrop() {
             </div>
           </div>
           <h2 className="text-xl font-semibold text-gray-800 mb-2">Saving...</h2>
-          <p className="text-gray-500">Please wait while we save your checklist.</p>
+          <p className="text-gray-500">
+            Please wait while we save your checklist.
+          </p>
         </div>
       </div>
     );
@@ -8268,11 +8268,17 @@ export default function NestedDragDrop() {
       title: !taskData.title.trim() ? "Task title is required" : "",
       description: !taskData.description.trim() ? "Task Description is required" : "",
       galleryTitle:
-        taskData.images && taskData.images.length > 0 && !taskData.galleryTitle.trim()
+        taskData.images &&
+        taskData.images.length > 0 &&
+        !taskData.galleryTitle.trim()
           ? "Gallery title is required when images are attached"
           : "",
     };
-    if (showTimeFields[`${stageId}_${index}`] && taskData.minTime && taskData.maxTime) {
+    if (
+      showTimeFields[`${stageId}_${index}`] &&
+      taskData.minTime &&
+      taskData.maxTime
+    ) {
       const minSeconds = timeToSeconds(
         taskData.minTime.hours,
         taskData.minTime.minutes,
@@ -8300,9 +8306,13 @@ export default function NestedDragDrop() {
   const validateSubtask = (subtaskData, parentId, index) => {
     const newErrors = {
       title: !subtaskData.title.trim() ? "Subtask title is required" : "",
-      description: !subtaskData.description.trim() ? "Subtask Description is required" : "",
+      description: !subtaskData.description.trim()
+        ? "Subtask Description is required"
+        : "",
       galleryTitle:
-        subtaskData.images && subtaskData.images.length > 0 && !subtaskData.galleryTitle.trim()
+        subtaskData.images &&
+        subtaskData.images.length > 0 &&
+        !subtaskData.galleryTitle.trim()
           ? "Gallery title is required when images are attached"
           : "",
     };
@@ -8340,7 +8350,9 @@ export default function NestedDragDrop() {
       title: !editFormData.title.trim() ? "Title is required" : "",
       description: !editFormData.description.trim() ? "Description is required" : "",
       galleryTitle:
-        editFormData.images && editFormData.images.length > 0 && !editFormData.galleryTitle.trim()
+        editFormData.images &&
+        editFormData.images.length > 0 &&
+        !editFormData.galleryTitle.trim()
           ? "Gallery title is required when images are attached"
           : "",
     };
@@ -8383,7 +8395,12 @@ export default function NestedDragDrop() {
       ...prev,
       subtaskForms: {
         ...prev.subtaskForms,
-        [`${parentId}_${index}`]: { title: "", description: "", galleryTitle: "", time: "" },
+        [`${parentId}_${index}`]: {
+          title: "",
+          description: "",
+          galleryTitle: "",
+          time: "",
+        },
       },
     }));
   };
@@ -8462,14 +8479,18 @@ export default function NestedDragDrop() {
     });
 
   const deleteItem = (items, id) =>
-    items.map((item) => {
-      if (item.id === id) return null;
-      return {
-        ...item,
-        tasks: item.tasks ? deleteItem(item.tasks, id).filter(Boolean) : undefined,
-        subtasks: item.subtasks ? deleteItem(item.subtasks, id).filter(Boolean) : undefined,
-      };
-    }).filter(Boolean);
+    items
+      .map((item) => {
+        if (item.id === id) return null;
+        return {
+          ...item,
+          tasks: item.tasks ? deleteItem(item.tasks, id).filter(Boolean) : undefined,
+          subtasks: item.subtasks
+            ? deleteItem(item.subtasks, id).filter(Boolean)
+            : undefined,
+        };
+      })
+      .filter(Boolean);
 
   const cloneItem = (item) => ({
     ...item,
@@ -8594,7 +8615,9 @@ export default function NestedDragDrop() {
       const errorMessage =
         stagesWithNoTasks.length === 1
           ? `Please add at least one task to "${stagesWithNoTasks[0]}" stage.`
-          : `Please add at least one task to the following stages: ${stagesWithNoTasks.join(", ")}.`;
+          : `Please add at least one task to the following stages: ${stagesWithNoTasks.join(
+              ", "
+            )}.`;
       toast.error(errorMessage);
       return;
     }
@@ -8842,7 +8865,14 @@ export default function NestedDragDrop() {
       }));
     }
     if (
-      ["minHours", "minMinutes", "minSeconds", "maxHours", "maxMinutes", "maxSeconds"].includes(name)
+      [
+        "minHours",
+        "minMinutes",
+        "minSeconds",
+        "maxHours",
+        "maxMinutes",
+        "maxSeconds",
+      ].includes(name)
     ) {
       const [timeType, unit] = name.split(/(Hours|Minutes|Seconds)/);
       const timeField = timeType === "min" ? "minTime" : "maxTime";
@@ -8984,7 +9014,9 @@ export default function NestedDragDrop() {
   const handleTaskSaveImages = async (stageId, index) => {
     setIsAttaching(true);
     try {
-      const imagesWithErrors = bulkTasks[index].images.filter((img) => !img.title.trim());
+      const imagesWithErrors = bulkTasks[index].images.filter(
+        (img) => !img.title.trim()
+      );
       if (imagesWithErrors.length > 0) {
         toast.error("All images must have titles");
         setIsAttaching(false);
@@ -9127,13 +9159,19 @@ export default function NestedDragDrop() {
     setShowSubtaskTimeFields((prev) => ({
       ...prev,
       ...Object.fromEntries(
-        Array.from({ length: subtaskCount }, (_, i) => [`${selectedParentId}_${i}`, false])
+        Array.from({ length: subtaskCount }, (_, i) => [
+          `${selectedParentId}_${i}`,
+          false,
+        ])
       ),
     }));
     setShowSubtaskImageModal((prev) => ({
       ...prev,
       ...Object.fromEntries(
-        Array.from({ length: subtaskCount }, (_, i) => [`${selectedParentId}_${i}`, false])
+        Array.from({ length: subtaskCount }, (_, i) => [
+          `${selectedParentId}_${i}`,
+          false,
+        ])
       ),
     }));
     setShowSubtaskCountModal(false);
@@ -9155,15 +9193,24 @@ export default function NestedDragDrop() {
       }));
     }
     if (
-      ["minHours", "minMinutes", "minSeconds", "maxHours", "maxMinutes", "maxSeconds"].includes(name)
+      [
+        "minHours",
+        "minMinutes",
+        "minSeconds",
+        "maxHours",
+        "maxMinutes",
+        "maxSeconds",
+      ].includes(name)
     ) {
       const [timeType, unit] = name.split(/(Hours|Minutes|Seconds)/);
       const timeField = timeType === "min" ? "minTime" : "maxTime";
       const unitKey = unit.toLowerCase();
       let newValue = value.replace(/^0+/, "") || "0";
       let hours = parseInt(bulkSubtasks[parentId][index]?.[timeField]?.hours) || 0;
-      let minutes = parseInt(bulkSubtasks[parentId][index]?.[timeField]?.minutes) || 0;
-      let seconds = parseInt(bulkSubtasks[parentId][index]?.[timeField]?.seconds) || 0;
+      let minutes =
+        parseInt(bulkSubtasks[parentId][index]?.[timeField]?.minutes) || 0;
+      let seconds =
+        parseInt(bulkSubtasks[parentId][index]?.[timeField]?.seconds) || 0;
       if (unitKey === "hours") {
         newValue = Math.max(0, Math.min(24, parseInt(newValue) || 0)).toString();
       } else if (unitKey === "minutes" || unitKey === "seconds") {
@@ -9206,7 +9253,12 @@ export default function NestedDragDrop() {
     }
   };
 
-  const handleSubtaskImageInputChange = (parentId, index, event, single = false) => {
+  const handleSubtaskImageInputChange = (
+    parentId,
+    index,
+    event,
+    single = false
+  ) => {
     setIsUploading(true);
     const files = Array.from(event.target.files);
     const maxImages = 10;
@@ -9312,27 +9364,29 @@ export default function NestedDragDrop() {
         setIsAttaching(false);
         return;
       }
-      const uploadPromises = bulkSubtasks[parentId][index].images.map(async (image) => {
-        const formData = new FormData();
-        formData.append("file", image.file);
-        const response = await fetch("/api/upload", {
-          method: "POST",
-          body: formData,
-        });
-        const result = await response.json();
-        if (!response.ok) {
-          throw new Error(result.error || "Failed to upload image");
+      const uploadPromises = bulkSubtasks[parentId][index].images.map(
+        async (image) => {
+          const formData = new FormData();
+          formData.append("file", image.file);
+          const response = await fetch("/api/upload", {
+            method: "POST",
+            body: formData,
+          });
+          const result = await response.json();
+          if (!response.ok) {
+            throw new Error(result.error || "Failed to upload image");
+          }
+          return {
+            url: result.url,
+            title: image.title,
+            description: image.description,
+            public_id: result.public_id,
+            width: result.width,
+            height: result.height,
+            format: result.format,
+          };
         }
-        return {
-          url: result.url,
-          title: image.title,
-          description: image.description,
-          public_id: result.public_id,
-          width: result.width,
-          height: result.height,
-          format: result.format,
-        };
-      });
+      );
       const uploadedImages = await Promise.all(uploadPromises);
       setBulkSubtasks((prev) => ({
         ...prev,
@@ -9360,7 +9414,9 @@ export default function NestedDragDrop() {
     }
     const parentItem = findItemById(stages, parentId);
     const parentContainer = findContainer(stages, parentId);
-    const siblings = parentContainer ? parentContainer.container : parentItem?.subtasks || [];
+    const siblings = parentContainer
+      ? parentContainer.container
+      : parentItem?.subtasks || [];
     if (!parentItem) {
       toast.error("Parent item not found");
       return;
@@ -9497,7 +9553,14 @@ export default function NestedDragDrop() {
       }));
     }
     if (
-      ["minHours", "minMinutes", "minSeconds", "maxHours", "maxMinutes", "maxSeconds"].includes(name)
+      [
+        "minHours",
+        "minMinutes",
+        "minSeconds",
+        "maxHours",
+        "maxMinutes",
+        "maxSeconds",
+      ].includes(name)
     ) {
       const [timeType, unit] = name.split(/(Hours|Minutes|Seconds)/);
       const timeField = timeType === "min" ? "minTime" : "maxTime";
@@ -9601,7 +9664,8 @@ export default function NestedDragDrop() {
         : "item";
       if (
         checkDuplicateTitle(parentContainer.container, editFormData.title, editItemId, itemType)
-      ) {        setErrors((prev) => ({
+      ) {
+        setErrors((prev) => ({
           ...prev,
           editForm: {
             ...prev.editForm,
@@ -9618,8 +9682,7 @@ export default function NestedDragDrop() {
           editFormData.minTime.seconds
         )
       : "";
-    const maxTime = showEditTimeFields
-      ? formatTime(
+    const maxTime=showEditTimeFields       ? formatTime(
           editFormData.maxTime.hours,
           editFormData.maxTime.minutes,
           editFormData.maxTime.seconds
@@ -10097,7 +10160,9 @@ export default function NestedDragDrop() {
                               />
                             </div>
                           </div>
-                          <ErrorMessage message={errors.subtaskForms[`${item.id}_${index}`]?.time} />
+                          <ErrorMessage
+                            message={errors.subtaskForms[`${item.id}_${index}`]?.time}
+                          />
                         </div>
                       )}
                       <div className="flex gap-2 flex-wrap">
@@ -10134,7 +10199,9 @@ export default function NestedDragDrop() {
                           }`}
                         >
                           <Clock size={17} />
-                          {showSubtaskTimeFields[`${item.id}_${index}`] ? "Cancel Time" : "Add Time"}
+                          {showSubtaskTimeFields[`${item.id}_${index}`]
+                            ? "Cancel Time"
+                            : "Add Time"}
                         </button>
                         <button
                           onClick={() => handleOpenSubtaskImageModal(item.id, index)}
@@ -10159,7 +10226,9 @@ export default function NestedDragDrop() {
                           ...prev,
                           [item.id]: [],
                         }));
-                        bulkSubtasks[item.id].forEach((_, index) => clearSubtaskErrors(item.id, index));
+                        bulkSubtasks[item.id].forEach((_, index) =>
+                          clearSubtaskErrors(item.id, index)
+                        );
                       }}
                       className="px-3 py-1.5 bg-red-100 text-red-700 hover:bg-red-200 text-sm rounded-lg"
                     >
@@ -10280,7 +10349,6 @@ export default function NestedDragDrop() {
             >
               <Plus className="w-4 h-4" /> New Stage
             </button>
-           
             <DndContext
               sensors={sensors}
               collisionDetection={closestCenter}
@@ -10305,7 +10373,10 @@ export default function NestedDragDrop() {
                         onDelete={handleDeleteStage}
                         numbering={idx + 1}
                         showActionButtons={false}
-                        onClick={setSelectedStageId}
+                        onClick={(id) => {
+                          setSelectedStageId(id);
+                          setShowVisualTable(false);
+                        }}
                         items={stages}
                         itemType="Stage"
                       />
@@ -10345,8 +10416,8 @@ export default function NestedDragDrop() {
                 ) : null}
               </DragOverlay>
             </DndContext>
-             <button
-              onClick={() => setShowVisualRepresentationModal(true)}
+            <button
+              onClick={() => setShowVisualTable(!showVisualTable)}
               className="w-full px-4 mt-4 py-2 bg-green-600 text-white text-sm font-medium rounded-lg hover:bg-green-700 transition-colors flex items-center justify-center gap-2 mb-4"
             >
               <svg
@@ -10362,11 +10433,58 @@ export default function NestedDragDrop() {
                   d="M3 10h18M3 14h18m-9-4v8m-7 0h14a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z"
                 />
               </svg>
-              Show Visual Representation
+             Visual Representation
             </button>
           </div>
           <div className="lg:col-span-2 bg-white rounded-xl shadow-md p-6">
-            {selectedStageId ? (
+            {showVisualTable ? (
+              <>
+                <div className="flex items-center justify-between mb-4">
+                  <h4 className="text-lg font-semibold text-gray-900">
+                    Checklist Visual Representation
+                  </h4>
+                  <button
+                    onClick={() => setShowVisualTable(false)}
+                    className="px-4 py-2 bg-blue-600 text-white text-sm font-medium rounded-lg hover:bg-blue-700 flex items-center gap-2"
+                  >
+                    Back to Tasks
+                  </button>
+                </div>
+                <div className="mb-4">
+                  <button
+                    onClick={addNewRow}
+                    className="px-4 py-2 bg-blue-600 text-white text-sm font-medium rounded-lg hover:bg-blue-700 transition-colors flex items-center gap-2"
+                  >
+                    <Plus className="w-4 h-4" />
+                    Add Record
+                  </button>
+                </div>
+                <div className="overflow-x-auto">
+                  <table className="min-w-full bg-white border border-gray-200">
+                    <thead>
+                      <tr className="bg-gray-100">
+                        <th className="py-3 px-4 text-left text-sm font-semibold text-gray-900">
+                          Check Point
+                        </th>
+                        <th className="py-3 px-4 text-left text-sm font-semibold text-gray-900">
+                          Cleaning Status
+                        </th>
+                        <th className="py-3 px-4 text-left text-sm font-semibold text-gray-900">
+                          Production
+                        </th>
+                        <th className="py-3 px-4 text-left text-sm font-semibold text-gray-900">
+                          QA
+                        </th>
+                        <th className="py-3 px-4 text-left text-sm font-semibold text-gray-900">
+                          Actions
+                        </th>
+                      </tr>
+                    </thead>
+                    <tbody>{renderTableRows()}</tbody>
+                  </table>
+                </div>
+              </>
+            ) : selectedStageId ? (
               <>
                 <div className="flex items-center justify-between mb-6">
                   <div>
@@ -10493,7 +10611,9 @@ export default function NestedDragDrop() {
                                 />
                               </div>
                             </div>
-                            <ErrorMessage message={errors.taskForms[`${selectedStageId}_${index}`]?.time} />
+                            <ErrorMessage
+                              message={errors.taskForms[`${selectedStageId}_${index}`]?.time}
+                            />
                           </div>
                         )}
                         <div className="flex gap-2 flex-wrap">
@@ -10527,7 +10647,9 @@ export default function NestedDragDrop() {
                             }`}
                           >
                             <Clock size={17} />
-                            {showTimeFields[`${selectedStageId}_${index}`] ? "Cancel Time" : "Add Time"}
+                            {showTimeFields[`${selectedStageId}_${index}`]
+                              ? "Cancel Time"
+                              : "Add Time"}
                           </button>
                           <button
                             onClick={() => handleOpenTaskImageModal(selectedStageId, index)}
@@ -10842,6 +10964,7 @@ export default function NestedDragDrop() {
                                   <input
                                     type="file"
                                     accept="image/*"
+                                    multiple
                                     onChange={(e) => handleTaskImageInputChange(selectedStageId, index, e, true)}
                                     className="hidden"
                                     id={`task-image-upload-single-${selectedStageId}-${index}`}
@@ -10850,7 +10973,7 @@ export default function NestedDragDrop() {
                                     htmlFor={`task-image-upload-single-${selectedStageId}-${index}`}
                                     className="cursor-pointer inline-flex items-center px-6 py-3 border border-transparent shadow-sm text-sm font-medium rounded-lg text-white bg-green-600 hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 transition-colors"
                                   >
-                                    Add Image
+                                    Add Images
                                   </label>
                                 </div>
                               </div>
@@ -10920,6 +11043,7 @@ export default function NestedDragDrop() {
                                   <input
                                     type="file"
                                     accept="image/*"
+                                    multiple
                                     onChange={(e) => handleTaskImageInputChange(selectedStageId, index, e, true)}
                                     className="hidden"
                                     id={`task-image-upload-single-add-${selectedStageId}-${index}`}
@@ -10928,7 +11052,7 @@ export default function NestedDragDrop() {
                                     htmlFor={`task-image-upload-single-add-${selectedStageId}-${index}`}
                                     className="cursor-pointer inline-flex items-center px-4 py-2 border border-transparent shadow-sm text-sm font-medium rounded-lg text-white bg-green-600 hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 transition-colors"
                                   >
-                                    Add Another Image
+                                    Add More Images
                                   </label>
                                 </div>
                               </div>
@@ -11050,6 +11174,7 @@ export default function NestedDragDrop() {
                                   <input
                                     type="file"
                                     accept="image/*"
+                                    multiple
                                     onChange={(e) => handleSubtaskImageInputChange(parentId, index, e, true)}
                                     className="hidden"
                                     id={`subtask-image-upload-single-${parentId}-${index}`}
@@ -11058,7 +11183,7 @@ export default function NestedDragDrop() {
                                     htmlFor={`subtask-image-upload-single-${parentId}-${index}`}
                                     className="cursor-pointer inline-flex items-center px-6 py-3 border border-transparent shadow-sm text-sm font-medium rounded-lg text-white bg-green-600 hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 transition-colors"
                                   >
-                                    Add Image
+                                    Add Images
                                   </label>
                                 </div>
                               </div>
@@ -11129,6 +11254,7 @@ export default function NestedDragDrop() {
                                   <input
                                     type="file"
                                     accept="image/*"
+                                    multiple
                                     onChange={(e) => handleSubtaskImageInputChange(parentId, index, e, true)}
                                     className="hidden"
                                     id={`subtask-image-upload-single-add-${parentId}-${index}`}
@@ -11137,7 +11263,7 @@ export default function NestedDragDrop() {
                                     htmlFor={`subtask-image-upload-single-add-${parentId}-${index}`}
                                     className="cursor-pointer inline-flex items-center px-4 py-2 border border-transparent shadow-sm text-sm font-medium rounded-lg text-white bg-green-600 hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 transition-colors"
                                   >
-                                    Add Another Image
+                                    Add More Images
                                   </label>
                                 </div>
                               </div>
@@ -11183,7 +11309,7 @@ export default function NestedDragDrop() {
           {showImageModal && (
             <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
               <div
-                className="absolute inset-0 bg-opacity-50 backdrop-blur-sm"
+                className="absolute inset-0 bg-black bg-opacity-50 backdrop-blur-sm"
                 onClick={() => setShowImageModal(false)}
               />
               <div className="relative bg-white rounded-2xl shadow-2xl w-full max-w-4xl max-h-[90vh] overflow-hidden transform transition-all duration-300 scale-100">
@@ -11288,7 +11414,8 @@ export default function NestedDragDrop() {
                               onClick={() => {
                                 setConfirmModalData({
                                   title: "Confirm Clear Images",
-                                  message: "Are you sure you want to remove all images? This action cannot be undone.",
+                                  message:
+                                    "Are you sure you want to remove all images? This action cannot be undone.",
                                   onConfirm: () => {
                                     setEditFormData((prev) => ({
                                       ...prev,
@@ -11310,6 +11437,7 @@ export default function NestedDragDrop() {
                               <input
                                 type="file"
                                 accept="image/*"
+                                multiple
                                 onChange={(e) => handleEditImageInputChange(e, true)}
                                 className="hidden"
                                 id="edit-image-upload-single-add"
@@ -11318,7 +11446,7 @@ export default function NestedDragDrop() {
                                 htmlFor="edit-image-upload-single-add"
                                 className="cursor-pointer inline-flex items-center px-4 py-2 border border-transparent shadow-sm text-sm font-medium rounded-lg text-white bg-green-600 hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 transition-colors"
                               >
-                                Add Another Image
+                                Add More Images
                               </label>
                             </div>
                           </div>
@@ -11341,6 +11469,7 @@ export default function NestedDragDrop() {
                               <input
                                 type="file"
                                 accept="image/*"
+                                multiple
                                 onChange={(e) => handleEditImageInputChange(e, true)}
                                 className="hidden"
                                 id="edit-image-upload-single"
@@ -11349,7 +11478,7 @@ export default function NestedDragDrop() {
                                 htmlFor="edit-image-upload-single"
                                 className="cursor-pointer inline-flex items-center px-6 py-3 border border-transparent shadow-sm text-sm font-medium rounded-lg text-white bg-green-600 hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 transition-colors"
                               >
-                                Add Image
+                                Add Images
                               </label>
                             </div>
                           </div>
@@ -11374,7 +11503,9 @@ export default function NestedDragDrop() {
                     <button
                       onClick={async () => {
                         setIsAttaching(true);
-                        const imagesWithErrors = editFormData.images.filter((img) => !img.title.trim());
+                        const imagesWithErrors = editFormData.images.filter(
+                          (img) => !img.title.trim()
+                        );
                         if (imagesWithErrors.length > 0) {
                           toast.error("All images must have titles");
                           setIsAttaching(false);
@@ -11422,7 +11553,11 @@ export default function NestedDragDrop() {
                           setIsAttaching(false);
                         }
                       }}
-                      disabled={!editFormData.images || editFormData.images.length === 0 || isAttaching}
+                      disabled={
+                        !editFormData.images ||
+                        editFormData.images.length === 0 ||
+                        isAttaching
+                      }
                       className="px-6 py-2 text-sm font-medium text-white bg-blue-600 border border-transparent rounded-lg hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed transition-colors flex items-center gap-2"
                     >
                       {isAttaching ? (
@@ -11430,7 +11565,8 @@ export default function NestedDragDrop() {
                       ) : (
                         <>
                           <ImageIcon className="w-4 h-4" />
-                          Attach {editFormData.images?.length || 0} Image{editFormData.images?.length !== 1 ? "s" : ""}
+                          Attach {editFormData.images?.length || 0} Image
+                          {editFormData.images?.length !== 1 ? "s" : ""}
                         </>
                       )}
                     </button>
@@ -11439,52 +11575,46 @@ export default function NestedDragDrop() {
               </div>
             </div>
           )}
-          <VisualRepresentationModal
-            isOpen={showVisualRepresentationModal}
-            onClose={() => setShowVisualRepresentationModal(false)}
-            stages={stages}
-          />
           {showAddedModalnew && (
-  <div className="fixed inset-0 pl-64 z-50 flex items-center justify-center p-4">
-    <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" />
-    <div className="relative bg-white rounded-2xl shadow-2xl w-full max-w-sm p-6 text-center animate-scaleIn">
-      <div className="flex justify-center mb-4">
-        <div className="w-16 h-16 flex items-center justify-center rounded-full bg-green-100">
-          <svg
-            className="w-10 h-10 text-green-600"
-            fill="none"
-            stroke="currentColor"
-            strokeWidth="3"
-            viewBox="0 0 24 24"
-            xmlns="http://www.w3.org/2000/svg"
-          >
-            <path
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              d="M5 13l4 4L19 7"
-            />
-          </svg>
-        </div>
-      </div>
-      <h2 className="text-xl font-semibold text-gray-800 mb-2">
-        Checklist Created!
-      </h2>
-      <p className="text-gray-500 mb-6">
-        Your checklist has been created successfully.
-      </p>
-      <button
-        onClick={() => {
-          setAddedmodalnew(false);
-          router.push("/dashboard/create-checklist");
-        }}
-        className="px-6 py-2 bg-green-600 text-white rounded-lg shadow-md hover:bg-green-700 transition"
-      >
-        OK
-      </button>
-    </div>
-  </div>
-)}
-
+            <div className="fixed inset-0 pl-64 z-50 flex items-center justify-center p-4">
+              <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" />
+              <div className="relative bg-white rounded-2xl shadow-2xl w-full max-w-sm p-6 text-center animate-scaleIn">
+                <div className="flex justify-center mb-4">
+                  <div className="w-16 h-16 flex items-center justify-center rounded-full bg-green-100">
+                    <svg
+                      className="w-10 h-10 text-green-600"
+                      fill="none"
+                      stroke="currentColor"
+                      strokeWidth="3"
+                      viewBox="0 0 24 24"
+                      xmlns="http://www.w3.org/2000/svg"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        d="M5 13l4 4L19 7"
+                      />
+                    </svg>
+                  </div>
+                </div>
+                <h2 className="text-xl font-semibold text-gray-800 mb-2">
+                  Checklist Created!
+                </h2>
+                <p className="text-gray-500 mb-6">
+                  Your checklist has been created successfully.
+                </p>
+                <button
+                  onClick={() => {
+                    setAddedmodalnew(false);
+                    router.push("/dashboard/create-checklist");
+                  }}
+                  className="px-6 py-2 bg-green-600 text-white rounded-lg shadow-md hover:bg-green-700 transition"
+                >
+                  OK
+                </button>
+              </div>
+            </div>
+          )}
           <ConfirmationModal
             isOpen={showGoBackConfirmModal}
             onClose={() => setShowGoBackConfirmModal(false)}
