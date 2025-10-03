@@ -30,13 +30,15 @@ const checklistSchema = new mongoose.Schema({
   documentNumber: { type: String, required: true },
   status:{type:String,default:"InProgress"},
   rejectionReason: { type: String, default: null },
+   userId: { type: String },
   reviews: [{
     reviewerId: { type: String },
     reviewerName: { type: String },
     reviewerRole: { type: String },
     status: { type: String },
     comments: { type: String },
-    reviewDate: { type: String }
+    reviewDate: { type: String },
+    createdAt: { type: Date, default: Date.now },
   }],
   approvers: [{
     approverId: { type: String },
@@ -44,7 +46,8 @@ const checklistSchema = new mongoose.Schema({
     approverRole: { type: String },
     status: { type: String },
     comments: { type: String },
-    approvalDate: { type: String }
+    approvalDate: { type: String },
+    createdAt: { type: Date, default: Date.now },
   }],
   createdAt: { type: Date, default: Date.now },
   updatedAt: { type: Date, default: Date.now },
