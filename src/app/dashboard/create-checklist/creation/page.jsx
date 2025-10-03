@@ -8152,7 +8152,7 @@ export default function NestedDragDrop() {
     return tableData.map((item) => (
       <tr key={item.id} className="border-b border-gray-200 hover:bg-gray-50">
         <td className="py-3 px-4 text-sm text-gray-700">
-          <div className="flex items-center gap-3">
+          <div className="flex items-start  flex-col gap-3">
             <input
               type="text"
               value={item.checkPoint}
