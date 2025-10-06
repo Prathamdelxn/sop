@@ -1,5 +1,5 @@
 // // "use client";
-// // import { useState } from "react";
+// // import { useState, useEffect } from "react";
 // // import {
 // //   DndContext,
 // //   closestCenter,
@@ -30,18 +30,15 @@
 // // } from "lucide-react";
 // // import Link from "next/link";
 // // import toast, { Toaster } from "react-hot-toast";
-
 // // // Loading Spinner Component
 // // const LoadingSpinner = () => (
 // //   <div className="flex items-center justify-center">
 // //     <div className="w-6 h-6 border-4 border-blue-600 border-t-transparent rounded-full animate-spin"></div>
 // //   </div>
 // // );
-
 // // // Error Message Component
 // // const ErrorMessage = ({ message }) =>
 // //   message ? <p className="text-xs text-red-600 mt-1">{message}</p> : null;
-
 // // // Duplicate Warning Component
 // // const DuplicateWarning = ({ items, value, excludeId, itemType = "Item" }) => {
 // //   const hasDuplicate = items.some(
@@ -61,7 +58,6 @@
 // //     </div>
 // //   );
 // // };
-
 // // // Input Field Component
 // // const InputField = ({
 // //   label,
@@ -120,7 +116,6 @@
 // //     </div>
 // //   );
 // // };
-
 // // // Text Area Field Component
 // // const TextAreaField = ({
 // //   label,
@@ -157,7 +152,6 @@
 // //     </div>
 // //   );
 // // };
-
 // // // Confirmation Modal Component
 // // const ConfirmationModal = ({ isOpen, onClose, onConfirm, title, message }) => {
 // //   if (!isOpen) return null;
@@ -193,7 +187,6 @@
 // //     </div>
 // //   );
 // // };
-
 // // // Sortable Item Component
 // // const SortableItem = ({
 // //   id,
@@ -350,7 +343,6 @@
 // //     </div>
 // //   );
 // // };
-
 // // export default function NestedDragDrop() {
 // //   const router = useRouter();
 // //   const [stages, setStages] = useState([]);
@@ -428,24 +420,21 @@
 // //     onConfirm: () => {},
 // //   });
 // //   const [tableData, setTableData] = useState([]);
-
-// //   // Initialize tableData when showVisualTable changes
-// //   useState(() => {
+// //   // Initialize tableData with useEffect
+// //   useEffect(() => {
 // //     if (showVisualTable) {
 // //       const initialData = stages.flatMap((stage) =>
 // //         stage.tasks?.flatMap((task) => [
 // //           {
 // //             id: task.id,
-// //             checkPoint: task.title,
-// //             checkPointImage: null,
+// //             checkpoint: { title: task.title, images: task.images || [] }, // Structured as requested
 // //             cleaningStatus: "Active",
 // //             production: task.description || "-",
 // //             qa: task.galleryTitle || "-",
 // //           },
 // //           ...(task.subtasks?.map((subtask) => ({
 // //             id: subtask.id,
-// //             checkPoint: subtask.title,
-// //             checkPointImage: null,
+// //             checkpoint: { title: subtask.title, images: subtask.images || [] }, // Structured as requested
 // //             cleaningStatus: "Active",
 // //             production: subtask.description || "-",
 // //             qa: subtask.galleryTitle || "-",
@@ -455,129 +444,166 @@
 // //       setTableData(initialData);
 // //     }
 // //   }, [showVisualTable, stages]);
-
 // //   const handleCheckPointChange = (id, value) => {
 // //     setTableData((prev) =>
-// //       prev.map((row) => (row.id === id ? { ...row, checkPoint: value } : row))
+// //       prev.map((row) => (row.id === id ? { ...row, checkpoint: { ...row.checkpoint, title: value } } : row))
 // //     );
 // //   };
-
 // //   const handleImageUpload = (id, event) => {
-// //     const file = event.target.files[0];
-// //     if (!file) return;
+// //     const files = Array.from(event.target.files);
+// //     if (!files.length) return;
 // //     const maxSize = 10 * 1024 * 1024; // 10MB
-// //     if (file.size > maxSize) {
-// //       toast.error("Image size exceeds 10MB limit.");
-// //       return;
+// //     const maxImages = 10; // Maximum images per row
+// //     const validFiles = files.filter((file) => file.size <= maxSize);
+// //     if (validFiles.length < files.length) {
+// //       toast.error("Some images exceed the 10MB limit.");
 // //     }
-// //     const reader = new FileReader();
-// //     reader.onload = (e) => {
-// //       setTableData((prev) =>
-// //         prev.map((row) =>
-// //           row.id === id
-// //             ? {
-// //                 ...row,
-// //                 checkPointImage: {
-// //                   url: e.target.result,
-// //                   file,
-// //                   title: file.name.replace(/\.[^/.]+$/, ""),
-// //                 },
+// //     const imagePromises = validFiles.map((file) => {
+// //       return new Promise((resolve) => {
+// //         const reader = new FileReader();
+// //         reader.onload = (e) => {
+// //           resolve({
+// //             url: e.target.result,
+// //             file,
+// //             title: file.name.replace(/\.[^/.]+$/, ""),
+// //           });
+// //         };
+// //         reader.readAsDataURL(file);
+// //       });
+// //     });
+// //     Promise.all(imagePromises)
+// //       .then((newImages) => {
+// //         setTableData((prev) =>
+// //           prev.map((row) => {
+// //             if (row.id === id) {
+// //               const currentImages = row.checkpoint?.images || [];
+// //               if (currentImages.length + newImages.length > maxImages) {
+// //                 toast.error(`Maximum ${maxImages} images allowed per row.`);
+// //                 return row;
 // //               }
-// //             : row
-// //         )
-// //       );
-// //       toast.success("Image uploaded successfully!");
-// //     };
-// //     reader.onerror = () => {
-// //       toast.error("Failed to upload image.");
-// //     };
-// //     reader.readAsDataURL(file);
+// //               return {
+// //                 ...row,
+// //                 checkpoint: { ...row.checkpoint, images: [...currentImages, ...newImages] },
+// //               };
+// //             }
+// //             return row;
+// //           })
+// //         );
+// //         toast.success(`Successfully uploaded ${validFiles.length} image(s)!`);
+// //       })
+// //       .catch(() => {
+// //         toast.error("Failed to upload images.");
+// //       });
 // //     event.target.value = "";
 // //   };
-
-// //   const handleRemoveImage = (id) => {
+// //   const handleRemoveImage = (id, imageIndex) => {
 // //     setTableData((prev) =>
-// //       prev.map((row) => (row.id === id ? { ...row, checkPointImage: null } : row))
+// //       prev.map((row) =>
+// //         row.id === id
+// //           ? {
+// //               ...row,
+// //               checkpoint: { ...row.checkpoint, images: row.checkpoint.images.filter((_, idx) => idx !== imageIndex) },
+// //             }
+// //           : row
+// //       )
 // //     );
 // //     toast.success("Image removed successfully!");
 // //   };
-
+// //   const handleDeleteRow = (id) => {
+// //     setConfirmModalData({
+// //       title: "Confirm Delete Row",
+// //       message: "Are you sure you want to delete this row? This action cannot be undone.",
+// //       onConfirm: () => {
+// //         setTableData((prev) => prev.filter((row) => row.id !== id));
+// //         setShowConfirmModal(false);
+// //         toast.success("Row deleted successfully!");
+// //       },
+// //     });
+// //     setShowConfirmModal(true);
+// //   };
 // //   const addNewRow = () => {
 // //     const newRow = {
 // //       id: `new-${Date.now()}-${Math.floor(Math.random() * 1000)}`,
-// //       checkPoint: "",
-// //       checkPointImage: null,
+// //       checkpoint: { title: "", images: [] },
 // //       cleaningStatus: "Visually Clean",
 // //       production: "-",
 // //       qa: "-",
 // //     };
 // //     setTableData((prev) => [...prev, newRow]);
 // //   };
-
 // //   const renderTableRows = () => {
 // //     return tableData.map((item) => (
 // //       <tr key={item.id} className="border-b border-gray-200 hover:bg-gray-50">
 // //         <td className="py-3 px-4 text-sm text-gray-700">
-// //           <div className="flex items-center gap-3">
+// //           <div className="flex items-start flex-col gap-3">
 // //             <input
 // //               type="text"
-// //               value={item.checkPoint}
+// //               value={item.checkpoint?.title || ""}
 // //               onChange={(e) => handleCheckPointChange(item.id, e.target.value)}
 // //               className="w-full px-2 py-1 text-sm border rounded-lg focus:ring-2 focus:ring-blue-500 transition-colors border-slate-300 focus:border-blue-500"
 // //               placeholder="Enter check point"
 // //             />
-// //             <div className="relative">
-// //               {item.checkPointImage ? (
-// //                 <div className="relative w-12 h-12">
-// //                   <img
-// //                     src={item.checkPointImage.url}
-// //                     alt={item.checkPointImage.title}
-// //                     className="w-full h-full object-cover rounded-lg"
-// //                   />
-// //                   <button
-// //                     onClick={() => handleRemoveImage(item.id)}
-// //                     className="absolute top-0 right-0 p-1 bg-red-500 text-white rounded-full hover:bg-red-600 transition-colors"
-// //                     title="Remove image"
-// //                   >
-// //                     <X className="w-3 h-3" />
-// //                   </button>
-// //                 </div>
-// //               ) : (
-// //                 <>
-// //                   <input
-// //                     type="file"
-// //                     accept="image/*"
-// //                     onChange={(e) => handleImageUpload(item.id, e)}
-// //                     className="hidden"
-// //                     id={`image-upload-${item.id}`}
-// //                   />
-// //                   <label
-// //                     htmlFor={`image-upload-${item.id}`}
-// //                     className="cursor-pointer p-1 bg-green-100 text-green-700 hover:bg-green-200 rounded-lg flex items-center gap-1 text-xs"
-// //                     title="Upload image"
-// //                   >
-// //                     <ImageIcon className="w-4 h-4" />
-// //                     Upload
-// //                   </label>
-// //                 </>
-// //               )}
+// //             <div className="flex flex-wrap gap-2">
+// //               {item.checkpoint?.images && item.checkpoint.images.length > 0 ? (
+// //                 item.checkpoint.images.map((image, index) => (
+// //                   <div key={`${item.id}-${index}`} className="relative">
+// //                     <div className="relative w-12 h-12">
+// //                       <img
+// //                         src={image.url}
+// //                         alt={image.title}
+// //                         className="w-full h-full object-cover rounded-lg"
+// //                       />
+// //                       <button
+// //                         onClick={() => handleRemoveImage(item.id, index)}
+// //                         className="absolute top-0 right-0 p-1 bg-red-500 text-white rounded-full hover:bg-red-600 transition-colors"
+// //                         title="Remove image"
+// //                       >
+// //                         <X className="w-3 h-3" />
+// //                       </button>
+// //                     </div>
+// //                   </div>
+// //                 ))
+// //               ) : null}
+// //               <input
+// //                 type="file"
+// //                 accept="image/*"
+// //                 multiple
+// //                 onChange={(e) => handleImageUpload(item.id, e)}
+// //                 className="hidden"
+// //                 id={`image-upload-${item.id}`}
+// //               />
+// //               <label
+// //                 htmlFor={`image-upload-${item.id}`}
+// //                 className="cursor-pointer p-1 bg-green-100 text-green-700 hover:bg-green-200 rounded-lg flex items-center gap-1 text-xs"
+// //                 title="Upload images"
+// //               >
+// //                 <ImageIcon className="w-4 h-4" />
+// //                 Upload
+// //               </label>
 // //             </div>
 // //           </div>
 // //         </td>
 // //         <td className="py-3 px-4 text-sm text-gray-700">{item.cleaningStatus}</td>
 // //         <td className="py-3 px-4 text-sm text-gray-600">{item.production}</td>
 // //         <td className="py-3 px-4 text-sm text-gray-600">{item.qa}</td>
+// //         <td className="py-3 px-4 text-sm text-gray-700">
+// //           <button
+// //             onClick={() => handleDeleteRow(item.id)}
+// //             className="p-1.5 text-slate-500 hover:text-red-600 hover:bg-red-50 rounded-md transition-colors"
+// //             title="Delete Row"
+// //           >
+// //             <Trash className="w-4 h-4" />
+// //           </button>
+// //         </td>
 // //       </tr>
 // //     ));
 // //   };
-
 // //   const sensors = useSensors(
 // //     useSensor(PointerSensor, { activationConstraint: { distance: 5 } }),
 // //     useSensor(TouchSensor, {
 // //       activationConstraint: { delay: 200, tolerance: 5 },
 // //     })
 // //   );
-
 // //   // Save Loading Modal Component
 // //   const SaveLoadingModal = ({ isOpen }) => {
 // //     if (!isOpen) return null;
@@ -598,7 +624,6 @@
 // //       </div>
 // //     );
 // //   };
-
 // //   const validateChecklistData = () => {
 // //     const newErrors = {
 // //       name: !checklistData.name.trim() ? "Checklist name is required" : "",
@@ -609,7 +634,6 @@
 // //     setErrors((prev) => ({ ...prev, checklist: newErrors }));
 // //     return Object.values(newErrors).every((error) => !error);
 // //   };
-
 // //   const validateStage = (title) => {
 // //     const newErrors = {
 // //       title: !title.trim() ? "Stage title is required" : "",
@@ -617,7 +641,6 @@
 // //     setStageErrors(newErrors);
 // //     return Object.values(newErrors).every((error) => !error);
 // //   };
-
 // //   const validateTask = (taskData, stageId, index) => {
 // //     const newErrors = {
 // //       title: !taskData.title.trim() ? "Task title is required" : "",
@@ -657,7 +680,6 @@
 // //     }));
 // //     return Object.values(newErrors).every((error) => !error);
 // //   };
-
 // //   const validateSubtask = (subtaskData, parentId, index) => {
 // //     const newErrors = {
 // //       title: !subtaskData.title.trim() ? "Subtask title is required" : "",
@@ -699,7 +721,6 @@
 // //     }));
 // //     return Object.values(newErrors).every((error) => !error);
 // //   };
-
 // //   const validateEditForm = () => {
 // //     const newErrors = {
 // //       title: !editFormData.title.trim() ? "Title is required" : "",
@@ -729,7 +750,6 @@
 // //     setErrors((prev) => ({ ...prev, editForm: newErrors }));
 // //     return Object.values(newErrors).every((error) => !error);
 // //   };
-
 // //   const clearTaskErrors = (stageId, index) => {
 // //     setErrors((prev) => ({
 // //       ...prev,
@@ -744,7 +764,6 @@
 // //       },
 // //     }));
 // //   };
-
 // //   const clearSubtaskErrors = (parentId, index) => {
 // //     setErrors((prev) => ({
 // //       ...prev,
@@ -759,17 +778,14 @@
 // //       },
 // //     }));
 // //   };
-
 // //   const clearEditErrors = () => {
 // //     setErrors((prev) => ({
 // //       ...prev,
 // //       editForm: { title: "", description: "", galleryTitle: "", time: "" },
 // //     }));
 // //   };
-
 // //   const generateId = (prefix) =>
 // //     `${prefix}-${Date.now()}-${Math.floor(Math.random() * 1000)}`;
-
 // //   const findItemById = (items, id) => {
 // //     for (const item of items) {
 // //       if (item.id === id) return item;
@@ -784,7 +800,6 @@
 // //     }
 // //     return null;
 // //   };
-
 // //   const findContainer = (items, id) => {
 // //     if (items.find((item) => item.id === id)) {
 // //       return {
@@ -804,7 +819,6 @@
 // //     }
 // //     return null;
 // //   };
-
 // //   const findItem = (items, id) => {
 // //     for (const item of items) {
 // //       if (item.id === id) return item;
@@ -819,7 +833,6 @@
 // //     }
 // //     return null;
 // //   };
-
 // //   const updateItem = (items, id, updatedData) =>
 // //     items.map((item) => {
 // //       if (item.id === id) return { ...item, ...updatedData };
@@ -832,7 +845,6 @@
 // //         };
 // //       return item;
 // //     });
-
 // //   const deleteItem = (items, id) =>
 // //     items
 // //       .map((item) => {
@@ -846,14 +858,12 @@
 // //         };
 // //       })
 // //       .filter(Boolean);
-
 // //   const cloneItem = (item) => ({
 // //     ...item,
 // //     id: generateId(item.id.split("-")[0]),
 // //     tasks: item.tasks ? item.tasks.map(cloneItem) : undefined,
 // //     subtasks: item.subtasks ? item.subtasks.map(cloneItem) : undefined,
 // //   });
-
 // //   const duplicateItemRecursive = (items, id) =>
 // //     items.flatMap((item) => {
 // //       if (item.id === id) {
@@ -872,7 +882,6 @@
 // //       }
 // //       return [newItem];
 // //     });
-
 // //   const checkDuplicateTitle = (items, newTitle, excludeId = null, itemType = "generic") => {
 // //     if (!newTitle || !newTitle.trim()) return false;
 // //     const typePrefix =
@@ -896,7 +905,6 @@
 // //     }
 // //     return false;
 // //   };
-
 // //   const generateNumbering = (items, id, parentNumbers = []) => {
 // //     for (let i = 0; i < items.length; i++) {
 // //       const currentNumbers = [...parentNumbers, i + 1];
@@ -912,13 +920,11 @@
 // //     }
 // //     return null;
 // //   };
-
 // //   const formatTime = (hours, minutes, seconds) => {
 // //     return `${hours.toString().padStart(2, "0")}:${minutes
 // //       .toString()
 // //       .padStart(2, "0")}:${seconds.toString().padStart(2, "0")}`;
 // //   };
-
 // //   const parseTime = (timeString) => {
 // //     if (!timeString) return { hours: "00", minutes: "00", seconds: "00" };
 // //     const [hours, minutes, seconds] = timeString
@@ -926,11 +932,9 @@
 // //       .map((val) => val.padStart(2, "0"));
 // //     return { hours, minutes, seconds };
 // //   };
-
 // //   const timeToSeconds = (hours, minutes, seconds) => {
 // //     return parseInt(hours) * 3600 + parseInt(minutes) * 60 + parseInt(seconds);
 // //   };
-
 // //   const handleInputChange = (e) => {
 // //     const { name, value } = e.target;
 // //     setChecklistData((prev) => ({ ...prev, [name]: value }));
@@ -941,7 +945,39 @@
 // //       }));
 // //     }
 // //   };
-
+// //   const syncTableEditsToStages = (stages, tableData) => {
+// //     return stages.map((stage) => ({
+// //       ...stage,
+// //       tasks: stage.tasks?.map((task) => {
+// //         const matchingRow = tableData.find((row) => row.id === task.id);
+// //         if (matchingRow) {
+// //           return {
+// //             ...task,
+// //             title: matchingRow.checkpoint?.title || task.title,
+// //             images: matchingRow.checkpoint?.images || task.images,
+// //             description: matchingRow.production || task.description,
+// //             galleryTitle: matchingRow.qa || task.galleryTitle,
+// //           };
+// //         }
+// //         return {
+// //           ...task,
+// //           subtasks: task.subtasks?.map((subtask) => {
+// //             const matchingSubRow = tableData.find((row) => row.id === subtask.id);
+// //             if (matchingSubRow) {
+// //               return {
+// //                 ...subtask,
+// //                 title: matchingSubRow.checkpoint?.title || subtask.title,
+// //                 images: matchingSubRow.checkpoint?.images || subtask.images,
+// //                 description: matchingSubRow.production || subtask.description,
+// //                 galleryTitle: matchingSubRow.qa || subtask.galleryTitle,
+// //               };
+// //             }
+// //             return subtask;
+// //           }) || [],
+// //         };
+// //       }) || [],
+// //     }));
+// //   };
 // //   const handleSubmit = async () => {
 // //     if (!validateChecklistData()) {
 // //       toast.error("Please fix the validation errors before submitting.");
@@ -976,11 +1012,23 @@
 // //       toast.error(errorMessage);
 // //       return;
 // //     }
+// //     let updatedStages = stages;
+// //     if (showVisualTable && tableData.length > 0) {
+// //       updatedStages = syncTableEditsToStages(stages, tableData);
+// //     }
+// //     const fullChecklistData = {
+// //       ...checklistData,
+// //       stages: updatedStages,
+// //       visualRepresentation: tableData,
+// //       companyId: JSON.parse(localStorage.getItem("user")).companyId,
+// //       userId: JSON.parse(localStorage.getItem("user")).id,
+// //     };
+// //     console.log("Full Checklist Data on Save:", JSON.stringify(fullChecklistData, null, 2));
 // //     setIsSaving(true);
 // //     const userData = JSON.parse(localStorage.getItem("user"));
 // //     const data = {
 // //       ...checklistData,
-// //       stages,
+// //       stages: updatedStages,
 // //       companyId: userData.companyId,
 // //       userId: userData.id,
 // //     };
@@ -1007,7 +1055,6 @@
 // //       setIsSaving(false);
 // //     }
 // //   };
-
 // //   const getCompletionStatus = () => {
 // //     const checklistComplete =
 // //       checklistData.name &&
@@ -1028,7 +1075,6 @@
 // //       ),
 // //     };
 // //   };
-
 // //   const handleStageInputChange = (e) => {
 // //     const value = e.target.value;
 // //     setNewStage({ title: value });
@@ -1036,7 +1082,6 @@
 // //       setStageErrors((prev) => ({ ...prev, title: "" }));
 // //     }
 // //   };
-
 // //   const addStage = () => {
 // //     if (!validateStage(newStage.title)) return;
 // //     if (checkDuplicateTitle(stages, newStage.title, null, "stage")) {
@@ -1058,7 +1103,6 @@
 // //     setStageErrors({ title: "" });
 // //     toast.success(`Stage "${newStage.title}" added successfully!`);
 // //   };
-
 // //   const handleStageCountConfirm = () => {
 // //     if (stageCount < 1 || stageCount > 10) {
 // //       toast.error("Please enter a number between 1 and 10.");
@@ -1074,7 +1118,6 @@
 // //     setStageCount(1);
 // //     setSelectedStageId(newStages[0]?.id || null);
 // //   };
-
 // //   const handleDeleteStage = (stageId) => {
 // //     const stageToDelete = stages.find((s) => s.id === stageId);
 // //     if (!stageToDelete) return;
@@ -1109,7 +1152,6 @@
 // //     });
 // //     setShowConfirmModal(true);
 // //   };
-
 // //   const handleDuplicateStage = (stageId) => {
 // //     const stageToDuplicate = stages.find((s) => s.id === stageId);
 // //     if (!stageToDuplicate) return;
@@ -1144,13 +1186,11 @@
 // //     setSelectedStageId(newStage.id);
 // //     toast.success(`Duplicated "${stageToDuplicate.title}"`);
 // //   };
-
 // //   const handleStageDragStart = (event) => {
 // //     const { active } = event;
 // //     setActiveStageId(active.id);
 // //     setActiveStageItem(stages.find((stage) => stage.id === active.id));
 // //   };
-
 // //   const handleStageDragEnd = (event) => {
 // //     const { active, over } = event;
 // //     if (!over || active.id === over.id) {
@@ -1166,12 +1206,10 @@
 // //     setActiveStageId(null);
 // //     setActiveStageItem(null);
 // //   };
-
 // //   const toggleTaskForm = (stageId) => {
 // //     setShowTaskCountModal(true);
 // //     setSelectedStageId(stageId);
 // //   };
-
 // //   const handleTaskCountConfirm = () => {
 // //     if (taskCount < 1 || taskCount > 10) {
 // //       toast.error("Please enter a number between 1 and 10.");
@@ -1204,7 +1242,6 @@
 // //     setShowTaskCountModal(false);
 // //     setTaskCount(1);
 // //   };
-
 // //   const handleTaskInputChange = (stageId, index, e) => {
 // //     const { name, value } = e.target;
 // //     if (errors.taskForms[`${stageId}_${index}`]?.[name]) {
@@ -1273,7 +1310,6 @@
 // //       );
 // //     }
 // //   };
-
 // //   const handleTaskImageInputChange = (stageId, index, event, single = false) => {
 // //     setIsUploading(true);
 // //     const files = Array.from(event.target.files);
@@ -1328,7 +1364,6 @@
 // //       event.target.value = "";
 // //     }
 // //   };
-
 // //   const handleRemoveSingleImage = (index, imageIndex) => {
 // //     setBulkTasks((prev) =>
 // //       prev.map((task, i) =>
@@ -1341,7 +1376,6 @@
 // //       )
 // //     );
 // //   };
-
 // //   const handleClearAllImages = (index) => {
 // //     setConfirmModalData({
 // //       title: "Confirm Clear Images",
@@ -1365,7 +1399,6 @@
 // //     });
 // //     setShowConfirmModal(true);
 // //   };
-
 // //   const handleTaskSaveImages = async (stageId, index) => {
 // //     setIsAttaching(true);
 // //     try {
@@ -1416,7 +1449,6 @@
 // //       setIsAttaching(false);
 // //     }
 // //   };
-
 // //   const addTask = (stageId, index) => {
 // //     const task = bulkTasks[index];
 // //     if (!validateTask(task, stageId, index)) {
@@ -1487,12 +1519,10 @@
 // //       setShowTaskForms((prev) => ({ ...prev, [stageId]: false }));
 // //     }
 // //   };
-
 // //   const toggleSubtaskForm = (parentId) => {
 // //     setShowSubtaskCountModal(true);
 // //     setSelectedParentId(parentId);
 // //   };
-
 // //   const handleSubtaskCountConfirm = () => {
 // //     if (subtaskCount < 1 || subtaskCount > 10) {
 // //       toast.error("Please enter a number between 1 and 10.");
@@ -1532,7 +1562,6 @@
 // //     setShowSubtaskCountModal(false);
 // //     setSubtaskCount(1);
 // //   };
-
 // //   const handleSubtaskInputChange = (parentId, index, e) => {
 // //     const { name, value } = e.target;
 // //     if (errors.subtaskForms[`${parentId}_${index}`]?.[name]) {
@@ -1607,7 +1636,6 @@
 // //       }));
 // //     }
 // //   };
-
 // //   const handleSubtaskImageInputChange = (
 // //     parentId,
 // //     index,
@@ -1668,7 +1696,6 @@
 // //       event.target.value = "";
 // //     }
 // //   };
-
 // //   const handleRemoveSubtaskImage = (parentId, index, imageIndex) => {
 // //     setBulkSubtasks((prev) => ({
 // //       ...prev,
@@ -1682,7 +1709,6 @@
 // //       ),
 // //     }));
 // //   };
-
 // //   const handleClearAllSubtaskImages = (parentId, index) => {
 // //     setConfirmModalData({
 // //       title: "Confirm Clear Images",
@@ -1707,7 +1733,6 @@
 // //     });
 // //     setShowConfirmModal(true);
 // //   };
-
 // //   const handleSubtaskSaveImages = async (parentId, index) => {
 // //     setIsAttaching(true);
 // //     try {
@@ -1761,7 +1786,6 @@
 // //       setIsAttaching(false);
 // //     }
 // //   };
-
 // //   const handleAddSubtask = (parentId, index) => {
 // //     const subtask = bulkSubtasks[parentId][index];
 // //     if (!validateSubtask(subtask, parentId, index)) {
@@ -1833,7 +1857,6 @@
 // //       setShowSubtaskForms((prev) => ({ ...prev, [parentId]: false }));
 // //     }
 // //   };
-
 // //   const addSubtask = (items, parentId, newSubtaskItem) =>
 // //     items.map((item) => {
 // //       if (item.id === parentId)
@@ -1853,7 +1876,6 @@
 // //         };
 // //       return item;
 // //     });
-
 // //   const toggleSubtaskTimeFields = (parentId, index) => {
 // //     setShowSubtaskTimeFields((prev) => ({
 // //       ...prev,
@@ -1874,7 +1896,6 @@
 // //       }));
 // //     }
 // //   };
-
 // //   const handleEdit = (id) => {
 // //     const item = findItemById(stages, id);
 // //     if (item) {
@@ -1893,12 +1914,10 @@
 // //       clearEditErrors();
 // //     }
 // //   };
-
 // //   const handleDuplicate = (id) => {
 // //     setStages((prev) => duplicateItemRecursive(prev, id));
 // //     toast.success("Item duplicated successfully!");
 // //   };
-
 // //   const handleEditInputChange = (e) => {
 // //     const { name, value } = e.target;
 // //     if (errors.editForm[name]) {
@@ -1953,7 +1972,6 @@
 // //       setEditFormData((prev) => ({ ...prev, [name]: value }));
 // //     }
 // //   };
-
 // //   const handleEditImageInputChange = (event, single = false) => {
 // //     setIsUploading(true);
 // //     const files = Array.from(event.target.files);
@@ -2000,7 +2018,6 @@
 // //       event.target.value = "";
 // //     }
 // //   };
-
 // //   const handleSaveEdit = () => {
 // //     if (!validateEditForm()) {
 // //       return;
@@ -2071,728 +2088,717 @@
 // //     clearEditErrors();
 // //     toast.success(`"${editFormData.title}" updated successfully!`);
 // //   };
-
-// // const handleDelete = (id) => {
-// //   console.log("Deleting item with ID:", id);
-// //   const item = findItemById(stages, id);
-// //   if (!item) {
-// //     console.error("Item not found for ID:", id);
-// //     toast.error("Item not found");
-// //     return;
-// //   }
-// //   if (item.subtasks?.length > 0) {
-// //     toast.error(
-// //       `Cannot delete task "${item.title}" because it has ${item.subtasks.length} subtask(s). Please delete subtasks first.`
-// //     );
-// //     return;
-// //   }
-// //   setConfirmModalData({
-// //     title: "Confirm Delete Item",
-// //     message: `Are you sure you want to delete the item "${item.title}"? This action cannot be undone.`,
-// //     onConfirm: () => {
-// //       console.log("Confirming deletion for ID:", id);
+// //   const handleDelete = (id) => {
+// //     console.log("Deleting item with ID:", id);
+// //     const item = findItemById(stages, id);
+// //     if (!item) {
+// //       console.error("Item not found for ID:", id);
+// //       toast.error("Item not found");
+// //       return;
+// //     }
+// //     if (item.subtasks?.length > 0) {
+// //       toast.error(
+// //         `Cannot delete task "${item.title}" because it has ${item.subtasks.length} subtask(s). Please delete subtasks first.`
+// //       );
+// //       return;
+// //     }
+// //     setConfirmModalData({
+// //       title: "Confirm Delete Item",
+// //       message: `Are you sure you want to delete the item "${item.title}"? This action cannot be undone.`,
+// //       onConfirm: () => {
+// //         console.log("Confirming deletion for ID:", id);
+// //         setStages((prev) => {
+// //           const newStages = deleteItem(prev, id);
+// //           console.log("New stages after deletion:", JSON.stringify(newStages, null, 2));
+// //           if (!newStages.find((s) => s.id === selectedStageId)) {
+// //             setSelectedStageId(newStages[0]?.id || null);
+// //           }
+// //           return newStages;
+// //         });
+// //         setEditItemId(null);
+// //         setShowEditTimeFields(true);
+// //         setShowImageModal(false);
+// //         setShowConfirmModal(false);
+// //         toast.success("Item deleted successfully!");
+// //       },
+// //     });
+// //     setShowConfirmModal(true);
+// //   };
+// //   const handleTaskDragStart = (event) => {
+// //     const { active } = event;
+// //     setActiveTaskId(active.id);
+// //     setActiveTaskItem(findItem(stages, active.id));
+// //   };
+// //   const handleTaskDragEnd = (event) => {
+// //     const { active, over } = event;
+// //     if (!over) {
+// //       setActiveTaskId(null);
+// //       setActiveTaskItem(null);
+// //       return;
+// //     }
+// //     if (active.id !== over.id) {
 // //       setStages((prev) => {
-// //         const newStages = deleteItem(prev, id);
-// //         console.log("New stages after deletion:", JSON.stringify(newStages, null, 2));
-// //         if (!newStages.find((s) => s.id === selectedStageId)) {
-// //           setSelectedStageId(newStages[0]?.id || null);
+// //         const newStages = JSON.parse(JSON.stringify(prev));
+// //         const activeContainer = findContainer(newStages, active.id);
+// //         const overContainer = findContainer(newStages, over.id);
+// //         if (activeContainer && overContainer) {
+// //           const [movedItem] = activeContainer.container.splice(activeContainer.index, 1);
+// //           overContainer.container.splice(overContainer.index, 0, movedItem);
 // //         }
 // //         return newStages;
 // //       });
-// //       setEditItemId(null);
-// //       setShowEditTimeFields(true);
-// //       setShowImageModal(false);
-// //       setShowConfirmModal(false);
-// //       toast.success("Item deleted successfully!");
-// //     },
-// //   });
-// //   setShowConfirmModal(true);
-// // };
-
-// // const handleTaskDragStart = (event) => {
-// //   const { active } = event;
-// //   setActiveTaskId(active.id);
-// //   setActiveTaskItem(findItem(stages, active.id));
-// // };
-
-// // const handleTaskDragEnd = (event) => {
-// //   const { active, over } = event;
-// //   if (!over) {
+// //     }
 // //     setActiveTaskId(null);
 // //     setActiveTaskItem(null);
-// //     return;
-// //   }
-// //   if (active.id !== over.id) {
-// //     setStages((prev) => {
-// //       const newStages = JSON.parse(JSON.stringify(prev));
-// //       const activeContainer = findContainer(newStages, active.id);
-// //       const overContainer = findContainer(newStages, over.id);
-// //       if (activeContainer && overContainer) {
-// //         const [movedItem] = activeContainer.container.splice(activeContainer.index, 1);
-// //         overContainer.container.splice(overContainer.index, 0, movedItem);
-// //       }
-// //       return newStages;
-// //     });
-// //   }
-// //   setActiveTaskId(null);
-// //   setActiveTaskItem(null);
-// // };
-
-// // const toggleTimeFields = (stageId, index) => {
-// //   setShowTimeFields((prev) => ({
-// //     ...prev,
-// //     [`${stageId}_${index}`]: !prev[`${stageId}_${index}`],
-// //   }));
-// //   if (!showTimeFields[`${stageId}_${index}`]) {
-// //     setBulkTasks((prev) =>
-// //       prev.map((task, i) =>
-// //         i === index
-// //           ? {
-// //               ...task,
-// //               minTime: { hours: "00", minutes: "00", seconds: "00" },
-// //               maxTime: { hours: "00", minutes: "00", seconds: "00" },
-// //             }
-// //           : task
-// //       )
-// //     );
-// //   }
-// // };
-
-// // const handleResetTime = () => {
-// //   setShowEditTimeFields(false);
-// //   setEditFormData((prev) => ({
-// //     ...prev,
-// //     minTime: { hours: "00", minutes: "00", seconds: "00" },
-// //     maxTime: { hours: "00", minutes: "00", seconds: "00" },
-// //   }));
-// // };
-
-// // const handleSetTime = () => {
-// //   setShowEditTimeFields(true);
-// // };
-
-// // const handleOpenTaskImageModal = (stageId, index) => {
-// //   setShowTaskImageModal((prev) => ({
-// //     ...prev,
-// //     [`${stageId}_${index}`]: true,
-// //   }));
-// // };
-
-// // const handleCloseTaskImageModal = (stageId, index) => {
-// //   setShowTaskImageModal((prev) => ({
-// //     ...prev,
-// //     [`${stageId}_${index}`]: false,
-// //   }));
-// // };
-
-// // const handleOpenSubtaskImageModal = (parentId, index) => {
-// //   setShowSubtaskImageModal((prev) => ({ ...prev, [`${parentId}_${index}`]: true }));
-// // };
-
-// // const handleCloseSubtaskImageModal = (parentId, index) => {
-// //   setShowSubtaskImageModal((prev) => ({ ...prev, [`${parentId}_${index}`]: false }));
-// // };
-
-// // const handleOpenImageModal = () => {
-// //   setShowImageModal(true);
-// // };
-
-// // const renderItems = (items, level = 1, parentStageId = null) =>
-// //   items.map((item) => {
-// //     const numbering = generateNumbering(stages, item.id);
-// //     const parentContainer = findContainer(stages, item.id);
-// //     const itemType = item.id.startsWith("task")
-// //       ? "Task"
-// //       : item.id.startsWith("subtask")
-// //       ? "Subtask"
-// //       : "Item";
-// //     return (
-// //       <div key={item.id} className={`${level > 1 ? "ml-6" : ""} mb-3`}>
-// //         {editItemId === item.id ? (
-// //           <div className="p-4 bg-white rounded-lg border border-slate-200 shadow-sm">
-// //             <h4 className="text-sm font-semibold text-slate-900 mb-3">Edit Item</h4>
-// //             <div className="space-y-3">
-// //               <InputField
-// //                 label="Title"
-// //                 name="title"
-// //                 placeholder="Title *"
-// //                 value={editFormData.title}
-// //                 onChange={handleEditInputChange}
-// //                 required
-// //                 error={errors.editForm.title}
-// //                 items={parentContainer?.container || []}
-// //                 excludeId={item.id}
-// //                 itemType={itemType}
-// //               />
-// //               <TextAreaField
-// //                 label="Description"
-// //                 name="description"
-// //                 placeholder="Description *"
-// //                 value={editFormData.description}
-// //                 onChange={handleEditInputChange}
-// //                 required
-// //                 error={errors.editForm.description}
-// //               />
-// //               {showEditTimeFields && (
-// //                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 p-3 bg-slate-50 rounded-lg">
-// //                   <div>
-// //                     <label className="block text-xs font-medium text-slate-700 mb-1">
-// //                       Minimum Time
-// //                     </label>
-// //                     <div className="flex gap-2">
-// //                       <InputField
-// //                         type="number"
-// //                         name="minHours"
-// //                         placeholder="HH"
-// //                         value={editFormData.minTime.hours}
-// //                         onChange={handleEditInputChange}
-// //                         className="w-16"
-// //                         min="0"
-// //                         max="24"
-// //                       />
-// //                       <InputField
-// //                         type="number"
-// //                         name="minMinutes"
-// //                         placeholder="MM"
-// //                         value={editFormData.minTime.minutes}
-// //                         onChange={handleEditInputChange}
-// //                         className="w-16"
-// //                         min="0"
-// //                         max="59"
-// //                       />
-// //                       <InputField
-// //                         type="number"
-// //                         name="minSeconds"
-// //                         placeholder="SS"
-// //                         value={editFormData.minTime.seconds}
-// //                         onChange={handleEditInputChange}
-// //                         className="w-16"
-// //                         min="0"
-// //                         max="59"
-// //                       />
-// //                     </div>
-// //                   </div>
-// //                   <div>
-// //                     <label className="block text-xs font-medium text-slate-700 mb-1">
-// //                       Maximum Time
-// //                     </label>
-// //                     <div className="flex gap-2">
-// //                       <InputField
-// //                         type="number"
-// //                         name="maxHours"
-// //                         placeholder="HH"
-// //                         value={editFormData.maxTime.hours}
-// //                         onChange={handleEditInputChange}
-// //                         className="w-16"
-// //                         min="0"
-// //                         max="24"
-// //                       />
-// //                       <InputField
-// //                         type="number"
-// //                         name="maxMinutes"
-// //                         placeholder="MM"
-// //                         value={editFormData.maxTime.minutes}
-// //                         onChange={handleEditInputChange}
-// //                         className="w-16"
-// //                         min="0"
-// //                         max="59"
-// //                       />
-// //                       <InputField
-// //                         type="number"
-// //                         name="maxSeconds"
-// //                         placeholder="SS"
-// //                         value={editFormData.maxTime.seconds}
-// //                         onChange={handleEditInputChange}
-// //                         className="w-16"
-// //                         min="0"
-// //                         max="59"
-// //                       />
-// //                     </div>
-// //                   </div>
-// //                   <ErrorMessage message={errors.editForm.time} />
-// //                 </div>
-// //               )}
-// //               {editFormData.images && editFormData.images.length > 0 && (
-// //                 <div className="space-y-3">
-// //                   <InputField
-// //                     label="Gallery Title"
-// //                     name="galleryTitle"
-// //                     placeholder="Gallery Title *"
-// //                     value={editFormData.galleryTitle}
-// //                     onChange={handleEditInputChange}
-// //                     required
-// //                     error={errors.editForm.galleryTitle}
-// //                   />
-// //                   <TextAreaField
-// //                     label="Gallery Description"
-// //                     name="galleryDescription"
-// //                     placeholder="Gallery Description"
-// //                     value={editFormData.galleryDescription}
-// //                     onChange={handleEditInputChange}
-// //                     rows={3}
-// //                   />
-// //                 </div>
-// //               )}
-// //               <div className="flex gap-2 flex-wrap">
-// //                 <button
-// //                   onClick={handleSaveEdit}
-// //                   className="px-3 py-1.5 bg-blue-600 text-white text-sm rounded-lg hover:bg-blue-700 transition-colors"
-// //                 >
-// //                   Save
-// //                 </button>
-// //                 <button
-// //                   onClick={() => {
-// //                     setEditItemId(null);
-// //                     setShowEditTimeFields(true);
-// //                     setShowImageModal(false);
-// //                     clearEditErrors();
-// //                   }}
-// //                   className="px-3 py-1.5 bg-slate-200 text-slate-800 text-sm rounded-lg hover:bg-slate-300 transition-colors"
-// //                 >
-// //                   Cancel
-// //                 </button>
-// //                 {showEditTimeFields ? (
-// //                   <button
-// //                     onClick={handleResetTime}
-// //                     className="px-3 py-1.5 bg-gray-100 text-gray-700 hover:bg-gray-200 text-sm rounded-lg flex items-center gap-1"
-// //                   >
-// //                     <Clock className="w-4 h-4" />
-// //                     Reset Time
-// //                   </button>
-// //                 ) : (
-// //                   <button
-// //                     onClick={handleSetTime}
-// //                     className="px-3 py-1.5 bg-blue-100 text-blue-700 hover:bg-blue-200 text-sm rounded-lg flex items-center gap-1"
-// //                   >
-// //                     <Clock className="w-4 h-4" />
-// //                     Set Time
-// //                   </button>
-// //                 )}
-// //                 <button
-// //                   onClick={handleOpenImageModal}
-// //                   className="px-3 py-1.5 bg-green-100 text-green-700 hover:bg-green-200 text-sm rounded-lg flex items-center gap-1"
-// //                 >
-// //                   <ImageIcon className="w-4 h-4" />
-// //                   {editFormData.images && editFormData.images.length > 0
-// //                     ? `Edit ${editFormData.images.length} Image${editFormData.images.length > 1 ? "s" : ""}`
-// //                     : "Attach Images"}
-// //                 </button>
-// //                 <button
-// //                   onClick={() => handleDelete(item.id)}
-// //                   className="px-3 py-1.5 bg-red-600 text-white text-sm rounded-lg hover:bg-red-700 transition-colors ml-auto"
-// //                 >
-// //                   <Trash className="w-3.5 h-3.5" />
-// //                 </button>
-// //               </div>
-// //             </div>
-// //           </div>
-// //         ) : (
-// //           <>
-// //             <SortableItem
-// //               id={item.id}
-// //               title={item.title}
-// //               description={item.description}
-// //               minTime={item.minTime}
-// //               maxTime={item.maxTime}
-// //               level={level}
-// //               onEdit={handleEdit}
-// //               onDelete={handleDelete}
-// //               onDuplicate={handleDuplicate}
-// //               onAddSubtask={toggleSubtaskForm}
-// //               numbering={numbering}
-// //               showActionButtons={level > 0}
-// //               images={item.images}
-// //               galleryTitle={item.galleryTitle}
-// //               galleryDescription={item.galleryDescription}
-// //               items={parentContainer?.container || []}
-// //               itemType={itemType}
-// //             />
-// //             {showSubtaskForms[item.id] && (
-// //               <div className="ml-4 mt-3 p-4 bg-white rounded-lg border border-slate-200">
-// //                 <h4 className="text-sm font-semibold text-slate-900 mb-3">
-// //                   Add Subtask(s)
-// //                 </h4>
-// //                 {bulkSubtasks[item.id]?.map((subtask, index) => (
-// //                   <div
-// //                     key={index}
-// //                     className="space-y-3 mb-4 p-4 bg-white rounded-lg border border-slate-200"
-// //                   >
-// //                     <h5 className="text-sm font-medium text-slate-700">
-// //                       Subtask {index + 1}
-// //                     </h5>
-// //                     <InputField
-// //                       label="Subtask Title"
-// //                       name="title"
-// //                       placeholder="Subtask Title *"
-// //                       value={subtask.title || ""}
-// //                       onChange={(e) => handleSubtaskInputChange(item.id, index, e)}
-// //                       required
-// //                       error={errors.subtaskForms[`${item.id}_${index}`]?.title}
-// //                       items={item.subtasks || []}
-// //                       itemType="Subtask"
-// //                     />
-// //                     <TextAreaField
-// //                       label="Subtask Description"
-// //                       name="description"
-// //                       placeholder="Subtask Description *"
-// //                       value={subtask.description || ""}
-// //                       onChange={(e) => handleSubtaskInputChange(item.id, index, e)}
-// //                       required
-// //                       error={errors.subtaskForms[`${item.id}_${index}`]?.description}
-// //                     />
-// //                     {showSubtaskTimeFields[`${item.id}_${index}`] && (
-// //                       <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 p-3 bg-slate-50 rounded-lg">
-// //                         <div>
-// //                           <label className="block text-xs font-medium text-slate-700 mb-1">
-// //                             Minimum Time
-// //                           </label>
-// //                           <div className="flex gap-2">
-// //                             <InputField
-// //                               type="number"
-// //                               name="minHours"
-// //                               placeholder="HH"
-// //                               value={subtask.minTime.hours || "00"}
-// //                               onChange={(e) => handleSubtaskInputChange(item.id, index, e)}
-// //                               className="w-16"
-// //                               min="0"
-// //                               max="24"
-// //                             />
-// //                             <InputField
-// //                               type="number"
-// //                               name="minMinutes"
-// //                               placeholder="MM"
-// //                               value={subtask.minTime.minutes || "00"}
-// //                               onChange={(e) => handleSubtaskInputChange(item.id, index, e)}
-// //                               className="w-16"
-// //                               min="0"
-// //                               max="59"
-// //                             />
-// //                             <InputField
-// //                               type="number"
-// //                               name="minSeconds"
-// //                               placeholder="SS"
-// //                               value={subtask.minTime.seconds || "00"}
-// //                               onChange={(e) => handleSubtaskInputChange(item.id, index, e)}
-// //                               className="w-16"
-// //                               min="0"
-// //                               max="59"
-// //                             />
-// //                           </div>
-// //                         </div>
-// //                         <div>
-// //                           <label className="block text-xs font-medium text-slate-700 mb-1">
-// //                             Maximum Time
-// //                           </label>
-// //                           <div className="flex gap-2">
-// //                             <InputField
-// //                               type="number"
-// //                               name="maxHours"
-// //                               placeholder="HH"
-// //                               value={subtask.maxTime.hours || "00"}
-// //                               onChange={(e) => handleSubtaskInputChange(item.id, index, e)}
-// //                               className="w-16"
-// //                               min="0"
-// //                               max="24"
-// //                             />
-// //                             <InputField
-// //                               type="number"
-// //                               name="maxMinutes"
-// //                               placeholder="MM"
-// //                               value={subtask.maxTime.minutes || "00"}
-// //                               onChange={(e) => handleSubtaskInputChange(item.id, index, e)}
-// //                               className="w-16"
-// //                               min="0"
-// //                               max="59"
-// //                             />
-// //                             <InputField
-// //                               type="number"
-// //                               name="maxSeconds"
-// //                               placeholder="SS"
-// //                               value={subtask.maxTime.seconds || "00"}
-// //                               onChange={(e) => handleSubtaskInputChange(item.id, index, e)}
-// //                               className="w-16"
-// //                               min="0"
-// //                               max="59"
-// //                             />
-// //                           </div>
-// //                         </div>
-// //                         <ErrorMessage
-// //                           message={errors.subtaskForms[`${item.id}_${index}`]?.time}
+// //   };
+// //   const toggleTimeFields = (stageId, index) => {
+// //     setShowTimeFields((prev) => ({
+// //       ...prev,
+// //       [`${stageId}_${index}`]: !prev[`${stageId}_${index}`],
+// //     }));
+// //     if (!showTimeFields[`${stageId}_${index}`]) {
+// //       setBulkTasks((prev) =>
+// //         prev.map((task, i) =>
+// //           i === index
+// //             ? {
+// //                 ...task,
+// //                 minTime: { hours: "00", minutes: "00", seconds: "00" },
+// //                 maxTime: { hours: "00", minutes: "00", seconds: "00" },
+// //               }
+// //             : task
+// //         )
+// //       );
+// //     }
+// //   };
+// //   const handleResetTime = () => {
+// //     setShowEditTimeFields(false);
+// //     setEditFormData((prev) => ({
+// //       ...prev,
+// //       minTime: { hours: "00", minutes: "00", seconds: "00" },
+// //       maxTime: { hours: "00", minutes: "00", seconds: "00" },
+// //     }));
+// //   };
+// //   const handleSetTime = () => {
+// //     setShowEditTimeFields(true);
+// //   };
+// //   const handleOpenTaskImageModal = (stageId, index) => {
+// //     setShowTaskImageModal((prev) => ({
+// //       ...prev,
+// //       [`${stageId}_${index}`]: true,
+// //     }));
+// //   };
+// //   const handleCloseTaskImageModal = (stageId, index) => {
+// //     setShowTaskImageModal((prev) => ({
+// //       ...prev,
+// //       [`${stageId}_${index}`]: false,
+// //     }));
+// //   };
+// //   const handleOpenSubtaskImageModal = (parentId, index) => {
+// //     setShowSubtaskImageModal((prev) => ({ ...prev, [`${parentId}_${index}`]: true }));
+// //   };
+// //   const handleCloseSubtaskImageModal = (parentId, index) => {
+// //     setShowSubtaskImageModal((prev) => ({ ...prev, [`${parentId}_${index}`]: false }));
+// //   };
+// //   const handleOpenImageModal = () => {
+// //     setShowImageModal(true);
+// //   };
+// //   const renderItems = (items, level = 1, parentStageId = null) =>
+// //     items.map((item) => {
+// //       const numbering = generateNumbering(stages, item.id);
+// //       const parentContainer = findContainer(stages, item.id);
+// //       const itemType = item.id.startsWith("task")
+// //         ? "Task"
+// //         : item.id.startsWith("subtask")
+// //         ? "Subtask"
+// //         : "Item";
+// //       return (
+// //         <div key={item.id} className={`${level > 1 ? "ml-6" : ""} mb-3`}>
+// //           {editItemId === item.id ? (
+// //             <div className="p-4 bg-white rounded-lg border border-slate-200 shadow-sm">
+// //               <h4 className="text-sm font-semibold text-slate-900 mb-3">Edit Item</h4>
+// //               <div className="space-y-3">
+// //                 <InputField
+// //                   label="Title"
+// //                   name="title"
+// //                   placeholder="Title *"
+// //                   value={editFormData.title}
+// //                   onChange={handleEditInputChange}
+// //                   required
+// //                   error={errors.editForm.title}
+// //                   items={parentContainer?.container || []}
+// //                   excludeId={item.id}
+// //                   itemType={itemType}
+// //                 />
+// //                 <TextAreaField
+// //                   label="Description"
+// //                   name="description"
+// //                   placeholder="Description *"
+// //                   value={editFormData.description}
+// //                   onChange={handleEditInputChange}
+// //                   required
+// //                   error={errors.editForm.description}
+// //                 />
+// //                 {showEditTimeFields && (
+// //                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 p-3 bg-slate-50 rounded-lg">
+// //                     <div>
+// //                       <label className="block text-xs font-medium text-slate-700 mb-1">
+// //                         Minimum Time
+// //                       </label>
+// //                       <div className="flex gap-2">
+// //                         <InputField
+// //                           type="number"
+// //                           name="minHours"
+// //                           placeholder="HH"
+// //                           value={editFormData.minTime.hours}
+// //                           onChange={handleEditInputChange}
+// //                           className="w-16"
+// //                           min="0"
+// //                           max="24"
+// //                         />
+// //                         <InputField
+// //                           type="number"
+// //                           name="minMinutes"
+// //                           placeholder="MM"
+// //                           value={editFormData.minTime.minutes}
+// //                           onChange={handleEditInputChange}
+// //                           className="w-16"
+// //                           min="0"
+// //                           max="59"
+// //                         />
+// //                         <InputField
+// //                           type="number"
+// //                           name="minSeconds"
+// //                           placeholder="SS"
+// //                           value={editFormData.minTime.seconds}
+// //                           onChange={handleEditInputChange}
+// //                           className="w-16"
+// //                           min="0"
+// //                           max="59"
 // //                         />
 // //                       </div>
-// //                     )}
-// //                     <div className="flex gap-2 flex-wrap">
-// //                       <button
-// //                         onClick={() => handleAddSubtask(item.id, index)}
-// //                         className="px-3 py-1.5 bg-blue-600 text-white text-sm rounded-lg hover:bg-blue-700 transition-colors"
-// //                       >
-// //                         Add Subtask
-// //                       </button>
-// //                       <button
-// //                         onClick={() => {
-// //                           setBulkSubtasks((prev) => ({
-// //                             ...prev,
-// //                             [item.id]: prev[item.id].filter((_, i) => i !== index),
-// //                           }));
-// //                           clearSubtaskErrors(item.id, index);
-// //                           if (bulkSubtasks[item.id].length === 1) {
-// //                             setShowSubtaskForms((prev) => ({
-// //                               ...prev,
-// //                               [item.id]: false,
-// //                             }));
-// //                           }
-// //                         }}
-// //                         className="px-3 py-1.5 bg-slate-200 text-slate-800 text-sm rounded-lg hover:bg-slate-300 transition-colors"
-// //                       >
-// //                         Cancel
-// //                       </button>
-// //                       <button
-// //                         onClick={() => toggleSubtaskTimeFields(item.id, index)}
-// //                         className={`px-3 py-1.5 text-sm rounded-lg flex items-center gap-1 ${
-// //                           showSubtaskTimeFields[`${item.id}_${index}`]
-// //                             ? "bg-blue-100 text-blue-700 hover:bg-blue-200"
-// //                             : "bg-gray-100 text-gray-700 hover:bg-gray-200"
-// //                         }`}
-// //                       >
-// //                         <Clock size={17} />
-// //                         {showSubtaskTimeFields[`${item.id}_${index}`]
-// //                           ? "Cancel Time"
-// //                           : "Add Time"}
-// //                       </button>
-// //                       <button
-// //                         onClick={() => handleOpenSubtaskImageModal(item.id, index)}
-// //                         className="px-3 py-1.5 bg-green-100 text-green-700 hover:bg-green-200 text-sm rounded-lg flex items-center gap-1"
-// //                       >
-// //                         <ImageIcon className="w-4 h-4" />
-// //                         {subtask.images && subtask.images.length > 0
-// //                           ? `Edit ${subtask.images.length} Image${subtask.images.length > 1 ? "s" : ""}`
-// //                           : "Attach Images"}
-// //                       </button>
 // //                     </div>
+// //                     <div>
+// //                       <label className="block text-xs font-medium text-slate-700 mb-1">
+// //                         Maximum Time
+// //                       </label>
+// //                       <div className="flex gap-2">
+// //                         <InputField
+// //                           type="number"
+// //                           name="maxHours"
+// //                           placeholder="HH"
+// //                           value={editFormData.maxTime.hours}
+// //                           onChange={handleEditInputChange}
+// //                           className="w-16"
+// //                           min="0"
+// //                           max="24"
+// //                         />
+// //                         <InputField
+// //                           type="number"
+// //                           name="maxMinutes"
+// //                           placeholder="MM"
+// //                           value={editFormData.maxTime.minutes}
+// //                           onChange={handleEditInputChange}
+// //                           className="w-16"
+// //                           min="0"
+// //                           max="59"
+// //                         />
+// //                         <InputField
+// //                           type="number"
+// //                           name="maxSeconds"
+// //                           placeholder="SS"
+// //                           value={editFormData.maxTime.seconds}
+// //                           onChange={handleEditInputChange}
+// //                           className="w-16"
+// //                           min="0"
+// //                           max="59"
+// //                         />
+// //                       </div>
+// //                     </div>
+// //                     <ErrorMessage message={errors.editForm.time} />
 // //                   </div>
-// //                 ))}
-// //                 {bulkSubtasks[item.id]?.length > 0 && (
+// //                 )}
+// //                 {editFormData.images && editFormData.images.length > 0 && (
+// //                   <div className="space-y-3">
+// //                     <InputField
+// //                       label="Gallery Title"
+// //                       name="galleryTitle"
+// //                       placeholder="Gallery Title *"
+// //                       value={editFormData.galleryTitle}
+// //                       onChange={handleEditInputChange}
+// //                       required
+// //                       error={errors.editForm.galleryTitle}
+// //                     />
+// //                     <TextAreaField
+// //                       label="Gallery Description"
+// //                       name="galleryDescription"
+// //                       placeholder="Gallery Description"
+// //                       value={editFormData.galleryDescription}
+// //                       onChange={handleEditInputChange}
+// //                       rows={3}
+// //                     />
+// //                   </div>
+// //                 )}
+// //                 <div className="flex gap-2 flex-wrap">
+// //                   <button
+// //                     onClick={handleSaveEdit}
+// //                     className="px-3 py-1.5 bg-blue-600 text-white text-sm rounded-lg hover:bg-blue-700 transition-colors"
+// //                   >
+// //                     Save
+// //                   </button>
 // //                   <button
 // //                     onClick={() => {
-// //                       setShowSubtaskForms((prev) => ({
-// //                         ...prev,
-// //                         [item.id]: false,
-// //                       }));
-// //                       setBulkSubtasks((prev) => ({
-// //                         ...prev,
-// //                         [item.id]: [],
-// //                       }));
-// //                       bulkSubtasks[item.id].forEach((_, index) =>
-// //                         clearSubtaskErrors(item.id, index)
-// //                       );
+// //                       setEditItemId(null);
+// //                       setShowEditTimeFields(true);
+// //                       setShowImageModal(false);
+// //                       clearEditErrors();
 // //                     }}
-// //                     className="px-3 py-1.5 bg-red-100 text-red-700 hover:bg-red-200 text-sm rounded-lg"
+// //                     className="px-3 py-1.5 bg-slate-200 text-slate-800 text-sm rounded-lg hover:bg-slate-300 transition-colors"
 // //                   >
-// //                     Cancel All Subtasks
+// //                     Cancel
 // //                   </button>
-// //                 )}
+// //                   {showEditTimeFields ? (
+// //                     <button
+// //                       onClick={handleResetTime}
+// //                       className="px-3 py-1.5 bg-gray-100 text-gray-700 hover:bg-gray-200 text-sm rounded-lg flex items-center gap-1"
+// //                     >
+// //                       <Clock className="w-4 h-4" />
+// //                       Reset Time
+// //                     </button>
+// //                   ) : (
+// //                     <button
+// //                       onClick={handleSetTime}
+// //                       className="px-3 py-1.5 bg-blue-100 text-blue-700 hover:bg-blue-200 text-sm rounded-lg flex items-center gap-1"
+// //                     >
+// //                       <Clock className="w-4 h-4" />
+// //                       Set Time
+// //                     </button>
+// //                   )}
+// //                   <button
+// //                     onClick={handleOpenImageModal}
+// //                     className="px-3 py-1.5 bg-green-100 text-green-700 hover:bg-green-200 text-sm rounded-lg flex items-center gap-1"
+// //                   >
+// //                     <ImageIcon className="w-4 h-4" />
+// //                     {editFormData.images && editFormData.images.length > 0
+// //                       ? `Edit ${editFormData.images.length} Image${editFormData.images.length > 1 ? "s" : ""}`
+// //                       : "Attach Images"}
+// //                   </button>
+// //                   <button
+// //                     onClick={() => handleDelete(item.id)}
+// //                     className="px-3 py-1.5 bg-red-600 text-white text-sm rounded-lg hover:bg-red-700 transition-colors ml-auto"
+// //                   >
+// //                     <Trash className="w-3.5 h-3.5" />
+// //                   </button>
+// //                 </div>
 // //               </div>
-// //             )}
-// //           </>
-// //         )}
-// //         {item.subtasks?.length > 0 && (
-// //           <div className="mt-3">
-// //             <SortableContext
-// //               items={item.subtasks.map((s) => s.id)}
-// //               strategy={verticalListSortingStrategy}
-// //             >
-// //               {renderItems(item.subtasks, level + 1, parentStageId)}
-// //             </SortableContext>
-// //           </div>
-// //         )}
-// //       </div>
-// //     );
-// //   });
-
-// // return (
-// //   <div className="min-h-screen bg-slate-100 p-4 sm:p-6 lg:p-8">
-// //     <Toaster />
-// //     <div className="flex items-center gap-10 mb-4">
-// //       <button
-// //         onClick={() => setShowGoBackConfirmModal(true)}
-// //         className="inline-flex items-center gap-2 px-4 py-2 bg-white rounded-lg border border-gray-300 hover:bg-gray-50 transition-colors duration-200 shadow-sm hover:shadow-md font-semibold text-gray-800 text-lg cursor-pointer"
-// //       >
-// //         <ArrowLeft size={20} />
-// //         <span>Go Back</span>
-// //       </button>
-// //       <h1 className="text-2xl sm:text-3xl md:text-4xl font-bold text-gray-900 tracking-tight">
-// //         Checklist Creation
-// //       </h1>
-// //     </div>
-// //     <div className="max-w-7xl mx-auto">
-// //       <section className="bg-white rounded-xl shadow-md p-6 mb-8">
-// //         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-// //           <div>
-// //             <InputField
-// //               label="Checklist Name"
-// //               name="name"
-// //               value={checklistData.name}
-// //               onChange={handleInputChange}
-// //               placeholder="Enter checklist name"
-// //               required
-// //               error={errors.checklist.name}
-// //             />
-// //           </div>
-// //           <div>
-// //             <InputField
-// //               label="Department"
-// //               name="department"
-// //               value={checklistData.department}
-// //               onChange={handleInputChange}
-// //               placeholder="Enter department"
-// //               required
-// //               error={errors.checklist.department}
-// //             />
-// //           </div>
-// //           <div>
-// //             <InputField
-// //               label="Document Number"
-// //               name="documentNumber"
-// //               value={checklistData.documentNumber}
-// //               onChange={handleInputChange}
-// //               placeholder="Enter document number"
-// //               error={errors.checklist.documentNumber}
-// //             />
-// //           </div>
-// //           <div>
-// //             <InputField
-// //               label="QMS Number"
-// //               name="qms_number"
-// //               value={checklistData.qms_number}
-// //               onChange={handleInputChange}
-// //               placeholder="Enter QMS Number"
-// //               required
-// //               error={errors.checklist.qms_number}
-// //             />
-// //           </div>
-// //           <div>
-// //             <InputField
-// //               label="Version"
-// //               name="version"
-// //               value={checklistData.version}
-// //               onChange={handleInputChange}
-// //               placeholder="e.g., 1.0"
-// //               required
-// //               error={errors.checklist.version}
-// //             />
-// //           </div>
-// //           <div className="flex items-end">
-// //             <button
-// //               onClick={handleSubmit}
-// //               className="px-4 py-2 bg-blue-600 text-white text-sm font-medium rounded-lg hover:bg-blue-700 transition-colors shadow-sm w-full"
-// //             >
-// //               Save Checklist
-// //             </button>
-// //           </div>
+// //             </div>
+// //           ) : (
+// //             <>
+// //               <SortableItem
+// //                 id={item.id}
+// //                 title={item.title}
+// //                 description={item.description}
+// //                 minTime={item.minTime}
+// //                 maxTime={item.maxTime}
+// //                 level={level}
+// //                 onEdit={handleEdit}
+// //                 onDelete={handleDelete}
+// //                 onDuplicate={handleDuplicate}
+// //                 onAddSubtask={toggleSubtaskForm}
+// //                 numbering={numbering}
+// //                 showActionButtons={level > 0}
+// //                 images={item.images}
+// //                 galleryTitle={item.galleryTitle}
+// //                 galleryDescription={item.galleryDescription}
+// //                 items={parentContainer?.container || []}
+// //                 itemType={itemType}
+// //               />
+// //               {showSubtaskForms[item.id] && (
+// //                 <div className="ml-4 mt-3 p-4 bg-white rounded-lg border border-slate-200">
+// //                   <h4 className="text-sm font-semibold text-slate-900 mb-3">
+// //                     Add Subtask(s)
+// //                   </h4>
+// //                   {bulkSubtasks[item.id]?.map((subtask, index) => (
+// //                     <div
+// //                       key={index}
+// //                       className="space-y-3 mb-4 p-4 bg-white rounded-lg border border-slate-200"
+// //                     >
+// //                       <h5 className="text-sm font-medium text-slate-700">
+// //                         Subtask {index + 1}
+// //                       </h5>
+// //                       <InputField
+// //                         label="Subtask Title"
+// //                         name="title"
+// //                         placeholder="Subtask Title *"
+// //                         value={subtask.title || ""}
+// //                         onChange={(e) => handleSubtaskInputChange(item.id, index, e)}
+// //                         required
+// //                         error={errors.subtaskForms[`${item.id}_${index}`]?.title}
+// //                         items={item.subtasks || []}
+// //                         itemType="Subtask"
+// //                       />
+// //                       <TextAreaField
+// //                         label="Subtask Description"
+// //                         name="description"
+// //                         placeholder="Subtask Description *"
+// //                         value={subtask.description || ""}
+// //                         onChange={(e) => handleSubtaskInputChange(item.id, index, e)}
+// //                         required
+// //                         error={errors.subtaskForms[`${item.id}_${index}`]?.description}
+// //                       />
+// //                       {showSubtaskTimeFields[`${item.id}_${index}`] && (
+// //                         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 p-3 bg-slate-50 rounded-lg">
+// //                           <div>
+// //                             <label className="block text-xs font-medium text-slate-700 mb-1">
+// //                               Minimum Time
+// //                             </label>
+// //                             <div className="flex gap-2">
+// //                               <InputField
+// //                                 type="number"
+// //                                 name="minHours"
+// //                                 placeholder="HH"
+// //                                 value={subtask.minTime.hours || "00"}
+// //                                 onChange={(e) => handleSubtaskInputChange(item.id, index, e)}
+// //                                 className="w-16"
+// //                                 min="0"
+// //                                 max="24"
+// //                               />
+// //                               <InputField
+// //                                 type="number"
+// //                                 name="minMinutes"
+// //                                 placeholder="MM"
+// //                                 value={subtask.minTime.minutes || "00"}
+// //                                 onChange={(e) => handleSubtaskInputChange(item.id, index, e)}
+// //                                 className="w-16"
+// //                                 min="0"
+// //                                 max="59"
+// //                               />
+// //                               <InputField
+// //                                 type="number"
+// //                                 name="minSeconds"
+// //                                 placeholder="SS"
+// //                                 value={subtask.minTime.seconds || "00"}
+// //                                 onChange={(e) => handleSubtaskInputChange(item.id, index, e)}
+// //                                 className="w-16"
+// //                                 min="0"
+// //                                 max="59"
+// //                               />
+// //                             </div>
+// //                           </div>
+// //                           <div>
+// //                             <label className="block text-xs font-medium text-slate-700 mb-1">
+// //                               Maximum Time
+// //                             </label>
+// //                             <div className="flex gap-2">
+// //                               <InputField
+// //                                 type="number"
+// //                                 name="maxHours"
+// //                                 placeholder="HH"
+// //                                 value={subtask.maxTime.hours || "00"}
+// //                                 onChange={(e) => handleSubtaskInputChange(item.id, index, e)}
+// //                                 className="w-16"
+// //                                 min="0"
+// //                                 max="24"
+// //                               />
+// //                               <InputField
+// //                                 type="number"
+// //                                 name="maxMinutes"
+// //                                 placeholder="MM"
+// //                                 value={subtask.maxTime.minutes || "00"}
+// //                                 onChange={(e) => handleSubtaskInputChange(item.id, index, e)}
+// //                                 className="w-16"
+// //                                 min="0"
+// //                                 max="59"
+// //                               />
+// //                               <InputField
+// //                                 type="number"
+// //                                 name="maxSeconds"
+// //                                 placeholder="SS"
+// //                                 value={subtask.maxTime.seconds || "00"}
+// //                                 onChange={(e) => handleSubtaskInputChange(item.id, index, e)}
+// //                                 className="w-16"
+// //                                 min="0"
+// //                                 max="59"
+// //                               />
+// //                             </div>
+// //                           </div>
+// //                           <ErrorMessage
+// //                             message={errors.subtaskForms[`${item.id}_${index}`]?.time}
+// //                           />
+// //                         </div>
+// //                       )}
+// //                       <div className="flex gap-2 flex-wrap">
+// //                         <button
+// //                           onClick={() => handleAddSubtask(item.id, index)}
+// //                           className="px-3 py-1.5 bg-blue-600 text-white text-sm rounded-lg hover:bg-blue-700 transition-colors"
+// //                         >
+// //                           Add Subtask
+// //                         </button>
+// //                         <button
+// //                           onClick={() => {
+// //                             setBulkSubtasks((prev) => ({
+// //                               ...prev,
+// //                               [item.id]: prev[item.id].filter((_, i) => i !== index),
+// //                             }));
+// //                             clearSubtaskErrors(item.id, index);
+// //                             if (bulkSubtasks[item.id].length === 1) {
+// //                               setShowSubtaskForms((prev) => ({
+// //                                 ...prev,
+// //                                 [item.id]: false,
+// //                               }));
+// //                             }
+// //                           }}
+// //                           className="px-3 py-1.5 bg-slate-200 text-slate-800 text-sm rounded-lg hover:bg-slate-300 transition-colors"
+// //                         >
+// //                           Cancel
+// //                         </button>
+// //                         <button
+// //                           onClick={() => toggleSubtaskTimeFields(item.id, index)}
+// //                           className={`px-3 py-1.5 text-sm rounded-lg flex items-center gap-1 ${
+// //                             showSubtaskTimeFields[`${item.id}_${index}`]
+// //                               ? "bg-blue-100 text-blue-700 hover:bg-blue-200"
+// //                               : "bg-gray-100 text-gray-700 hover:bg-gray-200"
+// //                           }`}
+// //                         >
+// //                           <Clock size={17} />
+// //                           {showSubtaskTimeFields[`${item.id}_${index}`]
+// //                             ? "Cancel Time"
+// //                             : "Add Time"}
+// //                         </button>
+// //                         <button
+// //                           onClick={() => handleOpenSubtaskImageModal(item.id, index)}
+// //                           className="px-3 py-1.5 bg-green-100 text-green-700 hover:bg-green-200 text-sm rounded-lg flex items-center gap-1"
+// //                         >
+// //                           <ImageIcon className="w-4 h-4" />
+// //                           {subtask.images && subtask.images.length > 0
+// //                             ? `Edit ${subtask.images.length} Image${subtask.images.length > 1 ? "s" : ""}`
+// //                             : "Attach Images"}
+// //                         </button>
+// //                       </div>
+// //                     </div>
+// //                   ))}
+// //                   {bulkSubtasks[item.id]?.length > 0 && (
+// //                     <button
+// //                       onClick={() => {
+// //                         setShowSubtaskForms((prev) => ({
+// //                           ...prev,
+// //                           [item.id]: false,
+// //                         }));
+// //                         setBulkSubtasks((prev) => ({
+// //                           ...prev,
+// //                           [item.id]: [],
+// //                         }));
+// //                         bulkSubtasks[item.id].forEach((_, index) =>
+// //                           clearSubtaskErrors(item.id, index)
+// //                         );
+// //                       }}
+// //                       className="px-3 py-1.5 bg-red-100 text-red-700 hover:bg-red-200 text-sm rounded-lg"
+// //                     >
+// //                       Cancel All Subtasks
+// //                     </button>
+// //                   )}
+// //                 </div>
+// //               )}
+// //             </>
+// //           )}
+// //           {item.subtasks?.length > 0 && (
+// //             <div className="mt-3">
+// //               <SortableContext
+// //                 items={item.subtasks.map((s) => s.id)}
+// //                 strategy={verticalListSortingStrategy}
+// //               >
+// //                 {renderItems(item.subtasks, level + 1, parentStageId)}
+// //               </SortableContext>
+// //             </div>
+// //           )}
 // //         </div>
-// //       </section>
-// //       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-// //         <div className="lg:col-span-1 bg-white rounded-xl shadow-md p-6">
-// //           <div className="flex items-center justify-between mb-6">
-// //             <h2 className="text-lg font-semibold text-slate-900">Stages</h2>
-// //             <span className="text-xs text-slate-500 bg-slate-100 px-2 py-1 rounded-full">
-// //               {stages.length}
-// //             </span>
+// //       );
+// //     });
+// //   return (
+// //     <div className="min-h-screen bg-slate-100 p-4 sm:p-6 lg:p-8">
+// //       <Toaster />
+// //       <div className="flex items-center gap-10 mb-4">
+// //         <button
+// //           onClick={() => setShowGoBackConfirmModal(true)}
+// //           className="inline-flex items-center gap-2 px-4 py-2 bg-white rounded-lg border border-gray-300 hover:bg-gray-50 transition-colors duration-200 shadow-sm hover:shadow-md font-semibold text-gray-800 text-lg cursor-pointer"
+// //         >
+// //           <ArrowLeft size={20} />
+// //           <span>Go Back</span>
+// //         </button>
+// //         <h1 className="text-2xl sm:text-3xl md:text-4xl font-bold text-gray-900 tracking-tight">
+// //           Checklist Creation
+// //         </h1>
+// //       </div>
+// //       <div className="max-w-7xl mx-auto">
+// //         <section className="bg-white rounded-xl shadow-md p-6 mb-8">
+// //           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+// //             <div>
+// //               <InputField
+// //                 label="Checklist Name"
+// //                 name="name"
+// //                 value={checklistData.name}
+// //                 onChange={handleInputChange}
+// //                 placeholder="Enter checklist name"
+// //                 required
+// //                 error={errors.checklist.name}
+// //               />
+// //             </div>
+// //             <div>
+// //               <InputField
+// //                 label="Department"
+// //                 name="department"
+// //                 value={checklistData.department}
+// //                 onChange={handleInputChange}
+// //                 placeholder="Enter department"
+// //                 required
+// //                 error={errors.checklist.department}
+// //               />
+// //             </div>
+// //             <div>
+// //               <InputField
+// //                 label="Document Number"
+// //                 name="documentNumber"
+// //                 value={checklistData.documentNumber}
+// //                 onChange={handleInputChange}
+// //                 placeholder="Enter document number"
+// //                 error={errors.checklist.documentNumber}
+// //               />
+// //             </div>
+// //             <div>
+// //               <InputField
+// //                 label="QMS Number"
+// //                 name="qms_number"
+// //                 value={checklistData.qms_number}
+// //                 onChange={handleInputChange}
+// //                 placeholder="Enter QMS Number"
+// //                 required
+// //                 error={errors.checklist.qms_number}
+// //               />
+// //             </div>
+// //             <div>
+// //               <InputField
+// //                 label="Version"
+// //                 name="version"
+// //                 value={checklistData.version}
+// //                 onChange={handleInputChange}
+// //                 placeholder="e.g., 1.0"
+// //                 required
+// //                 error={errors.checklist.version}
+// //               />
+// //             </div>
+// //             <div className="flex items-end">
+// //               <button
+// //                 onClick={handleSubmit}
+// //                 className="px-4 py-2 bg-blue-600 text-white text-sm font-medium rounded-lg hover:bg-blue-700 transition-colors shadow-sm w-full"
+// //               >
+// //                 Save Checklist
+// //               </button>
+// //             </div>
 // //           </div>
-// //           <button
-// //             onClick={() => setShowStageCountModal(true)}
-// //             className="w-full px-4 py-2 bg-blue-600 text-white text-sm font-medium rounded-lg hover:bg-blue-700 transition-colors flex items-center justify-center gap-2 mb-4"
-// //           >
-// //             <Plus className="w-4 h-4" /> New Stage
-// //           </button>
-// //           <DndContext
-// //             sensors={sensors}
-// //             collisionDetection={closestCenter}
-// //             onDragStart={handleStageDragStart}
-// //             onDragEnd={handleStageDragEnd}
-// //           >
-// //             <SortableContext
-// //               items={stages.map((s) => s.id)}
-// //               strategy={verticalListSortingStrategy}
+// //         </section>
+// //         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+// //           <div className="lg:col-span-1 bg-white rounded-xl shadow-md p-6">
+// //             <div className="flex items-center justify-between mb-6">
+// //               <h2 className="text-lg font-semibold text-slate-900">Stages</h2>
+// //               <span className="text-xs text-slate-500 bg-slate-100 px-2 py-1 rounded-full">
+// //                 {stages.length}
+// //               </span>
+// //             </div>
+// //             <button
+// //               onClick={() => setShowStageCountModal(true)}
+// //               className="w-full px-4 py-2 bg-blue-600 text-white text-sm font-medium rounded-lg hover:bg-blue-700 transition-colors flex items-center justify-center gap-2 mb-4"
 // //             >
-// //               <div className="space-y-2">
-// //                 {stages.map((stage, idx) => (
-// //                   <div key={stage.id} className="relative group/stage">
-// //                     <SortableItem
-// //                       id={stage.id}
-// //                       title={stage.title}
-// //                       description={`${stage.tasks?.length || 0} tasks`}
-// //                       level={1}
-// //                       onEdit={() => {}}
-// //                       onDuplicate={() => {}}
-// //                       onAddSubtask={() => {}}
-// //                       onDelete={handleDeleteStage}
-// //                       numbering={idx + 1}
-// //                       showActionButtons={false}
-// //                       onClick={setSelectedStageId}
-// //                       items={stages}
-// //                       itemType="Stage"
-// //                     />
-// //                     <div className="flex items-center gap-1 absolute top-2 right-2 opacity-0 group-hover/stage:opacity-100 transition-opacity">
-// //                       <button
-// //                         onClick={(e) => {
-// //                           e.stopPropagation();
-// //                           handleDuplicateStage(stage.id);
+// //               <Plus className="w-4 h-4" /> New Stage
+// //             </button>
+// //             <DndContext
+// //               sensors={sensors}
+// //               collisionDetection={closestCenter}
+// //               onDragStart={handleStageDragStart}
+// //               onDragEnd={handleStageDragEnd}
+// //             >
+// //               <SortableContext
+// //                 items={stages.map((s) => s.id)}
+// //                 strategy={verticalListSortingStrategy}
+// //               >
+// //                 <div className="space-y-2">
+// //                   {stages.map((stage, idx) => (
+// //                     <div key={stage.id} className="relative group/stage">
+// //                       <SortableItem
+// //                         id={stage.id}
+// //                         title={stage.title}
+// //                         description={`${stage.tasks?.length || 0} tasks`}
+// //                         level={1}
+// //                         onEdit={() => {}}
+// //                         onDuplicate={() => {}}
+// //                         onAddSubtask={() => {}}
+// //                         onDelete={handleDeleteStage}
+// //                         numbering={idx + 1}
+// //                         showActionButtons={false}
+// //                         onClick={(id) => {
+// //                           setSelectedStageId(id);
+// //                           setShowVisualTable(false);
 // //                         }}
-// //                         className="p-1.5 text-slate-500 hover:text-green-600 hover:bg-green-50 rounded-md transition-colors"
-// //                         title={`Duplicate stage "${stage.title}"`}
-// //                       >
-// //                         <Copy className="w-3 h-3" />
-// //                       </button>
-// //                       <button
-// //                         onClick={(e) => {
-// //                           e.stopPropagation();
-// //                           handleDeleteStage(stage.id);
-// //                         }}
-// //                         className="p-1.5 bg-red-500 text-white rounded-full hover:bg-red-600 transition-colors"
-// //                         title={`Delete stage "${stage.title}"`}
-// //                       >
-// //                         <Trash className="w-3 h-3" />
-// //                       </button>
+// //                         items={stages}
+// //                         itemType="Stage"
+// //                       />
+// //                       <div className="flex items-center gap-1 absolute top-2 right-2 opacity-0 group-hover/stage:opacity-100 transition-opacity">
+// //                         <button
+// //                           onClick={(e) => {
+// //                             e.stopPropagation();
+// //                             handleDuplicateStage(stage.id);
+// //                           }}
+// //                           className="p-1.5 text-slate-500 hover:text-green-600 hover:bg-green-50 rounded-md transition-colors"
+// //                           title={`Duplicate stage "${stage.title}"`}
+// //                         >
+// //                           <Copy className="w-3 h-3" />
+// //                         </button>
+// //                         <button
+// //                           onClick={(e) => {
+// //                             e.stopPropagation();
+// //                             handleDeleteStage(stage.id);
+// //                           }}
+// //                           className="p-1.5 bg-red-500 text-white rounded-full hover:bg-red-600 transition-colors"
+// //                           title={`Delete stage "${stage.title}"`}
+// //                         >
+// //                           <Trash className="w-3 h-3" />
+// //                         </button>
+// //                       </div>
+// //                     </div>
+// //                   ))}
+// //                 </div>
+// //               </SortableContext>
+// //               <DragOverlay className="z-50">
+// //                 {activeStageItem ? (
+// //                   <div className="p-3 bg-white rounded-lg shadow-xl border border-slate-200">
+// //                     <div className="font-medium text-slate-900 text-sm">
+// //                       {activeStageItem.title}
 // //                     </div>
 // //                   </div>
-// //                 ))}
-// //               </div>
-// //             </SortableContext>
-// //             <DragOverlay className="z-50">
-// //               {activeStageItem ? (
-// //                 <div className="p-3 bg-white rounded-lg shadow-xl border border-slate-200">
-// //                   <div className="font-medium text-slate-900 text-sm">
-// //                     {activeStageItem.title}
-// //                   </div>
-// //                 </div>
-// //               ) : null}
-// //             </DragOverlay>
-// //           </DndContext>
-// //           <button
-// //             onClick={() => setShowVisualTable(!showVisualTable)}
-// //             className="w-full px-4 mt-4 py-2 bg-green-600 text-white text-sm font-medium rounded-lg hover:bg-green-700 transition-colors flex items-center justify-center gap-2 mb-4"
-// //           >
-// //             <svg
-// //               className="w-4 h-4"
-// //               fill="none"
-// //               stroke="currentColor"
-// //               strokeWidth="2"
-// //               viewBox="0 0 24 24"
+// //                 ) : null}
+// //               </DragOverlay>
+// //             </DndContext>
+// //             <button
+// //               onClick={() => setShowVisualTable(!showVisualTable)}
+// //               className="w-full px-4 mt-4 py-2 bg-green-600 text-white text-sm font-medium rounded-lg hover:bg-green-700 transition-colors flex items-center justify-center gap-2 mb-4"
 // //             >
-// //               <path
-// //                 strokeLinecap="round"
-// //                 strokeLinejoin="round"
-// //                 d="M3 10h18M3 14h18m-9-4v8m-7 0h14a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z"
-// //               />
-// //             </svg>
-// //             {showVisualTable ? "Show Tasks" : "Show Visual Representation"}
-// //           </button>
-// //         </div>
-// //         <div className="lg:col-span-2 bg-white rounded-xl shadow-md p-6">
-// //           {selectedStageId ? (
-// //             showVisualTable ? (
-// //               <div>
+// //               <svg
+// //                 className="w-4 h-4"
+// //                 fill="none"
+// //                 stroke="currentColor"
+// //                 strokeWidth="2"
+// //                 viewBox="0 0 24 24"
+// //               >
+// //                 <path
+// //                   strokeLinecap="round"
+// //                   strokeLinejoin="round"
+// //                   d="M3 10h18M3 14h18m-9-4v8m-7 0h14a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z"
+// //                 />
+// //               </svg>
+// //              Visual Representation
+// //             </button>
+// //           </div>
+// //           <div className="lg:col-span-2 bg-white rounded-xl shadow-md p-6">
+// //             {showVisualTable ? (
+// //               <>
 // //                 <div className="flex items-center justify-between mb-4">
 // //                   <h4 className="text-lg font-semibold text-gray-900">
 // //                     Checklist Visual Representation
@@ -2829,13 +2835,16 @@
 // //                         <th className="py-3 px-4 text-left text-sm font-semibold text-gray-900">
 // //                           QA
 // //                         </th>
+// //                         <th className="py-3 px-4 text-left text-sm font-semibold text-gray-900">
+// //                           Actions
+// //                         </th>
 // //                       </tr>
 // //                     </thead>
 // //                     <tbody>{renderTableRows()}</tbody>
 // //                   </table>
 // //                 </div>
-// //               </div>
-// //             ) : (
+// //               </>
+// //             ) : selectedStageId ? (
 // //               <>
 // //                 <div className="flex items-center justify-between mb-6">
 // //                   <div>
@@ -3066,878 +3075,866 @@
 // //                   </DragOverlay>
 // //                 </DndContext>
 // //               </>
-// //             )
-// //           ) : (
-// //             <div className="flex items-center justify-center h-full">
-// //               <div className="text-center">
-// //                 <div className="w-16 h-16 bg-slate-100 rounded-full flex items-center justify-center mx-auto mb-4">
-// //                   <Plus className="w-8 h-8 text-slate-400" />
+// //             ) : (
+// //               <div className="flex items-center justify-center h-full">
+// //                 <div className="text-center">
+// //                   <div className="w-16 h-16 bg-slate-100 rounded-full flex items-center justify-center mx-auto mb-4">
+// //                     <Plus className="w-8 h-8 text-slate-400" />
+// //                   </div>
+// //                   <h3 className="text-lg font-medium text-slate-900 mb-2">
+// //                     No stage selected
+// //                   </h3>
+// //                   <p className="text-slate-600 text-sm">
+// //                     Select a stage from the sidebar to view and manage its tasks
+// //                   </p>
 // //                 </div>
-// //                 <h3 className="text-lg font-medium text-slate-900 mb-2">
-// //                   No stage selected
-// //                 </h3>
-// //                 <p className="text-slate-600 text-sm">
-// //                   Select a stage from the sidebar to view and manage its tasks
-// //                 </p>
+// //               </div>
+// //             )}
+// //           </div>
+// //           {showStageCountModal && (
+// //             <div className="fixed inset-0 pl-64 z-50 flex items-center justify-center p-4">
+// //               <div
+// //                 className="absolute inset-0 bg-black/40 backdrop-blur-sm"
+// //                 onClick={() => setShowStageCountModal(false)}
+// //               />
+// //               <div className="relative bg-white rounded-2xl shadow-2xl w-full max-w-sm p-6">
+// //                 <div className="flex items-center justify-between mb-4">
+// //                   <h4 className="text-lg font-semibold text-gray-900">
+// //                     Add Stages
+// //                   </h4>
+// //                   <button
+// //                     onClick={() => setShowStageCountModal(false)}
+// //                     className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+// //                   >
+// //                     <X className="w-5 h-5 text-gray-600" />
+// //                   </button>
+// //                 </div>
+// //                 <div className="mb-6">
+// //                   <InputField
+// //                     label="Number of Stages"
+// //                     type="number"
+// //                     name="stageCount"
+// //                     value={stageCount}
+// //                     onChange={(e) => setStageCount(parseInt(e.target.value) || 1)}
+// //                     placeholder="Enter number of stages"
+// //                     min="1"
+// //                     max="10"
+// //                     required
+// //                   />
+// //                   <p className="text-xs text-gray-500 mt-2">
+// //                     Enter the number of stages you want to create (1-10).
+// //                   </p>
+// //                 </div>
+// //                 <div className="flex justify-end gap-3">
+// //                   <button
+// //                     onClick={() => setShowStageCountModal(false)}
+// //                     className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50"
+// //                   >
+// //                     Cancel
+// //                   </button>
+// //                   <button
+// //                     onClick={handleStageCountConfirm}
+// //                     className="px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-lg hover:bg-blue-700"
+// //                   >
+// //                     Confirm
+// //                   </button>
+// //                 </div>
 // //               </div>
 // //             </div>
 // //           )}
-// //         </div>
-// //         {showStageCountModal && (
-// //           <div className="fixed inset-0 pl-64 z-50 flex items-center justify-center p-4">
-// //             <div
-// //               className="absolute inset-0 bg-black/40 backdrop-blur-sm"
-// //               onClick={() => setShowStageCountModal(false)}
-// //             />
-// //             <div className="relative bg-white rounded-2xl shadow-2xl w-full max-w-sm p-6">
-// //               <div className="flex items-center justify-between mb-4">
-// //                 <h4 className="text-lg font-semibold text-gray-900">
-// //                   Add Stages
-// //                 </h4>
-// //                 <button
-// //                   onClick={() => setShowStageCountModal(false)}
-// //                   className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
-// //                 >
-// //                   <X className="w-5 h-5 text-gray-600" />
-// //                 </button>
-// //               </div>
-// //               <div className="mb-6">
-// //                 <InputField
-// //                   label="Number of Stages"
-// //                   type="number"
-// //                   name="stageCount"
-// //                   value={stageCount}
-// //                   onChange={(e) => setStageCount(parseInt(e.target.value) || 1)}
-// //                   placeholder="Enter number of stages"
-// //                   min="1"
-// //                   max="10"
-// //                   required
-// //                 />
-// //                 <p className="text-xs text-gray-500 mt-2">
-// //                   Enter the number of stages you want to create (1-10).
-// //                 </p>
-// //               </div>
-// //               <div className="flex justify-end gap-3">
-// //                 <button
-// //                   onClick={() => setShowStageCountModal(false)}
-// //                   className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50"
-// //                 >
-// //                   Cancel
-// //                 </button>
-// //                 <button
-// //                   onClick={handleStageCountConfirm}
-// //                   className="px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-lg hover:bg-blue-700"
-// //                 >
-// //                   Confirm
-// //                 </button>
-// //               </div>
-// //             </div>
-// //           </div>
-// //         )}
-// //         {showTaskCountModal && (
-// //           <div className="fixed inset-0 pl-64 z-50 flex items-center justify-center p-4">
-// //             <div
-// //               className="absolute inset-0 bg-black/40 backdrop-blur-sm"
-// //               onClick={() => setShowTaskCountModal(false)}
-// //             />
-// //             <div className="relative bg-white rounded-2xl shadow-2xl w-full max-w-sm p-6">
-// //               <div className="flex items-center justify-between mb-4">
-// //                 <h4 className="text-lg font-semibold text-gray-900">
-// //                   Add Tasks
-// //                 </h4>
-// //                 <button
-// //                   onClick={() => setShowTaskCountModal(false)}
-// //                   className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
-// //                 >
-// //                   <X className="w-5 h-5 text-gray-600" />
-// //                 </button>
-// //               </div>
-// //               <div className="mb-6">
-// //                 <InputField
-// //                   label="Number of Tasks"
-// //                   type="number"
-// //                   name="taskCount"
-// //                   value={taskCount}
-// //                   onChange={(e) => setTaskCount(parseInt(e.target.value) || 1)}
-// //                   placeholder="Enter number of tasks"
-// //                   min="1"
-// //                   max="10"
-// //                   required
-// //                 />
-// //                 <p className="text-xs text-gray-500 mt-2">
-// //                   Enter the number of tasks you want to create (1-10).
-// //                 </p>
-// //               </div>
-// //               <div className="flex justify-end gap-3">
-// //                 <button
-// //                   onClick={() => setShowTaskCountModal(false)}
-// //                   className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50"
-// //                 >
-// //                   Cancel
-// //                 </button>
-// //                 <button
-// //                   onClick={handleTaskCountConfirm}
-// //                   className="px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-lg hover:bg-blue-700"
-// //                 >
-// //                   Confirm
-// //                 </button>
-// //               </div>
-// //             </div>
-// //           </div>
-// //         )}
-// //         {showSubtaskCountModal && (
-// //           <div className="fixed inset-0 pl-64 z-50 flex items-center justify-center p-4">
-// //             <div
-// //               className="absolute inset-0 bg-black/40 backdrop-blur-sm"
-// //               onClick={() => setShowSubtaskCountModal(false)}
-// //             />
-// //             <div className="relative bg-white rounded-2xl shadow-2xl w-full max-w-sm p-6">
-// //               <div className="flex items-center justify-between mb-4">
-// //                 <h4 className="text-lg font-semibold text-gray-900">
-// //                   Add Subtasks
-// //                 </h4>
-// //                 <button
-// //                   onClick={() => setShowSubtaskCountModal(false)}
-// //                   className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
-// //                 >
-// //                   <X className="w-5 h-5 text-gray-600" />
-// //                 </button>
-// //               </div>
-// //               <div className="mb-6">
-// //                 <InputField
-// //                   label="Number of Subtasks"
-// //                   type="number"
-// //                   name="subtaskCount"
-// //                   value={subtaskCount}
-// //                   onChange={(e) => setSubtaskCount(parseInt(e.target.value) || 1)}
-// //                   placeholder="Enter number of subtasks"
-// //                   min="1"
-// //                   max="10"
-// //                   required
-// //                 />
-// //                 <p className="text-xs text-gray-500 mt-2">
-// //                   Enter the number of subtasks you want to create (1-10).
-// //                 </p>
-// //               </div>
-// //               <div className="flex justify-end gap-3">
-// //                 <button
-// //                   onClick={() => setShowSubtaskCountModal(false)}
-// //                   className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50"
-// //                 >
-// //                   Cancel
-// //                 </button>
-// //                 <button
-// //                   onClick={handleSubtaskCountConfirm}
-// //                   className="px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-lg hover:bg-blue-700"
-// //                 >
-// //                   Confirm
-// //                 </button>
-// //               </div>
-// //             </div>
-// //           </div>
-// //         )}
-// //         {bulkTasks.map(
-// //           (task, index) =>
-// //             showTaskImageModal[`${selectedStageId}_${index}`] && (
+// //           {showTaskCountModal && (
+// //             <div className="fixed inset-0 pl-64 z-50 flex items-center justify-center p-4">
 // //               <div
-// //                 key={`${selectedStageId}_${index}`}
-// //                 className="fixed inset-0 pl-64 z-50 flex items-center justify-center p-4"
-// //               >
-// //                 <div
-// //                   className="absolute inset-0 bg-opacity-50 backdrop-blur-sm"
-// //                   onClick={() => handleCloseTaskImageModal(selectedStageId, index)}
-// //                 />
-// //                 <div className="relative bg-white rounded-2xl shadow-2xl w-full max-w-4xl max-h-[90vh] overflow-hidden transform transition-all duration-300 scale-100">
-// //                   <div className="bg-gradient-to-r from-blue-600 to-blue-700 px-6 py-4 text-white">
-// //                     <div className="flex items-center justify-between">
-// //                       <div className="flex items-center gap-3">
-// //                         <div className="p-2 bg-white/20 rounded-xl">
-// //                           <ImageIcon className="w-5 h-5" />
-// //                         </div>
-// //                         <div>
-// //                           <h4 className="text-lg font-semibold">
-// //                             Attach Images - Task {index + 1}
-// //                           </h4>
-// //                           <p className="text-blue-100 text-sm">
-// //                             Add visual references for this task
-// //                           </p>
-// //                         </div>
-// //                       </div>
-// //                       <button
-// //                         onClick={() => handleCloseTaskImageModal(selectedStageId, index)}
-// //                         className="p-2 hover:bg-white/20 rounded-lg transition-colors"
-// //                         title="Close"
-// //                       >
-// //                         <X className="w-5 h-5" />
-// //                       </button>
-// //                     </div>
-// //                   </div>
-// //                   <div className="p-6 max-h-[calc(90vh-120px)] overflow-y-auto">
-// //                     <div className="space-y-6">
-// //                       <div className="space-y-4">
-// //                         <InputField
-// //                           label="Gallery Title"
-// //                           name="galleryTitle"
-// //                           placeholder="Enter a title for this image gallery (required)"
-// //                           value={task.galleryTitle || ""}
-// //                           onChange={(e) => handleTaskInputChange(selectedStageId, index, e)}
-// //                           required
-// //                           error={errors.taskForms[`${selectedStageId}_${index}`]?.galleryTitle}
-// //                         />
-// //                         <TextAreaField
-// //                           label="Gallery Description"
-// //                           name="galleryDescription"
-// //                           placeholder="Describe what these images show..."
-// //                           value={task.galleryDescription || ""}
-// //                           onChange={(e) => handleTaskInputChange(selectedStageId, index, e)}
-// //                           rows={3}
-// //                         />
-// //                       </div>
-// //                       <div className="space-y-4">
-// //                         {isUploading ? (
-// //                           <div className="flex justify-center items-center h-32">
-// //                             <LoadingSpinner />
-// //                           </div>
-// //                         ) : !task.images || task.images.length === 0 ? (
-// //                           <div className="border-2 border-dashed border-gray-300 rounded-2xl p-8 text-center hover:border-blue-400 transition-colors bg-gray-50/50 hover:bg-blue-50/25">
-// //                             <div className="flex flex-col items-center justify-center space-y-4">
-// //                               <div className="w-16 h-16 bg-gradient-to-br from-blue-100 to-indigo-100 rounded-2xl flex items-center justify-center">
-// //                                 <ImageIcon className="w-8 h-8 text-blue-600" />
-// //                               </div>
-// //                               <div className="space-y-1">
-// //                                 <h5 className="text-sm font-medium text-gray-900">
-// //                                   Upload images
-// //                                 </h5>
-// //                                 <p className="text-xs text-gray-500">
-// //                                   Select images (PNG, JPG, GIF up to 10MB each)
-// //                                 </p>
-// //                               </div>
-// //                               <div className="flex gap-4">
-// //                                 <input
-// //                                   type="file"
-// //                                   accept="image/*"
-// //                                   onChange={(e) => handleTaskImageInputChange(selectedStageId, index, e, true)}
-// //                                   className="hidden"
-// //                                   id={`task-image-upload-single-${selectedStageId}-${index}`}
-// //                                 />
-// //                                 <label
-// //                                   htmlFor={`task-image-upload-single-${selectedStageId}-${index}`}
-// //                                   className="cursor-pointer inline-flex items-center px-6 py-3 border border-transparent shadow-sm text-sm font-medium rounded-lg text-white bg-green-600 hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 transition-colors"
-// //                                 >
-// //                                   Add Image
-// //                                 </label>
-// //                               </div>
-// //                             </div>
-// //                           </div>
-// //                         ) : (
-// //                           <>
-// //                             <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
-// //                               {task.images.map((image, imageIndex) => (
-// //                                 <div
-// //                                   key={`${selectedStageId}-${index}-${imageIndex}`}
-// //                                   className="relative group"
-// //                                 >
-// //                                   <div className="relative rounded-xl overflow-hidden border-2 border-blue-200 bg-gradient-to-br from-blue-50 to-indigo-50">
-// //                                     <img
-// //                                       src={image.url}
-// //                                       alt={image.title || `Image ${imageIndex + 1}`}
-// //                                       className="w-full h-32 object-cover rounded-lg"
-// //                                     />
-// //                                     <button
-// //                                       onClick={(e) => {
-// //                                         e.stopPropagation();
-// //                                         handleRemoveSingleImage(index, imageIndex);
-// //                                       }}
-// //                                       className="absolute top-2 right-2 p-1.5 bg-red-500 text-white rounded-full hover:bg-red-600 transition-colors opacity-0 group-hover:opacity-100 z-10"
-// //                                       title={`Remove ${image.title || `Image ${imageIndex + 1}`}`}
-// //                                     >
-// //                                       <X className="w-3 h-3" />
-// //                                     </button>
-// //                                   </div>
-// //                                   <div className="mt-2">
-// //                                     <InputField
-// //                                       label={`Image ${imageIndex + 1} Title`}
-// //                                       name={`imageTitle_${imageIndex}`}
-// //                                       placeholder={`Image ${imageIndex + 1} Title`}
-// //                                       value={image.title || ""}
-// //                                       onChange={(e) => {
-// //                                         setBulkTasks((prev) =>
-// //                                           prev.map((t, i) =>
-// //                                             i === index
-// //                                               ? {
-// //                                                   ...t,
-// //                                                   images: t.images.map((img, idx) =>
-// //                                                     idx === imageIndex
-// //                                                       ? { ...img, title: e.target.value, titleError: "" }
-// //                                                       : img
-// //                                                   ),
-// //                                                 }
-// //                                               : t
-// //                                           )
-// //                                         );
-// //                                       }}
-// //                                       className="text-xs"
-// //                                       error={image.titleError}
-// //                                     />
-// //                                   </div>
-// //                                 </div>
-// //                               ))}
-// //                             </div>
-// //                             <div className="flex justify-between items-center mt-4">
-// //                               <button
-// //                                 onClick={() => handleClearAllImages(index)}
-// //                                 className="text-xs text-red-600 hover:text-red-700 font-medium transition-colors"
-// //                               >
-// //                                 Clear all images with Data
-// //                               </button>
-// //                               <div>
-// //                                 <input
-// //                                   type="file"
-// //                                   accept="image/*"
-// //                                   onChange={(e) => handleTaskImageInputChange(selectedStageId, index, e, true)}
-// //                                   className="hidden"
-// //                                   id={`task-image-upload-single-add-${selectedStageId}-${index}`}
-// //                                 />
-// //                                 <label
-// //                                   htmlFor={`task-image-upload-single-add-${selectedStageId}-${index}`}
-// //                                   className="cursor-pointer inline-flex items-center px-4 py-2 border border-transparent shadow-sm text-sm font-medium rounded-lg text-white bg-green-600 hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 transition-colors"
-// //                                 >
-// //                                   Add Another Image
-// //                                 </label>
-// //                               </div>
-// //                             </div>
-// //                           </>
-// //                         )}
-// //                       </div>
-// //                     </div>
-// //                   </div>
-// //                   <div className="px-6 py-4 bg-gray-50 border-t border-gray-200 flex items-center justify-between">
-// //                     <div className="text-xs text-gray-500">
-// //                       <span>Maximum 10 images • Each file up to 10MB</span>
-// //                       <span className="mx-2">•</span>
-// //                       <span>Supported formats: JPG, PNG, GIF</span>
-// //                     </div>
-// //                     <div className="flex items-center gap-3">
-// //                       <button
-// //                         onClick={() => handleCloseTaskImageModal(selectedStageId, index)}
-// //                         className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition-colors"
-// //                       >
-// //                         Cancel
-// //                       </button>
-// //                       <button
-// //                         onClick={() => handleTaskSaveImages(selectedStageId, index)}
-// //                         disabled={!task.images || task.images.length === 0 || isAttaching}
-// //                         className="px-6 py-2 text-sm font-medium text-white bg-blue-600 border border-transparent rounded-lg hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed transition-colors flex items-center gap-2"
-// //                       >
-// //                         {isAttaching ? (
-// //                           <LoadingSpinner />
-// //                         ) : (
-// //                           <>
-// //                             <ImageIcon className="w-4 h-4" />
-// //                             Attach {task.images?.length || 0} Image{task.images?.length !== 1 ? "s" : ""}
-// //                           </>
-// //                         )}
-// //                       </button>
-// //                     </div>
-// //                   </div>
+// //                 className="absolute inset-0 bg-black/40 backdrop-blur-sm"
+// //                 onClick={() => setShowTaskCountModal(false)}
+// //               />
+// //               <div className="relative bg-white rounded-2xl shadow-2xl w-full max-w-sm p-6">
+// //                 <div className="flex items-center justify-between mb-4">
+// //                   <h4 className="text-lg font-semibold text-gray-900">
+// //                     Add Tasks
+// //                   </h4>
+// //                   <button
+// //                     onClick={() => setShowTaskCountModal(false)}
+// //                     className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+// //                   >
+// //                     <X className="w-5 h-5 text-gray-600" />
+// //                   </button>
+// //                 </div>
+// //                 <div className="mb-6">
+// //                   <InputField
+// //                     label="Number of Tasks"
+// //                     type="number"
+// //                     name="taskCount"
+// //                     value={taskCount}
+// //                     onChange={(e) => setTaskCount(parseInt(e.target.value) || 1)}
+// //                     placeholder="Enter number of tasks"
+// //                     min="1"
+// //                     max="10"
+// //                     required
+// //                   />
+// //                   <p className="text-xs text-gray-500 mt-2">
+// //                     Enter the number of tasks you want to create (1-10).
+// //                   </p>
+// //                 </div>
+// //                 <div className="flex justify-end gap-3">
+// //                   <button
+// //                     onClick={() => setShowTaskCountModal(false)}
+// //                     className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50"
+// //                   >
+// //                     Cancel
+// //                   </button>
+// //                   <button
+// //                     onClick={handleTaskCountConfirm}
+// //                     className="px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-lg hover:bg-blue-700"
+// //                   >
+// //                     Confirm
+// //                   </button>
 // //                 </div>
 // //               </div>
-// //             )
-// //         )}
-// //         {Object.entries(bulkSubtasks).flatMap(([parentId, subtasks]) =>
-// //           subtasks.map((subtask, index) =>
-// //             showSubtaskImageModal[`${parentId}_${index}`] ? (
+// //             </div>
+// //           )}
+// //           {showSubtaskCountModal && (
+// //             <div className="fixed inset-0 pl-64 z-50 flex items-center justify-center p-4">
 // //               <div
-// //                 key={`${parentId}_${index}`}
-// //                 className="fixed inset-0 pl-64 z-50 flex items-center justify-center p-4"
-// //               >
-// //                 <div
-// //                   className="absolute inset-0 bg-opacity-50 backdrop-blur-sm"
-// //                   onClick={() => handleCloseSubtaskImageModal(parentId, index)}
-// //                 />
-// //                 <div className="relative bg-white rounded-2xl shadow-2xl w-full max-w-4xl max-h-[90vh] overflow-hidden transform transition-all duration-300 scale-100">
-// //                   <div className="bg-gradient-to-r from-blue-600 to-blue-700 px-6 py-4 text-white">
-// //                     <div className="flex items-center justify-between">
-// //                       <div className="flex items-center gap-3">
-// //                         <div className="p-2 bg-white/20 rounded-xl">
-// //                           <ImageIcon className="w-5 h-5" />
-// //                         </div>
-// //                         <div>
-// //                           <h4 className="text-lg font-semibold">
-// //                             Attach Images - Subtask {index + 1}
-// //                           </h4>
-// //                           <p className="text-blue-100 text-sm">
-// //                             Add visual references for this subtask
-// //                           </p>
-// //                         </div>
-// //                       </div>
-// //                       <button
-// //                         onClick={() => handleCloseSubtaskImageModal(parentId, index)}
-// //                         className="p-2 hover:bg-white/20 rounded-lg transition-colors"
-// //                         title="Close"
-// //                       >
-// //                         <X className="w-5 h-5" />
-// //                       </button>
-// //                     </div>
-// //                   </div>
-// //                   <div className="p-6 max-h-[calc(90vh-120px)] overflow-y-auto">
-// //                     <div className="space-y-6">
-// //                       <div className="space-y-4">
-// //                         <InputField
-// //                           label="Gallery Title"
-// //                           name="galleryTitle"
-// //                           placeholder="Enter a title for this image gallery (required)"
-// //                           value={subtask.galleryTitle || ""}
-// //                           onChange={(e) => handleSubtaskInputChange(parentId, index, e)}
-// //                           required
-// //                           error={errors.subtaskForms[`${parentId}_${index}`]?.galleryTitle}
-// //                         />
-// //                         <TextAreaField
-// //                           label="Gallery Description"
-// //                           name="galleryDescription"
-// //                           placeholder="Describe what these images show..."
-// //                           value={subtask.galleryDescription || ""}
-// //                           onChange={(e) => handleSubtaskInputChange(parentId, index, e)}
-// //                           rows={3}
-// //                         />
-// //                       </div>
-// //                       <div className="space-y-4">
-// //                         {isUploading ? (
-// //                           <div className="flex justify-center items-center h-32">
-// //                             <LoadingSpinner />
-// //                           </div>
-// //                         ) : !subtask.images || subtask.images.length === 0 ? (
-// //                           <div className="border-2 border-dashed border-gray-300 rounded-2xl p-8 text-center hover:border-blue-400 transition-colors bg-gray-50/50 hover:bg-blue-50/25">
-// //                             <div className="flex flex-col items-center justify-center space-y-4">
-// //                               <div className="w-16 h-16 bg-gradient-to-br from-blue-100 to-indigo-100 rounded-2xl flex items-center justify-center">
-// //                                 <ImageIcon className="w-8 h-8 text-blue-600" />
-// //                               </div>
-// //                               <div className="space-y-1">
-// //                                 <h5 className="text-sm font-medium text-gray-900">
-// //                                   Upload images
-// //                                 </h5>
-// //                                 <p className="text-xs text-gray-500">
-// //                                   Select images (PNG, JPG, GIF up to 10MB each)
-// //                                 </p>
-// //                               </div>
-// //                               <div className="flex gap-4">
-// //                                 <input
-// //                                   type="file"
-// //                                   accept="image/*"
-// //                                   onChange={(e) => handleSubtaskImageInputChange(parentId, index, e, true)}
-// //                                   className="hidden"
-// //                                   id={`subtask-image-upload-single-${parentId}-${index}`}
-// //                                 />
-// //                                 <label
-// //                                   htmlFor={`subtask-image-upload-single-${parentId}-${index}`}
-// //                                   className="cursor-pointer inline-flex items-center px-6 py-3 border border-transparent shadow-sm text-sm font-medium rounded-lg text-white bg-green-600 hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 transition-colors"
-// //                                 >
-// //                                   Add Image
-// //                                 </label>
-// //                               </div>
-// //                             </div>
-// //                           </div>
-// //                         ) : (
-// //                           <>
-// //                             <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
-// //                               {subtask.images.map((image, imageIndex) => (
-// //                                 <div
-// //                                   key={`${parentId}-${index}-${imageIndex}`}
-// //                                   className="relative group"
-// //                                 >
-// //                                   <div className="relative rounded-xl overflow-hidden border-2 border-blue-200 bg-gradient-to-br from-blue-50 to-indigo-50">
-// //                                     <img
-// //                                       src={image.url}
-// //                                       alt={image.title || `Image ${imageIndex + 1}`}
-// //                                       className="w-full h-32 object-cover rounded-lg"
-// //                                     />
-// //                                     <button
-// //                                       onClick={(e) => {
-// //                                         e.stopPropagation();
-// //                                         handleRemoveSubtaskImage(parentId, index, imageIndex);
-// //                                       }}
-// //                                       className="absolute top-2 right-2 p-1.5 bg-red-500 text-white rounded-full hover:bg-red-600 transition-colors opacity-0 group-hover:opacity-100 z-10"
-// //                                       title={`Remove ${image.title || `Image ${imageIndex + 1}`}`}
-// //                                     >
-// //                                       <X className="w-3 h-3" />
-// //                                     </button>
-// //                                   </div>
-// //                                   <div className="mt-2">
-// //                                     <InputField
-// //                                       label={`Image ${imageIndex + 1} Title`}
-// //                                       name={`imageTitle_${imageIndex}`}
-// //                                       placeholder={`Image ${imageIndex + 1} Title`}
-// //                                       value={image.title || ""}
-// //                                       onChange={(e) => {
-// //                                         setBulkSubtasks((prev) => ({
-// //                                           ...prev,
-// //                                           [parentId]: prev[parentId].map((st, i) =>
-// //                                             i === index
-// //                                               ? {
-// //                                                   ...st,
-// //                                                   images: st.images.map((img, idx) =>
-// //                                                     idx === imageIndex
-// //                                                       ? { ...img, title: e.target.value, titleError: "" }
-// //                                                       : img
-// //                                                   ),
-// //                                                 }
-// //                                               : st
-// //                                           ),
-// //                                         }));
-// //                                       }}
-// //                                       className="text-xs"
-// //                                       error={image.titleError}
-// //                                     />
-// //                                   </div>
-// //                                 </div>
-// //                               ))}
-// //                             </div>
-// //                             <div className="flex justify-between items-center mt-4">
-// //                               <button
-// //                                 onClick={() => handleClearAllSubtaskImages(parentId, index)}
-// //                                 className="text-xs text-red-600 hover:text-red-700 font-medium transition-colors"
-// //                               >
-// //                                 Clear all images with Data
-// //                               </button>
-// //                               <div>
-// //                                 <input
-// //                                   type="file"
-// //                                   accept="image/*"
-// //                                   onChange={(e) => handleSubtaskImageInputChange(parentId, index, e, true)}
-// //                                   className="hidden"
-// //                                   id={`subtask-image-upload-single-add-${parentId}-${index}`}
-// //                                 />
-// //                                 <label
-// //                                   htmlFor={`subtask-image-upload-single-add-${parentId}-${index}`}
-// //                                   className="cursor-pointer inline-flex items-center px-4 py-2 border border-transparent shadow-sm text-sm font-medium rounded-lg text-white bg-green-600 hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 transition-colors"
-// //                                 >
-// //                                   Add Another Image
-// //                                 </label>
-// //                               </div>
-// //                             </div>
-// //                           </>
-// //                         )}
-// //                       </div>
-// //                     </div>
-// //                   </div>
-// //                   <div className="px-6 py-4 bg-gray-50 border-t border-gray-200 flex items-center justify-between">
-// //                     <div className="text-xs text-gray-500">
-// //                       <span>Maximum 10 images • Each file up to 10MB</span>
-// //                       <span className="mx-2">•</span>
-// //                       <span>Supported formats: JPG, PNG, GIF</span>
-// //                     </div>
-// //                     <div className="flex items-center gap-3">
-// //                       <button
-// //                         onClick={() => handleCloseSubtaskImageModal(parentId, index)}
-// //                         className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition-colors"
-// //                       >
-// //                         Cancel
-// //                       </button>
-// //                       <button
-// //                         onClick={() => handleSubtaskSaveImages(parentId, index)}
-// //                         disabled={!subtask.images || subtask.images.length === 0 || isAttaching}
-// //                         className="px-6 py-2 text-sm font-medium text-white bg-blue-600 border border-transparent rounded-lg hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed transition-colors flex items-center gap-2"
-// //                       >
-// //                         {isAttaching ? (
-// //                           <LoadingSpinner />
-// //                         ) : (
-// //                           <>
-// //                             <ImageIcon className="w-4 h-4" />
-// //                             Attach {subtask.images?.length || 0} Image{subtask.images?.length !== 1 ? "s" : ""}
-// //                           </>
-// //                         )}
-// //                       </button>
-// //                     </div>
-// //                   </div>
+// //                 className="absolute inset-0 bg-black/40 backdrop-blur-sm"
+// //                 onClick={() => setShowSubtaskCountModal(false)}
+// //               />
+// //               <div className="relative bg-white rounded-2xl shadow-2xl w-full max-w-sm p-6">
+// //                 <div className="flex items-center justify-between mb-4">
+// //                   <h4 className="text-lg font-semibold text-gray-900">
+// //                     Add Subtasks
+// //                   </h4>
+// //                   <button
+// //                     onClick={() => setShowSubtaskCountModal(false)}
+// //                     className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+// //                   >
+// //                     <X className="w-5 h-5 text-gray-600" />
+// //                   </button>
+// //                 </div>
+// //                 <div className="mb-6">
+// //                   <InputField
+// //                     label="Number of Subtasks"
+// //                     type="number"
+// //                     name="subtaskCount"
+// //                     value={subtaskCount}
+// //                     onChange={(e) => setSubtaskCount(parseInt(e.target.value) || 1)}
+// //                     placeholder="Enter number of subtasks"
+// //                     min="1"
+// //                     max="10"
+// //                     required
+// //                   />
+// //                   <p className="text-xs text-gray-500 mt-2">
+// //                     Enter the number of subtasks you want to create (1-10).
+// //                   </p>
+// //                 </div>
+// //                 <div className="flex justify-end gap-3">
+// //                   <button
+// //                     onClick={() => setShowSubtaskCountModal(false)}
+// //                     className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50"
+// //                   >
+// //                     Cancel
+// //                   </button>
+// //                   <button
+// //                     onClick={handleSubtaskCountConfirm}
+// //                     className="px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-lg hover:bg-blue-700"
+// //                   >
+// //                     Confirm
+// //                   </button>
 // //                 </div>
 // //               </div>
-// //             ) : null
-// //           )
-// //         )}
-// //         {showImageModal && (
-// //   <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-// //     {/* Background overlay */}
-// //     <div
-// //       className="absolute inset-0 bg-black bg-opacity-50 backdrop-blur-sm"
-// //       onClick={() => setShowImageModal(false)}
-// //     />
-
-// //     {/* Modal container */}
-// //     <div className="relative bg-white rounded-2xl shadow-2xl w-full max-w-4xl max-h-[90vh] overflow-hidden transform transition-all duration-300 scale-100">
-      
-// //       {/* Header */}
-// //       <div className="bg-gradient-to-r from-blue-600 to-blue-700 px-6 py-4 text-white">
-// //         <div className="flex items-center justify-between">
-// //           <div className="flex items-center gap-3">
-// //             <div className="p-2 bg-white/20 rounded-xl">
-// //               <ImageIcon className="w-5 h-5" />
 // //             </div>
-// //             <div>
-// //               <h4 className="text-lg font-semibold">Edit Images</h4>
-// //               <p className="text-blue-100 text-sm">
-// //                 Manage visual references for this item
-// //               </p>
-// //             </div>
-// //           </div>
-// //           <button
-// //             onClick={() => setShowImageModal(false)}
-// //             className="p-2 hover:bg-white/20 rounded-lg transition-colors"
-// //             title="Close"
-// //           >
-// //             <X className="w-5 h-5" />
-// //           </button>
-// //         </div>
-// //       </div>
-
-// //       {/* Body */}
-// //       <div className="p-6 max-h-[calc(90vh-120px)] overflow-y-auto">
-// //         <div className="space-y-6">
-// //           {/* Title + Description */}
-// //           <div className="space-y-4">
-// //             <InputField
-// //               label="Gallery Title"
-// //               name="galleryTitle"
-// //               placeholder="Enter a title for this image gallery (required)"
-// //               value={editFormData.galleryTitle}
-// //               onChange={handleEditInputChange}
-// //               required
-// //               error={errors.editForm.galleryTitle}
-// //             />
-// //             <TextAreaField
-// //               label="Gallery Description"
-// //               name="galleryDescription"
-// //               placeholder="Describe what these images show..."
-// //               value={editFormData.galleryDescription}
-// //               onChange={handleEditInputChange}
-// //               rows={3}
-// //             />
-// //           </div>
-
-// //           {/* Image Section */}
-// //           <div className="space-y-4">
-// //             {isUploading ? (
-// //               <div className="flex justify-center items-center h-32">
-// //                 <LoadingSpinner />
-// //               </div>
-// //             ) : editFormData.images && editFormData.images.length > 0 ? (
-// //               <>
-// //                 {/* Image grid */}
-// //                 <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
-// //                   {editFormData.images.map((image, index) => (
-// //                     <div key={`edit-${index}`} className="relative group">
-// //                       <div className="relative rounded-xl overflow-hidden border-2 border-blue-200 bg-gradient-to-br from-blue-50 to-indigo-50">
-// //                         <img
-// //                           src={image.url}
-// //                           alt={image.title || `Image ${index + 1}`}
-// //                           className="w-full h-32 object-cover rounded-lg"
-// //                         />
+// //           )}
+// //           {bulkTasks.map(
+// //             (task, index) =>
+// //               showTaskImageModal[`${selectedStageId}_${index}`] && (
+// //                 <div
+// //                   key={`${selectedStageId}_${index}`}
+// //                   className="fixed inset-0 pl-64 z-50 flex items-center justify-center p-4"
+// //                 >
+// //                   <div
+// //                     className="absolute inset-0 bg-opacity-50 backdrop-blur-sm"
+// //                     onClick={() => handleCloseTaskImageModal(selectedStageId, index)}
+// //                   />
+// //                   <div className="relative bg-white rounded-2xl shadow-2xl w-full max-w-4xl max-h-[90vh] overflow-hidden transform transition-all duration-300 scale-100">
+// //                     <div className="bg-gradient-to-r from-blue-600 to-blue-700 px-6 py-4 text-white">
+// //                       <div className="flex items-center justify-between">
+// //                         <div className="flex items-center gap-3">
+// //                           <div className="p-2 bg-white/20 rounded-xl">
+// //                             <ImageIcon className="w-5 h-5" />
+// //                           </div>
+// //                           <div>
+// //                             <h4 className="text-lg font-semibold">
+// //                               Attach Images - Task {index + 1}
+// //                             </h4>
+// //                             <p className="text-blue-100 text-sm">
+// //                               Add visual references for this task
+// //                             </p>
+// //                           </div>
+// //                         </div>
 // //                         <button
-// //                           onClick={(e) => {
-// //                             e.stopPropagation();
-// //                             setEditFormData((prev) => ({
-// //                               ...prev,
-// //                               images: prev.images.filter((_, i) => i !== index),
-// //                             }));
-// //                           }}
-// //                           className="absolute top-2 right-2 p-1.5 bg-red-500 text-white rounded-full hover:bg-red-600 transition-colors opacity-0 group-hover:opacity-100 z-10"
-// //                           title={`Remove ${image.title || `Image ${index + 1}`}`}
+// //                           onClick={() => handleCloseTaskImageModal(selectedStageId, index)}
+// //                           className="p-2 hover:bg-white/20 rounded-lg transition-colors"
+// //                           title="Close"
 // //                         >
-// //                           <X className="w-3 h-3" />
+// //                           <X className="w-5 h-5" />
 // //                         </button>
 // //                       </div>
-// //                       <div className="mt-2">
-// //                         <InputField
-// //                           label={`Image ${index + 1} Title`}
-// //                           name={`imageTitle_${index}`}
-// //                           placeholder={`Image ${index + 1} Title`}
-// //                           value={image.title || ""}
-// //                           onChange={(e) => {
-// //                             setEditFormData((prev) => ({
-// //                               ...prev,
-// //                               images: prev.images.map((img, i) =>
-// //                                 i === index
-// //                                   ? { ...img, title: e.target.value, titleError: "" }
-// //                                   : img
-// //                               ),
-// //                             }));
-// //                           }}
-// //                           className="text-xs"
-// //                           error={image.titleError}
-// //                         />
+// //                     </div>
+// //                     <div className="p-6 max-h-[calc(90vh-120px)] overflow-y-auto">
+// //                       <div className="space-y-6">
+// //                         <div className="space-y-4">
+// //                           <InputField
+// //                             label="Gallery Title"
+// //                             name="galleryTitle"
+// //                             placeholder="Enter a title for this image gallery (required)"
+// //                             value={task.galleryTitle || ""}
+// //                             onChange={(e) => handleTaskInputChange(selectedStageId, index, e)}
+// //                             required
+// //                             error={errors.taskForms[`${selectedStageId}_${index}`]?.galleryTitle}
+// //                           />
+// //                           <TextAreaField
+// //                             label="Gallery Description"
+// //                             name="galleryDescription"
+// //                             placeholder="Describe what these images show..."
+// //                             value={task.galleryDescription || ""}
+// //                             onChange={(e) => handleTaskInputChange(selectedStageId, index, e)}
+// //                             rows={3}
+// //                           />
+// //                         </div>
+// //                         <div className="space-y-4">
+// //                           {isUploading ? (
+// //                             <div className="flex justify-center items-center h-32">
+// //                               <LoadingSpinner />
+// //                             </div>
+// //                           ) : !task.images || task.images.length === 0 ? (
+// //                             <div className="border-2 border-dashed border-gray-300 rounded-2xl p-8 text-center hover:border-blue-400 transition-colors bg-gray-50/50 hover:bg-blue-50/25">
+// //                               <div className="flex flex-col items-center justify-center space-y-4">
+// //                                 <div className="w-16 h-16 bg-gradient-to-br from-blue-100 to-indigo-100 rounded-2xl flex items-center justify-center">
+// //                                   <ImageIcon className="w-8 h-8 text-blue-600" />
+// //                                 </div>
+// //                                 <div className="space-y-1">
+// //                                   <h5 className="text-sm font-medium text-gray-900">
+// //                                     Upload images
+// //                                   </h5>
+// //                                   <p className="text-xs text-gray-500">
+// //                                     Select images (PNG, JPG, GIF up to 10MB each)
+// //                                   </p>
+// //                                 </div>
+// //                                 <div className="flex gap-4">
+// //                                   <input
+// //                                     type="file"
+// //                                     accept="image/*"
+// //                                     multiple
+// //                                     onChange={(e) => handleTaskImageInputChange(selectedStageId, index, e, true)}
+// //                                     className="hidden"
+// //                                     id={`task-image-upload-single-${selectedStageId}-${index}`}
+// //                                   />
+// //                                   <label
+// //                                     htmlFor={`task-image-upload-single-${selectedStageId}-${index}`}
+// //                                     className="cursor-pointer inline-flex items-center px-6 py-3 border border-transparent shadow-sm text-sm font-medium rounded-lg text-white bg-green-600 hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 transition-colors"
+// //                                   >
+// //                                     Add Images
+// //                                   </label>
+// //                                 </div>
+// //                               </div>
+// //                             </div>
+// //                           ) : (
+// //                             <>
+// //                               <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+// //                                 {task.images.map((image, imageIndex) => (
+// //                                   <div
+// //                                     key={`${selectedStageId}-${index}-${imageIndex}`}
+// //                                     className="relative group"
+// //                                   >
+// //                                     <div className="relative rounded-xl overflow-hidden border-2 border-blue-200 bg-gradient-to-br from-blue-50 to-indigo-50">
+// //                                       <img
+// //                                         src={image.url}
+// //                                         alt={image.title || `Image ${imageIndex + 1}`}
+// //                                         className="w-full h-32 object-cover rounded-lg"
+// //                                       />
+// //                                       <button
+// //                                         onClick={(e) => {
+// //                                           e.stopPropagation();
+// //                                           handleRemoveSingleImage(index, imageIndex);
+// //                                         }}
+// //                                         className="absolute top-2 right-2 p-1.5 bg-red-500 text-white rounded-full hover:bg-red-600 transition-colors opacity-0 group-hover:opacity-100 z-10"
+// //                                         title={`Remove ${image.title || `Image ${imageIndex + 1}`}`}
+// //                                       >
+// //                                         <X className="w-3 h-3" />
+// //                                       </button>
+// //                                     </div>
+// //                                     <div className="mt-2">
+// //                                       <InputField
+// //                                         label={`Image ${imageIndex + 1} Title`}
+// //                                         name={`imageTitle_${imageIndex}`}
+// //                                         placeholder={`Image ${imageIndex + 1} Title`}
+// //                                         value={image.title || ""}
+// //                                         onChange={(e) => {
+// //                                           setBulkTasks((prev) =>
+// //                                             prev.map((t, i) =>
+// //                                               i === index
+// //                                                 ? {
+// //                                                     ...t,
+// //                                                     images: t.images.map((img, idx) =>
+// //                                                       idx === imageIndex
+// //                                                         ? { ...img, title: e.target.value, titleError: "" }
+// //                                                         : img
+// //                                                     ),
+// //                                                   }
+// //                                                 : t
+// //                                             )
+// //                                           );
+// //                                         }}
+// //                                         className="text-xs"
+// //                                         error={image.titleError}
+// //                                       />
+// //                                     </div>
+// //                                   </div>
+// //                                 ))}
+// //                               </div>
+// //                               <div className="flex justify-between items-center mt-4">
+// //                                 <button
+// //                                   onClick={() => handleClearAllImages(index)}
+// //                                   className="text-xs text-red-600 hover:text-red-700 font-medium transition-colors"
+// //                                 >
+// //                                   Clear all images with Data
+// //                                 </button>
+// //                                 <div>
+// //                                   <input
+// //                                     type="file"
+// //                                     accept="image/*"
+// //                                     multiple
+// //                                     onChange={(e) => handleTaskImageInputChange(selectedStageId, index, e, true)}
+// //                                     className="hidden"
+// //                                     id={`task-image-upload-single-add-${selectedStageId}-${index}`}
+// //                                   />
+// //                                   <label
+// //                                     htmlFor={`task-image-upload-single-add-${selectedStageId}-${index}`}
+// //                                     className="cursor-pointer inline-flex items-center px-4 py-2 border border-transparent shadow-sm text-sm font-medium rounded-lg text-white bg-green-600 hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 transition-colors"
+// //                                   >
+// //                                     Add More Images
+// //                                   </label>
+// //                                 </div>
+// //                               </div>
+// //                             </>
+// //                           )}
+// //                         </div>
 // //                       </div>
 // //                     </div>
-// //                   ))}
+// //                     <div className="px-6 py-4 bg-gray-50 border-t border-gray-200 flex items-center justify-between">
+// //                       <div className="text-xs text-gray-500">
+// //                         <span>Maximum 10 images • Each file up to 10MB</span>
+// //                         <span className="mx-2">•</span>
+// //                         <span>Supported formats: JPG, PNG, GIF</span>
+// //                       </div>
+// //                       <div className="flex items-center gap-3">
+// //                         <button
+// //                           onClick={() => handleCloseTaskImageModal(selectedStageId, index)}
+// //                           className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition-colors"
+// //                         >
+// //                           Cancel
+// //                         </button>
+// //                         <button
+// //                           onClick={() => handleTaskSaveImages(selectedStageId, index)}
+// //                           disabled={!task.images || task.images.length === 0 || isAttaching}
+// //                           className="px-6 py-2 text-sm font-medium text-white bg-blue-600 border border-transparent rounded-lg hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed transition-colors flex items-center gap-2"
+// //                         >
+// //                           {isAttaching ? (
+// //                             <LoadingSpinner />
+// //                           ) : (
+// //                             <>
+// //                               <ImageIcon className="w-4 h-4" />
+// //                               Attach {task.images?.length || 0} Image{task.images?.length !== 1 ? "s" : ""}
+// //                             </>
+// //                           )}
+// //                         </button>
+// //                       </div>
+// //                     </div>
+// //                   </div>
 // //                 </div>
-
-// //                 {/* Clear All + Add Another */}
-// //                 <div className="flex justify-between items-center mt-4">
-// //                   <button
-// //                     onClick={() => {
-// //                       setConfirmModalData({
-// //                         title: "Confirm Clear Images",
-// //                         message:
-// //                           "Are you sure you want to remove all images? This action cannot be undone.",
-// //                         onConfirm: () => {
+// //               )
+// //           )}
+// //           {Object.entries(bulkSubtasks).flatMap(([parentId, subtasks]) =>
+// //             subtasks.map((subtask, index) =>
+// //               showSubtaskImageModal[`${parentId}_${index}`] ? (
+// //                 <div
+// //                   key={`${parentId}_${index}`}
+// //                   className="fixed inset-0 pl-64 z-50 flex items-center justify-center p-4"
+// //                 >
+// //                   <div
+// //                     className="absolute inset-0 bg-opacity-50 backdrop-blur-sm"
+// //                     onClick={() => handleCloseSubtaskImageModal(parentId, index)}
+// //                   />
+// //                   <div className="relative bg-white rounded-2xl shadow-2xl w-full max-w-4xl max-h-[90vh] overflow-hidden transform transition-all duration-300 scale-100">
+// //                     <div className="bg-gradient-to-r from-blue-600 to-blue-700 px-6 py-4 text-white">
+// //                       <div className="flex items-center justify-between">
+// //                         <div className="flex items-center gap-3">
+// //                           <div className="p-2 bg-white/20 rounded-xl">
+// //                             <ImageIcon className="w-5 h-5" />
+// //                           </div>
+// //                           <div>
+// //                             <h4 className="text-lg font-semibold">
+// //                               Attach Images - Subtask {index + 1}
+// //                             </h4>
+// //                             <p className="text-blue-100 text-sm">
+// //                               Add visual references for this subtask
+// //                             </p>
+// //                           </div>
+// //                         </div>
+// //                         <button
+// //                           onClick={() => handleCloseSubtaskImageModal(parentId, index)}
+// //                           className="p-2 hover:bg-white/20 rounded-lg transition-colors"
+// //                           title="Close"
+// //                         >
+// //                           <X className="w-5 h-5" />
+// //                         </button>
+// //                       </div>
+// //                     </div>
+// //                     <div className="p-6 max-h-[calc(90vh-120px)] overflow-y-auto">
+// //                       <div className="space-y-6">
+// //                         <div className="space-y-4">
+// //                           <InputField
+// //                             label="Gallery Title"
+// //                             name="galleryTitle"
+// //                             placeholder="Enter a title for this image gallery (required)"
+// //                             value={subtask.galleryTitle || ""}
+// //                             onChange={(e) => handleSubtaskInputChange(parentId, index, e)}
+// //                             required
+// //                             error={errors.subtaskForms[`${parentId}_${index}`]?.galleryTitle}
+// //                           />
+// //                           <TextAreaField
+// //                             label="Gallery Description"
+// //                             name="galleryDescription"
+// //                             placeholder="Describe what these images show..."
+// //                             value={subtask.galleryDescription || ""}
+// //                             onChange={(e) => handleSubtaskInputChange(parentId, index, e)}
+// //                             rows={3}
+// //                           />
+// //                         </div>
+// //                         <div className="space-y-4">
+// //                           {isUploading ? (
+// //                             <div className="flex justify-center items-center h-32">
+// //                               <LoadingSpinner />
+// //                             </div>
+// //                           ) : !subtask.images || subtask.images.length === 0 ? (
+// //                             <div className="border-2 border-dashed border-gray-300 rounded-2xl p-8 text-center hover:border-blue-400 transition-colors bg-gray-50/50 hover:bg-blue-50/25">
+// //                               <div className="flex flex-col items-center justify-center space-y-4">
+// //                                 <div className="w-16 h-16 bg-gradient-to-br from-blue-100 to-indigo-100 rounded-2xl flex items-center justify-center">
+// //                                   <ImageIcon className="w-8 h-8 text-blue-600" />
+// //                                 </div>
+// //                                 <div className="space-y-1">
+// //                                   <h5 className="text-sm font-medium text-gray-900">
+// //                                     Upload images
+// //                                   </h5>
+// //                                   <p className="text-xs text-gray-500">
+// //                                     Select images (PNG, JPG, GIF up to 10MB each)
+// //                                   </p>
+// //                                 </div>
+// //                                 <div className="flex gap-4">
+// //                                   <input
+// //                                     type="file"
+// //                                     accept="image/*"
+// //                                     multiple
+// //                                     onChange={(e) => handleSubtaskImageInputChange(parentId, index, e, true)}
+// //                                     className="hidden"
+// //                                     id={`subtask-image-upload-single-${parentId}-${index}`}
+// //                                   />
+// //                                   <label
+// //                                     htmlFor={`subtask-image-upload-single-${parentId}-${index}`}
+// //                                     className="cursor-pointer inline-flex items-center px-6 py-3 border border-transparent shadow-sm text-sm font-medium rounded-lg text-white bg-green-600 hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 transition-colors"
+// //                                   >
+// //                                     Add Images
+// //                                   </label>
+// //                                 </div>
+// //                               </div>
+// //                             </div>
+// //                           ) : (
+// //                             <>
+// //                               <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+// //                                 {subtask.images.map((image, imageIndex) => (
+// //                                   <div
+// //                                     key={`${parentId}-${index}-${imageIndex}`}
+// //                                     className="relative group"
+// //                                   >
+// //                                     <div className="relative rounded-xl overflow-hidden border-2 border-blue-200 bg-gradient-to-br from-blue-50 to-indigo-50">
+// //                                       <img
+// //                                         src={image.url}
+// //                                         alt={image.title || `Image ${imageIndex + 1}`}
+// //                                         className="w-full h-32 object-cover rounded-lg"
+// //                                       />
+// //                                       <button
+// //                                         onClick={(e) => {
+// //                                           e.stopPropagation();
+// //                                           handleRemoveSubtaskImage(parentId, index, imageIndex);
+// //                                         }}
+// //                                         className="absolute top-2 right-2 p-1.5 bg-red-500 text-white rounded-full hover:bg-red-600 transition-colors opacity-0 group-hover:opacity-100 z-10"
+// //                                         title={`Remove ${image.title || `Image ${imageIndex + 1}`}`}
+// //                                       >
+// //                                         <X className="w-3 h-3" />
+// //                                       </button>
+// //                                     </div>
+// //                                     <div className="mt-2">
+// //                                       <InputField
+// //                                         label={`Image ${imageIndex + 1} Title`}
+// //                                         name={`imageTitle_${imageIndex}`}
+// //                                         placeholder={`Image ${imageIndex + 1} Title`}
+// //                                         value={image.title || ""}
+// //                                         onChange={(e) => {
+// //                                           setBulkSubtasks((prev) => ({
+// //                                             ...prev,
+// //                                             [parentId]: prev[parentId].map((st, i) =>
+// //                                               i === index
+// //                                                 ? {
+// //                                                     ...st,
+// //                                                     images: st.images.map((img, idx) =>
+// //                                                       idx === imageIndex
+// //                                                         ? { ...img, title: e.target.value, titleError: "" }
+// //                                                         : img
+// //                                                     ),
+// //                                                   }
+// //                                                 : st
+// //                                             ),
+// //                                           }));
+// //                                         }}
+// //                                         className="text-xs"
+// //                                         error={image.titleError}
+// //                                       />
+// //                                     </div>
+// //                                   </div>
+// //                                 ))}
+// //                               </div>
+// //                               <div className="flex justify-between items-center mt-4">
+// //                                 <button
+// //                                   onClick={() => handleClearAllSubtaskImages(parentId, index)}
+// //                                   className="text-xs text-red-600 hover:text-red-700 font-medium transition-colors"
+// //                                 >
+// //                                   Clear all images with Data
+// //                                 </button>
+// //                                 <div>
+// //                                   <input
+// //                                     type="file"
+// //                                     accept="image/*"
+// //                                     multiple
+// //                                     onChange={(e) => handleSubtaskImageInputChange(parentId, index, e, true)}
+// //                                     className="hidden"
+// //                                     id={`subtask-image-upload-single-add-${parentId}-${index}`}
+// //                                   />
+// //                                   <label
+// //                                     htmlFor={`subtask-image-upload-single-add-${parentId}-${index}`}
+// //                                     className="cursor-pointer inline-flex items-center px-4 py-2 border border-transparent shadow-sm text-sm font-medium rounded-lg text-white bg-green-600 hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 transition-colors"
+// //                                   >
+// //                                     Add More Images
+// //                                   </label>
+// //                                 </div>
+// //                               </div>
+// //                             </>
+// //                           )}
+// //                         </div>
+// //                       </div>
+// //                     </div>
+// //                     <div className="px-6 py-4 bg-gray-50 border-t border-gray-200 flex items-center justify-between">
+// //                       <div className="text-xs text-gray-500">
+// //                         <span>Maximum 10 images • Each file up to 10MB</span>
+// //                         <span className="mx-2">•</span>
+// //                         <span>Supported formats: JPG, PNG, GIF</span>
+// //                       </div>
+// //                       <div className="flex items-center gap-3">
+// //                         <button
+// //                           onClick={() => handleCloseSubtaskImageModal(parentId, index)}
+// //                           className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition-colors"
+// //                         >
+// //                           Cancel
+// //                         </button>
+// //                         <button
+// //                           onClick={() => handleSubtaskSaveImages(parentId, index)}
+// //                           disabled={!subtask.images || subtask.images.length === 0 || isAttaching}
+// //                           className="px-6 py-2 text-sm font-medium text-white bg-blue-600 border border-transparent rounded-lg hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed transition-colors flex items-center gap-2"
+// //                         >
+// //                           {isAttaching ? (
+// //                             <LoadingSpinner />
+// //                           ) : (
+// //                             <>
+// //                               <ImageIcon className="w-4 h-4" />
+// //                               Attach {subtask.images?.length || 0} Image{subtask.images?.length !== 1 ? "s" : ""}
+// //                             </>
+// //                           )}
+// //                         </button>
+// //                       </div>
+// //                     </div>
+// //                   </div>
+// //                 </div>
+// //               ) : null
+// //             )
+// //           )}
+// //           {showImageModal && (
+// //             <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+// //               <div
+// //                 className="absolute inset-0 bg-black bg-opacity-50 backdrop-blur-sm"
+// //                 onClick={() => setShowImageModal(false)}
+// //               />
+// //               <div className="relative bg-white rounded-2xl shadow-2xl w-full max-w-4xl max-h-[90vh] overflow-hidden transform transition-all duration-300 scale-100">
+// //                 <div className="bg-gradient-to-r from-blue-600 to-blue-700 px-6 py-4 text-white">
+// //                   <div className="flex items-center justify-between">
+// //                     <div className="flex items-center gap-3">
+// //                       <div className="p-2 bg-white/20 rounded-xl">
+// //                         <ImageIcon className="w-5 h-5" />
+// //                       </div>
+// //                       <div>
+// //                         <h4 className="text-lg font-semibold">Edit Images</h4>
+// //                         <p className="text-blue-100 text-sm">
+// //                           Manage visual references for this item
+// //                         </p>
+// //                       </div>
+// //                     </div>
+// //                     <button
+// //                       onClick={() => setShowImageModal(false)}
+// //                       className="p-2 hover:bg-white/20 rounded-lg transition-colors"
+// //                       title="Close"
+// //                     >
+// //                       <X className="w-5 h-5" />
+// //                     </button>
+// //                   </div>
+// //                 </div>
+// //                 <div className="p-6 max-h-[calc(90vh-120px)] overflow-y-auto">
+// //                   <div className="space-y-6">
+// //                     <div className="space-y-4">
+// //                       <InputField
+// //                         label="Gallery Title"
+// //                         name="galleryTitle"
+// //                         placeholder="Enter a title for this image gallery (required)"
+// //                         value={editFormData.galleryTitle}
+// //                         onChange={handleEditInputChange}
+// //                         required
+// //                         error={errors.editForm.galleryTitle}
+// //                       />
+// //                       <TextAreaField
+// //                         label="Gallery Description"
+// //                         name="galleryDescription"
+// //                         placeholder="Describe what these images show..."
+// //                         value={editFormData.galleryDescription}
+// //                         onChange={handleEditInputChange}
+// //                         rows={3}
+// //                       />
+// //                     </div>
+// //                     <div className="space-y-4">
+// //                       {isUploading ? (
+// //                         <div className="flex justify-center items-center h-32">
+// //                           <LoadingSpinner />
+// //                         </div>
+// //                       ) : editFormData.images && editFormData.images.length > 0 ? (
+// //                         <>
+// //                           <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+// //                             {editFormData.images.map((image, index) => (
+// //                               <div key={`edit-${index}`} className="relative group">
+// //                                 <div className="relative rounded-xl overflow-hidden border-2 border-blue-200 bg-gradient-to-br from-blue-50 to-indigo-50">
+// //                                   <img
+// //                                     src={image.url}
+// //                                     alt={image.title || `Image ${index + 1}`}
+// //                                     className="w-full h-32 object-cover rounded-lg"
+// //                                   />
+// //                                   <button
+// //                                     onClick={(e) => {
+// //                                       e.stopPropagation();
+// //                                       setEditFormData((prev) => ({
+// //                                         ...prev,
+// //                                         images: prev.images.filter((_, i) => i !== index),
+// //                                       }));
+// //                                     }}
+// //                                     className="absolute top-2 right-2 p-1.5 bg-red-500 text-white rounded-full hover:bg-red-600 transition-colors opacity-0 group-hover:opacity-100 z-10"
+// //                                     title={`Remove ${image.title || `Image ${index + 1}`}`}
+// //                                   >
+// //                                     <X className="w-3 h-3" />
+// //                                   </button>
+// //                                 </div>
+// //                                 <div className="mt-2">
+// //                                   <InputField
+// //                                     label={`Image ${index + 1} Title`}
+// //                                     name={`imageTitle_${index}`}
+// //                                     placeholder={`Image ${index + 1} Title`}
+// //                                     value={image.title || ""}
+// //                                     onChange={(e) => {
+// //                                       setEditFormData((prev) => ({
+// //                                         ...prev,
+// //                                         images: prev.images.map((img, i) =>
+// //                                           i === index
+// //                                             ? { ...img, title: e.target.value, titleError: "" }
+// //                                             : img
+// //                                         ),
+// //                                       }));
+// //                                     }}
+// //                                     className="text-xs"
+// //                                     error={image.titleError}
+// //                                   />
+// //                                 </div>
+// //                               </div>
+// //                             ))}
+// //                           </div>
+// //                           <div className="flex justify-between items-center mt-4">
+// //                             <button
+// //                               onClick={() => {
+// //                                 setConfirmModalData({
+// //                                   title: "Confirm Clear Images",
+// //                                   message:
+// //                                     "Are you sure you want to remove all images? This action cannot be undone.",
+// //                                   onConfirm: () => {
+// //                                     setEditFormData((prev) => ({
+// //                                       ...prev,
+// //                                       images: [],
+// //                                       galleryTitle: "",
+// //                                       galleryDescription: "",
+// //                                     }));
+// //                                     setShowConfirmModal(false);
+// //                                     toast.success("All images cleared successfully.");
+// //                                   },
+// //                                 });
+// //                                 setShowConfirmModal(true);
+// //                               }}
+// //                               className="text-xs text-red-600 hover:text-red-700 font-medium transition-colors"
+// //                             >
+// //                               Clear all images with Data
+// //                             </button>
+// //                             <div>
+// //                               <input
+// //                                 type="file"
+// //                                 accept="image/*"
+// //                                 multiple
+// //                                 onChange={(e) => handleEditImageInputChange(e, true)}
+// //                                 className="hidden"
+// //                                 id="edit-image-upload-single-add"
+// //                               />
+// //                               <label
+// //                                 htmlFor="edit-image-upload-single-add"
+// //                                 className="cursor-pointer inline-flex items-center px-4 py-2 border border-transparent shadow-sm text-sm font-medium rounded-lg text-white bg-green-600 hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 transition-colors"
+// //                               >
+// //                                 Add More Images
+// //                               </label>
+// //                             </div>
+// //                           </div>
+// //                         </>
+// //                       ) : (
+// //                         <div className="border-2 border-dashed border-gray-300 rounded-2xl p-8 text-center hover:border-blue-400 transition-colors bg-gray-50/50 hover:bg-blue-50/25">
+// //                           <div className="flex flex-col items-center justify-center space-y-4">
+// //                             <div className="w-16 h-16 bg-gradient-to-br from-blue-100 to-indigo-100 rounded-2xl flex items-center justify-center">
+// //                               <ImageIcon className="w-8 h-8 text-blue-600" />
+// //                             </div>
+// //                             <div className="space-y-1">
+// //                               <h5 className="text-sm font-medium text-gray-900">
+// //                                 Upload images
+// //                               </h5>
+// //                               <p className="text-xs text-gray-500">
+// //                                 Select images (PNG, JPG, GIF up to 10MB each)
+// //                               </p>
+// //                             </div>
+// //                             <div className="flex gap-4">
+// //                               <input
+// //                                 type="file"
+// //                                 accept="image/*"
+// //                                 multiple
+// //                                 onChange={(e) => handleEditImageInputChange(e, true)}
+// //                                 className="hidden"
+// //                                 id="edit-image-upload-single"
+// //                               />
+// //                               <label
+// //                                 htmlFor="edit-image-upload-single"
+// //                                 className="cursor-pointer inline-flex items-center px-6 py-3 border border-transparent shadow-sm text-sm font-medium rounded-lg text-white bg-green-600 hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 transition-colors"
+// //                               >
+// //                                 Add Images
+// //                               </label>
+// //                             </div>
+// //                           </div>
+// //                         </div>
+// //                       )}
+// //                     </div>
+// //                   </div>
+// //                 </div>
+// //                 <div className="px-6 py-4 bg-gray-50 border-t border-gray-200 flex items-center justify-between">
+// //                   <div className="text-xs text-gray-500">
+// //                     <span>Maximum 10 images • Each file up to 10MB</span>
+// //                     <span className="mx-2">•</span>
+// //                     <span>Supported formats: JPG, PNG, GIF</span>
+// //                   </div>
+// //                   <div className="flex items-center gap-3">
+// //                     <button
+// //                       onClick={() => setShowImageModal(false)}
+// //                       className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition-colors"
+// //                     >
+// //                       Cancel
+// //                     </button>
+// //                     <button
+// //                       onClick={async () => {
+// //                         setIsAttaching(true);
+// //                         const imagesWithErrors = editFormData.images.filter(
+// //                           (img) => !img.title.trim()
+// //                         );
+// //                         if (imagesWithErrors.length > 0) {
+// //                           toast.error("All images must have titles");
+// //                           setIsAttaching(false);
+// //                           return;
+// //                         }
+// //                         try {
+// //                           const uploadPromises = editFormData.images
+// //                             .filter((img) => img.file)
+// //                             .map(async (image) => {
+// //                               const formData = new FormData();
+// //                               formData.append("file", image.file);
+// //                               const response = await fetch("/api/upload", {
+// //                                 method: "POST",
+// //                                 body: formData,
+// //                               });
+// //                               const result = await response.json();
+// //                               if (!response.ok) {
+// //                                 throw new Error(result.error || "Failed to upload image");
+// //                               }
+// //                               return {
+// //                                 url: result.url,
+// //                                 title: image.title,
+// //                                 description: image.description,
+// //                                 public_id: result.public_id,
+// //                                 width: result.width,
+// //                                 height: result.height,
+// //                                 format: result.format,
+// //                               };
+// //                             });
+// //                           const uploadedImages = await Promise.all(uploadPromises);
+// //                           const allImages = [
+// //                             ...editFormData.images.filter((img) => !img.file),
+// //                             ...uploadedImages,
+// //                           ];
 // //                           setEditFormData((prev) => ({
 // //                             ...prev,
-// //                             images: [],
-// //                             galleryTitle: "",
-// //                             galleryDescription: "",
+// //                             images: allImages,
 // //                           }));
-// //                           setShowConfirmModal(false);
-// //                           toast.success("All images cleared successfully.");
-// //                         },
-// //                       });
-// //                       setShowConfirmModal(true);
-// //                     }}
-// //                     className="text-xs text-red-600 hover:text-red-700 font-medium transition-colors"
-// //                   >
-// //                     Clear all images with Data
-// //                   </button>
-// //                   <div>
-// //                     <input
-// //                       type="file"
-// //                       accept="image/*"
-// //                       onChange={(e) => handleEditImageInputChange(e, true)}
-// //                       className="hidden"
-// //                       id="edit-image-upload-single-add"
-// //                     />
-// //                     <label
-// //                       htmlFor="edit-image-upload-single-add"
-// //                       className="cursor-pointer inline-flex items-center px-4 py-2 border border-transparent shadow-sm text-sm font-medium rounded-lg text-white bg-green-600 hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 transition-colors"
+// //                           setShowImageModal(false);
+// //                           toast.success(`Successfully attached ${allImages.length} images`);
+// //                         } catch (error) {
+// //                           console.error("Error saving images:", error);
+// //                           toast.error("Failed to save images. Please try again.");
+// //                         } finally {
+// //                           setIsAttaching(false);
+// //                         }
+// //                       }}
+// //                       disabled={
+// //                         !editFormData.images ||
+// //                         editFormData.images.length === 0 ||
+// //                         isAttaching
+// //                       }
+// //                       className="px-6 py-2 text-sm font-medium text-white bg-blue-600 border border-transparent rounded-lg hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed transition-colors flex items-center gap-2"
 // //                     >
-// //                       Add Another Image
-// //                     </label>
-// //                   </div>
-// //                 </div>
-// //               </>
-// //             ) : (
-// //               /* Empty state */
-// //               <div className="border-2 border-dashed border-gray-300 rounded-2xl p-8 text-center hover:border-blue-400 transition-colors bg-gray-50/50 hover:bg-blue-50/25">
-// //                 <div className="flex flex-col items-center justify-center space-y-4">
-// //                   <div className="w-16 h-16 bg-gradient-to-br from-blue-100 to-indigo-100 rounded-2xl flex items-center justify-center">
-// //                     <ImageIcon className="w-8 h-8 text-blue-600" />
-// //                   </div>
-// //                   <div className="space-y-1">
-// //                     <h5 className="text-sm font-medium text-gray-900">
-// //                       Upload images
-// //                     </h5>
-// //                     <p className="text-xs text-gray-500">
-// //                       Select images (PNG, JPG, GIF up to 10MB each)
-// //                     </p>
-// //                   </div>
-// //                   <div className="flex gap-4">
-// //                     <input
-// //                       type="file"
-// //                       accept="image/*"
-// //                       onChange={(e) => handleEditImageInputChange(e, true)}
-// //                       className="hidden"
-// //                       id="edit-image-upload-single"
-// //                     />
-// //                     <label
-// //                       htmlFor="edit-image-upload-single"
-// //                       className="cursor-pointer inline-flex items-center px-6 py-3 border border-transparent shadow-sm text-sm font-medium rounded-lg text-white bg-green-600 hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 transition-colors"
-// //                     >
-// //                       Add Image
-// //                     </label>
+// //                       {isAttaching ? (
+// //                         <LoadingSpinner />
+// //                       ) : (
+// //                         <>
+// //                           <ImageIcon className="w-4 h-4" />
+// //                           Attach {editFormData.images?.length || 0} Image
+// //                           {editFormData.images?.length !== 1 ? "s" : ""}
+// //                         </>
+// //                       )}
+// //                     </button>
 // //                   </div>
 // //                 </div>
 // //               </div>
-// //             )}
-// //           </div>
-// //         </div>
-// //       </div>
-
-// //       {/* Footer */}
-// //       <div className="px-6 py-4 bg-gray-50 border-t border-gray-200 flex items-center justify-between">
-// //         <div className="text-xs text-gray-500">
-// //           <span>Maximum 10 images • Each file up to 10MB</span>
-// //           <span className="mx-2">•</span>
-// //           <span>Supported formats: JPG, PNG, GIF</span>
-// //         </div>
-// //         <div className="flex items-center gap-3">
-// //           <button
-// //             onClick={() => setShowImageModal(false)}
-// //             className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition-colors"
-// //           >
-// //             Cancel
-// //           </button>
-// //           <button
-// //             onClick={async () => {
-// //               setIsAttaching(true);
-// //               const imagesWithErrors = editFormData.images.filter(
-// //                 (img) => !img.title.trim()
-// //               );
-// //               if (imagesWithErrors.length > 0) {
-// //                 toast.error("All images must have titles");
-// //                 setIsAttaching(false);
-// //                 return;
-// //               }
-// //               try {
-// //                 const uploadPromises = editFormData.images
-// //                   .filter((img) => img.file)
-// //                   .map(async (image) => {
-// //                     const formData = new FormData();
-// //                     formData.append("file", image.file);
-// //                     const response = await fetch("/api/upload", {
-// //                       method: "POST",
-// //                       body: formData,
-// //                     });
-// //                     const result = await response.json();
-// //                     if (!response.ok) {
-// //                       throw new Error(result.error || "Failed to upload image");
-// //                     }
-// //                     return {
-// //                       url: result.url,
-// //                       title: image.title,
-// //                       description: image.description,
-// //                       public_id: result.public_id,
-// //                       width: result.width,
-// //                       height: result.height,
-// //                       format: result.format,
-// //                     };
-// //                   });
-// //                 const uploadedImages = await Promise.all(uploadPromises);
-// //                 const allImages = [
-// //                   ...editFormData.images.filter((img) => !img.file),
-// //                   ...uploadedImages,
-// //                 ];
-// //                 setEditFormData((prev) => ({
-// //                   ...prev,
-// //                   images: allImages,
-// //                 }));
-// //                 setShowImageModal(false);
-// //                 toast.success(`Successfully attached ${allImages.length} images`);
-// //               } catch (error) {
-// //                 console.error("Error saving images:", error);
-// //                 toast.error("Failed to save images. Please try again.");
-// //               } finally {
-// //                 setIsAttaching(false);
-// //               }
-// //             }}
-// //             disabled={
-// //               !editFormData.images ||
-// //               editFormData.images.length === 0 ||
-// //               isAttaching
-// //             }
-// //             className="px-6 py-2 text-sm font-medium text-white bg-blue-600 border border-transparent rounded-lg hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed transition-colors flex items-center gap-2"
-// //           >
-// //             {isAttaching ? (
-// //               <LoadingSpinner />
-// //             ) : (
-// //               <>
-// //                 <ImageIcon className="w-4 h-4" />
-// //                 Attach {editFormData.images?.length || 0} Image
-// //                 {editFormData.images?.length !== 1 ? "s" : ""}
-// //               </>
-// //             )}
-// //           </button>
-// //         </div>
-// //       </div>
-// //     </div>
-// //   </div>
-// // )}
-
+// //             </div>
+// //           )}
 // //           {showAddedModalnew && (
 // //             <div className="fixed inset-0 pl-64 z-50 flex items-center justify-center p-4">
 // //               <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" />
@@ -4001,7 +3998,6 @@
 // //     </div>
 // //   );
 // // }
-
 // "use client";
 // import { useState, useEffect } from "react";
 // import {
@@ -4034,18 +4030,15 @@
 // } from "lucide-react";
 // import Link from "next/link";
 // import toast, { Toaster } from "react-hot-toast";
-
 // // Loading Spinner Component
 // const LoadingSpinner = () => (
 //   <div className="flex items-center justify-center">
 //     <div className="w-6 h-6 border-4 border-blue-600 border-t-transparent rounded-full animate-spin"></div>
 //   </div>
 // );
-
 // // Error Message Component
 // const ErrorMessage = ({ message }) =>
 //   message ? <p className="text-xs text-red-600 mt-1">{message}</p> : null;
-
 // // Duplicate Warning Component
 // const DuplicateWarning = ({ items, value, excludeId, itemType = "Item" }) => {
 //   const hasDuplicate = items.some(
@@ -4065,7 +4058,6 @@
 //     </div>
 //   );
 // };
-
 // // Input Field Component
 // const InputField = ({
 //   label,
@@ -4124,7 +4116,6 @@
 //     </div>
 //   );
 // };
-
 // // Text Area Field Component
 // const TextAreaField = ({
 //   label,
@@ -4161,7 +4152,6 @@
 //     </div>
 //   );
 // };
-
 // // Confirmation Modal Component
 // const ConfirmationModal = ({ isOpen, onClose, onConfirm, title, message }) => {
 //   if (!isOpen) return null;
@@ -4197,7 +4187,6 @@
 //     </div>
 //   );
 // };
-
 // // Sortable Item Component
 // const SortableItem = ({
 //   id,
@@ -4240,7 +4229,7 @@
 //         style={style}
 //         onClick={(e) => {
 //           e.stopPropagation();
-//           onClick?.(id); // Updated to handle stage selection and hide table
+//           onClick?.(id);
 //         }}
 //         className={`group p-3 rounded-lg border border-slate-200 bg-white hover:border-slate-300 hover:shadow-sm transition-all duration-200 ${
 //           onClick ? "cursor-pointer" : ""
@@ -4354,7 +4343,6 @@
 //     </div>
 //   );
 // };
-
 // export default function NestedDragDrop() {
 //   const router = useRouter();
 //   const [stages, setStages] = useState([]);
@@ -4432,7 +4420,6 @@
 //     onConfirm: () => {},
 //   });
 //   const [tableData, setTableData] = useState([]);
-
 //   // Initialize tableData with useEffect
 //   useEffect(() => {
 //     if (showVisualTable) {
@@ -4440,16 +4427,14 @@
 //         stage.tasks?.flatMap((task) => [
 //           {
 //             id: task.id,
-//             checkPoint: task.title,
-//             checkPointImage: null,
+//             checkpoint: { title: task.title, images: task.images || [] }, // Structured as requested
 //             cleaningStatus: "Active",
 //             production: task.description || "-",
 //             qa: task.galleryTitle || "-",
 //           },
 //           ...(task.subtasks?.map((subtask) => ({
 //             id: subtask.id,
-//             checkPoint: subtask.title,
-//             checkPointImage: null,
+//             checkpoint: { title: subtask.title, images: subtask.images || [] }, // Structured as requested
 //             cleaningStatus: "Active",
 //             production: subtask.description || "-",
 //             qa: subtask.galleryTitle || "-",
@@ -4459,129 +4444,183 @@
 //       setTableData(initialData);
 //     }
 //   }, [showVisualTable, stages]);
-
 //   const handleCheckPointChange = (id, value) => {
 //     setTableData((prev) =>
-//       prev.map((row) => (row.id === id ? { ...row, checkPoint: value } : row))
+//       prev.map((row) => (row.id === id ? { ...row, checkpoint: { ...row.checkpoint, title: value } } : row))
 //     );
 //   };
-
-//   const handleImageUpload = (id, event) => {
-//     const file = event.target.files[0];
-//     if (!file) return;
-//     const maxSize = 10 * 1024 * 1024; // 10MB
-//     if (file.size > maxSize) {
-//       toast.error("Image size exceeds 10MB limit.");
+//   const handleImageUpload = async (id, event) => {
+//     setIsUploading(true);
+//     const files = Array.from(event.target.files);
+//     if (!files.length) {
+//       setIsUploading(false);
 //       return;
 //     }
-//     const reader = new FileReader();
-//     reader.onload = (e) => {
+//     const maxSize = 10 * 1024 * 1024; // 10MB
+//     const maxImages = 10; // Maximum images per row
+//     const validFiles = files.filter((file) => file.size <= maxSize);
+//     if (validFiles.length < files.length) {
+//       toast.error("Some images exceed the 10MB limit.");
+//     }
+//     const currentImages = tableData.find((row) => row.id === id)?.checkpoint?.images || [];
+//     if (currentImages.length + validFiles.length > maxImages) {
+//       toast.error(`Maximum ${maxImages} images allowed per row.`);
+//       setIsUploading(false);
+//       return;
+//     }
+//     try {
+//       const uploadPromises = validFiles.map(async (file) => {
+//         const formData = new FormData();
+//         formData.append("file", file);
+//         const response = await fetch("/api/upload", {
+//           method: "POST",
+//           body: formData,
+//         });
+//         const result = await response.json();
+//         if (!response.ok) {
+//           throw new Error(result.error || "Failed to upload image");
+//         }
+//         return {
+//           url: result.url,
+//           title: file.name.replace(/\.[^/.]+$/, ""),
+//           public_id: result.public_id,
+//           width: result.width,
+//           height: result.height,
+//           format: result.format,
+//         };
+//       });
+//       const uploadedImages = await Promise.all(uploadPromises);
 //       setTableData((prev) =>
-//         prev.map((row) =>
-//           row.id === id
-//             ? {
-//                 ...row,
-//                 checkPointImage: {
-//                   url: e.target.result,
-//                   file,
-//                   title: file.name.replace(/\.[^/.]+$/, ""),
-//                 },
-//               }
-//             : row
-//         )
+//         prev.map((row) => {
+//           if (row.id === id) {
+//             return {
+//               ...row,
+//               checkpoint: { ...row.checkpoint, images: [...currentImages, ...uploadedImages] },
+//             };
+//           }
+//           return row;
+//         })
 //       );
-//       toast.success("Image uploaded successfully!");
-//     };
-//     reader.onerror = () => {
-//       toast.error("Failed to upload image.");
-//     };
-//     reader.readAsDataURL(file);
+//       toast.success(`Successfully uploaded ${validFiles.length} image(s)!`);
+//     } catch (error) {
+//       console.error("Error uploading images:", error);
+//       toast.error("Failed to upload images. Please try again.");
+//     } finally {
+//       setIsUploading(false);
+//     }
 //     event.target.value = "";
 //   };
-
-//   const handleRemoveImage = (id) => {
+//   const handleRemoveImage = (id, imageIndex) => {
 //     setTableData((prev) =>
-//       prev.map((row) => (row.id === id ? { ...row, checkPointImage: null } : row))
+//       prev.map((row) =>
+//         row.id === id
+//           ? {
+//               ...row,
+//               checkpoint: { ...row.checkpoint, images: row.checkpoint.images.filter((_, idx) => idx !== imageIndex) },
+//             }
+//           : row
+//       )
 //     );
 //     toast.success("Image removed successfully!");
 //   };
-
+//   const handleDeleteRow = (id) => {
+//     setConfirmModalData({
+//       title: "Confirm Delete Row",
+//       message: "Are you sure you want to delete this row? This action cannot be undone.",
+//       onConfirm: () => {
+//         setTableData((prev) => prev.filter((row) => row.id !== id));
+//         setShowConfirmModal(false);
+//         toast.success("Row deleted successfully!");
+//       },
+//     });
+//     setShowConfirmModal(true);
+//   };
 //   const addNewRow = () => {
 //     const newRow = {
 //       id: `new-${Date.now()}-${Math.floor(Math.random() * 1000)}`,
-//       checkPoint: "",
-//       checkPointImage: null,
+//       checkpoint: { title: "", images: [] },
 //       cleaningStatus: "Visually Clean",
 //       production: "-",
 //       qa: "-",
 //     };
 //     setTableData((prev) => [...prev, newRow]);
 //   };
-
 //   const renderTableRows = () => {
 //     return tableData.map((item) => (
 //       <tr key={item.id} className="border-b border-gray-200 hover:bg-gray-50">
 //         <td className="py-3 px-4 text-sm text-gray-700">
-//           <div className="flex items-center gap-3">
+//           <div className="flex items-start flex-col gap-3">
 //             <input
 //               type="text"
-//               value={item.checkPoint}
+//               value={item.checkpoint?.title || ""}
 //               onChange={(e) => handleCheckPointChange(item.id, e.target.value)}
 //               className="w-full px-2 py-1 text-sm border rounded-lg focus:ring-2 focus:ring-blue-500 transition-colors border-slate-300 focus:border-blue-500"
 //               placeholder="Enter check point"
 //             />
-//             <div className="relative">
-//               {item.checkPointImage ? (
-//                 <div className="relative w-12 h-12">
-//                   <img
-//                     src={item.checkPointImage.url}
-//                     alt={item.checkPointImage.title}
-//                     className="w-full h-full object-cover rounded-lg"
-//                   />
-//                   <button
-//                     onClick={() => handleRemoveImage(item.id)}
-//                     className="absolute top-0 right-0 p-1 bg-red-500 text-white rounded-full hover:bg-red-600 transition-colors"
-//                     title="Remove image"
-//                   >
-//                     <X className="w-3 h-3" />
-//                   </button>
-//                 </div>
-//               ) : (
-//                 <>
-//                   <input
-//                     type="file"
-//                     accept="image/*"
-//                     onChange={(e) => handleImageUpload(item.id, e)}
-//                     className="hidden"
-//                     id={`image-upload-${item.id}`}
-//                   />
-//                   <label
-//                     htmlFor={`image-upload-${item.id}`}
-//                     className="cursor-pointer p-1 bg-green-100 text-green-700 hover:bg-green-200 rounded-lg flex items-center gap-1 text-xs"
-//                     title="Upload image"
-//                   >
-//                     <ImageIcon className="w-4 h-4" />
-//                     Upload
-//                   </label>
-//                 </>
-//               )}
+//             <div className="flex flex-wrap gap-2">
+//               {item.checkpoint?.images && item.checkpoint.images.length > 0 ? (
+//                 item.checkpoint.images.map((image, index) => (
+//                   <div key={`${item.id}-${index}`} className="relative">
+//                     <div className="relative w-12 h-12">
+//                       <img
+//                         src={image.url}
+//                         alt={image.title}
+//                         className="w-full h-full object-cover rounded-lg"
+//                       />
+//                       <button
+//                         onClick={() => handleRemoveImage(item.id, index)}
+//                         className="absolute top-0 right-0 p-1 bg-red-500 text-white rounded-full hover:bg-red-600 transition-colors"
+//                         title="Remove image"
+//                       >
+//                         <X className="w-3 h-3" />
+//                       </button>
+//                     </div>
+//                   </div>
+//                 ))
+//               ) : null}
+//               <input
+//                 type="file"
+//                 accept="image/*"
+//                 multiple
+//                 onChange={(e) => handleImageUpload(item.id, e)}
+//                 disabled={isUploading}
+//                 className="hidden"
+//                 id={`image-upload-${item.id}`}
+//               />
+//               <label
+//                 htmlFor={`image-upload-${item.id}`}
+//                 className={`cursor-pointer p-1 bg-green-100 text-green-700 hover:bg-green-200 rounded-lg flex items-center gap-1 text-xs ${
+//                   isUploading ? "opacity-50 cursor-not-allowed" : ""
+//                 }`}
+//                 title="Upload images"
+//               >
+//                 {isUploading ? <LoadingSpinner /> : <ImageIcon className="w-4 h-4" />}
+//                 {isUploading ? "Uploading..." : "Upload"}
+//               </label>
 //             </div>
 //           </div>
 //         </td>
 //         <td className="py-3 px-4 text-sm text-gray-700">{item.cleaningStatus}</td>
 //         <td className="py-3 px-4 text-sm text-gray-600">{item.production}</td>
 //         <td className="py-3 px-4 text-sm text-gray-600">{item.qa}</td>
+//         <td className="py-3 px-4 text-sm text-gray-700">
+//           <button
+//             onClick={() => handleDeleteRow(item.id)}
+//             className="p-1.5 text-slate-500 hover:text-red-600 hover:bg-red-50 rounded-md transition-colors"
+//             title="Delete Row"
+//           >
+//             <Trash className="w-4 h-4" />
+//           </button>
+//         </td>
 //       </tr>
 //     ));
 //   };
-
 //   const sensors = useSensors(
 //     useSensor(PointerSensor, { activationConstraint: { distance: 5 } }),
 //     useSensor(TouchSensor, {
 //       activationConstraint: { delay: 200, tolerance: 5 },
 //     })
 //   );
-
 //   // Save Loading Modal Component
 //   const SaveLoadingModal = ({ isOpen }) => {
 //     if (!isOpen) return null;
@@ -4602,7 +4641,6 @@
 //       </div>
 //     );
 //   };
-
 //   const validateChecklistData = () => {
 //     const newErrors = {
 //       name: !checklistData.name.trim() ? "Checklist name is required" : "",
@@ -4613,7 +4651,6 @@
 //     setErrors((prev) => ({ ...prev, checklist: newErrors }));
 //     return Object.values(newErrors).every((error) => !error);
 //   };
-
 //   const validateStage = (title) => {
 //     const newErrors = {
 //       title: !title.trim() ? "Stage title is required" : "",
@@ -4621,7 +4658,6 @@
 //     setStageErrors(newErrors);
 //     return Object.values(newErrors).every((error) => !error);
 //   };
-
 //   const validateTask = (taskData, stageId, index) => {
 //     const newErrors = {
 //       title: !taskData.title.trim() ? "Task title is required" : "",
@@ -4661,7 +4697,6 @@
 //     }));
 //     return Object.values(newErrors).every((error) => !error);
 //   };
-
 //   const validateSubtask = (subtaskData, parentId, index) => {
 //     const newErrors = {
 //       title: !subtaskData.title.trim() ? "Subtask title is required" : "",
@@ -4703,7 +4738,6 @@
 //     }));
 //     return Object.values(newErrors).every((error) => !error);
 //   };
-
 //   const validateEditForm = () => {
 //     const newErrors = {
 //       title: !editFormData.title.trim() ? "Title is required" : "",
@@ -4733,7 +4767,6 @@
 //     setErrors((prev) => ({ ...prev, editForm: newErrors }));
 //     return Object.values(newErrors).every((error) => !error);
 //   };
-
 //   const clearTaskErrors = (stageId, index) => {
 //     setErrors((prev) => ({
 //       ...prev,
@@ -4748,7 +4781,6 @@
 //       },
 //     }));
 //   };
-
 //   const clearSubtaskErrors = (parentId, index) => {
 //     setErrors((prev) => ({
 //       ...prev,
@@ -4763,17 +4795,14 @@
 //       },
 //     }));
 //   };
-
 //   const clearEditErrors = () => {
 //     setErrors((prev) => ({
 //       ...prev,
 //       editForm: { title: "", description: "", galleryTitle: "", time: "" },
 //     }));
 //   };
-
 //   const generateId = (prefix) =>
 //     `${prefix}-${Date.now()}-${Math.floor(Math.random() * 1000)}`;
-
 //   const findItemById = (items, id) => {
 //     for (const item of items) {
 //       if (item.id === id) return item;
@@ -4788,7 +4817,6 @@
 //     }
 //     return null;
 //   };
-
 //   const findContainer = (items, id) => {
 //     if (items.find((item) => item.id === id)) {
 //       return {
@@ -4808,7 +4836,6 @@
 //     }
 //     return null;
 //   };
-
 //   const findItem = (items, id) => {
 //     for (const item of items) {
 //       if (item.id === id) return item;
@@ -4823,7 +4850,6 @@
 //     }
 //     return null;
 //   };
-
 //   const updateItem = (items, id, updatedData) =>
 //     items.map((item) => {
 //       if (item.id === id) return { ...item, ...updatedData };
@@ -4836,7 +4862,6 @@
 //         };
 //       return item;
 //     });
-
 //   const deleteItem = (items, id) =>
 //     items
 //       .map((item) => {
@@ -4850,14 +4875,12 @@
 //         };
 //       })
 //       .filter(Boolean);
-
 //   const cloneItem = (item) => ({
 //     ...item,
 //     id: generateId(item.id.split("-")[0]),
 //     tasks: item.tasks ? item.tasks.map(cloneItem) : undefined,
 //     subtasks: item.subtasks ? item.subtasks.map(cloneItem) : undefined,
 //   });
-
 //   const duplicateItemRecursive = (items, id) =>
 //     items.flatMap((item) => {
 //       if (item.id === id) {
@@ -4876,7 +4899,6 @@
 //       }
 //       return [newItem];
 //     });
-
 //   const checkDuplicateTitle = (items, newTitle, excludeId = null, itemType = "generic") => {
 //     if (!newTitle || !newTitle.trim()) return false;
 //     const typePrefix =
@@ -4900,7 +4922,6 @@
 //     }
 //     return false;
 //   };
-
 //   const generateNumbering = (items, id, parentNumbers = []) => {
 //     for (let i = 0; i < items.length; i++) {
 //       const currentNumbers = [...parentNumbers, i + 1];
@@ -4916,13 +4937,11 @@
 //     }
 //     return null;
 //   };
-
 //   const formatTime = (hours, minutes, seconds) => {
 //     return `${hours.toString().padStart(2, "0")}:${minutes
 //       .toString()
 //       .padStart(2, "0")}:${seconds.toString().padStart(2, "0")}`;
 //   };
-
 //   const parseTime = (timeString) => {
 //     if (!timeString) return { hours: "00", minutes: "00", seconds: "00" };
 //     const [hours, minutes, seconds] = timeString
@@ -4930,11 +4949,9 @@
 //       .map((val) => val.padStart(2, "0"));
 //     return { hours, minutes, seconds };
 //   };
-
 //   const timeToSeconds = (hours, minutes, seconds) => {
 //     return parseInt(hours) * 3600 + parseInt(minutes) * 60 + parseInt(seconds);
 //   };
-
 //   const handleInputChange = (e) => {
 //     const { name, value } = e.target;
 //     setChecklistData((prev) => ({ ...prev, [name]: value }));
@@ -4945,7 +4962,80 @@
 //       }));
 //     }
 //   };
-
+//   const syncTableEditsToStages = (stages, tableData) => {
+//     return stages.map((stage) => ({
+//       ...stage,
+//       tasks: stage.tasks?.map((task) => {
+//         const matchingRow = tableData.find((row) => row.id === task.id);
+//         if (matchingRow) {
+//           return {
+//             ...task,
+//             title: matchingRow.checkpoint?.title || task.title,
+//             images: matchingRow.checkpoint?.images || task.images,
+//             description: matchingRow.production || task.description,
+//             galleryTitle: matchingRow.qa || task.galleryTitle,
+//           };
+//         }
+//         return {
+//           ...task,
+//           subtasks: task.subtasks?.map((subtask) => {
+//             const matchingSubRow = tableData.find((row) => row.id === subtask.id);
+//             if (matchingSubRow) {
+//               return {
+//                 ...subtask,
+//                 title: matchingSubRow.checkpoint?.title || subtask.title,
+//                 images: matchingSubRow.checkpoint?.images || subtask.images,
+//                 description: matchingSubRow.production || subtask.description,
+//                 galleryTitle: matchingSubRow.qa || subtask.galleryTitle,
+//               };
+//             }
+//             return subtask;
+//           }) || [],
+//         };
+//       }) || [],
+//     }));
+//   };
+//   // Helper to transform stages to schema format (remove IDs, ensure structure)
+//   const transformStagesForSchema = (stages) => {
+//     return stages.map((stage) => ({
+//       title: stage.title,
+//       tasks: stage.tasks?.map((task) => ({
+//         title: task.title,
+//         description: task.description || "",
+//         galleryDescription: task.galleryDescription || "",
+//         minTime: task.minTime || "",
+//         maxTime: task.maxTime || "",
+//         galleryTitle: task.galleryTitle || "",
+//         images: task.images || [], // Assuming images are already URL strings after upload
+//         subtasks: task.subtasks ? transformTasksForSchema(task.subtasks) : [],
+//       })) || [],
+//     }));
+//   };
+//   // Recursive transform for subtasks (since checklistStageSchema is recursive)
+//   const transformTasksForSchema = (tasks) => {
+//     return tasks.map((task) => ({
+//       title: task.title,
+//       description: task.description || "",
+//       galleryDescription: task.galleryDescription || "",
+//       minTime: task.minTime || "",
+//       maxTime: task.maxTime || "",
+//       galleryTitle: task.galleryTitle || "",
+//       images: task.images || [],
+//       subtasks: task.subtasks ? transformTasksForSchema(task.subtasks) : [],
+//     }));
+//   };
+//   // Helper to transform tableData to visualRepresentation schema format
+//   const transformVisualRepresentationForSchema = (tableData) => {
+//     return tableData.map((row) => ({
+//       checkPoint: {
+//         title: row.checkpoint?.title || "",
+//         images: row.checkpoint?.images || [], // Full Cloudinary objects
+//       },
+//       cleaningStatus: row.cleaningStatus || "Visually Clean",
+//       production: row.production || "",
+//       qa: row.qa || "",
+//     }));
+//   };
 //   const handleSubmit = async () => {
 //     if (!validateChecklistData()) {
 //       toast.error("Please fix the validation errors before submitting.");
@@ -4980,38 +5070,55 @@
 //       toast.error(errorMessage);
 //       return;
 //     }
+//     let updatedStages = stages;
+//     if (showVisualTable && tableData.length > 0) {
+//       updatedStages = syncTableEditsToStages(stages, tableData);
+//     }
+//     // Transform to match schema exactly
+//     const schemaStages = transformStagesForSchema(updatedStages);
+//     const schemaVisualRepresentation = transformVisualRepresentationForSchema(tableData);
+//     const fullChecklistData = {
+//       ...checklistData,
+//       stages: schemaStages,
+//       visualRepresntation: schemaVisualRepresentation, // Fixed typo to match schema: visualRepresntation
+//       companyId: JSON.parse(localStorage.getItem("user")).companyId,
+//       userId: JSON.parse(localStorage.getItem("user")).id,
+//     };
+//     // Console the full transformed data for debugging
+//     console.log("Full Checklist Data (Schema-Compliant) on Save:", JSON.stringify(fullChecklistData, null, 2));
 //     setIsSaving(true);
 //     const userData = JSON.parse(localStorage.getItem("user"));
 //     const data = {
 //       ...checklistData,
-//       stages,
+//       stages: schemaStages,
+//       visualRepresntation: schemaVisualRepresentation, // Now included in POST body
 //       companyId: userData.companyId,
 //       userId: userData.id,
 //     };
-//     try {
-//       const response = await fetch("/api/checklistapi/create", {
-//         method: "POST",
-//         headers: {
-//           "Content-Type": "application/json",
-//         },
-//         body: JSON.stringify(data),
-//       });
-//       if (!response.ok) {
-//         const err = await response.json();
-//         toast.error(err.message || "Failed to create checklist.");
-//         setIsSaving(false);
-//         return;
-//       }
-//       const result = await response.json();
-//       setIsSaving(false);
-//       setAddedmodalnew(true);
-//     } catch (error) {
-//       console.error("Error creating checklist:", error);
-//       toast.error("Something went wrong. Please try again.");
-//       setIsSaving(false);
-//     }
+//     console.log("ad",data);
+//     // try {
+//     //   const response = await fetch("/api/checklistapi/create", {
+//     //     method: "POST",
+//     //     headers: {
+//     //       "Content-Type": "application/json",
+//     //     },
+//     //     body: JSON.stringify(data),
+//     //   });
+//     //   if (!response.ok) {
+//     //     const err = await response.json();
+//     //     toast.error(err.message || "Failed to create checklist.");
+//     //     setIsSaving(false);
+//     //     return;
+//     //   }
+//     //   const result = await response.json();
+//     //   setIsSaving(false);
+//     //   setAddedmodalnew(true);
+//     // } catch (error) {
+//     //   console.error("Error creating checklist:", error);
+//     //   toast.error("Something went wrong. Please try again.");
+//     //   setIsSaving(false);
+//     // }
 //   };
-
 //   const getCompletionStatus = () => {
 //     const checklistComplete =
 //       checklistData.name &&
@@ -5032,7 +5139,6 @@
 //       ),
 //     };
 //   };
-
 //   const handleStageInputChange = (e) => {
 //     const value = e.target.value;
 //     setNewStage({ title: value });
@@ -5040,7 +5146,6 @@
 //       setStageErrors((prev) => ({ ...prev, title: "" }));
 //     }
 //   };
-
 //   const addStage = () => {
 //     if (!validateStage(newStage.title)) return;
 //     if (checkDuplicateTitle(stages, newStage.title, null, "stage")) {
@@ -5062,7 +5167,6 @@
 //     setStageErrors({ title: "" });
 //     toast.success(`Stage "${newStage.title}" added successfully!`);
 //   };
-
 //   const handleStageCountConfirm = () => {
 //     if (stageCount < 1 || stageCount > 10) {
 //       toast.error("Please enter a number between 1 and 10.");
@@ -5078,7 +5182,6 @@
 //     setStageCount(1);
 //     setSelectedStageId(newStages[0]?.id || null);
 //   };
-
 //   const handleDeleteStage = (stageId) => {
 //     const stageToDelete = stages.find((s) => s.id === stageId);
 //     if (!stageToDelete) return;
@@ -5113,7 +5216,6 @@
 //     });
 //     setShowConfirmModal(true);
 //   };
-
 //   const handleDuplicateStage = (stageId) => {
 //     const stageToDuplicate = stages.find((s) => s.id === stageId);
 //     if (!stageToDuplicate) return;
@@ -5148,13 +5250,11 @@
 //     setSelectedStageId(newStage.id);
 //     toast.success(`Duplicated "${stageToDuplicate.title}"`);
 //   };
-
 //   const handleStageDragStart = (event) => {
 //     const { active } = event;
 //     setActiveStageId(active.id);
 //     setActiveStageItem(stages.find((stage) => stage.id === active.id));
 //   };
-
 //   const handleStageDragEnd = (event) => {
 //     const { active, over } = event;
 //     if (!over || active.id === over.id) {
@@ -5170,12 +5270,10 @@
 //     setActiveStageId(null);
 //     setActiveStageItem(null);
 //   };
-
 //   const toggleTaskForm = (stageId) => {
 //     setShowTaskCountModal(true);
 //     setSelectedStageId(stageId);
 //   };
-
 //   const handleTaskCountConfirm = () => {
 //     if (taskCount < 1 || taskCount > 10) {
 //       toast.error("Please enter a number between 1 and 10.");
@@ -5208,7 +5306,6 @@
 //     setShowTaskCountModal(false);
 //     setTaskCount(1);
 //   };
-
 //   const handleTaskInputChange = (stageId, index, e) => {
 //     const { name, value } = e.target;
 //     if (errors.taskForms[`${stageId}_${index}`]?.[name]) {
@@ -5277,7 +5374,6 @@
 //       );
 //     }
 //   };
-
 //   const handleTaskImageInputChange = (stageId, index, event, single = false) => {
 //     setIsUploading(true);
 //     const files = Array.from(event.target.files);
@@ -5332,7 +5428,6 @@
 //       event.target.value = "";
 //     }
 //   };
-
 //   const handleRemoveSingleImage = (index, imageIndex) => {
 //     setBulkTasks((prev) =>
 //       prev.map((task, i) =>
@@ -5345,7 +5440,6 @@
 //       )
 //     );
 //   };
-
 //   const handleClearAllImages = (index) => {
 //     setConfirmModalData({
 //       title: "Confirm Clear Images",
@@ -5369,7 +5463,6 @@
 //     });
 //     setShowConfirmModal(true);
 //   };
-
 //   const handleTaskSaveImages = async (stageId, index) => {
 //     setIsAttaching(true);
 //     try {
@@ -5420,7 +5513,6 @@
 //       setIsAttaching(false);
 //     }
 //   };
-
 //   const addTask = (stageId, index) => {
 //     const task = bulkTasks[index];
 //     if (!validateTask(task, stageId, index)) {
@@ -5491,12 +5583,10 @@
 //       setShowTaskForms((prev) => ({ ...prev, [stageId]: false }));
 //     }
 //   };
-
 //   const toggleSubtaskForm = (parentId) => {
 //     setShowSubtaskCountModal(true);
 //     setSelectedParentId(parentId);
 //   };
-
 //   const handleSubtaskCountConfirm = () => {
 //     if (subtaskCount < 1 || subtaskCount > 10) {
 //       toast.error("Please enter a number between 1 and 10.");
@@ -5536,7 +5626,6 @@
 //     setShowSubtaskCountModal(false);
 //     setSubtaskCount(1);
 //   };
-
 //   const handleSubtaskInputChange = (parentId, index, e) => {
 //     const { name, value } = e.target;
 //     if (errors.subtaskForms[`${parentId}_${index}`]?.[name]) {
@@ -5611,7 +5700,6 @@
 //       }));
 //     }
 //   };
-
 //   const handleSubtaskImageInputChange = (
 //     parentId,
 //     index,
@@ -5672,7 +5760,6 @@
 //       event.target.value = "";
 //     }
 //   };
-
 //   const handleRemoveSubtaskImage = (parentId, index, imageIndex) => {
 //     setBulkSubtasks((prev) => ({
 //       ...prev,
@@ -5686,7 +5773,6 @@
 //       ),
 //     }));
 //   };
-
 //   const handleClearAllSubtaskImages = (parentId, index) => {
 //     setConfirmModalData({
 //       title: "Confirm Clear Images",
@@ -5711,7 +5797,6 @@
 //     });
 //     setShowConfirmModal(true);
 //   };
-
 //   const handleSubtaskSaveImages = async (parentId, index) => {
 //     setIsAttaching(true);
 //     try {
@@ -5765,7 +5850,6 @@
 //       setIsAttaching(false);
 //     }
 //   };
-
 //   const handleAddSubtask = (parentId, index) => {
 //     const subtask = bulkSubtasks[parentId][index];
 //     if (!validateSubtask(subtask, parentId, index)) {
@@ -5837,7 +5921,6 @@
 //       setShowSubtaskForms((prev) => ({ ...prev, [parentId]: false }));
 //     }
 //   };
-
 //   const addSubtask = (items, parentId, newSubtaskItem) =>
 //     items.map((item) => {
 //       if (item.id === parentId)
@@ -5857,7 +5940,6 @@
 //         };
 //       return item;
 //     });
-
 //   const toggleSubtaskTimeFields = (parentId, index) => {
 //     setShowSubtaskTimeFields((prev) => ({
 //       ...prev,
@@ -5878,7 +5960,6 @@
 //       }));
 //     }
 //   };
-
 //   const handleEdit = (id) => {
 //     const item = findItemById(stages, id);
 //     if (item) {
@@ -5897,12 +5978,10 @@
 //       clearEditErrors();
 //     }
 //   };
-
 //   const handleDuplicate = (id) => {
 //     setStages((prev) => duplicateItemRecursive(prev, id));
 //     toast.success("Item duplicated successfully!");
 //   };
-
 //   const handleEditInputChange = (e) => {
 //     const { name, value } = e.target;
 //     if (errors.editForm[name]) {
@@ -5957,7 +6036,6 @@
 //       setEditFormData((prev) => ({ ...prev, [name]: value }));
 //     }
 //   };
-
 //   const handleEditImageInputChange = (event, single = false) => {
 //     setIsUploading(true);
 //     const files = Array.from(event.target.files);
@@ -6004,7 +6082,6 @@
 //       event.target.value = "";
 //     }
 //   };
-
 //   const handleSaveEdit = () => {
 //     if (!validateEditForm()) {
 //       return;
@@ -6075,8 +6152,6 @@
 //     clearEditErrors();
 //     toast.success(`"${editFormData.title}" updated successfully!`);
 //   };
-
-  
 //   const handleDelete = (id) => {
 //     console.log("Deleting item with ID:", id);
 //     const item = findItemById(stages, id);
@@ -6113,13 +6188,11 @@
 //     });
 //     setShowConfirmModal(true);
 //   };
-
 //   const handleTaskDragStart = (event) => {
 //     const { active } = event;
 //     setActiveTaskId(active.id);
 //     setActiveTaskItem(findItem(stages, active.id));
 //   };
-
 //   const handleTaskDragEnd = (event) => {
 //     const { active, over } = event;
 //     if (!over) {
@@ -6142,7 +6215,6 @@
 //     setActiveTaskId(null);
 //     setActiveTaskItem(null);
 //   };
-
 //   const toggleTimeFields = (stageId, index) => {
 //     setShowTimeFields((prev) => ({
 //       ...prev,
@@ -6162,7 +6234,6 @@
 //       );
 //     }
 //   };
-
 //   const handleResetTime = () => {
 //     setShowEditTimeFields(false);
 //     setEditFormData((prev) => ({
@@ -6171,37 +6242,30 @@
 //       maxTime: { hours: "00", minutes: "00", seconds: "00" },
 //     }));
 //   };
-
 //   const handleSetTime = () => {
 //     setShowEditTimeFields(true);
 //   };
-
 //   const handleOpenTaskImageModal = (stageId, index) => {
 //     setShowTaskImageModal((prev) => ({
 //       ...prev,
 //       [`${stageId}_${index}`]: true,
 //     }));
 //   };
-
 //   const handleCloseTaskImageModal = (stageId, index) => {
 //     setShowTaskImageModal((prev) => ({
 //       ...prev,
 //       [`${stageId}_${index}`]: false,
 //     }));
 //   };
-
 //   const handleOpenSubtaskImageModal = (parentId, index) => {
 //     setShowSubtaskImageModal((prev) => ({ ...prev, [`${parentId}_${index}`]: true }));
 //   };
-
 //   const handleCloseSubtaskImageModal = (parentId, index) => {
 //     setShowSubtaskImageModal((prev) => ({ ...prev, [`${parentId}_${index}`]: false }));
 //   };
-
 //   const handleOpenImageModal = () => {
 //     setShowImageModal(true);
 //   };
-
 //   const renderItems = (items, level = 1, parentStageId = null) =>
 //     items.map((item) => {
 //       const numbering = generateNumbering(stages, item.id);
@@ -6613,7 +6677,6 @@
 //         </div>
 //       );
 //     });
-
 //   return (
 //     <div className="min-h-screen bg-slate-100 p-4 sm:p-6 lg:p-8">
 //       <Toaster />
@@ -6736,7 +6799,7 @@
 //                         showActionButtons={false}
 //                         onClick={(id) => {
 //                           setSelectedStageId(id);
-//                           setShowVisualTable(false); // Hide table when selecting a stage
+//                           setShowVisualTable(false);
 //                         }}
 //                         items={stages}
 //                         itemType="Stage"
@@ -6794,7 +6857,7 @@
 //                   d="M3 10h18M3 14h18m-9-4v8m-7 0h14a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z"
 //                 />
 //               </svg>
-//               {showVisualTable ? "Show Tasks" : "Show Visual Representation"}
+//              Visual Representation
 //             </button>
 //           </div>
 //           <div className="lg:col-span-2 bg-white rounded-xl shadow-md p-6">
@@ -6835,6 +6898,9 @@
 //                         </th>
 //                         <th className="py-3 px-4 text-left text-sm font-semibold text-gray-900">
 //                           QA
+//                         </th>
+//                         <th className="py-3 px-4 text-left text-sm font-semibold text-gray-900">
+//                           Actions
 //                         </th>
 //                       </tr>
 //                     </thead>
@@ -7322,6 +7388,7 @@
 //                                   <input
 //                                     type="file"
 //                                     accept="image/*"
+//                                     multiple
 //                                     onChange={(e) => handleTaskImageInputChange(selectedStageId, index, e, true)}
 //                                     className="hidden"
 //                                     id={`task-image-upload-single-${selectedStageId}-${index}`}
@@ -7330,7 +7397,7 @@
 //                                     htmlFor={`task-image-upload-single-${selectedStageId}-${index}`}
 //                                     className="cursor-pointer inline-flex items-center px-6 py-3 border border-transparent shadow-sm text-sm font-medium rounded-lg text-white bg-green-600 hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 transition-colors"
 //                                   >
-//                                     Add Image
+//                                     Add Images
 //                                   </label>
 //                                 </div>
 //                               </div>
@@ -7400,6 +7467,7 @@
 //                                   <input
 //                                     type="file"
 //                                     accept="image/*"
+//                                     multiple
 //                                     onChange={(e) => handleTaskImageInputChange(selectedStageId, index, e, true)}
 //                                     className="hidden"
 //                                     id={`task-image-upload-single-add-${selectedStageId}-${index}`}
@@ -7408,7 +7476,7 @@
 //                                     htmlFor={`task-image-upload-single-add-${selectedStageId}-${index}`}
 //                                     className="cursor-pointer inline-flex items-center px-4 py-2 border border-transparent shadow-sm text-sm font-medium rounded-lg text-white bg-green-600 hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 transition-colors"
 //                                   >
-//                                     Add Another Image
+//                                     Add More Images
 //                                   </label>
 //                                 </div>
 //                               </div>
@@ -7530,6 +7598,7 @@
 //                                   <input
 //                                     type="file"
 //                                     accept="image/*"
+//                                     multiple
 //                                     onChange={(e) => handleSubtaskImageInputChange(parentId, index, e, true)}
 //                                     className="hidden"
 //                                     id={`subtask-image-upload-single-${parentId}-${index}`}
@@ -7538,7 +7607,7 @@
 //                                     htmlFor={`subtask-image-upload-single-${parentId}-${index}`}
 //                                     className="cursor-pointer inline-flex items-center px-6 py-3 border border-transparent shadow-sm text-sm font-medium rounded-lg text-white bg-green-600 hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 transition-colors"
 //                                   >
-//                                     Add Image
+//                                     Add Images
 //                                   </label>
 //                                 </div>
 //                               </div>
@@ -7609,6 +7678,7 @@
 //                                   <input
 //                                     type="file"
 //                                     accept="image/*"
+//                                     multiple
 //                                     onChange={(e) => handleSubtaskImageInputChange(parentId, index, e, true)}
 //                                     className="hidden"
 //                                     id={`subtask-image-upload-single-add-${parentId}-${index}`}
@@ -7617,7 +7687,7 @@
 //                                     htmlFor={`subtask-image-upload-single-add-${parentId}-${index}`}
 //                                     className="cursor-pointer inline-flex items-center px-4 py-2 border border-transparent shadow-sm text-sm font-medium rounded-lg text-white bg-green-600 hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 transition-colors"
 //                                   >
-//                                     Add Another Image
+//                                     Add More Images
 //                                   </label>
 //                                 </div>
 //                               </div>
@@ -7791,6 +7861,7 @@
 //                               <input
 //                                 type="file"
 //                                 accept="image/*"
+//                                 multiple
 //                                 onChange={(e) => handleEditImageInputChange(e, true)}
 //                                 className="hidden"
 //                                 id="edit-image-upload-single-add"
@@ -7799,7 +7870,7 @@
 //                                 htmlFor="edit-image-upload-single-add"
 //                                 className="cursor-pointer inline-flex items-center px-4 py-2 border border-transparent shadow-sm text-sm font-medium rounded-lg text-white bg-green-600 hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 transition-colors"
 //                               >
-//                                 Add Another Image
+//                                 Add More Images
 //                               </label>
 //                             </div>
 //                           </div>
@@ -7822,6 +7893,7 @@
 //                               <input
 //                                 type="file"
 //                                 accept="image/*"
+//                                 multiple
 //                                 onChange={(e) => handleEditImageInputChange(e, true)}
 //                                 className="hidden"
 //                                 id="edit-image-upload-single"
@@ -7830,7 +7902,7 @@
 //                                 htmlFor="edit-image-upload-single"
 //                                 className="cursor-pointer inline-flex items-center px-6 py-3 border border-transparent shadow-sm text-sm font-medium rounded-lg text-white bg-green-600 hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 transition-colors"
 //                               >
-//                                 Add Image
+//                                 Add Images
 //                               </label>
 //                             </div>
 //                           </div>
@@ -7919,7 +7991,6 @@
 //                           <ImageIcon className="w-4 h-4" />
 //                           Attach {editFormData.images?.length || 0} Image
 //                           {editFormData.images?.length !== 1 ? "s" : ""}
-                    
 //                         </>
 //                       )}
 //                     </button>
@@ -7991,8 +8062,6 @@
 //     </div>
 //   );
 // }
-
-
 "use client";
 import { useState, useEffect } from "react";
 import {
@@ -8422,91 +8491,73 @@ export default function NestedDragDrop() {
     message: "",
     onConfirm: () => {},
   });
-  const [tableData, setTableData] = useState([]);
-
-  // Initialize tableData with useEffect
-  useEffect(() => {
-    if (showVisualTable) {
-      const initialData = stages.flatMap((stage) =>
-        stage.tasks?.flatMap((task) => [
-          {
-            id: task.id,
-            checkPoint: task.title,
-            checkPointImages: task.images || [], // Changed to array
-            cleaningStatus: "Active",
-            production: task.description || "-",
-            qa: task.galleryTitle || "-",
-          },
-          ...(task.subtasks?.map((subtask) => ({
-            id: subtask.id,
-            checkPoint: subtask.title,
-            checkPointImages: subtask.images || [], // Changed to array
-            cleaningStatus: "Active",
-            production: subtask.description || "-",
-            qa: subtask.galleryTitle || "-",
-          })) || []),
-        ]) || []
-      );
-      setTableData(initialData);
-    }
-  }, [showVisualTable, stages]);
+  const [tableData, setTableData] = useState([]); // Independent, persistent table data
 
   const handleCheckPointChange = (id, value) => {
     setTableData((prev) =>
-      prev.map((row) => (row.id === id ? { ...row, checkPoint: value } : row))
+      prev.map((row) => (row.id === id ? { ...row, checkpoint: { ...row.checkpoint, title: value } } : row))
     );
   };
 
-  const handleImageUpload = (id, event) => {
+  const handleImageUpload = async (id, event) => {
+    setIsUploading(true);
     const files = Array.from(event.target.files);
-    if (!files.length) return;
-
+    if (!files.length) {
+      setIsUploading(false);
+      return;
+    }
     const maxSize = 10 * 1024 * 1024; // 10MB
     const maxImages = 10; // Maximum images per row
-
     const validFiles = files.filter((file) => file.size <= maxSize);
     if (validFiles.length < files.length) {
       toast.error("Some images exceed the 10MB limit.");
     }
-
-    const imagePromises = validFiles.map((file) => {
-      return new Promise((resolve) => {
-        const reader = new FileReader();
-        reader.onload = (e) => {
-          resolve({
-            url: e.target.result,
-            file,
-            title: file.name.replace(/\.[^/.]+$/, ""),
-          });
+    const currentImages = tableData.find((row) => row.id === id)?.checkpoint?.images || [];
+    if (currentImages.length + validFiles.length > maxImages) {
+      toast.error(`Maximum ${maxImages} images allowed per row.`);
+      setIsUploading(false);
+      return;
+    }
+    try {
+      const uploadPromises = validFiles.map(async (file) => {
+        const formData = new FormData();
+        formData.append("file", file);
+        const response = await fetch("/api/upload", {
+          method: "POST",
+          body: formData,
+        });
+        const result = await response.json();
+        if (!response.ok) {
+          throw new Error(result.error || "Failed to upload image");
+        }
+        return {
+          url: result.url,
+          title: file.name.replace(/\.[^/.]+$/, ""),
+          public_id: result.public_id,
+          width: result.width,
+          height: result.height,
+          format: result.format,
         };
-        reader.readAsDataURL(file);
       });
-    });
-
-    Promise.all(imagePromises)
-      .then((newImages) => {
-        setTableData((prev) =>
-          prev.map((row) => {
-            if (row.id === id) {
-              const currentImages = row.checkPointImages || [];
-              if (currentImages.length + newImages.length > maxImages) {
-                toast.error(`Maximum ${maxImages} images allowed per row.`);
-                return row;
-              }
-              return {
-                ...row,
-                checkPointImages: [...currentImages, ...newImages],
-              };
-            }
-            return row;
-          })
-        );
-        toast.success(`Successfully uploaded ${validFiles.length} image(s)!`);
-      })
-      .catch(() => {
-        toast.error("Failed to upload images.");
-      });
-
+      const uploadedImages = await Promise.all(uploadPromises);
+      setTableData((prev) =>
+        prev.map((row) => {
+          if (row.id === id) {
+            return {
+              ...row,
+              checkpoint: { ...row.checkpoint, images: [...currentImages, ...uploadedImages] },
+            };
+          }
+          return row;
+        })
+      );
+      toast.success(`Successfully uploaded ${validFiles.length} image(s)!`);
+    } catch (error) {
+      console.error("Error uploading images:", error);
+      toast.error("Failed to upload images. Please try again.");
+    } finally {
+      setIsUploading(false);
+    }
     event.target.value = "";
   };
 
@@ -8516,7 +8567,7 @@ export default function NestedDragDrop() {
         row.id === id
           ? {
               ...row,
-              checkPointImages: row.checkPointImages.filter((_, idx) => idx !== imageIndex),
+              checkpoint: { ...row.checkpoint, images: row.checkpoint.images.filter((_, idx) => idx !== imageIndex) },
             }
           : row
       )
@@ -8539,9 +8590,8 @@ export default function NestedDragDrop() {
 
   const addNewRow = () => {
     const newRow = {
-      id: `new-${Date.now()}-${Math.floor(Math.random() * 1000)}`,
-      checkPoint: "",
-      checkPointImages: [],
+      id: `visual-${Date.now()}-${Math.floor(Math.random() * 1000)}`, // Unique persistent ID
+      checkpoint: { title: "", images: [] },
       cleaningStatus: "Visually Clean",
       production: "-",
       qa: "-",
@@ -8549,21 +8599,34 @@ export default function NestedDragDrop() {
     setTableData((prev) => [...prev, newRow]);
   };
 
+  const clearAllRows = () => {
+    setConfirmModalData({
+      title: "Confirm Clear All Rows",
+      message: "Are you sure you want to clear all rows? This action cannot be undone.",
+      onConfirm: () => {
+        setTableData([]);
+        setShowConfirmModal(false);
+        toast.success("All rows cleared!");
+      },
+    });
+    setShowConfirmModal(true);
+  };
+
   const renderTableRows = () => {
     return tableData.map((item) => (
       <tr key={item.id} className="border-b border-gray-200 hover:bg-gray-50">
         <td className="py-3 px-4 text-sm text-gray-700">
-          <div className="flex items-center gap-3">
+          <div className="flex items-start flex-col gap-3">
             <input
               type="text"
-              value={item.checkPoint}
+              value={item.checkpoint?.title || ""}
               onChange={(e) => handleCheckPointChange(item.id, e.target.value)}
               className="w-full px-2 py-1 text-sm border rounded-lg focus:ring-2 focus:ring-blue-500 transition-colors border-slate-300 focus:border-blue-500"
               placeholder="Enter check point"
             />
             <div className="flex flex-wrap gap-2">
-              {item.checkPointImages && item.checkPointImages.length > 0 ? (
-                item.checkPointImages.map((image, index) => (
+              {item.checkpoint?.images && item.checkpoint.images.length > 0 ? (
+                item.checkpoint.images.map((image, index) => (
                   <div key={`${item.id}-${index}`} className="relative">
                     <div className="relative w-12 h-12">
                       <img
@@ -8587,16 +8650,19 @@ export default function NestedDragDrop() {
                 accept="image/*"
                 multiple
                 onChange={(e) => handleImageUpload(item.id, e)}
+                disabled={isUploading}
                 className="hidden"
                 id={`image-upload-${item.id}`}
               />
               <label
                 htmlFor={`image-upload-${item.id}`}
-                className="cursor-pointer p-1 bg-green-100 text-green-700 hover:bg-green-200 rounded-lg flex items-center gap-1 text-xs"
+                className={`cursor-pointer p-1 bg-green-100 text-green-700 hover:bg-green-200 rounded-lg flex items-center gap-1 text-xs ${
+                  isUploading ? "opacity-50 cursor-not-allowed" : ""
+                }`}
                 title="Upload images"
               >
-                <ImageIcon className="w-4 h-4" />
-                Upload
+                {isUploading ? <LoadingSpinner /> : <ImageIcon className="w-4 h-4" />}
+                {isUploading ? "Uploading..." : "Upload"}
               </label>
             </div>
           </div>
@@ -8988,6 +9054,50 @@ export default function NestedDragDrop() {
     }
   };
 
+  // Helper to transform stages to schema format (remove IDs, ensure structure)
+  const transformStagesForSchema = (stages) => {
+    return stages.map((stage) => ({
+      title: stage.title,
+      tasks: stage.tasks?.map((task) => ({
+        title: task.title,
+        description: task.description || "",
+        galleryDescription: task.galleryDescription || "",
+        minTime: task.minTime || "",
+        maxTime: task.maxTime || "",
+        galleryTitle: task.galleryTitle || "",
+        images: task.images || [], // Assuming images are already URL strings after upload
+        subtasks: task.subtasks ? transformTasksForSchema(task.subtasks) : [],
+      })) || [],
+    }));
+  };
+
+  // Recursive transform for subtasks (since checklistStageSchema is recursive)
+  const transformTasksForSchema = (tasks) => {
+    return tasks.map((task) => ({
+      title: task.title,
+      description: task.description || "",
+      galleryDescription: task.galleryDescription || "",
+      minTime: task.minTime || "",
+      maxTime: task.maxTime || "",
+      galleryTitle: task.galleryTitle || "",
+      images: task.images || [],
+      subtasks: task.subtasks ? transformTasksForSchema(task.subtasks) : [],
+    }));
+  };
+
+  // Helper to transform tableData to visualRepresentation schema format
+  const transformVisualRepresentationForSchema = (tableData) => {
+    return tableData.map((row) => ({
+      checkPoint: {
+        title: row.checkpoint?.title || "",
+        images: row.checkpoint?.images || [], // Full Cloudinary objects
+      },
+      cleaningStatus: row.cleaningStatus || "Visually Clean",
+      production: row.production || "",
+      qa: row.qa || "",
+    }));
+  };
+
   const handleSubmit = async () => {
     if (!validateChecklistData()) {
       toast.error("Please fix the validation errors before submitting.");
@@ -9022,35 +9132,55 @@ export default function NestedDragDrop() {
       toast.error(errorMessage);
       return;
     }
+    // NO SYNC: Use stages as-is (independent from table)
+    const schemaStages = transformStagesForSchema(stages);
+    const schemaVisualRepresentation = transformVisualRepresentationForSchema(tableData); // Purely from table, independent
+
+    const fullChecklistData = {
+      ...checklistData,
+      stages: schemaStages,
+      visualRepresntation: schemaVisualRepresentation, // Fixed typo to match schema: visualRepresntation
+      companyId: JSON.parse(localStorage.getItem("user")).companyId,
+      userId: JSON.parse(localStorage.getItem("user")).id,
+    };
+
+    // Console the full transformed data for debugging
+    console.log("Full Checklist Data (Schema-Compliant) on Save:", JSON.stringify(fullChecklistData, null, 2));
+    console.log("Stages (Independent):", JSON.stringify(schemaStages, null, 2));
+    console.log("Visual Representation:", JSON.stringify(schemaVisualRepresentation, null, 2));
+
     setIsSaving(true);
     const userData = JSON.parse(localStorage.getItem("user"));
     const data = {
       ...checklistData,
-      stages,
+      stages: schemaStages,
+      visualRepresntation: schemaVisualRepresentation, // Now included in POST body
       companyId: userData.companyId,
       userId: userData.id,
     };
+    console.log("ad",data);
     try {
-      const response = await fetch("/api/checklistapi/create", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify(data),
-      });
-      if (!response.ok) {
-        const err = await response.json();
-        toast.error(err.message || "Failed to create checklist.");
-        setIsSaving(false);
-        return;
-      }
-      const result = await response.json();
-      setIsSaving(false);
-      setAddedmodalnew(true);
+    const response = await fetch("/api/checklistapi/create", {
+    method: "POST",
+    headers: {
+    "Content-Type": "application/json",
+    },
+    body: JSON.stringify(data),
+    });
+    if (!response.ok) {
+    const err = await response.json();
+    console.log(err);
+    toast.error(err.message || "Failed to create checklist.");
+    setIsSaving(false);
+    return;
+    }
+    const result = await response.json();
+    setIsSaving(false);
+    setAddedmodalnew(true);
     } catch (error) {
-      console.error("Error creating checklist:", error);
-      toast.error("Something went wrong. Please try again.");
-      setIsSaving(false);
+    console.error("Error creating checklist:", error);
+    toast.error("Something went wrong. Please try again.");
+    setIsSaving(false);
     }
   };
 
@@ -10083,7 +10213,8 @@ export default function NestedDragDrop() {
           editFormData.minTime.seconds
         )
       : "";
-    const maxTime=showEditTimeFields       ? formatTime(
+    const maxTime = showEditTimeFields
+      ? formatTime(
           editFormData.maxTime.hours,
           editFormData.maxTime.minutes,
           editFormData.maxTime.seconds
@@ -10834,7 +10965,7 @@ export default function NestedDragDrop() {
                   d="M3 10h18M3 14h18m-9-4v8m-7 0h14a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z"
                 />
               </svg>
-              {showVisualTable ? "Show Tasks" : "Show Visual Representation"}
+             Visual Representation
             </button>
           </div>
           <div className="lg:col-span-2 bg-white rounded-xl shadow-md p-6">
@@ -10842,14 +10973,23 @@ export default function NestedDragDrop() {
               <>
                 <div className="flex items-center justify-between mb-4">
                   <h4 className="text-lg font-semibold text-gray-900">
-                    Checklist Visual Representation
+                    Visual Representation
                   </h4>
-                  <button
-                    onClick={() => setShowVisualTable(false)}
-                    className="px-4 py-2 bg-blue-600 text-white text-sm font-medium rounded-lg hover:bg-blue-700 flex items-center gap-2"
-                  >
-                    Back to Tasks
-                  </button>
+                  <div className="flex items-center gap-2">
+                    <button
+                      onClick={() => setShowVisualTable(false)}
+                      className="px-4 py-2 bg-blue-600 text-white text-sm font-medium rounded-lg hover:bg-blue-700 flex items-center gap-2"
+                    >
+                      Back to Tasks
+                    </button>
+                    <button
+                      onClick={clearAllRows}
+                      className="px-4 py-2 bg-red-600 text-white text-sm font-medium rounded-lg hover:bg-red-700 flex items-center gap-2"
+                    >
+                      <Trash className="w-4 h-4" />
+                      Clear All
+                    </button>
+                  </div>
                 </div>
                 <div className="mb-4">
                   <button
@@ -10859,6 +10999,9 @@ export default function NestedDragDrop() {
                     <Plus className="w-4 h-4" />
                     Add Record
                   </button>
+                  {tableData.length === 0 && (
+                    <p className="text-sm text-gray-500 mt-2">No records yet. Add rows manually.</p>
+                  )}
                 </div>
                 <div className="overflow-x-auto">
                   <table className="min-w-full bg-white border border-gray-200">

@@ -56,6 +56,18 @@ const checklistSchema = new mongoose.Schema({
     title:{String},
     tasks:[checklistStageSchema]
   }], // ✅ reference StageSchema, not itself
+
+  visualRepresntation:[
+    {
+      checkPoint:{
+        title:{type:String},
+        images:[Object]
+      },
+      cleaningStatus:{type:String,default:"Visually Clean"},
+      production:{type:String},
+      qa:{type:String}
+    }
+  ]
 });
  
 delete mongoose.models.Checklist;
