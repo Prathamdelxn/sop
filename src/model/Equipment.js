@@ -38,6 +38,8 @@
 // delete mongoose.models.Equipment;
 // export default mongoose.models.Equipment || mongoose.model('Equipment', equipmentSchema);
 //src/model/Equipment.js
+
+
 import mongoose from 'mongoose';
 
 const equipmentSchema = new mongoose.Schema({
@@ -83,6 +85,10 @@ const equipmentSchema = new mongoose.Schema({
     type: String,
   },
   companyId:{type:String},
+  approver:{
+    approverId:{type:String},
+    approverName:{type:String}
+  },
   userId:{type:String},
   barcode:{type:String,default:''},
   status:{type:String,default:'InProgress'},

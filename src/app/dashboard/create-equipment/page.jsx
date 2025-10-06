@@ -2590,7 +2590,14 @@ export default function FacilityAdminDashboard() {
       </div>
       <span className="text-blue-100">Equipment Id: </span>
       <span className="text-blue-100">{viewingEquipment._id}</span>
+      {viewingEquipment.approver?  <div className="">
+         <span className="text-blue-100">Approver Name: </span>
+      <span className="text-blue-100">{viewingEquipment.approver.approverName}</span>
+      </div>:<></>}
+     
+      
     </div>
+    
 
     <div className="p-6 space-y-6">
       {viewingEquipment.status === "Approved" && (

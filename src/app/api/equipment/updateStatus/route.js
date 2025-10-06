@@ -40,8 +40,8 @@ export async function PUT(request) {
   await connectToDB();
 
   try {
-    const { equipmentId, status, rejectionReason } = await request.json();
-console.log(rejectionReason);
+    const { equipmentId, status,approver, rejectionReason } = await request.json();
+console.log("asdfasdsdfasd",approver);
     if (!equipmentId || !status) {
       return NextResponse.json(
         { success: false, message: 'Missing required fields: equipmentId or status' },
@@ -50,6 +50,13 @@ console.log(rejectionReason);
     }
 
     const updateFields = { status };
+     if (approver && approver.approverId && approver.approverName) {
+      updateFields.approver = {
+        approverId: approver.approverId,
+        approverName: approver.approverName
+      };
+    }
+
     if (status === 'Rejected' && rejectionReason) {
       updateFields.rejectionReason = rejectionReason;
     } else if (status === 'Approved' || status === 'Pending Approval') {
@@ -59,6 +66,7 @@ console.log(rejectionReason);
     const updatedEquipment = await Equipment.findByIdAndUpdate(
       equipmentId,
       updateFields,
+
       { new: true }
     );
 

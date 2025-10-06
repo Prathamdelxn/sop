@@ -480,6 +480,10 @@ console.log("companydat",companyData);
         body: JSON.stringify({
           equipmentId,
           status,
+          approver:{
+            approverId:companyData.id,
+            approverName:companyData.name
+          },
           rejectionReason: status === 'Rejected' ? reason : undefined
         })
       });
