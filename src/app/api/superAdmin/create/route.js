@@ -133,7 +133,7 @@ export async function POST(req) {
         <p><strong>Username:</strong> ${username}</p>
         <p><strong>Password:</strong> ${password}</p>
         <p>Please log in and manage your business.</p>
-        <p><a href="https://sop-seven.vercel.app/new-login">Click here to log in</a></p>
+        <p><a href="https://sop-seven.vercel.app/login">Click here to log in</a></p>
         <br/>
         <p>Regards,<br/>Support Team</p>
       `,

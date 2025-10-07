@@ -295,10 +295,11 @@ export default function ClientManagement() {
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(payload)
         });
-
-        if (!response.ok) throw new Error('Creation failed');
+console.log(response);
+       
 
         const result = await response.json();
+        console.log("asdfasdf",result);
         const newClientWithId = {
           ...payload,
           _id: result.id || (clients.length + 1).toString(), // fallback for id
