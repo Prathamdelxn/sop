@@ -5,7 +5,7 @@
 
 import React, { useState, useMemo, useEffect } from 'react';
 import {
-  Search, Plus, Check, Eye, X, AlertCircle, CheckCircle, XCircle,
+  Search, Plus, Check, Eye, X, AlertCircle, CheckCircle, XCircle,Users,User,
   Filter, Calendar, Download, TrendingUp, BarChart3, Package,
   Clock, Award, Zap, Sparkles, ArrowRight, QrCode, ChevronDown
 } from 'lucide-react';
@@ -210,7 +210,19 @@ const TaskDetailsModal = ({ task, onClose, onBarcodeUpload }) => {
   if (!task) return null;
 
   const isApproved = task.status.toLowerCase() === 'approved';
+useEffect(() => {
 
+    fetchUseredById(task?.userId);
+
+  }, [task]);
+  const [name, setNAme] = useState();
+  const fetchUseredById = async (id) => {
+    const res = await fetch(`/api/users/fetch-by-id/${id}`);
+    const data = await res.json();
+    console.log("asdfasdf", data?.user?.name);
+    setNAme(data?.user?.name);
+
+  };
   return (
     <div className="fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-[60] flex items-center justify-center p-4 overflow-hidden">
       <div className="bg-white rounded-3xl w-full max-w-4xl max-h-[90vh] overflow-y-auto shadow-xl border border-white/20 animate-in fade-in-0 zoom-in-95 duration-300 lg:ml-[288px] lg:max-w-2xl [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]">
@@ -360,6 +372,92 @@ const TaskDetailsModal = ({ task, onClose, onBarcodeUpload }) => {
               </div>
             </div>
           </div>
+          dsf
+           <div className="bg-gray-50 rounded-xl p-6 mx-6 border border-gray-200">
+                          <h3 className="text-xl font-semibold text-gray-900 mb-6 flex items-center gap-2">
+                            <Users className="w-6 h-6 text-blue-600" />
+                            Contributors
+                          </h3>
+          
+                          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                            {/* Created By */}
+                            <div className="bg-white rounded-lg p-4 border border-gray-200 shadow-sm">
+                              <div className="flex items-center gap-3 mb-3">
+                                <div className="w-10 h-10 bg-blue-100 rounded-full flex items-center justify-center">
+                                  <User className="w-5 h-5 text-blue-600" />
+                                </div>
+                                <div>
+                                  <h4 className="font-medium text-gray-900">Created By</h4>
+                                </div>
+                              </div>
+                              <div className="flex items-center gap-3 p-2 bg-blue-50 rounded-md">
+                                <div className="w-8 h-8 bg-blue-600 rounded-full flex items-center justify-center text-white text-sm font-medium">
+                                  {'d' || 'C'}
+                                </div>
+                                <span className="text-sm font-medium text-gray-900">
+                                  {name}
+                                </span>
+                              </div>
+                            </div>
+          
+          
+          
+                            {/* Approvers */}
+                            <div className="bg-white rounded-lg p-4 border border-gray-200 shadow-sm">
+                              <div className="flex items-center justify-between mb-3">
+                                <div className="flex items-center gap-3">
+                                  <div className="w-10 h-10 bg-green-100 rounded-full flex items-center justify-center">
+                                    <CheckCircle className="w-5 h-5 text-green-600" />
+                                  </div>
+                                  <div>
+                                    <h4 className="font-medium text-gray-900">Approved / Rejected By</h4>
+          
+                                  </div>
+                                </div>
+                              </div>
+          
+                              <div className="space-y-2 max-h-32 overflow-y-auto">
+                                {task.status === "Approved" ? (
+                                  <>
+                                    <div>
+                                      <span className="font-semibold text-green-600">Approved</span>{" "}
+                                      By{" "}
+                                      {task.approver.approverName}
+          
+                                    </div>
+                                    <div className="">{task.approver?.approverDate
+                                      ? new Date(task.approver.approverDate).toLocaleString()
+                                      : "—"}</div>
+                                  </>
+                                ) : task.status === "Rejected" ? (
+                                  <>
+                                    <div>
+                                      <span className="font-semibold text-red-600">Rejected</span>{" "}
+                                      By{" "}
+                                      {task.approver.approverName}
+          
+                                    </div>
+                                    <div className="">
+                                      {task.approver?.approverDate
+                                        ? new Date(task.approver.approverDate).toLocaleString()
+                                        : "—"}
+                                    </div>
+                                    {task.rejectionReason && (
+                                      <div className="text-gray-700">
+                                        Reason: {task.rejectionReason}
+                                      </div>
+                                    )}
+                                  </>
+                                ) : (
+                                  <span className="text-yellow-600">Pending Approval</span>
+                                )}
+                              </div>
+          
+                            </div>
+                          </div>
+          
+          
+                        </div>
         </div>
       </div>
     </div>

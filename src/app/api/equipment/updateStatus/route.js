@@ -53,7 +53,8 @@ console.log("asdfasdsdfasd",approver);
      if (approver && approver.approverId && approver.approverName) {
       updateFields.approver = {
         approverId: approver.approverId,
-        approverName: approver.approverName
+        approverName: approver.approverName,
+        approverDate: new Date()
       };
     }
 

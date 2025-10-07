@@ -87,7 +87,8 @@ const equipmentSchema = new mongoose.Schema({
   companyId:{type:String},
   approver:{
     approverId:{type:String},
-    approverName:{type:String}
+    approverName:{type:String},
+    approverDate:{ type: Date, default: Date.now }
   },
   userId:{type:String},
   barcode:{type:String,default:''},

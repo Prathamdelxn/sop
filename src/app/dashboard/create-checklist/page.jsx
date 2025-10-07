@@ -1263,7 +1263,8 @@ const SOPDashboard = () => {
     )
   }
 
-  const [companyData, setCompanyData] = useState()
+  const [companyData, setCompanyData] = useState();
+ 
 
   useEffect(() => {
     const userData = localStorage.getItem('user')
@@ -1358,7 +1359,19 @@ const SOPDashboard = () => {
       </span>
     )
   }
+ useEffect(() => {
+    
+      fetchUserById(selectedSop?.userId);
+    
+  }, [selectedSop]);
+  const [name,setNAme]=useState();
+const fetchUserById = async (id) => {
+  const res = await fetch(`/api/users/fetch-by-id/${id}`);
+  const data = await res.json();
+  console.log("asdfasdf",data?.user?.name);
+  setNAme(data?.user?.name);
 
+};
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 p-4 relative ">
       <div className="bg-white border-b border-gray-200 rounded-xl mx-2 mt-4 shadow-sm">
@@ -1797,7 +1810,8 @@ const SOPDashboard = () => {
                           {companyData.name?.charAt(0) || 'C'}
                         </div>
                         <span className="text-sm font-medium text-gray-900">
-                          {companyData.name || 'Unknown'}
+                       
+                          {name}
                         </span>
                       </div>
                     </div>

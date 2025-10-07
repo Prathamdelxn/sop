@@ -8062,6 +8062,8 @@
 //     </div>
 //   );
 // }
+
+
 "use client";
 import { useState, useEffect } from "react";
 import {
@@ -8449,6 +8451,8 @@ export default function NestedDragDrop() {
   const [newStage, setNewStage] = useState({ title: "" });
   const [stageErrors, setStageErrors] = useState({ title: "" });
   const [showTaskForms, setShowTaskForms] = useState({});
+  const [showRecordCountModal, setShowRecordCountModal] = useState(false);
+const [recordCount, setRecordCount] = useState(1);
   const [newTasks, setNewTasks] = useState({});
   const [showSubtaskForms, setShowSubtaskForms] = useState({});
   const [newSubtasks, setNewSubtasks] = useState({});
@@ -8588,16 +8592,16 @@ export default function NestedDragDrop() {
     setShowConfirmModal(true);
   };
 
-  const addNewRow = () => {
-    const newRow = {
-      id: `visual-${Date.now()}-${Math.floor(Math.random() * 1000)}`, // Unique persistent ID
-      checkpoint: { title: "", images: [] },
-      cleaningStatus: "Visually Clean",
-      production: "-",
-      qa: "-",
-    };
-    setTableData((prev) => [...prev, newRow]);
-  };
+ const addNewRows = (count) => {
+  const newRows = Array.from({ length: count }, () => ({
+    id: `visual-${Date.now()}-${Math.floor(Math.random() * 1000)}`, // Unique persistent ID
+    checkpoint: { title: "", images: [] },
+    cleaningStatus: "Visually Clean",
+    production: "-",
+    qa: "-",
+  }));
+  setTableData((prev) => [...prev, ...newRows]);
+};
 
   const clearAllRows = () => {
     setConfirmModalData({
@@ -9234,22 +9238,34 @@ export default function NestedDragDrop() {
     setStageErrors({ title: "" });
     toast.success(`Stage "${newStage.title}" added successfully!`);
   };
-
-  const handleStageCountConfirm = () => {
-    if (stageCount < 1 || stageCount > 10) {
-      toast.error("Please enter a number between 1 and 10.");
-      return;
-    }
-    const newStages = Array.from({ length: stageCount }, (_, idx) => ({
-      id: `stage-${idx + 1}`,
-      title: `Stage ${idx + 1}`,
-      tasks: [],
-    }));
-    setStages(newStages);
-    setShowStageCountModal(false);
-    setStageCount(1);
-    setSelectedStageId(newStages[0]?.id || null);
-  };
+const handleRecordCountConfirm = () => {
+  if (recordCount < 1 || recordCount > 10) {
+    toast.error("Please enter a number between 1 and 10.");
+    return;
+  }
+  addNewRows(recordCount); // Add the batch of rows
+  setShowRecordCountModal(false);
+  setRecordCount(1);
+  toast.success(`${recordCount} new record(s) added successfully!`);
+};
+ const handleStageCountConfirm = () => {
+  if (stageCount < 1 || stageCount > 10) {
+    toast.error("Please enter a number between 1 and 10.");
+    return;
+  }
+  const currentLength = stages.length;
+  const newStages = Array.from({ length: stageCount }, (_, idx) => ({
+    id: generateId("stage"),  // Use generateId for unique IDs
+    title: `Stage ${currentLength + idx + 1}`,  // Continue sequential numbering
+    tasks: [],
+  }));
+  setStages((prev) => [...prev, ...newStages]);  // Append to existing stages
+  setShowStageCountModal(false);
+  setStageCount(1);
+  // Select the last newly added stage (or fallback to first if none exist)
+  setSelectedStageId(newStages[newStages.length - 1]?.id || stages[0]?.id || null);
+  toast.success(`${stageCount} new stage(s) added successfully!`);
+};
 
   const handleDeleteStage = (stageId) => {
     const stageToDelete = stages.find((s) => s.id === stageId);
@@ -10992,17 +11008,17 @@ export default function NestedDragDrop() {
                   </div>
                 </div>
                 <div className="mb-4">
-                  <button
-                    onClick={addNewRow}
-                    className="px-4 py-2 bg-blue-600 text-white text-sm font-medium rounded-lg hover:bg-blue-700 transition-colors flex items-center gap-2"
-                  >
-                    <Plus className="w-4 h-4" />
-                    Add Record
-                  </button>
-                  {tableData.length === 0 && (
-                    <p className="text-sm text-gray-500 mt-2">No records yet. Add rows manually.</p>
-                  )}
-                </div>
+  <button
+    onClick={() => setShowRecordCountModal(true)} // Open modal instead of direct add
+    className="px-4 py-2 bg-blue-600 text-white text-sm font-medium rounded-lg hover:bg-blue-700 transition-colors flex items-center gap-2"
+  >
+    <Plus className="w-4 h-4" />
+    Add Record(s)
+  </button>
+  {tableData.length === 0 && (
+    <p className="text-sm text-gray-500 mt-2">No records yet. Add rows using the modal above.</p>
+  )}
+</div>
                 <div className="overflow-x-auto">
                   <table className="min-w-full bg-white border border-gray-200">
                     <thead>
@@ -11428,6 +11444,57 @@ export default function NestedDragDrop() {
               </div>
             </div>
           )}
+          {showRecordCountModal && (
+  <div className="fixed inset-0 pl-64 z-50 flex items-center justify-center p-4">
+    <div
+      className="absolute inset-0 bg-black/40 backdrop-blur-sm"
+      onClick={() => setShowRecordCountModal(false)}
+    />
+    <div className="relative bg-white rounded-2xl shadow-2xl w-full max-w-sm p-6">
+      <div className="flex items-center justify-between mb-4">
+        <h4 className="text-lg font-semibold text-gray-900">
+          Add Records
+        </h4>
+        <button
+          onClick={() => setShowRecordCountModal(false)}
+          className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+        >
+          <X className="w-5 h-5 text-gray-600" />
+        </button>
+      </div>
+      <div className="mb-6">
+        <InputField
+          label="Number of Records"
+          type="number"
+          name="recordCount"
+          value={recordCount}
+          onChange={(e) => setRecordCount(parseInt(e.target.value) || 1)}
+          placeholder="Enter number of records"
+          min="1"
+          max="10"
+          required
+        />
+        <p className="text-xs text-gray-500 mt-2">
+          Enter the number of records you want to create (1-10).
+        </p>
+      </div>
+      <div className="flex justify-end gap-3">
+        <button
+          onClick={() => setShowRecordCountModal(false)}
+          className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50"
+        >
+          Cancel
+        </button>
+        <button
+          onClick={handleRecordCountConfirm}
+          className="px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-lg hover:bg-blue-700"
+        >
+          Confirm
+        </button>
+      </div>
+    </div>
+  </div>
+)}
           {bulkTasks.map(
             (task, index) =>
               showTaskImageModal[`${selectedStageId}_${index}`] && (
