@@ -3644,6 +3644,8 @@
 //     </div>
 //   );
 // }
+
+
 "use client";
 import { useState, useEffect } from "react";
 import {
@@ -4867,51 +4869,24 @@ export default function NestedDragDrop() {
     };
   };
 
-  const handleStageInputChange = (e) => {
-    const value = e.target.value;
-    setNewStage({ title: value });
-    if (stageErrors.title) {
-      setStageErrors((prev) => ({ ...prev, title: "" }));
-    }
-  };
-
-  const addStage = () => {
-    if (!validateStage(newStage.title)) return;
-    if (checkDuplicateTitle(stages, newStage.title, null, "stage")) {
-      setStageErrors((prev) => ({
-        ...prev,
-        title: `A stage with the title "${newStage.title}" already exists. Please use a different title.`,
-      }));
-      return;
-    }
-    const newStageItem = {
-      id: generateId("stage"),
-      title: newStage.title.trim(),
-      tasks: [],
-    };
-    setStages((prev) => [...prev, newStageItem]);
-    setNewStage({ title: "" });
-    setShowStageForm(false);
-    setSelectedStageId(newStageItem.id);
-    setStageErrors({ title: "" });
-    toast.success(`Stage "${newStage.title}" added successfully!`);
-  };
-
-  const handleStageCountConfirm = () => {
-    if (stageCount < 1 || stageCount > 10) {
-      toast.error("Please enter a number between 1 and 10.");
-      return;
-    }
-    const newStages = Array.from({ length: stageCount }, (_, idx) => ({
-      id: `stage-${idx + 1}`,
-      title: `Stage ${idx + 1}`,
-      tasks: [],
-    }));
-    setStages(newStages);
-    setShowStageCountModal(false);
-    setStageCount(1);
-    setSelectedStageId(newStages[0]?.id || null);
-  };
+ const handleStageCountConfirm = () => {
+   if (stageCount < 1 || stageCount > 10) {
+     toast.error("Please enter a number between 1 and 10.");
+     return;
+   }
+   const currentLength = stages.length;
+   const newStages = Array.from({ length: stageCount }, (_, idx) => ({
+     id: generateId("stage"), // Use generateId for unique IDs
+     title: `Stage ${currentLength + idx + 1}`, // Continue sequential numbering
+     tasks: [],
+   }));
+   setStages((prev) => [...prev, ...newStages]); // Append to existing stages
+   setShowStageCountModal(false);
+   setStageCount(1);
+   // Select the last newly added stage (or fallback to first if none exist)
+   setSelectedStageId(newStages[newStages.length - 1]?.id || stages[0]?.id || null);
+   toast.success(`${stageCount} new stage(s) added successfully!`);
+ };
 
   const handleDeleteStage = (stageId) => {
     const stageToDelete = stages.find((s) => s.id === stageId);
