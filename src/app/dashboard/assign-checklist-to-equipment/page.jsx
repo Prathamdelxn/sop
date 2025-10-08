@@ -2135,8 +2135,16 @@ export default function AssignEquipmentPage() {
           equipmentRes.json(),
           prototypesRes.json()
         ]);
-
-        const approvedEquipments = equipmentData.data.filter(e => e.status === 'Approved' && e.companyId === companyData?.companyId);
+const currentDate = new Date();
+        // const approvedEquipments = equipmentData.data.filter(e => e.status === 'Approved' && e.companyId === companyData?.companyId );
+        const approvedEquipments = equipmentData.data.filter(e => {
+  const dueDate = new Date(e.qualificationDueDate);
+  return (
+    e.status === 'Approved' &&
+    e.companyId === companyData?.companyId &&
+    dueDate >= currentDate // ✅ keep only future or current due dates
+  );
+});
         setEquipmentList(approvedEquipments);
 
         const filteredPrototypes = prototypesData.data.filter((t) => t.status === 'Approved' && t.companyId === companyData?.companyId);
@@ -2512,7 +2520,7 @@ export default function AssignEquipmentPage() {
           <div
             key={item._id}
             onClick={() => setAssignee(item)}
-            className={`p-3 cursor-pointer hover:bg-gray-50 transition-colors ${
+            className={`p-3 cursor-pointer border-1 border-gray-300 hover:bg-gray-50 transition-colors ${
               assignee?._id === item._id ? 'bg-blue-50 border-l-4 border-l-blue-500' : ''
             } ${
               item === filteredPrototypes[0] ? 'rounded-t-lg' : ''
