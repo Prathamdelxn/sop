@@ -8997,7 +8997,7 @@ export default function NestedDragDrop() {
       if (!response.ok) {
         const err = await response.json();
         console.log(err);
-        toast.error(err.message || `Failed to ${isEditMode ? "update" : "create"} checklist.`);
+        toast.error(err.error || `Failed to ${isEditMode ? "update" : "create"} checklist.`);
         setIsSaving(false);
         return;
       }

@@ -1490,7 +1490,7 @@ const fetchUserById = async (id) => {
                     <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                       Status
                     </th>
-                    <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    <th scope="col" className="px-8 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                       Created At
                     </th>
                     <th scope="col" className="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">
@@ -1506,11 +1506,11 @@ const fetchUserById = async (id) => {
                     <tr key={sop.id} className="hover:bg-gray-50">
                       <td className="px-6 py-4 whitespace-nowrap">
                         <div className="flex items-center">
-                          <div className={`flex-shrink-0 h-10 w-10 rounded-lg flex items-center justify-center ${sop.bgColor}`}>
+                          {/* <div className={`flex-shrink-0 h-10 w-10 rounded-lg flex items-center justify-center ${sop.bgColor}`}>
                             {sop.icon}
-                          </div>
+                          </div> */}
                           <div className="ml-4">
-                            <div className="text-sm font-medium text-gray-900 truncate max-w-[180px]" title={sop.name} >{sop.name}</div>
+                            <div className="text-sm font-medium text-gray-900 truncate max-w-[180px] capitalize" title={sop.name} >{sop.name}</div>
                           </div>
                         </div>
                       </td>
@@ -1521,7 +1521,7 @@ const fetchUserById = async (id) => {
                         {getStatusBadge(sop.status)}
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
-                        <div className="text-sm text-gray-900"> {new Date(sop.createdAt).toLocaleString("en-IN", {
+                        <div className="text-sm text-gray-900 uppercase"> {new Date(sop.createdAt).toLocaleString("en-IN", {
                           day: "2-digit",
                           month: "short",
                           year: "numeric",
@@ -1802,6 +1802,17 @@ const fetchUserById = async (id) => {
                         </div>
                         <div>
                           <h4 className="font-medium text-gray-900">Created By</h4>
+                          <p className="text-sm text-gray-500 uppercase">
+                             
+                              {selectedSop.createdAt ? new Date(selectedSop.createdAt).toLocaleString("en-IN", {
+                                        day: "2-digit",
+                                        month: "short",
+                                        year: "numeric",
+                                        hour: "2-digit",
+                                        minute: "2-digit",
+                                        hour12: true,
+                                      }) : 'Not reviewed'}
+                            </p>
                         
                         </div>
                       </div>

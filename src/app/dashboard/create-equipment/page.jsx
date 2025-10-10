@@ -1884,7 +1884,7 @@ export default function FacilityAdminDashboard() {
           )}
         </div>
         {/* Equipment Details Modal */}
-        {isInfoModalOpen && viewingEquipment && (
+        {/* {isInfoModalOpen && viewingEquipment && (
           <div className="fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-[60] flex items-center justify-center p-4 overflow-hidden">
             <div className="bg-white rounded-3xl w-full max-w-4xl max-h-[90vh] overflow-y-auto shadow-xl border border-white/20 animate-in fade-in-0 zoom-in-95 duration-300 lg:ml-[288px] max-w-2xl [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]">
               <div className="bg-gradient-to-r from-blue-600 via-indigo-600 to-purple-600 text-white p-6 rounded-t-3xl relative">
@@ -2053,6 +2053,17 @@ export default function FacilityAdminDashboard() {
                       </div>
                       <div>
                         <h4 className="font-medium text-gray-900">Created By</h4>
+                        <p className="text-sm text-gray-500 uppercase">
+                             
+                              {viewingEquipment.createdAt ? new Date(viewingEquipment.createdAt).toLocaleString("en-IN", {
+                                        day: "2-digit",
+                                        month: "short",
+                                        year: "numeric",
+                                        hour: "2-digit",
+                                        minute: "2-digit",
+                                        hour12: true,
+                                      }) : 'Not reviewed'}
+                            </p>
                       </div>
                     </div>
                     <div className="flex items-center gap-3 p-2 bg-blue-50 rounded-md">
@@ -2126,7 +2137,263 @@ export default function FacilityAdminDashboard() {
               </div>
             </div>
           </div>
+        )} */}
+        {/* Equipment Details Modal */}
+{isInfoModalOpen && viewingEquipment && (
+  <div className="fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-[60] flex items-center justify-center p-4 overflow-hidden">
+    {/* Fixed Close Button */}
+    <button
+      onClick={() => {
+        setViewingEquipment(null);
+        setIsInfoModalOpen(false);
+      }}
+      className="fixed top-6 right-6 text-white hover:bg-white/20 p-3 rounded-full transition-all duration-200 z-10 bg-black/30 backdrop-blur-sm border border-white/20"
+    >
+      <X className="w-6 h-6" />
+    </button>
+
+    <div className="bg-white rounded-3xl w-full max-w-4xl max-h-[90vh] overflow-y-auto shadow-xl border border-white/20 animate-in fade-in-0 zoom-in-95 duration-300 [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]">
+      <div className="bg-gradient-to-r from-blue-600 via-indigo-600 to-purple-600 text-white p-6 rounded-t-3xl relative">
+        <div className="flex items-center mb-2">
+          <Package className="w-8 h-8 mr-3" />
+          <h3 className="text-2xl font-bold">Equipment Details</h3>
+        </div>
+        <span className="text-blue-100">Equipment Id: </span>
+        <span className="text-blue-100">{viewingEquipment.equipmentId}</span>
+      </div>
+      <div className="p-6 space-y-6">
+        {viewingEquipment.status === "Approved" && (
+          <div className={`bg-white rounded-xl border border-slate-200 p-4 ${viewingEquipment.barcode ? 'w-full' : 'flex flex-col items-center'}`}>
+            {!viewingEquipment.barcode ? (
+              <>
+                <p className="mt-3 text-sm text-slate-600 text-center">
+                  Barcode generation not implemented yet.
+                </p>
+              </>
+            ) : (
+              <div className="flex flex-col md:flex-row items-center justify-center gap-6 h-full">
+                <div className="flex flex-col items-center text-center">
+                  <p className="text-green-600 font-medium mb-2">Barcode generated</p>
+                  <img
+                    src={viewingEquipment.barcode}
+                    alt="Equipment barcode"
+                    className="max-w-full h-auto rounded-lg border border-slate-200"
+                  />
+                  <p className="text-sm text-slate-600 mb-2">Scan this barcode to identify the equipment:</p>
+                </div>
+              </div>
+            )}
+          </div>
         )}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <div className="bg-gradient-to-r from-blue-50 to-indigo-50 p-6 rounded-2xl border border-blue-100 h-full">
+            <h4 className="font-semibold text-slate-800 mb-4 flex items-center">
+              <Sparkles className="w-5 h-5 mr-2 text-blue-600" />
+              Basic Information
+            </h4>
+            <div className="space-y-4">
+              <div className="flex justify-between items-center pb-2 border-b border-blue-100">
+                <span className="text-slate-600 font-medium">Name:</span>
+                <span className="text-slate-800 font-semibold text-right">{viewingEquipment.name}</span>
+              </div>
+              <div className="flex justify-between items-center pb-2 border-b border-blue-100">
+                <span className="text-slate-600 font-medium">Type:</span>
+                <span className="text-slate-800 font-semibold text-right">{viewingEquipment.type}</span>
+              </div>
+              {viewingEquipment.status.toLowerCase() === 'rejected' && viewingEquipment.rejectionReason && (
+                <div className="flex justify-between items-center pb-2 border-b border-blue-100">
+                  <span className="text-slate-600 font-medium">Rejection Reason:</span>
+                  <span className="text-slate-800 font-medium text-right text-red-600">
+                    {viewingEquipment.rejectionReason}
+                  </span>
+                </div>
+              )}
+              <div className="flex justify-between items-center">
+                <span className="text-slate-600 font-medium">Status:</span>
+                <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${viewingEquipment.status === 'Approved'
+                  ? 'bg-green-100 text-green-800'
+                  : viewingEquipment.status === 'Pending Approval'
+                    ? 'bg-yellow-100 text-yellow-800'
+                    : viewingEquipment.status === 'InProgress'
+                      ? 'bg-blue-100 text-blue-800'
+                      : viewingEquipment.status === 'Rejected'
+                        ? 'bg-red-100 text-red-800'
+                        : viewingEquipment.status === 'Expired'
+                          ? 'bg-red-100 text-red-800'
+                          : 'bg-gray-100 text-gray-800'
+                  }`}>
+                  {viewingEquipment.status}
+                </span>
+              </div>
+            </div>
+          </div>
+          <div className="bg-gradient-to-r from-green-50 to-emerald-50 p-6 rounded-2xl border border-green-100 h-full">
+            <h4 className="font-semibold text-slate-800 mb-4 flex items-center">
+              <Award className="w-5 h-5 mr-2 text-green-600" />
+              Manufacturer Details
+            </h4>
+            <div className="space-y-4">
+              <div className="flex justify-between items-center pb-2 border-b border-green-100">
+                <span className="text-slate-600 font-medium">Manufacturer:</span>
+                <span className="text-slate-800 font-semibold text-right">{viewingEquipment.manufacturer}</span>
+              </div>
+              <div className="flex justify-between items-center pb-2 border-b border-green-100">
+                <span className="text-slate-600 font-medium">Supplier:</span>
+                <span className="text-slate-800 font-semibold text-right">{viewingEquipment.supplier}</span>
+              </div>
+              <div className="flex justify-between items-center">
+                <span className="text-slate-600 font-medium">Model:</span>
+                <span className="text-slate-800 font-semibold text-right">{viewingEquipment.model}</span>
+              </div>
+            </div>
+          </div>
+          <div className="bg-gradient-to-r from-purple-50 to-pink-50 p-6 rounded-2xl border border-purple-100 h-full">
+            <h4 className="font-semibold text-slate-800 mb-4 flex items-center">
+              <Zap className="w-5 h-5 mr-2 text-purple-600" />
+              Asset Information
+            </h4>
+            <div className="space-y-4">
+              <div className="flex justify-between items-center pb-2 border-b border-purple-100">
+                <span className="text-slate-600 font-medium">Asset Tag:</span>
+                <span className="text-slate-800 font-semibold font-mono text-right">{viewingEquipment.assetTag}</span>
+              </div>
+              <div className="flex justify-between items-center">
+                <span className="text-slate-600 font-medium">Qualification Date:</span>
+                <span className="text-slate-800 font-semibold text-right">
+                  {viewingEquipment.qualificationDoneDate
+                    ? new Date(viewingEquipment.qualificationDoneDate).toLocaleDateString()
+                    : 'N/A'}
+                </span>
+              </div>
+              <div className="flex justify-between items-center">
+                <span className="text-slate-600 font-medium">Qualification Due Date:</span>
+                <span className="text-slate-800 font-semibold text-right">
+                  {viewingEquipment.qualificationDueDate
+                    ? new Date(viewingEquipment.qualificationDueDate).toLocaleDateString()
+                    : 'N/A'}
+                </span>
+              </div>
+            </div>
+          </div>
+          <div className="bg-gradient-to-r from-green-50 to-emerald-50 p-6 rounded-2xl border border-green-100 h-full">
+            <h4 className="font-semibold text-slate-800 mb-4 flex items-center">
+              <Award className="w-5 h-5 mr-2 text-green-600" />
+              Additional Details
+            </h4>
+            <div className="space-y-4">
+              <div className="flex justify-between items-center pb-2 border-b border-purple-100">
+                <span className="text-slate-600 font-medium">Serial Number:</span>
+                <span className="text-slate-800 font-semibold font-mono text-right">{viewingEquipment.serial}</span>
+              </div>
+              <div className="flex justify-between items-center pb-2 border-b border-green-100">
+                <span className="text-slate-600 font-medium">QMS Number:</span>
+                <span className="text-slate-800 font-semibold text-right">{viewingEquipment.qmsNumber}</span>
+              </div>
+              <div className="flex justify-between items-center">
+                <span className="text-slate-600 font-medium">PO Number:</span>
+                <span className="text-slate-800 font-semibold text-right">{viewingEquipment.poNumber}</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div className="bg-gray-50 rounded-xl p-6 mx-6 border border-gray-200">
+        <h3 className="text-xl font-semibold text-gray-900 mb-6 flex items-center gap-2">
+          <Users className="w-6 h-6 text-blue-600" />
+          Contributors
+        </h3>
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          <div className="bg-white rounded-lg p-4 border border-gray-200 shadow-sm">
+            <div className="flex items-center gap-3 mb-3">
+              <div className="w-10 h-10 bg-blue-100 rounded-full flex items-center justify-center">
+                <User className="w-5 h-5 text-blue-600" />
+              </div>
+              <div>
+                <h4 className="font-medium text-gray-900">Created By</h4>
+                <p className="text-sm text-gray-500 uppercase">
+                  {viewingEquipment.createdAt ? new Date(viewingEquipment.createdAt).toLocaleString("en-IN", {
+                    day: "2-digit",
+                    month: "short",
+                    year: "numeric",
+                    hour: "2-digit",
+                    minute: "2-digit",
+                    hour12: true,
+                  }) : 'Not reviewed'}
+                </p>
+              </div>
+            </div>
+            <div className="flex items-center gap-3 p-2 bg-blue-50 rounded-md">
+              <div className="w-8 h-8 bg-blue-600 rounded-full flex items-center justify-center text-white text-sm font-medium">
+                {companyData.name?.charAt(0) || 'C'}
+              </div>
+              <span className="text-sm font-medium text-gray-900">
+                {name}
+              </span>
+            </div>
+          </div>
+          <div className="bg-white rounded-lg p-4 border border-gray-200 shadow-sm">
+            <div className="flex items-center justify-between mb-3">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 bg-green-100 rounded-full flex items-center justify-center">
+                  <CheckCircle className="w-5 h-5 text-green-600" />
+                </div>
+                <div>
+                  <h4 className="font-medium text-gray-900">Approved / Rejected By</h4>
+                </div>
+              </div>
+            </div>
+            <div className="space-y-2 max-h-32 overflow-y-auto">
+              {viewingEquipment.status === "Approved" ? (
+                <>
+                  <div>
+                    <span className="font-semibold text-green-600">Approved</span>{" "}
+                    By{" "}
+                    {viewingEquipment.approver.approverName}
+                  </div>
+                  <div className="">{viewingEquipment.approver?.approverDate
+                    ? new Date(viewingEquipment.approver.approverDate).toLocaleString()
+                    : "—"}
+                  </div>
+                </>
+              ) : viewingEquipment.status === "Rejected" ? (
+                <>
+                  <div>
+                    <span className="font-semibold text-red-600">Rejected</span>{" "}
+                    By{" "}
+                    {viewingEquipment.approver.approverName}
+                  </div>
+                  <div className="">
+                    {viewingEquipment.approver?.approverDate
+                      ? new Date(viewingEquipment.approver.approverDate).toLocaleString()
+                      : "—"}
+                  </div>
+                  {viewingEquipment.rejectionReason && (
+                    <div className="text-gray-700">
+                      Reason: {viewingEquipment.rejectionReason}
+                    </div>
+                  )}
+                </>
+              ) : (
+                <span className="text-yellow-600">Pending Approval</span>
+              )}
+            </div>
+          </div>
+        </div>
+      </div>
+      <div className="bg-gray-50 px-6 py-4 flex justify-end rounded-b-3xl">
+        <button
+          onClick={() => {
+            setViewingEquipment(null);
+            setIsInfoModalOpen(false);
+          }}
+          className="px-5 py-2 rounded-lg bg-indigo-600 text-white font-medium hover:bg-indigo-700 transition-colors shadow-sm focus:outline-none focus:ring-2 focus:ring-indigo-300"
+        >
+          Close
+        </button>
+      </div>
+    </div>
+  </div>
+)}
         {/* Add/Edit Equipment Popup */}
         {isPopupOpen && (
           <div className="fixed pl-64 inset-0 backdrop-blur-sm bg-opacity-50 flex items-center justify-center z-50 p-4">

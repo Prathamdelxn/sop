@@ -1743,9 +1743,7 @@ const ReviewPage = () => {
     console.log(data);
     setCompanyData(data)
   }, [])
-
-  useEffect(() => {
-  const fetchSops = async () => {
+ const fetchSops = async () => {
     try {
       setLoading(true);
       const res = await fetch("/api/checklistapi/fetch-for-review", {
@@ -1781,6 +1779,43 @@ const ReviewPage = () => {
       setLoading(false);
     }
   };
+  useEffect(() => {
+  // const fetchSops = async () => {
+  //   try {
+  //     setLoading(true);
+  //     const res = await fetch("/api/checklistapi/fetch-for-review", {
+  //       method: "POST",
+  //       headers: {
+  //         "Content-Type": "application/json",
+  //       },
+  //       body: JSON.stringify({
+  //         companyId: companyData?.companyId,
+  //         reviewerId: companyData?.id,
+  //       }),
+  //     });
+  //     const data = await res.json();
+  //     // Transform data to ensure nested structure
+  //     const transformedData = data.map((sop) => ({
+  //       ...sop,
+  //       stages: sop.stages.map((stage) => ({
+  //         ...stage,
+  //         tasks: stage.tasks.map((task) => ({
+  //           ...task,
+  //           minTime: task.minTime || { hours: 0, minutes: 0, seconds: 0 },
+  //           maxTime: task.maxTime || { hours: 0, minutes: 0, seconds: 0 },
+  //           images: task.images || [],  // Use 'images' to match saved data
+  //           galleryTitle: task.galleryTitle || '',  // Default metadata
+  //           galleryDescription: task.galleryDescription || '',
+  //         })),
+  //       })),
+  //     }));
+  //     setData(transformedData);
+  //     setLoading(false);
+  //   } catch (err) {
+  //     console.error("Failed to fetch SOPs:", err);
+  //     setLoading(false);
+  //   }
+  // };
 
   if (companyData) {
     fetchSops();
@@ -1841,6 +1876,7 @@ const getReviewStatus = (sop) => {
       setTimeout(() => {
         setShowApprovalFeedback(false);
       }, 3000);
+      fetchSops();
     } catch (err) {
       console.error("Failed to approve checklist:", err);
       setApprovalMessage("Failed to approve checklist. Please try again.");
@@ -1892,6 +1928,7 @@ console.log(rejectReason);
       setTimeout(() => {
         setShowApprovalFeedback(false);
       }, 3000);
+        fetchSops();
     } catch (err) {
       console.error("Failed to reject checklist:", err);
       setApprovalMessage("Failed to reject checklist. Please try again.");
@@ -2257,11 +2294,11 @@ const fetchUserById = async (id) => {
                       <tr key={sop._id} className="hover:bg-gray-50">
                         <td className="px-6 py-4 whitespace-nowrap">
                           <div className="flex items-center">
-                            <div className={`flex-shrink-0 h-10 w-10 rounded-lg flex items-center justify-center ${sop.bgColor || 'bg-blue-100'}`}>
+                            {/* <div className={`flex-shrink-0 h-10 w-10 rounded-lg flex items-center justify-center ${sop.bgColor || 'bg-blue-100'}`}>
                               <Layers className="w-5 h-5 text-blue-600" />
-                            </div>
+                            </div> */}
                             <div className="ml-4">
-                              <div className="text-sm font-medium text-gray-900 truncate max-w-[180px]">{sop.name}</div>
+                              <div className="text-sm font-medium text-gray-900 truncate max-w-[180px] capitalize">{sop.name}</div>
                               <div className="text-sm text-gray-500 line-clamp-1">{sop.description}</div>
                             </div>
                           </div>
@@ -2503,6 +2540,17 @@ const fetchUserById = async (id) => {
                       </div>
                       <div>
                         <h4 className="font-medium text-gray-900">Created By</h4>
+                         <p className="text-sm text-gray-500 uppercase">
+                             
+                              {selectedSop.createdAt ? new Date(selectedSop.createdAt).toLocaleString("en-IN", {
+                                        day: "2-digit",
+                                        month: "short",
+                                        year: "numeric",
+                                        hour: "2-digit",
+                                        minute: "2-digit",
+                                        hour12: true,
+                                      }) : 'Not reviewed'}
+                            </p>
                       </div>
                     </div>
                     <div className="flex items-center gap-3 p-2 bg-blue-50 rounded-md">

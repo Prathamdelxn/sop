@@ -8305,6 +8305,8 @@
 //     </div>
 //   );
 // }
+
+
 "use client";
 import { useState, useEffect } from "react";
 import {
@@ -9568,7 +9570,7 @@ const [recordCount, setRecordCount] = useState(1);
     if (!response.ok) {
     const err = await response.json();
     console.log(err);
-    toast.error(err.message || "Failed to create checklist.");
+    toast.error(err.error || "Failed to create checklist.");
     setIsSaving(false);
     return;
     }
@@ -9657,40 +9659,70 @@ const handleRecordCountConfirm = () => {
   setSelectedStageId(newStages[newStages.length - 1]?.id || stages[0]?.id || null);
   toast.success(`${stageCount} new stage(s) added successfully!`);
 };
-  const handleDeleteStage = (stageId) => {
-    const stageToDelete = stages.find((s) => s.id === stageId);
-    if (!stageToDelete) return;
-    if (stageToDelete.tasks && stageToDelete.tasks.length > 0) {
-      toast.error(
-        `Cannot delete stage "${stageToDelete.title}". It contains ${stageToDelete.tasks.length} task(s). Please delete the tasks first.`
+const handleDeleteStage = (stageId) => {
+  const stageToDelete = stages.find((s) => s.id === stageId);
+  if (!stageToDelete) return;
+
+  // if (stages.length === 1) {
+  //   toast.error("Cannot delete the last stage. Please create another stage first.");
+  //   return;
+  // }
+
+  setConfirmModalData({
+    title: "Confirm Delete Stage",
+    message: `Are you sure you want to delete the stage "${stageToDelete.title}" and all its tasks/subtasks? This action cannot be undone.`,
+    onConfirm: () => {
+      setStages((prev) =>
+        prev
+          .filter((s) => s.id !== stageId)
+          .map((s, idx) => ({
+            ...s,
+            title: `Stage ${idx + 1}`,
+          }))
       );
-      return;
-    }
-    if (stages.length === 1) {
-      toast.error("Cannot delete the last stage. Please create another stage first.");
-      return;
-    }
-    setConfirmModalData({
-      title: "Confirm Delete Stage",
-      message: `Are you sure you want to delete the stage "${stageToDelete.title}"? This action cannot be undone.`,
-      onConfirm: () => {
-        setStages((prev) =>
-          prev
-            .filter((s) => s.id !== stageId)
-            .map((s, idx) => ({
-              ...s,
-              title: `Stage ${idx + 1}`,
-            }))
-        );
-        if (selectedStageId === stageId) {
-          setSelectedStageId(stages[0]?.id || null);
-        }
-        setShowConfirmModal(false);
-        toast.success(`Stage "${stageToDelete.title}" deleted successfully.`);
-      },
-    });
-    setShowConfirmModal(true);
-  };
+      if (selectedStageId === stageId) {
+        setSelectedStageId(stages[0]?.id || null);
+      }
+      setShowConfirmModal(false);
+      toast.success(`Stage "${stageToDelete.title}" and all its contents deleted successfully.`);
+    },
+  });
+  setShowConfirmModal(true);
+};
+  // const handleDeleteStage = (stageId) => {
+  //   const stageToDelete = stages.find((s) => s.id === stageId);
+  //   if (!stageToDelete) return;
+  //   if (stageToDelete.tasks && stageToDelete.tasks.length > 0) {
+  //     toast.error(
+  //       `Cannot delete stage "${stageToDelete.title}". It contains ${stageToDelete.tasks.length} task(s). Please delete the tasks first.`
+  //     );
+  //     return;
+  //   }
+  //   if (stages.length === 1) {
+  //     toast.error("Cannot delete the last stage. Please create another stage first.");
+  //     return;
+  //   }
+  //   setConfirmModalData({
+  //     title: "Confirm Delete Stage",
+  //     message: `Are you sure you want to delete the stage "${stageToDelete.title}"? This action cannot be undone.`,
+  //     onConfirm: () => {
+  //       setStages((prev) =>
+  //         prev
+  //           .filter((s) => s.id !== stageId)
+  //           .map((s, idx) => ({
+  //             ...s,
+  //             title: `Stage ${idx + 1}`,
+  //           }))
+  //       );
+  //       if (selectedStageId === stageId) {
+  //         setSelectedStageId(stages[0]?.id || null);
+  //       }
+  //       setShowConfirmModal(false);
+  //       toast.success(`Stage "${stageToDelete.title}" deleted successfully.`);
+  //     },
+  //   });
+  //   setShowConfirmModal(true);
+  // };
   const handleDuplicateStage = (stageId) => {
     const stageToDuplicate = stages.find((s) => s.id === stageId);
     if (!stageToDuplicate) return;
