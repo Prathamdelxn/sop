@@ -11,12 +11,11 @@ export async function PUT(req, { params }) {
     const data = await req.json();
 
     // ✅ Update and return the new document
-    const updatedChecklist = await Checklist.findByIdAndUpdate(
+     const updatedChecklist = await Checklist.findByIdAndUpdate(
       id,
-      { ...data, updatedAt: Date.now() },
+      { ...data, status:"InProgress",rejectionReason:null,reviews:[],approvers:[], updatedAt: Date.now() },
       { new: true } // return updated doc
     );
-
     if (!updatedChecklist) {
       return NextResponse.json(
         { message: "Checklist not found" },

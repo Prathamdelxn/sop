@@ -63,14 +63,14 @@ const equipmentSchema = new mongoose.Schema({
   serial: {
     type: String,
   },
-  assetTag: {
+  preventiveMaintenaceDoneDate: {
     type: String,
-    unique: true, // assuming assetTag is unique
+
   },
   qmsNumber: {
     type: String,
   },
-  poNumber: {
+  preventiveDueDate: {
     type: String,
   },
   qualificationDoneDate: {
@@ -91,6 +91,7 @@ const equipmentSchema = new mongoose.Schema({
     approverDate:{ type: Date, default: Date.now }
   },
   userId:{type:String},
+  remark:{type:String},
   barcode:{type:String,default:''},
   status:{type:String,default:'InProgress'},
   rejectionReason:{type:String},

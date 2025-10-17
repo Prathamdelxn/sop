@@ -21,9 +21,12 @@ console.log("adddd",approverId);
     // Query prototypes
     const prototypes = await Checklist.find({
       companyId,
-      status: "Pending Approval",
+     status: { $in: ["Pending Approval", "Approved", "Rejected"] },
       approvers: {
-        $elemMatch: { approverId }
+        $elemMatch: { approverId,
+          status: { $in: ["Pending Approval", "Approved", "Rejected"] }
+         },
+        
       }
     }).sort({ createdAt: -1 });
 

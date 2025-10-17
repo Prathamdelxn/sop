@@ -1647,6 +1647,80 @@ const fetchUserById = async (id) => {
 
             {/* Scrollable Content */}
             <div className="p-6 space-y-8 overflow-y-auto flex-1 hide-scrollbar">
+              <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
+                <div className="bg-gray-50 px-6 py-4 border-b border-gray-200">
+                  <h3 className="text-lg font-semibold text-gray-900 flex items-center gap-2">
+                    <FileText className="w-4 h-4 text-blue-600" />
+                    Checklist Information
+                  </h3>
+                </div>
+ 
+                <div className="p-6">
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                    {/* Checklist Name */}
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">
+                        Checklist Name
+                      </label>
+                      <div className="p-3 bg-gray-50 rounded-lg border border-gray-200">
+                        <p className="text-sm text-gray-900 font-medium">
+                          {selectedSop.name || 'Not specified'}
+                        </p>
+                      </div>
+                    </div>
+ 
+                    {/* Department */}
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">
+                        Department
+                      </label>
+                      <div className="p-3 bg-gray-50 rounded-lg border border-gray-200">
+                        <p className="text-sm text-gray-900 font-medium">
+                          {selectedSop.department || 'Not specified'}
+                        </p>
+                      </div>
+                    </div>
+ 
+                    {/* Document Number */}
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">
+                        Document Number
+                      </label>
+                      <div className="p-3 bg-gray-50 rounded-lg border border-gray-200">
+                        <p className="text-sm text-gray-900 font-medium">
+                          {selectedSop.documentNumber || 'Not specified'}
+                        </p>
+                      </div>
+                    </div>
+ 
+                    {/* Version */}
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">
+                        Version
+                      </label>
+                      <div className="p-3 bg-gray-50 rounded-lg border border-gray-200">
+                        <p className="text-sm text-gray-900 font-medium">
+                          {selectedSop.version || 'Not specified'}
+                        </p>
+                      </div>
+                    </div>
+ 
+                    {/* QMS Number */}
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">
+                        QMS Number
+                      </label>
+                      <div className="p-3 bg-gray-50 rounded-lg border border-gray-200">
+                        <p className="text-sm text-gray-900 font-medium">
+                          {selectedSop.qms_number || 'Not specified'}
+                        </p>
+                      </div>
+                    </div>
+ 
+                    
+                  </div>
+                </div>
+              </div>
               <div className="space-y-6">
                 {/* ---- Stages ---- */}
                 {selectedSop.stages?.map((stage, stageIndex) => (

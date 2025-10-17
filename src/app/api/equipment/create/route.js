@@ -67,9 +67,9 @@ export async function POST(req) {
       supplier,
       model,
       serial,
-      assetTag,
+      preventiveMaintenaceDoneDate,
       qmsNumber,
-      poNumber,
+      preventiveDueDate,
       qualificationDoneDate,
       qualificationDueDate,
       equipmentId,
@@ -90,15 +90,7 @@ export async function POST(req) {
     }
 
     // Validate unique assetTag if provided
-    if (assetTag) {
-      const existingEquipment = await Equipment.findOne({ assetTag });
-      if (existingEquipment) {
-        return NextResponse.json(
-          { success: false, message: 'Asset Tag must be unique' },
-          { status: 400 }
-        );
-      }
-    }
+    
 
     // Create equipment
     const newEquipment = await Equipment.create({
@@ -108,9 +100,9 @@ export async function POST(req) {
       supplier,
       model,
       serial,
-      assetTag,
+      preventiveMaintenaceDoneDate,
       qmsNumber,
-      poNumber,
+      preventiveDueDate,
       qualificationDoneDate: qualificationDoneDate || null,
       qualificationDueDate: qualificationDueDate || null,
       equipmentId,

@@ -1054,8 +1054,8 @@ export default function AssignWorkerPage() {
               <Sparkles className="w-6 h-6 text-white" />
             </div>
             <div>
-              <h1 className="text-2xl font-bold text-gray-900">Assign Worker</h1>
-              <p className="text-gray-600 mt-2 text-md">Manage and assign worker for task execution processes</p>
+              <h1 className="text-2xl font-bold text-gray-900">Assign Resources</h1>
+              <p className="text-gray-600 mt-2 text-md">Manage and assign resources for task execution processes</p>
             </div>
           </div>
         </div>
@@ -1179,7 +1179,7 @@ export default function AssignWorkerPage() {
                               }}
                             >
                               <User className="w-4 h-4" />
-                              Assign Worker
+                              Assign
                             </button>
                           ) : (
                             <button 
@@ -1209,7 +1209,7 @@ export default function AssignWorkerPage() {
             <div className="flex items-center justify-between p-6 border-b border-gray-200 bg-gray-50">
               <div>
                 <h3 className="text-xl font-semibold text-gray-900">
-                  {selectedAssignment.prototypeData?.name} - {viewMode ? 'View Assigned Workers' : 'Assign Workers'}
+                  {selectedAssignment.prototypeData?.name} - {viewMode ? 'View Assigned Resources' : 'Assign Resources'}
                 </h3>
                 <p className="text-sm text-gray-600 mt-1">
                   Equipment: {selectedAssignment.equipment?.name} | ID: {selectedAssignment.generatedId}
@@ -1228,7 +1228,7 @@ export default function AssignWorkerPage() {
               {!viewMode && (
                 <div className="mb-6 flex justify-between items-center">
                   <div>
-                    <p className="text-sm text-gray-600">Select stages or tasks to assign workers</p>
+                    <p className="text-sm text-gray-600">Select stages or tasks to assign resources</p>
                     <p className="text-xs text-gray-500 mt-1">
                       {Object.values(selectedItems).filter(item => item).length} item(s) selected
                     </p>
@@ -1243,7 +1243,7 @@ export default function AssignWorkerPage() {
                     onClick={() => setShowWorkerList(true)}
                   >
                     <User className="w-4 h-4" />
-                    Assign Worker
+                    Assign resources
                   </button>
                 </div>
               )}
