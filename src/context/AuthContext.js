@@ -42,6 +42,8 @@
 
 // // Custom hook
 // export const useAuth = () => useContext(AuthContext);
+
+
 "use client";
 import { createContext, useState, useContext, useEffect } from "react";
 

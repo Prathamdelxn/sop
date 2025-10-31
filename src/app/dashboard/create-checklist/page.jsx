@@ -7,7 +7,7 @@ import {
   Sparkles,
   Trash2, User,
   CheckCircle,
-  Table ,
+  Table,
   Activity,
   Search,
   AlertCircle,
@@ -1264,7 +1264,7 @@ const SOPDashboard = () => {
   }
 
   const [companyData, setCompanyData] = useState();
- 
+
 
   useEffect(() => {
     const userData = localStorage.getItem('user')
@@ -1359,19 +1359,19 @@ const SOPDashboard = () => {
       </span>
     )
   }
- useEffect(() => {
-    
-      fetchUserById(selectedSop?.userId);
-    
-  }, [selectedSop]);
-  const [name,setNAme]=useState();
-const fetchUserById = async (id) => {
-  const res = await fetch(`/api/users/fetch-by-id/${id}`);
-  const data = await res.json();
-  console.log("asdfasdf",data?.user?.name);
-  setNAme(data?.user?.name);
+  useEffect(() => {
 
-};
+    fetchUserById(selectedSop?.userId);
+
+  }, [selectedSop]);
+  const [name, setNAme] = useState();
+  const fetchUserById = async (id) => {
+    const res = await fetch(`/api/users/fetch-by-id/${id}`);
+    const data = await res.json();
+    console.log("asdfasdf", data?.user?.name);
+    setNAme(data?.user?.name);
+
+  };
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 p-4 relative ">
       <div className="bg-white border-b border-gray-200 rounded-xl mx-2 mt-4 shadow-sm">
@@ -1654,7 +1654,7 @@ const fetchUserById = async (id) => {
                     Checklist Information
                   </h3>
                 </div>
- 
+
                 <div className="p-6">
                   <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                     {/* Checklist Name */}
@@ -1668,7 +1668,7 @@ const fetchUserById = async (id) => {
                         </p>
                       </div>
                     </div>
- 
+
                     {/* Department */}
                     <div>
                       <label className="block text-sm font-medium text-gray-700 mb-2">
@@ -1680,7 +1680,7 @@ const fetchUserById = async (id) => {
                         </p>
                       </div>
                     </div>
- 
+
                     {/* Document Number */}
                     <div>
                       <label className="block text-sm font-medium text-gray-700 mb-2">
@@ -1692,7 +1692,7 @@ const fetchUserById = async (id) => {
                         </p>
                       </div>
                     </div>
- 
+
                     {/* Version */}
                     <div>
                       <label className="block text-sm font-medium text-gray-700 mb-2">
@@ -1704,7 +1704,7 @@ const fetchUserById = async (id) => {
                         </p>
                       </div>
                     </div>
- 
+
                     {/* QMS Number */}
                     <div>
                       <label className="block text-sm font-medium text-gray-700 mb-2">
@@ -1716,8 +1716,8 @@ const fetchUserById = async (id) => {
                         </p>
                       </div>
                     </div>
- 
-                    
+
+
                   </div>
                 </div>
               </div>
@@ -1733,7 +1733,7 @@ const fetchUserById = async (id) => {
                         <span className="font-bold text-lg mr-4">Stage</span>
                         <span className="flex-shrink-0 bg-blue-600 text-white rounded-full w-6 h-6 flex items-center justify-center mr-3">
                           {stageIndex + 1}
-                        </span> 
+                        </span>
                         <h3 className="font-semibold text-gray-800">{stage.name}</h3>
                         <span className="ml-auto text-sm text-gray-500">
                           {stage.tasks?.length || 0} tasks
@@ -1760,106 +1760,106 @@ const fetchUserById = async (id) => {
                     </div>
                   </div>
                 ))}
-            
-              
-<div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
-  <div className="bg-gray-50 px-6 py-4 border-b border-gray-200">
-    <h3 className="text-lg font-semibold text-gray-900 flex items-center gap-2">
-      <Table className="w-4 h-4 text-blue-600" />
-      Visual Representation
-    </h3>
-  </div>
-  
-  <div className="overflow-x-auto">
-    <table className="min-w-full divide-y divide-gray-200">
-      <thead className="bg-gray-100">
-        <tr>
-          <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-            Check Point
-          </th>
-          <th className="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">
-            Status
-          </th>
-          <th className="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">
-            Production
-          </th>
-          <th className="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">
-            QA
-          </th>
-        </tr>
-      </thead>
-      <tbody className="bg-white divide-y divide-gray-200">
-        {selectedSop.visualRepresntation?.map((item, index) => (
-          <tr key={index} className="hover:bg-gray-50 transition-colors">
-            {/* Check Point Column */}
-            <td className="px-6 py-4 whitespace-nowrap">
-              <div className="flex items-center gap-3">
-                
-                <div className="flex-1 min-w-0">
-                  <div className="text-sm font-medium text-gray-900 capitalize">
-                    {item.checkPoint?.title || 'No Title'}
+
+
+                <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
+                  <div className="bg-gray-50 px-6 py-4 border-b border-gray-200">
+                    <h3 className="text-lg font-semibold text-gray-900 flex items-center gap-2">
+                      <Table className="w-4 h-4 text-blue-600" />
+                      Visual Representation
+                    </h3>
                   </div>
-                  {/* Images */}
-                  {item.checkPoint?.images && item.checkPoint.images.length > 0 && (
-                    <div className="flex items-center gap-1 mt-2">
-                      {item.checkPoint.images.map((image, imgIndex) => (
-                        <img 
-                          key={imgIndex}
-                          src={image.url} 
-                          alt={`Checkpoint ${index + 1} - Image ${imgIndex + 1}`}
-                          className="h-8 w-8 rounded border border-gray-200 object-cover hover:scale-110 transition-transform cursor-pointer"
-                          onClick={() => window.open(image.url, '_blank')}
-                        />
-                      ))}
-                    </div>
-                  )}
+
+                  <div className="overflow-x-auto">
+                    <table className="min-w-full divide-y divide-gray-200">
+                      <thead className="bg-gray-100">
+                        <tr>
+                          <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                            Check Point
+                          </th>
+                          <th className="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">
+                            Status
+                          </th>
+                          <th className="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">
+                            Production
+                          </th>
+                          <th className="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">
+                            QA
+                          </th>
+                        </tr>
+                      </thead>
+                      <tbody className="bg-white divide-y divide-gray-200">
+                        {selectedSop.visualRepresntation?.map((item, index) => (
+                          <tr key={index} className="hover:bg-gray-50 transition-colors">
+                            {/* Check Point Column */}
+                            <td className="px-6 py-4 whitespace-nowrap">
+                              <div className="flex items-center gap-3">
+
+                                <div className="flex-1 min-w-0">
+                                  <div className="text-sm font-medium text-gray-900 capitalize">
+                                    {item.checkPoint?.title || 'No Title'}
+                                  </div>
+                                  {/* Images */}
+                                  {item.checkPoint?.images && item.checkPoint.images.length > 0 && (
+                                    <div className="flex items-center gap-1 mt-2">
+                                      {item.checkPoint.images.map((image, imgIndex) => (
+                                        <img
+                                          key={imgIndex}
+                                          src={image.url}
+                                          alt={`Checkpoint ${index + 1} - Image ${imgIndex + 1}`}
+                                          className="h-8 w-8 rounded border border-gray-200 object-cover hover:scale-110 transition-transform cursor-pointer"
+                                          onClick={() => window.open(image.url, '_blank')}
+                                        />
+                                      ))}
+                                    </div>
+                                  )}
+                                </div>
+                              </div>
+                            </td>
+
+                            {/* Status Column */}
+                            <td className="px-6 py-4 whitespace-nowrap text-center">
+                              <span className={`inline-flex items-center px-3 py-1 rounded-full text-sm font-medium`}>
+
+                                {item.cleaningStatus || 'Visually Clean'}
+                              </span>
+                            </td>
+
+                            {/* Production Column */}
+                            <td className="px-6 py-4 whitespace-nowrap text-center">
+                              <span className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-medium `}>
+
+                                {item.production || 'Not Set'}
+                              </span>
+                            </td>
+
+                            {/* QA Column */}
+                            <td className="px-6 py-4 whitespace-nowrap text-center">
+                              <span className="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium ">
+
+                                {item.qa || 'Not Set'}
+                              </span>
+                            </td>
+                          </tr>
+                        ))}
+
+                      </tbody>
+                    </table>
+
+                    {/* Empty State */}
+                    {(!selectedSop.visualRepresntation || selectedSop.visualRepresntation.length === 0) && (
+                      <div className="text-center py-12 bg-gray-50">
+                        <Table className="w-12 h-12 text-gray-400 mx-auto mb-3" />
+                        <h4 className="text-lg font-medium text-gray-900 mb-1">No Visual Data</h4>
+                        <p className="text-gray-500 text-sm">
+                          No visual representation data available for this SOP.
+                        </p>
+                      </div>
+                    )}
+                  </div>
                 </div>
-              </div>
-            </td>
 
-            {/* Status Column */}
-            <td className="px-6 py-4 whitespace-nowrap text-center">
-              <span className={`inline-flex items-center px-3 py-1 rounded-full text-sm font-medium`}>
-             
-                {item.cleaningStatus || 'Visually Clean'}
-              </span>
-            </td>
 
-            {/* Production Column */}
-            <td className="px-6 py-4 whitespace-nowrap text-center">
-              <span className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-medium `}>
-            
-                {item.production || 'Not Set'}
-              </span>
-            </td>
-
-            {/* QA Column */}
-            <td className="px-6 py-4 whitespace-nowrap text-center">
-              <span className="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium ">
-               
-                {item.qa || 'Not Set'}
-              </span>
-            </td>
-          </tr>
-        ))}
-        
-      </tbody>
-    </table>
-
-    {/* Empty State */}
-    {(!selectedSop.visualRepresntation || selectedSop.visualRepresntation.length === 0) && (
-      <div className="text-center py-12 bg-gray-50">
-        <Table className="w-12 h-12 text-gray-400 mx-auto mb-3" />
-        <h4 className="text-lg font-medium text-gray-900 mb-1">No Visual Data</h4>
-        <p className="text-gray-500 text-sm">
-          No visual representation data available for this SOP.
-        </p>
-      </div>
-    )}
-  </div>
-</div>
-
-             
                 {/* ---- Contributors Section ---- */}
                 <div className="bg-gray-50 rounded-xl p-6 border border-gray-200">
                   <h3 className="text-xl font-semibold text-gray-900 mb-6 flex items-center gap-2">
@@ -1877,17 +1877,17 @@ const fetchUserById = async (id) => {
                         <div>
                           <h4 className="font-medium text-gray-900">Created By</h4>
                           <p className="text-sm text-gray-500 uppercase">
-                             
-                              {selectedSop.createdAt ? new Date(selectedSop.createdAt).toLocaleString("en-IN", {
-                                        day: "2-digit",
-                                        month: "short",
-                                        year: "numeric",
-                                        hour: "2-digit",
-                                        minute: "2-digit",
-                                        hour12: true,
-                                      }) : 'Not reviewed'}
-                            </p>
-                        
+
+                            {selectedSop.createdAt ? new Date(selectedSop.createdAt).toLocaleString("en-IN", {
+                              day: "2-digit",
+                              month: "short",
+                              year: "numeric",
+                              hour: "2-digit",
+                              minute: "2-digit",
+                              hour12: true,
+                            }) : 'Not reviewed'}
+                          </p>
+
                         </div>
                       </div>
                       <div className="flex items-center gap-3 p-2 bg-blue-50 rounded-md">
@@ -1895,7 +1895,7 @@ const fetchUserById = async (id) => {
                           {companyData.name?.charAt(0) || 'C'}
                         </div>
                         <span className="text-sm font-medium text-gray-900">
-                       
+
                           {name}
                         </span>
                       </div>
@@ -1930,10 +1930,10 @@ const fetchUserById = async (id) => {
                                 </span>
                               </div>
                               <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${review.status === 'Approved'
-                                  ? 'bg-green-100 text-green-800'
-                                  : review.status === 'Rejected'
-                                    ? 'bg-red-100 text-red-800'
-                                    : 'bg-yellow-100 text-yellow-800'
+                                ? 'bg-green-100 text-green-800'
+                                : review.status === 'Rejected'
+                                  ? 'bg-red-100 text-red-800'
+                                  : 'bg-yellow-100 text-yellow-800'
                                 }`}>
                                 {review.status}
                               </span>
@@ -1976,10 +1976,10 @@ const fetchUserById = async (id) => {
                                 </span>
                               </div>
                               <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${approver.status === 'Approved'
-                                  ? 'bg-green-100 text-green-800'
-                                  : approver.status === 'Rejected'
-                                    ? 'bg-red-100 text-red-800'
-                                    : 'bg-yellow-100 text-yellow-800'
+                                ? 'bg-green-100 text-green-800'
+                                : approver.status === 'Rejected'
+                                  ? 'bg-red-100 text-red-800'
+                                  : 'bg-yellow-100 text-yellow-800'
                                 }`}>
                                 {approver.status}
                               </span>
@@ -2050,10 +2050,10 @@ const fetchUserById = async (id) => {
                                     </td>
                                     <td className="px-4 py-3 whitespace-nowrap">
                                       <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${review.status === 'Approved'
-                                          ? 'bg-green-100 text-green-800'
-                                          : review.status === 'Rejected'
-                                            ? 'bg-red-100 text-red-800'
-                                            : 'bg-yellow-100 text-yellow-800'
+                                        ? 'bg-green-100 text-green-800'
+                                        : review.status === 'Rejected'
+                                          ? 'bg-red-100 text-red-800'
+                                          : 'bg-yellow-100 text-yellow-800'
                                         }`}>
                                         {review.status === 'Approved' && <Check className="w-3 h-3 mr-1" />}
                                         {review.status === 'Rejected' && <X className="w-3 h-3 mr-1" />}
@@ -2133,10 +2133,10 @@ const fetchUserById = async (id) => {
                                     </td>
                                     <td className="px-4 py-3 whitespace-nowrap">
                                       <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${approver.status === 'Approved'
-                                          ? 'bg-green-100 text-green-800'
-                                          : approver.status === 'Rejected'
-                                            ? 'bg-red-100 text-red-800'
-                                            : 'bg-yellow-100 text-yellow-800'
+                                        ? 'bg-green-100 text-green-800'
+                                        : approver.status === 'Rejected'
+                                          ? 'bg-red-100 text-red-800'
+                                          : 'bg-yellow-100 text-yellow-800'
                                         }`}>
                                         {approver.status === 'Approved' && <Check className="w-3 h-3 mr-1" />}
                                         {approver.status === 'Rejected' && <X className="w-3 h-3 mr-1" />}
@@ -2253,10 +2253,10 @@ const fetchUserById = async (id) => {
                             </td>
                             <td className="px-6 py-4 whitespace-nowrap">
                               <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${review.status === 'Approved'
-                                  ? 'bg-green-100 text-green-800'
-                                  : review.status === 'Rejected'
-                                    ? 'bg-red-100 text-red-800'
-                                    : 'bg-yellow-100 text-yellow-800'
+                                ? 'bg-green-100 text-green-800'
+                                : review.status === 'Rejected'
+                                  ? 'bg-red-100 text-red-800'
+                                  : 'bg-yellow-100 text-yellow-800'
                                 }`}>
                                 {review.status === 'Approved' && <Check className="w-3 h-3 mr-1" />}
                                 {review.status === 'Rejected' && <X className="w-3 h-3 mr-1" />}
@@ -2334,10 +2334,10 @@ const fetchUserById = async (id) => {
                             </td>
                             <td className="px-6 py-4 whitespace-nowrap">
                               <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${approver.status === 'Approved'
-                                  ? 'bg-green-100 text-green-800'
-                                  : approver.status === 'Rejected'
-                                    ? 'bg-red-100 text-red-800'
-                                    : 'bg-yellow-100 text-yellow-800'
+                                ? 'bg-green-100 text-green-800'
+                                : approver.status === 'Rejected'
+                                  ? 'bg-red-100 text-red-800'
+                                  : 'bg-yellow-100 text-yellow-800'
                                 }`}>
                                 {approver.status === 'Approved' && <Check className="w-3 h-3 mr-1" />}
                                 {approver.status === 'Rejected' && <X className="w-3 h-3 mr-1" />}

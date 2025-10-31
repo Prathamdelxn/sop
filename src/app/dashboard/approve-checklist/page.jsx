@@ -2497,14 +2497,9 @@ const ApprovePage = () => {
             className="relative bg-white rounded-xl shadow-xl w-full max-w-4xl max-h-[80vh] overflow-y-auto mx-4"
             onClick={(e) => e.stopPropagation()}
           >
-            <button
-              onClick={closeModal}
-              className="absolute top-4 right-4 z-10 p-2 rounded-full bg-white shadow-md hover:bg-gray-100 transition-colors"
-            >
-              <X className="w-5 h-5 text-gray-600" />
-            </button>
+          
 
-            <div className="sticky top-0 bg-white p-6 pb-4 border-b">
+            <div className="sticky top-0 flex items-center justify-between  bg-white p-6 pb-4 border-b">
               <div className="flex items-start justify-between gap-4">
                 <div>
                   <h2 className="text-2xl font-bold text-gray-900">{selectedSop.name}</h2>
@@ -2529,6 +2524,12 @@ const ApprovePage = () => {
                   </div>
                 </div>
               </div>
+              <div className=""> <button
+              onClick={closeModal}
+              className="z-10 p-2 rounded-full bg-white shadow-md hover:bg-gray-100 transition-colors"
+            >
+              <X className="w-5 h-5 text-gray-600" />
+            </button></div>
             </div>
 
             <div className="p-6 space-y-8">
