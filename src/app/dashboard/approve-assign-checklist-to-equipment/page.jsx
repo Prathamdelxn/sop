@@ -1,3 +1,5 @@
+'use client'
+
 import React, { useEffect, useState } from 'react';
 import { Plus, Package, Users, X, Trash2, Sparkles, Eye, Check, Search, Filter, Loader2, ChevronDown, ChevronUp } from 'lucide-react';
 import PasswordModal from '../../components/PasswordModal'; // Import the PasswordModal component
