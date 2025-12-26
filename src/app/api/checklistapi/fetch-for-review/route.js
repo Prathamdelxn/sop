@@ -61,7 +61,7 @@ export async function POST(req) {
     // Query prototypes with status "Under Review", "Approved", or "Rejected" by the specific reviewer
     const prototypes = await Checklist.find({
       companyId,
-      status: { $in: ["Under Review", "Approved", "Rejected Review"] },
+      status: { $in: ["Under Review", "Approved", "Rejected Review","Approved Review","Rejected","Pending Approval"] },
       reviews: {
         $elemMatch: { 
           reviewerId,

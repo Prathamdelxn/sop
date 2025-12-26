@@ -7,9 +7,9 @@ export async function POST(req) {
   try {
     await connectDB();
     const data = await req.json();
- 
+   console.log("asdfasdf",data);
     // 🔍 check if checklist with same name already exists
-    const existing = await Checklist.findOne({ name: data.name });
+    const existing = await Checklist.findOne({ name: data.name , companyId: data.companyId });
     if (existing) {
       return NextResponse.json(
         { error: "Checklist with this name already exists" },

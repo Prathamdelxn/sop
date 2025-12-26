@@ -1557,7 +1557,8 @@ const SOPDashboard = () => {
                       <td className="px-6 py-4 whitespace-nowrap text-center text-sm font-medium">
                         <div className="flex h-8 items-center justify-end gap-6">
                           <div className="flex justify-end space-x-2">
-                            {sop.status == 'InProgress' || sop.status == 'Rejected' || sop.status == 'Rejected Review' ? <button
+                            {sop.status == 'InProgress' || sop.status == 'Rejected' || sop.status == 'Rejected Review' ?
+                             <button
                               onClick={() => handleEdit(sop)}
                               className="p-2 bg-yellow-100 text-yellow-600 rounded-lg hover:bg-yellow-200"
                               title="Edit"
