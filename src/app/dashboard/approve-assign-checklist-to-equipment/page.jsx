@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { Plus, Package, Users, X, Trash2, Sparkles, Eye, Check, Search, Filter, Loader2, ChevronDown, ChevronUp } from 'lucide-react';
-import PasswordModal from '@/app/components/PasswordModal'; // Import the PasswordModal component
+import PasswordModal from '../../components/PasswordModal'; // Import the PasswordModal component
 
 export default function ApproveAssignEquipmentPage() {
   const [assigndata, setAssignData] = useState([]);
