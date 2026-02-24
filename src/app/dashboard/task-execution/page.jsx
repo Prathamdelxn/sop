@@ -1,98 +1,98 @@
 "use client";
 import { useRouter } from 'next/navigation';
 import React, { useState, useEffect } from 'react';
-import { Play, Eye, Clock, User, Package, Hash, Zap,Sparkles } from 'lucide-react';
+import { Play, Eye, Clock, User, Package, Hash, Zap, Sparkles } from 'lucide-react';
 
 const TaskExecutionPage = () => {
   const router = useRouter();
   // Dummy data for task executions
   const [tasks, setTasks] = useState([
-    {
-      _id: '1',
-      generatedId: 'TE-001',
-      equipment: {
-        name: 'Microscope X200',
-        barcode: 'MBX200-001',
-      },
-      prototypeData: {
-        name: 'Cell Analysis',
-        status: 'pending'
-      },
-      assignedTo: 'John Doe',
-      deadline: '2023-12-31'
-    },
-    {
-      _id: '2',
-      generatedId: 'TE-002',
-      equipment: {
-        name: 'Centrifuge C100',
-        barcode: 'CFC100-001',
-      },
-      prototypeData: {
-        name: 'Sample Processing',
-        status: 'in-progress'
-      },
-      assignedTo: 'Jane Smith',
-      deadline: '2023-12-15'
-    },
-    {
-      _id: '3',
-      generatedId: 'TE-003',
-      equipment: {
-        name: 'Spectrometer S500',
-        barcode: 'SPS500-001',
-      },
-      prototypeData: {
-        name: 'Chemical Analysis',
-        status: 'completed'
-      },
-      assignedTo: 'Mike Johnson',
-      deadline: '2023-12-10'
-    }
+    // {
+    //   _id: '1',
+    //   generatedId: 'TE-001',
+    //   equipment: {
+    //     name: 'Microscope X200',
+    //     barcode: 'MBX200-001',
+    //   },
+    //   prototypeData: {
+    //     name: 'Cell Analysis',
+    //     status: 'pending'
+    //   },
+    //   assignedTo: 'John Doe',
+    //   deadline: '2023-12-31'
+    // },
+    // {
+    //   _id: '2',
+    //   generatedId: 'TE-002',
+    //   equipment: {
+    //     name: 'Centrifuge C100',
+    //     barcode: 'CFC100-001',
+    //   },
+    //   prototypeData: {
+    //     name: 'Sample Processing',
+    //     status: 'in-progress'
+    //   },
+    //   assignedTo: 'Jane Smith',
+    //   deadline: '2023-12-15'
+    // },
+    // {
+    //   _id: '3',
+    //   generatedId: 'TE-003',
+    //   equipment: {
+    //     name: 'Spectrometer S500',
+    //     barcode: 'SPS500-001',
+    //   },
+    //   prototypeData: {
+    //     name: 'Chemical Analysis',
+    //     status: 'completed'
+    //   },
+    //   assignedTo: 'Mike Johnson',
+    //   deadline: '2023-12-10'
+    // }
   ]);
 
   const handleExecuteTask = (taskId) => {
     console.log('Executing task:', taskId);
-        // router.push('/dashboard/task-execution/demo');
-     router.push(`/dashboard/task-execution/execution/${taskId}`);
+    // router.push('/dashboard/task-execution/demo');
+    router.push(`/dashboard/task-execution/execution/${taskId}`);
     // Router navigation would go here
   };
-  const [userData,setUser]=useState();
- useEffect(() => {
-  const storedUser = localStorage.getItem("user");
-  if (storedUser) {
-    const data = JSON.parse(storedUser);
-    setUser(data);
+  const [userData, setUser] = useState();
+  useEffect(() => {
+    const storedUser = localStorage.getItem("user");
+    if (storedUser) {
+      const data = JSON.parse(storedUser);
+      setUser(data);
 
-    // ✅ call fetch here after setting
-    fetch(`/api/assignment/execution/${data.companyId}/${data.id}`)
-      .then((res) => res.json())
-      .then((data) => {
-        console.log("Assignments:", data);
-        setTasks(data);
-      })
-      .catch((err) => console.error("Error:", err));
-  }
-}, []);
+      // ✅ call fetch here after setting
+      fetch(`/api/assignment/execution/${data.companyId}/${data.id}`)
+        .then((res) => res.json())
+        .then((data) => {
+          console.log("Assignments:", data);
+          setTasks(data);
+        })
+        .catch((err) => console.error("Error:", err));
+    }
+  }, []);
 
 
-//  const fetchAssignment = async () => {
-//   try {
-//     const res = await fetch(`/api/assignments/${userData?.companyId}/${userData?.id}`);
-//     if (!res.ok) {
-//       throw new Error("Failed to fetch assignments");
-//     }
-//     const data = await res.json();
-//     console.log("Assignments:", data);
-//     return data;
-//   } catch (error) {
-//     console.error("Error:", error);
-//   }
-// };
+  //  const fetchAssignment = async () => {
+  //   try {
+  //     const res = await fetch(`/api/assignments/${userData?.companyId}/${userData?.id}`);
+  //     if (!res.ok) {
+  //       throw new Error("Failed to fetch assignments");
+  //     }
+  //     const data = await res.json();
+  //     console.log("Assignments:", data);
+  //     return data;
+  //   } catch (error) {
+  //     console.error("Error:", error);
+  //   }
+  // };
 
-//   useEffect(()=>{
-//     fetchAssignment();
-//   },[userData])
+  //   useEffect(()=>{
+  //     fetchAssignment();
+  //   },[userData])
 
 
 
@@ -134,22 +134,22 @@ const TaskExecutionPage = () => {
     <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 p-4 ">
       <div className="max-w-7xl mx-auto px-4 sm:px-4 lg:px-2 py-2">
         <div className="bg-white border-b border-gray-200 rounded-xl  mt-4 shadow-sm">
-                <div className="max-w-7xl mx-auto px-6 py-6 rounded-xl flex flex-col lg:flex-row lg:items-center lg:justify-between gap-6">
-                  <div className="flex items-center space-x-4">
-                    <div className="p-4 bg-gradient-to-br from-blue-500 via-purple-500 to-pink-500 rounded-2xl shadow">
-                      <Sparkles className="w-6 h-6 text-white" />
-                    </div>
-                    <div>
-                      <h1 className="text-2xl font-bold text-gray-900">Task Execution Workspace</h1>
-                      <p className="text-gray-600 mt-2 text-md">Manage and Execute your assigned task </p>
-                    </div>
-                  </div>
-                 
-        
-                </div>
+          <div className="max-w-7xl mx-auto px-6 py-6 rounded-xl flex flex-col lg:flex-row lg:items-center lg:justify-between gap-6">
+            <div className="flex items-center space-x-4">
+              <div className="p-4 bg-gradient-to-br from-blue-500 via-purple-500 to-pink-500 rounded-2xl shadow">
+                <Sparkles className="w-6 h-6 text-white" />
               </div>
+              <div>
+                <h1 className="text-2xl font-bold text-gray-900">Task Execution Workspace</h1>
+                <p className="text-gray-600 mt-2 text-md">Manage and Execute your assigned task </p>
+              </div>
+            </div>
+
+
+          </div>
+        </div>
         {/* Header */}
-       
+
 
         {/* Modern Card Container */}
         <div className="bg-white mt-4 rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
@@ -189,7 +189,7 @@ const TaskExecutionPage = () => {
                       ID
                     </div>
                   </th>
-                  
+
 
                   <th className="px-6 py-4 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">
                     <div className="flex items-center gap-2">
@@ -206,11 +206,10 @@ const TaskExecutionPage = () => {
                 {tasks.map((task, index) => {
                   const statusConfig = getStatusConfig(task.status);
                   return (
-                    <tr 
-                      key={task._id} 
-                      className={`border-b border-gray-50 hover:bg-gray-50/50 transition-colors duration-200 ${
-                        index % 2 === 0 ? 'bg-white' : 'bg-gray-50/20'
-                      }`}
+                    <tr
+                      key={task._id}
+                      className={`border-b border-gray-50 hover:bg-gray-50/50 transition-colors duration-200 ${index % 2 === 0 ? 'bg-white' : 'bg-gray-50/20'
+                        }`}
                     >
                       <td className="px-6 py-5">
                         <div className="flex items-center gap-3">
@@ -223,7 +222,7 @@ const TaskExecutionPage = () => {
                             <div className="text-sm font-medium text-gray-900">
                               {task.equipment.name}
                             </div>
-                            
+
                           </div>
                         </div>
                       </td>
@@ -237,7 +236,7 @@ const TaskExecutionPage = () => {
                           {task.generatedId}
                         </span>
                       </td>
-                     
+
                       <td className="px-6 py-5">
                         <span className={`inline-flex items-center gap-2 px-3 py-1 rounded-xl text-sm font-medium  ${statusConfig.bg} ${statusConfig.text}`}>
                           {/* <span>{statusConfig.icon}</span> */}
@@ -246,15 +245,14 @@ const TaskExecutionPage = () => {
                       </td>
                       <td className="px-6 py-5">
                         <div className="flex items-center gap-2">
-                        
+
                           <button
                             onClick={() => handleExecuteTask(task._id)}
                             disabled={task.prototypeData.status === 'completed'}
-                            className={`inline-flex items-center gap-2 px-4 py-2 text-sm font-medium rounded-lg transition-all duration-200 shadow-sm hover:shadow ${
-                              task.prototypeData.status === 'completed'
-                                ? 'text-gray-400 bg-gray-50 border border-gray-200 cursor-not-allowed'
-                                : 'text-white bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 border border-transparent'
-                            }`}
+                            className={`inline-flex items-center gap-2 px-4 py-2 text-sm font-medium rounded-lg transition-all duration-200 shadow-sm hover:shadow ${task.prototypeData.status === 'completed'
+                              ? 'text-gray-400 bg-gray-50 border border-gray-200 cursor-not-allowed'
+                              : 'text-white bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 border border-transparent'
+                              }`}
                           >
                             <Play className="h-4 w-4" />
                             {task.prototypeData.status === 'completed' ? 'Complete' : 'Execute'}
