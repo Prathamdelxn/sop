@@ -1,4 +1,3 @@
-
 "use client";
 import { useState, useEffect } from "react";
 import {
@@ -28,18 +27,22 @@ import {
   Trash,
   GripVertical,
   AlertCircle,
+  Gauge,
 } from "lucide-react";
 import Link from "next/link";
 import toast, { Toaster } from "react-hot-toast";
+
 // Loading Spinner Component
 const LoadingSpinner = () => (
   <div className="flex items-center justify-center">
     <div className="w-6 h-6 border-4 border-blue-600 border-t-transparent rounded-full animate-spin"></div>
   </div>
 );
+
 // Error Message Component
 const ErrorMessage = ({ message }) =>
   message ? <p className="text-xs text-red-600 mt-1">{message}</p> : null;
+
 // Duplicate Warning Component
 const DuplicateWarning = ({ items, value, excludeId, itemType = "Item" }) => {
   const hasDuplicate = items.some(
@@ -59,6 +62,7 @@ const DuplicateWarning = ({ items, value, excludeId, itemType = "Item" }) => {
     </div>
   );
 };
+
 // Input Field Component
 const InputField = ({
   label,
@@ -89,11 +93,10 @@ const InputField = ({
     );
   return (
     <div
-      className={`space-y-1 ${
-        hasDuplicate
-          ? "border-l-4 border-yellow-500 bg-yellow-50 p-3 rounded-lg"
-          : ""
-      }`}
+      className={`space-y-1 ${hasDuplicate
+        ? "border-l-4 border-yellow-500 bg-yellow-50 p-3 rounded-lg"
+        : ""
+        }`}
     >
       <label className="block text-xs font-medium text-slate-700 mb-1">
         {label} {required && <span className="text-red-500">*</span>}
@@ -117,6 +120,7 @@ const InputField = ({
     </div>
   );
 };
+
 // Text Area Field Component
 const TextAreaField = ({
   label,
@@ -153,6 +157,7 @@ const TextAreaField = ({
     </div>
   );
 };
+
 // Confirmation Modal Component
 const ConfirmationModal = ({ isOpen, onClose, onConfirm, title, message }) => {
   if (!isOpen) return null;
@@ -188,6 +193,7 @@ const ConfirmationModal = ({ isOpen, onClose, onConfirm, title, message }) => {
     </div>
   );
 };
+
 // Sortable Item Component
 const SortableItem = ({
   id,
@@ -208,6 +214,7 @@ const SortableItem = ({
   galleryDescription,
   items,
   itemType = "Item",
+  parameter,
 }) => {
   const {
     attributes,
@@ -223,6 +230,7 @@ const SortableItem = ({
     opacity: isDragging ? 0.5 : 1,
   };
   const hasImages = images && images.length > 0;
+
   return (
     <div>
       <div
@@ -232,9 +240,8 @@ const SortableItem = ({
           e.stopPropagation();
           onClick?.(id);
         }}
-        className={`group p-3 rounded-lg border border-slate-200 bg-white hover:border-slate-300 hover:shadow-sm transition-all duration-200 ${
-          onClick ? "cursor-pointer" : ""
-        }`}
+        className={`group p-3 rounded-lg border border-slate-200 bg-white hover:border-slate-300 hover:shadow-sm transition-all duration-200 ${onClick ? "cursor-pointer" : ""
+          }`}
       >
         <div className="flex items-start gap-3">
           {showActionButtons && (
@@ -264,25 +271,33 @@ const SortableItem = ({
                     {description}
                   </p>
                 )}
-                <div className="flex justify-between">
+                <div className="flex flex-wrap items-center gap-2 mt-1">
                   {(minTime || maxTime) && (
-                    <div className="flex items-center gap-2">
+                    <div className="flex items-center gap-1">
                       <Clock className="w-3 h-3 text-slate-500" />
                       <span className="text-xs text-slate-500">
                         {minTime && maxTime
                           ? `${minTime} - ${maxTime}`
                           : minTime
-                          ? `Min: ${minTime}`
-                          : maxTime
-                          ? `Max: ${maxTime}`
-                          : ""}
+                            ? `Min: ${minTime}`
+                            : maxTime
+                              ? `Max: ${maxTime}`
+                              : ""}
+                      </span>
+                    </div>
+                  )}
+                  {parameter && parameter.label && (
+                    <div className="flex items-center gap-1">
+                      <Gauge className="w-3 h-3 text-purple-500" />
+                      <span className="text-xs text-purple-600 bg-purple-50 px-2 py-0.5 rounded-full">
+                        {parameter.label}: {parameter.min} - {parameter.max}
                       </span>
                     </div>
                   )}
                   {hasImages && (
-                    <div className="text-xs font-medium text-blue-600 bg-blue-100 px-2 py-1 rounded-full inline-block">
-                      {images.length} Image
-                      {galleryTitle ? `s - ${galleryTitle}` : "s"} Attached
+                    <div className="text-xs font-medium text-blue-600 bg-blue-100 px-2 py-0.5 rounded-full">
+                      {images.length} Image{images.length > 1 ? "s" : ""}
+                      {galleryTitle ? ` - ${galleryTitle}` : ""}
                     </div>
                   )}
                 </div>
@@ -344,6 +359,7 @@ const SortableItem = ({
     </div>
   );
 };
+
 export default function NestedDragDrop() {
   const router = useRouter();
   const [stages, setStages] = useState([]);
@@ -351,6 +367,13 @@ export default function NestedDragDrop() {
   const [selectedStageId, setSelectedStageId] = useState(null);
   const [showGoBackConfirmModal, setShowGoBackConfirmModal] = useState(false);
   const [showVisualTable, setShowVisualTable] = useState(false);
+  const [showModal, setShowModal] = useState(false);
+  const [label, setLabel] = useState("Pressure");
+  const [min, setMin] = useState("");
+  const [max, setMax] = useState("");
+  const [currentTaskIndex, setCurrentTaskIndex] = useState(null);
+  const [currentStageId, setCurrentStageId] = useState(null);
+  const [currentEditItemId, setCurrentEditItemId] = useState(null);
   const [checklistData, setChecklistData] = useState({
     name: "",
     department: "",
@@ -380,7 +403,7 @@ export default function NestedDragDrop() {
   const [stageErrors, setStageErrors] = useState({ title: "" });
   const [showTaskForms, setShowTaskForms] = useState({});
   const [showRecordCountModal, setShowRecordCountModal] = useState(false);
-const [recordCount, setRecordCount] = useState(1);
+  const [recordCount, setRecordCount] = useState(1);
   const [newTasks, setNewTasks] = useState({});
   const [showSubtaskForms, setShowSubtaskForms] = useState({});
   const [newSubtasks, setNewSubtasks] = useState({});
@@ -395,6 +418,7 @@ const [recordCount, setRecordCount] = useState(1);
     galleryTitle: "",
     galleryDescription: "",
     bulkDescription: "",
+    parameter: { label: "Pressure", min: "", max: "" },
   });
   const [activeStageId, setActiveStageId] = useState(null);
   const [activeStageItem, setActiveStageItem] = useState(null);
@@ -421,15 +445,17 @@ const [recordCount, setRecordCount] = useState(1);
   const [confirmModalData, setConfirmModalData] = useState({
     title: "",
     message: "",
-    onConfirm: () => {},
+    onConfirm: () => { },
   });
   const [tableData, setTableData] = useState([]); // Independent, persistent table data
+
   const handleCheckPointChange = (id, value) => {
     setTableData((prev) =>
       prev.map((row) => (row.id === id ? { ...row, checkpoint: { ...row.checkpoint, title: value } } : row))
     );
     setTableErrors((prev) => ({ ...prev, [id]: "" }));
   };
+
   useEffect(() => {
     if (stages.length === 0) {
       const defaultStage = {
@@ -440,11 +466,13 @@ const [recordCount, setRecordCount] = useState(1);
       setStages([defaultStage]);
     }
   }, []);
+
   const handleCleaningStatusChange = (id, value) => {
     setTableData((prev) =>
       prev.map((row) => (row.id === id ? { ...row, cleaningStatus: value } : row))
     );
   };
+
   const handleImageUpload = async (id, event) => {
     setIsUploading(true);
     const files = Array.from(event.target.files);
@@ -506,19 +534,21 @@ const [recordCount, setRecordCount] = useState(1);
     }
     event.target.value = "";
   };
+
   const handleRemoveImage = (id, imageIndex) => {
     setTableData((prev) =>
       prev.map((row) =>
         row.id === id
           ? {
-              ...row,
-              checkpoint: { ...row.checkpoint, images: row.checkpoint.images.filter((_, idx) => idx !== imageIndex) },
-            }
+            ...row,
+            checkpoint: { ...row.checkpoint, images: row.checkpoint.images.filter((_, idx) => idx !== imageIndex) },
+          }
           : row
       )
     );
     toast.success("Image removed successfully!");
   };
+
   const handleDeleteRow = (id) => {
     setConfirmModalData({
       title: "Confirm Delete Row",
@@ -531,16 +561,18 @@ const [recordCount, setRecordCount] = useState(1);
     });
     setShowConfirmModal(true);
   };
- const addNewRows = (count) => {
-  const newRows = Array.from({ length: count }, () => ({
-    id: `visual-${Date.now()}-${Math.floor(Math.random() * 1000)}`, // Unique persistent ID
-    checkpoint: { title: "", images: [] },
-    cleaningStatus: "Clean",
-    production: "-",
-    qa: "-",
-  }));
-  setTableData((prev) => [...prev, ...newRows]);
-};
+
+  const addNewRows = (count) => {
+    const newRows = Array.from({ length: count }, () => ({
+      id: `visual-${Date.now()}-${Math.floor(Math.random() * 1000)}`, // Unique persistent ID
+      checkpoint: { title: "", images: [] },
+      cleaningStatus: "Clean",
+      production: "-",
+      qa: "-",
+    }));
+    setTableData((prev) => [...prev, ...newRows]);
+  };
+
   const clearAllRows = () => {
     setConfirmModalData({
       title: "Confirm Clear All Rows",
@@ -553,77 +585,7 @@ const [recordCount, setRecordCount] = useState(1);
     });
     setShowConfirmModal(true);
   };
-  // const renderTableRows = () => {
-  //   return tableData.map((item) => (
-  //     <tr key={item.id} className="border-b border-gray-200 hover:bg-gray-50">
-  //       <td className="py-3 px-4 text-sm text-gray-700">
-  //         <div className="flex items-start flex-col gap-3">
-  //           <input
-  //             type="text"
-  //             value={item.checkpoint?.title || ""}
-  //             onChange={(e) => handleCheckPointChange(item.id, e.target.value)}
-  //             className="w-full px-2 py-1 text-sm border rounded-lg focus:ring-2 focus:ring-blue-500 transition-colors border-slate-300 focus:border-blue-500"
-  //             placeholder="Enter check point"
-  //           />
-  //           <div className="flex flex-wrap gap-2">
-  //             {item.checkpoint?.images && item.checkpoint.images.length > 0 ? (
-  //               item.checkpoint.images.map((image, index) => (
-  //                 <div key={`${item.id}-${index}`} className="relative">
-  //                   <div className="relative w-12 h-12">
-  //                     <img
-  //                       src={image.url}
-  //                       alt={image.title}
-  //                       className="w-full h-full object-cover rounded-lg"
-  //                     />
-  //                     <button
-  //                       onClick={() => handleRemoveImage(item.id, index)}
-  //                       className="absolute top-0 right-0 p-1 bg-red-500 text-white rounded-full hover:bg-red-600 transition-colors"
-  //                       title="Remove image"
-  //                     >
-  //                       <X className="w-3 h-3" />
-  //                     </button>
-  //                   </div>
-  //                 </div>
-  //               ))
-  //             ) : null}
-  //             <input
-  //               type="file"
-  //               accept="image/*"
-  //               multiple
-  //               onChange={(e) => handleImageUpload(item.id, e)}
-  //               disabled={isUploading}
-  //               className="hidden"
-  //               id={`image-upload-${item.id}`}
-  //             />
-  //             <label
-  //               htmlFor={`image-upload-${item.id}`}
-  //               className={`cursor-pointer p-1 bg-green-100 text-green-700 hover:bg-green-200 rounded-lg flex items-center gap-1 text-xs ${
-  //                 isUploading ? "opacity-50 cursor-not-allowed" : ""
-  //               }`}
-  //               title="Upload images"
-  //             >
-  //               {isUploading ? <LoadingSpinner /> : <ImageIcon className="w-4 h-4" />}
-  //               {isUploading ? "Uploading..." : "Upload"}
-  //             </label>
-  //           </div>
-  //         </div>
-  //       </td>
-  //       <td className="py-3 px-4 text-sm text-gray-700">{item.cleaningStatus}</td>
-  //       <td className="py-3 px-4 text-sm text-gray-600">{item.production}</td>
-  //       <td className="py-3 px-4 text-sm text-gray-600">{item.qa}</td>
-  //       <td className="py-3 px-4 text-sm text-gray-700">
-  //         <button
-  //           onClick={() => handleDeleteRow(item.id)}
-  //           className="p-1.5 text-slate-500 hover:text-red-600 hover:bg-red-50 rounded-md transition-colors"
-  //           title="Delete Row"
-  //         >
-  //           <Trash className="w-4 h-4" />
-  //         </button>
-  //       </td>
-  //     </tr>
-  //   ));
-  // };
-  
+
   const renderTableRows = () => {
     return tableData.map((item) => {
       const error = tableErrors[item.id] || "";
@@ -634,7 +596,6 @@ const [recordCount, setRecordCount] = useState(1);
         <tr key={item.id} className="border-b border-gray-200 hover:bg-gray-50">
           <td className="py-3 px-4 text-sm text-gray-700">
             <div className="flex items-start flex-col gap-3">
-              {/* Updated: Input with error styling and onBlur validation */}
               <div className={`space-y-1 ${hasError ? "border-l-4 border-red-500 bg-red-50 p-3 rounded-lg" : ""}`}>
                 <label className="block text-xs font-medium text-slate-700 mb-1">
                   Check Point <span className="text-red-500">*</span>
@@ -685,9 +646,8 @@ const [recordCount, setRecordCount] = useState(1);
                 />
                 <label
                   htmlFor={`image-upload-${item.id}`}
-                  className={`cursor-pointer p-1 bg-green-100 text-green-700 hover:bg-green-200 rounded-lg flex items-center gap-1 text-xs ${
-                    isUploading ? "opacity-50 cursor-not-allowed" : ""
-                  }`}
+                  className={`cursor-pointer p-1 bg-green-100 text-green-700 hover:bg-green-200 rounded-lg flex items-center gap-1 text-xs ${isUploading ? "opacity-50 cursor-not-allowed" : ""
+                    }`}
                   title="Upload images"
                 >
                   {isUploading ? <LoadingSpinner /> : <ImageIcon className="w-4 h-4" />}
@@ -722,12 +682,14 @@ const [recordCount, setRecordCount] = useState(1);
       );
     });
   };
+
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 5 } }),
     useSensor(TouchSensor, {
       activationConstraint: { delay: 200, tolerance: 5 },
     })
   );
+
   // Save Loading Modal Component
   const SaveLoadingModal = ({ isOpen }) => {
     if (!isOpen) return null;
@@ -748,6 +710,7 @@ const [recordCount, setRecordCount] = useState(1);
       </div>
     );
   };
+
   const validateChecklistData = () => {
     const newErrors = {
       name: !checklistData.name.trim() ? "Checklist name is required" : "",
@@ -758,6 +721,7 @@ const [recordCount, setRecordCount] = useState(1);
     setErrors((prev) => ({ ...prev, checklist: newErrors }));
     return Object.values(newErrors).every((error) => !error);
   };
+
   const validateStage = (title) => {
     const newErrors = {
       title: !title.trim() ? "Stage title is required" : "",
@@ -765,14 +729,15 @@ const [recordCount, setRecordCount] = useState(1);
     setStageErrors(newErrors);
     return Object.values(newErrors).every((error) => !error);
   };
+
   const validateTask = (taskData, stageId, index) => {
     const newErrors = {
       title: !taskData.title.trim() ? "Task title is required" : "",
       description: !taskData.description.trim() ? "Task Description is required" : "",
       galleryTitle:
         taskData.images &&
-        taskData.images.length > 0 &&
-        !taskData.galleryTitle.trim()
+          taskData.images.length > 0 &&
+          !taskData.galleryTitle.trim()
           ? "Gallery title is required when images are attached"
           : "",
     };
@@ -804,6 +769,7 @@ const [recordCount, setRecordCount] = useState(1);
     }));
     return Object.values(newErrors).every((error) => !error);
   };
+
   const validateSubtask = (subtaskData, parentId, index) => {
     const newErrors = {
       title: !subtaskData.title.trim() ? "Subtask title is required" : "",
@@ -812,8 +778,8 @@ const [recordCount, setRecordCount] = useState(1);
         : "",
       galleryTitle:
         subtaskData.images &&
-        subtaskData.images.length > 0 &&
-        !subtaskData.galleryTitle.trim()
+          subtaskData.images.length > 0 &&
+          !subtaskData.galleryTitle.trim()
           ? "Gallery title is required when images are attached"
           : "",
     };
@@ -845,14 +811,15 @@ const [recordCount, setRecordCount] = useState(1);
     }));
     return Object.values(newErrors).every((error) => !error);
   };
+
   const validateEditForm = () => {
     const newErrors = {
       title: !editFormData.title.trim() ? "Title is required" : "",
       description: !editFormData.description.trim() ? "Description is required" : "",
       galleryTitle:
         editFormData.images &&
-        editFormData.images.length > 0 &&
-        !editFormData.galleryTitle.trim()
+          editFormData.images.length > 0 &&
+          !editFormData.galleryTitle.trim()
           ? "Gallery title is required when images are attached"
           : "",
     };
@@ -874,6 +841,7 @@ const [recordCount, setRecordCount] = useState(1);
     setErrors((prev) => ({ ...prev, editForm: newErrors }));
     return Object.values(newErrors).every((error) => !error);
   };
+
   const clearTaskErrors = (stageId, index) => {
     setErrors((prev) => ({
       ...prev,
@@ -888,6 +856,7 @@ const [recordCount, setRecordCount] = useState(1);
       },
     }));
   };
+
   const clearSubtaskErrors = (parentId, index) => {
     setErrors((prev) => ({
       ...prev,
@@ -902,14 +871,17 @@ const [recordCount, setRecordCount] = useState(1);
       },
     }));
   };
+
   const clearEditErrors = () => {
     setErrors((prev) => ({
       ...prev,
       editForm: { title: "", description: "", galleryTitle: "", time: "" },
     }));
   };
+
   const generateId = (prefix) =>
     `${prefix}-${Date.now()}-${Math.floor(Math.random() * 1000)}`;
+
   const findItemById = (items, id) => {
     for (const item of items) {
       if (item.id === id) return item;
@@ -924,6 +896,7 @@ const [recordCount, setRecordCount] = useState(1);
     }
     return null;
   };
+
   const findContainer = (items, id) => {
     if (items.find((item) => item.id === id)) {
       return {
@@ -943,6 +916,7 @@ const [recordCount, setRecordCount] = useState(1);
     }
     return null;
   };
+
   const findItem = (items, id) => {
     for (const item of items) {
       if (item.id === id) return item;
@@ -957,6 +931,7 @@ const [recordCount, setRecordCount] = useState(1);
     }
     return null;
   };
+
   const updateItem = (items, id, updatedData) =>
     items.map((item) => {
       if (item.id === id) return { ...item, ...updatedData };
@@ -969,6 +944,7 @@ const [recordCount, setRecordCount] = useState(1);
         };
       return item;
     });
+
   const deleteItem = (items, id) =>
     items
       .map((item) => {
@@ -982,12 +958,14 @@ const [recordCount, setRecordCount] = useState(1);
         };
       })
       .filter(Boolean);
+
   const cloneItem = (item) => ({
     ...item,
     id: generateId(item.id.split("-")[0]),
     tasks: item.tasks ? item.tasks.map(cloneItem) : undefined,
     subtasks: item.subtasks ? item.subtasks.map(cloneItem) : undefined,
   });
+
   const duplicateItemRecursive = (items, id) =>
     items.flatMap((item) => {
       if (item.id === id) {
@@ -1006,16 +984,17 @@ const [recordCount, setRecordCount] = useState(1);
       }
       return [newItem];
     });
+
   const checkDuplicateTitle = (items, newTitle, excludeId = null, itemType = "generic") => {
     if (!newTitle || !newTitle.trim()) return false;
     const typePrefix =
       itemType === "stage"
         ? "Stage"
         : itemType === "task"
-        ? "Task"
-        : itemType === "subtask"
-        ? "Subtask"
-        : "Item";
+          ? "Task"
+          : itemType === "subtask"
+            ? "Subtask"
+            : "Item";
     const hasDuplicate = items.some(
       (item) =>
         item.title?.toLowerCase().trim() === newTitle?.toLowerCase().trim() &&
@@ -1029,6 +1008,7 @@ const [recordCount, setRecordCount] = useState(1);
     }
     return false;
   };
+
   const generateNumbering = (items, id, parentNumbers = []) => {
     for (let i = 0; i < items.length; i++) {
       const currentNumbers = [...parentNumbers, i + 1];
@@ -1044,11 +1024,13 @@ const [recordCount, setRecordCount] = useState(1);
     }
     return null;
   };
+
   const formatTime = (hours, minutes, seconds) => {
     return `${hours.toString().padStart(2, "0")}:${minutes
       .toString()
       .padStart(2, "0")}:${seconds.toString().padStart(2, "0")}`;
   };
+
   const parseTime = (timeString) => {
     if (!timeString) return { hours: "00", minutes: "00", seconds: "00" };
     const [hours, minutes, seconds] = timeString
@@ -1056,9 +1038,11 @@ const [recordCount, setRecordCount] = useState(1);
       .map((val) => val.padStart(2, "0"));
     return { hours, minutes, seconds };
   };
+
   const timeToSeconds = (hours, minutes, seconds) => {
     return parseInt(hours) * 3600 + parseInt(minutes) * 60 + parseInt(seconds);
   };
+
   const handleInputChange = (e) => {
     const { name, value } = e.target;
     setChecklistData((prev) => ({ ...prev, [name]: value }));
@@ -1069,6 +1053,7 @@ const [recordCount, setRecordCount] = useState(1);
       }));
     }
   };
+
   // Helper to transform stages to schema format (remove IDs, ensure structure)
   const transformStagesForSchema = (stages) => {
     return stages.map((stage) => ({
@@ -1081,10 +1066,12 @@ const [recordCount, setRecordCount] = useState(1);
         maxTime: task.maxTime || "",
         galleryTitle: task.galleryTitle || "",
         images: task.images || [], // Assuming images are already URL strings after upload
+        parameter: task.parameter || null, // Include parameter in transformation
         subtasks: task.subtasks ? transformTasksForSchema(task.subtasks) : [],
       })) || [],
     }));
   };
+
   // Recursive transform for subtasks (since checklistStageSchema is recursive)
   const transformTasksForSchema = (tasks) => {
     return tasks.map((task) => ({
@@ -1095,9 +1082,11 @@ const [recordCount, setRecordCount] = useState(1);
       maxTime: task.maxTime || "",
       galleryTitle: task.galleryTitle || "",
       images: task.images || [],
+      parameter: task.parameter || null, // Include parameter in transformation
       subtasks: task.subtasks ? transformTasksForSchema(task.subtasks) : [],
     }));
   };
+
   // Helper to transform tableData to visualRepresentation schema format
   const transformVisualRepresentationForSchema = (tableData) => {
     return tableData.map((row) => ({
@@ -1105,7 +1094,6 @@ const [recordCount, setRecordCount] = useState(1);
         title: row.checkpoint?.title || "",
         images: row.checkpoint?.images || [], // Full Cloudinary objects
       },
-      // cleaningStatus: row.cleaningStatus || "Visually Clean",
       cleaningStatus: row.cleaningStatus ?? "Clean",
       production: row.production || "",
       qa: row.qa || "",
@@ -1141,8 +1129,8 @@ const [recordCount, setRecordCount] = useState(1);
         stagesWithNoTasks.length === 1
           ? `Please add at least one task to "${stagesWithNoTasks[0]}" stage.`
           : `Please add at least one task to the following stages: ${stagesWithNoTasks.join(
-              ", "
-            )}.`;
+            ", "
+          )}.`;
       toast.error(errorMessage);
       return;
     }
@@ -1170,77 +1158,64 @@ const [recordCount, setRecordCount] = useState(1);
     // NO SYNC: Use stages as-is (independent from table)
     const schemaStages = transformStagesForSchema(stages);
     const schemaDefaultStage = schemaStages.length > 0
-  ? schemaStages[0]
-  : { title: "Default Stage", tasks: [] };
-  const stagesWithoutDefault = schemaStages.length > 0
-  ? schemaStages.slice(1) // drop the first one (your default)
-  : [];
+      ? schemaStages[0]
+      : { title: "Default Stage", tasks: [] };
+    const stagesWithoutDefault = schemaStages.length > 0
+      ? schemaStages.slice(1) // drop the first one (your default)
+      : [];
     const schemaVisualRepresentation = transformVisualRepresentationForSchema(tableData); // Purely from table, independent
-    // const fullChecklistData = {
-    //   ...checklistData,
-    //   stages: schemaStages,
-    //   defaultStage: schemaDefaultStage,
-    //   visualRepresntation: schemaVisualRepresentation, // Fixed typo to match schema: visualRepresntation
-    //   companyId: JSON.parse(localStorage.getItem("user")).companyId,
-    //   userId: JSON.parse(localStorage.getItem("user")).id,
-    // };
-    const fullChecklistData = {
-  ...checklistData,
-  stages: stagesWithoutDefault,
-  defaultStage: schemaDefaultStage,
-  visualRepresntation: schemaVisualRepresentation,
-  companyId: JSON.parse(localStorage.getItem("user")).companyId,
-  userId: JSON.parse(localStorage.getItem("user")).id,
-};
-    // Console the full transformed data for debugging
 
+    const fullChecklistData = {
+      ...checklistData,
+      stages: stagesWithoutDefault,
+      defaultStage: schemaDefaultStage,
+      visualRepresntation: schemaVisualRepresentation,
+      companyId: JSON.parse(localStorage.getItem("user")).companyId,
+      userId: JSON.parse(localStorage.getItem("user")).id,
+    };
+
+    // Console the full transformed data for debugging
     console.log("Full Checklist Data (Schema-Compliant) on Save:", JSON.stringify(fullChecklistData, null, 2));
     console.log("Stages (Independent):", JSON.stringify(schemaStages, null, 2));
     console.log("Visual Representation:", JSON.stringify(schemaVisualRepresentation, null, 2));
+
     setIsSaving(true);
     const userData = JSON.parse(localStorage.getItem("user"));
-    // const data = {
-    //   ...checklistData,
-    //   stages: schemaStages,
-    //   defaultStage: schemaDefaultStage,
-    //   visualRepresntation: schemaVisualRepresentation, // Now included in POST body
-    //   companyId: userData.companyId,
-    //   userId: userData.id,
-    // };
 
     const data = {
-  ...checklistData,
-  stages: stagesWithoutDefault,
-  defaultStage: schemaDefaultStage,
-  visualRepresntation: schemaVisualRepresentation,
-  companyId: userData.companyId,
-  userId: userData.id,
-};
-    console.log("ad",data);
+      ...checklistData,
+      stages: stagesWithoutDefault,
+      defaultStage: schemaDefaultStage,
+      visualRepresntation: schemaVisualRepresentation,
+      companyId: userData.companyId,
+      userId: userData.id,
+    };
+    console.log("ad", data);
     try {
-    const response = await fetch("/api/checklistapi/create", {
-    method: "POST",
-    headers: {
-    "Content-Type": "application/json",
-    },
-    body: JSON.stringify(data),
-    });
-    if (!response.ok) {
-    const err = await response.json();
-    console.log(err);
-    toast.error(err.error || "Failed to create checklist.");
-    setIsSaving(false);
-    return;
-    }
-    const result = await response.json();
-    setIsSaving(false);
-    setAddedmodalnew(true);
+      const response = await fetch("/api/checklistapi/create", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(data),
+      });
+      if (!response.ok) {
+        const err = await response.json();
+        console.log(err);
+        toast.error(err.error || "Failed to create checklist.");
+        setIsSaving(false);
+        return;
+      }
+      const result = await response.json();
+      setIsSaving(false);
+      setAddedmodalnew(true);
     } catch (error) {
-    console.error("Error creating checklist:", error);
-    toast.error("Something went wrong. Please try again.");
-    setIsSaving(false);
+      console.error("Error creating checklist:", error);
+      toast.error("Something went wrong. Please try again.");
+      setIsSaving(false);
     }
   };
+
   const getCompletionStatus = () => {
     const checklistComplete =
       checklistData.name &&
@@ -1261,6 +1236,7 @@ const [recordCount, setRecordCount] = useState(1);
       ),
     };
   };
+
   const handleStageInputChange = (e) => {
     const value = e.target.value;
     setNewStage({ title: value });
@@ -1268,6 +1244,7 @@ const [recordCount, setRecordCount] = useState(1);
       setStageErrors((prev) => ({ ...prev, title: "" }));
     }
   };
+
   const addStage = () => {
     if (!validateStage(newStage.title)) return;
     if (checkDuplicateTitle(stages, newStage.title, null, "stage")) {
@@ -1289,98 +1266,63 @@ const [recordCount, setRecordCount] = useState(1);
     setStageErrors({ title: "" });
     toast.success(`Stage "${newStage.title}" added successfully!`);
   };
-const handleRecordCountConfirm = () => {
-  if (recordCount < 1 || recordCount > 10) {
-    toast.error("Please enter a number between 1 and 10.");
-    return;
-  }
-  addNewRows(recordCount); // Add the batch of rows
-  setShowRecordCountModal(false);
-  setRecordCount(1);
-  toast.success(`${recordCount} new record(s) added successfully!`);
-};
- const handleStageCountConfirm = () => {
-  if (stageCount < 1 || stageCount > 10) {
-    toast.error("Please enter a number between 1 and 10.");
-    return;
-  }
-  const currentLength = stages.length;
-  const newStages = Array.from({ length: stageCount }, (_, idx) => ({
-    id: generateId("stage"), // Use generateId for unique IDs
-    title: (currentLength + idx) === 0 ? "Default Stage" : `Stage ${currentLength + idx}`, // Continue sequential numbering
-    tasks: [],
-  }));
-  setStages((prev) => [...prev, ...newStages]); // Append to existing stages
-  setShowStageCountModal(false);
-  setStageCount(1);
-  // Select the last newly added stage (or fallback to first if none exist)
-  setSelectedStageId(newStages[newStages.length - 1]?.id || stages[0]?.id || null);
-  toast.success(`${stageCount} new stage(s) added successfully!`);
-};
-const handleDeleteStage = (stageId) => {
-  const stageToDelete = stages.find((s) => s.id === stageId);
-  if (!stageToDelete) return;
 
-  // if (stages.length === 1) {
-  //   toast.error("Cannot delete the last stage. Please create another stage first.");
-  //   return;
-  // }
+  const handleRecordCountConfirm = () => {
+    if (recordCount < 1 || recordCount > 10) {
+      toast.error("Please enter a number between 1 and 10.");
+      return;
+    }
+    addNewRows(recordCount); // Add the batch of rows
+    setShowRecordCountModal(false);
+    setRecordCount(1);
+    toast.success(`${recordCount} new record(s) added successfully!`);
+  };
 
-  setConfirmModalData({
-    title: "Confirm Delete Stage",
-    message: `Are you sure you want to delete the stage "${stageToDelete.title}" and all its tasks/subtasks? This action cannot be undone.`,
-    onConfirm: () => {
-      setStages((prev) =>
-        prev
-          .filter((s) => s.id !== stageId)
-          .map((s, idx) => ({
-            ...s,
-            title: idx === 0 ? "Default Stage" : `Stage ${idx}`,
-          }))
-      );
-      if (selectedStageId === stageId) {
-        setSelectedStageId(stages[0]?.id || null);
-      }
-      setShowConfirmModal(false);
-      toast.success(`Stage "${stageToDelete.title}" and all its contents deleted successfully.`);
-    },
-  });
-  setShowConfirmModal(true);
-};
-  // const handleDeleteStage = (stageId) => {
-  //   const stageToDelete = stages.find((s) => s.id === stageId);
-  //   if (!stageToDelete) return;
-  //   if (stageToDelete.tasks && stageToDelete.tasks.length > 0) {
-  //     toast.error(
-  //       `Cannot delete stage "${stageToDelete.title}". It contains ${stageToDelete.tasks.length} task(s). Please delete the tasks first.`
-  //     );
-  //     return;
-  //   }
-  //   if (stages.length === 1) {
-  //     toast.error("Cannot delete the last stage. Please create another stage first.");
-  //     return;
-  //   }
-  //   setConfirmModalData({
-  //     title: "Confirm Delete Stage",
-  //     message: `Are you sure you want to delete the stage "${stageToDelete.title}"? This action cannot be undone.`,
-  //     onConfirm: () => {
-  //       setStages((prev) =>
-  //         prev
-  //           .filter((s) => s.id !== stageId)
-  //           .map((s, idx) => ({
-  //             ...s,
-  //             title: `Stage ${idx + 1}`,
-  //           }))
-  //       );
-  //       if (selectedStageId === stageId) {
-  //         setSelectedStageId(stages[0]?.id || null);
-  //       }
-  //       setShowConfirmModal(false);
-  //       toast.success(`Stage "${stageToDelete.title}" deleted successfully.`);
-  //     },
-  //   });
-  //   setShowConfirmModal(true);
-  // };
+  const handleStageCountConfirm = () => {
+    if (stageCount < 1 || stageCount > 10) {
+      toast.error("Please enter a number between 1 and 10.");
+      return;
+    }
+    const currentLength = stages.length;
+    const newStages = Array.from({ length: stageCount }, (_, idx) => ({
+      id: generateId("stage"), // Use generateId for unique IDs
+      title: (currentLength + idx) === 0 ? "Default Stage" : `Stage ${currentLength + idx}`, // Continue sequential numbering
+      tasks: [],
+    }));
+    setStages((prev) => [...prev, ...newStages]); // Append to existing stages
+    setShowStageCountModal(false);
+    setStageCount(1);
+    // Select the last newly added stage (or fallback to first if none exist)
+    setSelectedStageId(newStages[newStages.length - 1]?.id || stages[0]?.id || null);
+    toast.success(`${stageCount} new stage(s) added successfully!`);
+  };
+
+  const handleDeleteStage = (stageId) => {
+    const stageToDelete = stages.find((s) => s.id === stageId);
+    if (!stageToDelete) return;
+
+    setConfirmModalData({
+      title: "Confirm Delete Stage",
+      message: `Are you sure you want to delete the stage "${stageToDelete.title}" and all its tasks/subtasks? This action cannot be undone.`,
+      onConfirm: () => {
+        setStages((prev) =>
+          prev
+            .filter((s) => s.id !== stageId)
+            .map((s, idx) => ({
+              ...s,
+              title: idx === 0 ? "Default Stage" : `Stage ${idx}`,
+            }))
+        );
+        if (selectedStageId === stageId) {
+          setSelectedStageId(stages[0]?.id || null);
+        }
+        setShowConfirmModal(false);
+        toast.success(`Stage "${stageToDelete.title}" and all its contents deleted successfully.`);
+      },
+    });
+    setShowConfirmModal(true);
+  };
+
   const handleDuplicateStage = (stageId) => {
     const stageToDuplicate = stages.find((s) => s.id === stageId);
     if (!stageToDuplicate) return;
@@ -1391,11 +1333,13 @@ const handleDeleteStage = (stageId) => {
       tasks: stageToDuplicate.tasks.map((task) => ({
         ...task,
         id: generateId("task"),
+        parameter: task.parameter ? { ...task.parameter } : null, // Copy parameter
         subtasks: task.subtasks
           ? task.subtasks.map((sub) => ({
-              ...sub,
-              id: generateId("subtask"),
-            }))
+            ...sub,
+            id: generateId("subtask"),
+            parameter: sub.parameter ? { ...sub.parameter } : null, // Copy parameter for subtasks
+          }))
           : [],
       })),
     };
@@ -1415,11 +1359,13 @@ const handleDeleteStage = (stageId) => {
     setSelectedStageId(newStage.id);
     toast.success(`Duplicated "${stageToDuplicate.title}"`);
   };
+
   const handleStageDragStart = (event) => {
     const { active } = event;
     setActiveStageId(active.id);
     setActiveStageItem(stages.find((stage) => stage.id === active.id));
   };
+
   const handleStageDragEnd = (event) => {
     const { active, over } = event;
     if (!over || active.id === over.id) {
@@ -1435,10 +1381,12 @@ const handleDeleteStage = (stageId) => {
     setActiveStageId(null);
     setActiveStageItem(null);
   };
+
   const toggleTaskForm = (stageId) => {
     setShowTaskCountModal(true);
     setSelectedStageId(stageId);
   };
+
   const handleTaskCountConfirm = () => {
     if (taskCount < 1 || taskCount > 10) {
       toast.error("Please enter a number between 1 and 10.");
@@ -1454,6 +1402,7 @@ const handleDeleteStage = (stageId) => {
         images: [],
         galleryTitle: "",
         galleryDescription: "",
+        parameter: { label: "Pressure", min: "", max: "" }, // Initialize parameter
       }))
     );
     setShowTimeFields((prev) => ({
@@ -1471,8 +1420,30 @@ const handleDeleteStage = (stageId) => {
     setShowTaskCountModal(false);
     setTaskCount(1);
   };
+
   const handleTaskInputChange = (stageId, index, e) => {
     const { name, value } = e.target;
+
+    // Handle parameter fields
+    if (name === "parameterLabel" || name === "parameterMin" || name === "parameterMax") {
+      setBulkTasks((prev) =>
+        prev.map((task, i) =>
+          i === index
+            ? {
+              ...task,
+              parameter: {
+                ...task.parameter,
+                label: name === "parameterLabel" ? value : task.parameter?.label || "Pressure",
+                min: name === "parameterMin" ? value : task.parameter?.min || "",
+                max: name === "parameterMax" ? value : task.parameter?.max || "",
+              },
+            }
+            : task
+        )
+      );
+      return;
+    }
+
     if (errors.taskForms[`${stageId}_${index}`]?.[name]) {
       setErrors((prev) => ({
         ...prev,
@@ -1522,14 +1493,14 @@ const handleDeleteStage = (stageId) => {
         prev.map((task, i) =>
           i === index
             ? {
-                ...task,
-                [timeField]: {
-                  ...task[timeField],
-                  hours: unitKey === "hours" ? newValue.padStart(2, "0") : hours.toString().padStart(2, "0"),
-                  minutes: unitKey === "minutes" ? newValue.padStart(2, "0") : minutes.toString().padStart(2, "0"),
-                  seconds: unitKey === "seconds" ? newValue.padStart(2, "0") : seconds.toString().padStart(2, "0"),
-                },
-              }
+              ...task,
+              [timeField]: {
+                ...task[timeField],
+                hours: unitKey === "hours" ? newValue.padStart(2, "0") : hours.toString().padStart(2, "0"),
+                minutes: unitKey === "minutes" ? newValue.padStart(2, "0") : minutes.toString().padStart(2, "0"),
+                seconds: unitKey === "seconds" ? newValue.padStart(2, "0") : seconds.toString().padStart(2, "0"),
+              },
+            }
             : task
         )
       );
@@ -1539,6 +1510,7 @@ const handleDeleteStage = (stageId) => {
       );
     }
   };
+
   const handleTaskImageInputChange = (stageId, index, event, single = false) => {
     setIsUploading(true);
     const files = Array.from(event.target.files);
@@ -1574,11 +1546,11 @@ const handleDeleteStage = (stageId) => {
           prev.map((task, i) =>
             i === index
               ? {
-                  ...task,
-                  images: [...(task.images || []), ...newImages],
-                  galleryTitle: task.galleryTitle || "",
-                  galleryDescription: task.galleryDescription || "",
-                }
+                ...task,
+                images: [...(task.images || []), ...newImages],
+                galleryTitle: task.galleryTitle || "",
+                galleryDescription: task.galleryDescription || "",
+              }
               : task
           )
         );
@@ -1593,18 +1565,20 @@ const handleDeleteStage = (stageId) => {
       event.target.value = "";
     }
   };
+
   const handleRemoveSingleImage = (index, imageIndex) => {
     setBulkTasks((prev) =>
       prev.map((task, i) =>
         i === index
           ? {
-              ...task,
-              images: task.images.filter((_, idx) => idx !== imageIndex),
-            }
+            ...task,
+            images: task.images.filter((_, idx) => idx !== imageIndex),
+          }
           : task
       )
     );
   };
+
   const handleClearAllImages = (index) => {
     setConfirmModalData({
       title: "Confirm Clear Images",
@@ -1614,11 +1588,11 @@ const handleDeleteStage = (stageId) => {
           prev.map((task, i) =>
             i === index
               ? {
-                  ...task,
-                  images: [],
-                  galleryTitle: "",
-                  galleryDescription: "",
-                }
+                ...task,
+                images: [],
+                galleryTitle: "",
+                galleryDescription: "",
+              }
               : task
           )
         );
@@ -1628,6 +1602,7 @@ const handleDeleteStage = (stageId) => {
     });
     setShowConfirmModal(true);
   };
+
   const handleTaskSaveImages = async (stageId, index) => {
     setIsAttaching(true);
     try {
@@ -1678,6 +1653,7 @@ const handleDeleteStage = (stageId) => {
       setIsAttaching(false);
     }
   };
+
   const addTask = (stageId, index) => {
     const task = bulkTasks[index];
     if (!validateTask(task, stageId, index)) {
@@ -1712,6 +1688,26 @@ const handleDeleteStage = (stageId) => {
         task.maxTime.seconds
       );
     }
+
+    // Validate parameter if it exists and has values
+    const parameter = task.parameter;
+    if (parameter && parameter.min && parameter.max) {
+      const minVal = parseFloat(parameter.min);
+      const maxVal = parseFloat(parameter.max);
+      if (isNaN(minVal) || isNaN(maxVal)) {
+        toast.error("Parameter values must be valid numbers");
+        return;
+      }
+      if (minVal < 0 || maxVal < 0) {
+        toast.error("Parameter values cannot be negative");
+        return;
+      }
+      if (minVal >= maxVal) {
+        toast.error("Parameter min value must be less than max value");
+        return;
+      }
+    }
+
     const newTaskItem = {
       id: generateId("task"),
       title: task.title.trim(),
@@ -1722,14 +1718,15 @@ const handleDeleteStage = (stageId) => {
       images: task.images || [],
       galleryTitle: task.galleryTitle?.trim() || "",
       galleryDescription: task.galleryDescription?.trim() || "",
+      parameter: task.parameter && task.parameter.min ? task.parameter : null, // Include parameter if it has values
     };
     setStages((prev) =>
       prev.map((stage) =>
         stage.id === stageId
           ? {
-              ...stage,
-              tasks: [...(stage.tasks || []), newTaskItem],
-            }
+            ...stage,
+            tasks: [...(stage.tasks || []), newTaskItem],
+          }
           : stage
       )
     );
@@ -1748,10 +1745,12 @@ const handleDeleteStage = (stageId) => {
       setShowTaskForms((prev) => ({ ...prev, [stageId]: false }));
     }
   };
+
   const toggleSubtaskForm = (parentId) => {
     setShowSubtaskCountModal(true);
     setSelectedParentId(parentId);
   };
+
   const handleSubtaskCountConfirm = () => {
     if (subtaskCount < 1 || subtaskCount > 10) {
       toast.error("Please enter a number between 1 and 10.");
@@ -1768,6 +1767,7 @@ const handleDeleteStage = (stageId) => {
         images: [],
         galleryTitle: "",
         galleryDescription: "",
+        parameter: { label: "Pressure", min: "", max: "" }, // Initialize parameter for subtasks
       })),
     }));
     setShowSubtaskTimeFields((prev) => ({
@@ -1791,8 +1791,31 @@ const handleDeleteStage = (stageId) => {
     setShowSubtaskCountModal(false);
     setSubtaskCount(1);
   };
+
   const handleSubtaskInputChange = (parentId, index, e) => {
     const { name, value } = e.target;
+
+    // Handle parameter fields for subtasks
+    if (name === "parameterLabel" || name === "parameterMin" || name === "parameterMax") {
+      setBulkSubtasks((prev) => ({
+        ...prev,
+        [parentId]: prev[parentId].map((subtask, i) =>
+          i === index
+            ? {
+              ...subtask,
+              parameter: {
+                ...subtask.parameter,
+                label: name === "parameterLabel" ? value : subtask.parameter?.label || "Pressure",
+                min: name === "parameterMin" ? value : subtask.parameter?.min || "",
+                max: name === "parameterMax" ? value : subtask.parameter?.max || "",
+              },
+            }
+            : subtask
+        ),
+      }));
+      return;
+    }
+
     if (errors.subtaskForms[`${parentId}_${index}`]?.[name]) {
       setErrors((prev) => ({
         ...prev,
@@ -1845,14 +1868,14 @@ const handleDeleteStage = (stageId) => {
         [parentId]: prev[parentId].map((subtask, i) =>
           i === index
             ? {
-                ...subtask,
-                [timeField]: {
-                  ...subtask[timeField],
-                  hours: unitKey === "hours" ? newValue.padStart(2, "0") : hours.toString().padStart(2, "0"),
-                  minutes: unitKey === "minutes" ? newValue.padStart(2, "0") : minutes.toString().padStart(2, "0"),
-                  seconds: unitKey === "seconds" ? newValue.padStart(2, "0") : seconds.toString().padStart(2, "0"),
-                },
-              }
+              ...subtask,
+              [timeField]: {
+                ...subtask[timeField],
+                hours: unitKey === "hours" ? newValue.padStart(2, "0") : hours.toString().padStart(2, "0"),
+                minutes: unitKey === "minutes" ? newValue.padStart(2, "0") : minutes.toString().padStart(2, "0"),
+                seconds: unitKey === "seconds" ? newValue.padStart(2, "0") : seconds.toString().padStart(2, "0"),
+              },
+            }
             : subtask
         ),
       }));
@@ -1865,6 +1888,7 @@ const handleDeleteStage = (stageId) => {
       }));
     }
   };
+
   const handleSubtaskImageInputChange = (
     parentId,
     index,
@@ -1906,11 +1930,11 @@ const handleDeleteStage = (stageId) => {
           [parentId]: prev[parentId].map((subtask, i) =>
             i === index
               ? {
-                  ...subtask,
-                  images: [...(subtask.images || []), ...newImages],
-                  galleryTitle: subtask.galleryTitle || "",
-                  galleryDescription: subtask.galleryDescription || "",
-                }
+                ...subtask,
+                images: [...(subtask.images || []), ...newImages],
+                galleryTitle: subtask.galleryTitle || "",
+                galleryDescription: subtask.galleryDescription || "",
+              }
               : subtask
           ),
         }));
@@ -1925,19 +1949,21 @@ const handleDeleteStage = (stageId) => {
       event.target.value = "";
     }
   };
+
   const handleRemoveSubtaskImage = (parentId, index, imageIndex) => {
     setBulkSubtasks((prev) => ({
       ...prev,
       [parentId]: prev[parentId].map((subtask, i) =>
         i === index
           ? {
-              ...subtask,
-              images: subtask.images.filter((_, idx) => idx !== imageIndex),
-            }
+            ...subtask,
+            images: subtask.images.filter((_, idx) => idx !== imageIndex),
+          }
           : subtask
       ),
     }));
   };
+
   const handleClearAllSubtaskImages = (parentId, index) => {
     setConfirmModalData({
       title: "Confirm Clear Images",
@@ -1948,11 +1974,11 @@ const handleDeleteStage = (stageId) => {
           [parentId]: prev[parentId].map((subtask, i) =>
             i === index
               ? {
-                  ...subtask,
-                  images: [],
-                  galleryTitle: "",
-                  galleryDescription: "",
-                }
+                ...subtask,
+                images: [],
+                galleryTitle: "",
+                galleryDescription: "",
+              }
               : subtask
           ),
         }));
@@ -1962,6 +1988,7 @@ const handleDeleteStage = (stageId) => {
     });
     setShowConfirmModal(true);
   };
+
   const handleSubtaskSaveImages = async (parentId, index) => {
     setIsAttaching(true);
     try {
@@ -2015,6 +2042,7 @@ const handleDeleteStage = (stageId) => {
       setIsAttaching(false);
     }
   };
+
   const handleAddSubtask = (parentId, index) => {
     const subtask = bulkSubtasks[parentId][index];
     if (!validateSubtask(subtask, parentId, index)) {
@@ -2042,6 +2070,26 @@ const handleDeleteStage = (stageId) => {
       }));
       return;
     }
+
+    // Validate parameter if it exists and has values
+    const parameter = subtask.parameter;
+    if (parameter && parameter.min && parameter.max) {
+      const minVal = parseFloat(parameter.min);
+      const maxVal = parseFloat(parameter.max);
+      if (isNaN(minVal) || isNaN(maxVal)) {
+        toast.error("Parameter values must be valid numbers");
+        return;
+      }
+      if (minVal < 0 || maxVal < 0) {
+        toast.error("Parameter values cannot be negative");
+        return;
+      }
+      if (minVal >= maxVal) {
+        toast.error("Parameter min value must be less than max value");
+        return;
+      }
+    }
+
     let minTime = "";
     let maxTime = "";
     if (showSubtaskTimeFields[`${parentId}_${index}`]) {
@@ -2066,6 +2114,7 @@ const handleDeleteStage = (stageId) => {
       images: subtask.images || [],
       galleryTitle: subtask.galleryTitle?.trim() || "",
       galleryDescription: subtask.galleryDescription?.trim() || "",
+      parameter: subtask.parameter && subtask.parameter.min ? subtask.parameter : null, // Include parameter if it has values
     };
     setStages((prev) => addSubtask(prev, parentId, newSubtaskItem));
     setBulkSubtasks((prev) => ({
@@ -2086,6 +2135,7 @@ const handleDeleteStage = (stageId) => {
       setShowSubtaskForms((prev) => ({ ...prev, [parentId]: false }));
     }
   };
+
   const addSubtask = (items, parentId, newSubtaskItem) =>
     items.map((item) => {
       if (item.id === parentId)
@@ -2105,6 +2155,7 @@ const handleDeleteStage = (stageId) => {
         };
       return item;
     });
+
   const toggleSubtaskTimeFields = (parentId, index) => {
     setShowSubtaskTimeFields((prev) => ({
       ...prev,
@@ -2116,19 +2167,21 @@ const handleDeleteStage = (stageId) => {
         [parentId]: prev[parentId].map((subtask, i) =>
           i === index
             ? {
-                ...subtask,
-                minTime: { hours: "00", minutes: "00", seconds: "00" },
-                maxTime: { hours: "00", minutes: "00", seconds: "00" },
-              }
+              ...subtask,
+              minTime: { hours: "00", minutes: "00", seconds: "00" },
+              maxTime: { hours: "00", minutes: "00", seconds: "00" },
+            }
             : subtask
         ),
       }));
     }
   };
+
   const handleEdit = (id) => {
     const item = findItemById(stages, id);
     if (item) {
       setEditItemId(id);
+      setCurrentEditItemId(id);
       setEditFormData({
         title: item.title || "",
         description: item.description || "",
@@ -2138,17 +2191,35 @@ const handleDeleteStage = (stageId) => {
         galleryTitle: item.galleryTitle || "",
         galleryDescription: item.galleryDescription || "",
         bulkDescription: "",
+        parameter: item.parameter || { label: "Pressure", min: "", max: "" },
       });
       setShowEditTimeFields(!!item.minTime || !!item.maxTime);
       clearEditErrors();
     }
   };
+
   const handleDuplicate = (id) => {
     setStages((prev) => duplicateItemRecursive(prev, id));
     toast.success("Item duplicated successfully!");
   };
+
   const handleEditInputChange = (e) => {
     const { name, value } = e.target;
+
+    // Handle parameter fields for edit
+    if (name === "parameterLabel" || name === "parameterMin" || name === "parameterMax") {
+      setEditFormData((prev) => ({
+        ...prev,
+        parameter: {
+          ...prev.parameter,
+          label: name === "parameterLabel" ? value : prev.parameter?.label || "Pressure",
+          min: name === "parameterMin" ? value : prev.parameter?.min || "",
+          max: name === "parameterMax" ? value : prev.parameter?.max || "",
+        },
+      }));
+      return;
+    }
+
     if (errors.editForm[name]) {
       setErrors((prev) => ({
         ...prev,
@@ -2201,6 +2272,7 @@ const handleDeleteStage = (stageId) => {
       setEditFormData((prev) => ({ ...prev, [name]: value }));
     }
   };
+
   const handleEditImageInputChange = (event, single = false) => {
     setIsUploading(true);
     const files = Array.from(event.target.files);
@@ -2247,6 +2319,7 @@ const handleDeleteStage = (stageId) => {
       event.target.value = "";
     }
   };
+
   const handleSaveEdit = () => {
     if (!validateEditForm()) {
       return;
@@ -2261,8 +2334,8 @@ const handleDeleteStage = (stageId) => {
       const itemType = currentItem.id.startsWith("task")
         ? "task"
         : currentItem.id.startsWith("subtask")
-        ? "subtask"
-        : "item";
+          ? "subtask"
+          : "item";
       if (
         checkDuplicateTitle(parentContainer.container, editFormData.title, editItemId, itemType)
       ) {
@@ -2276,19 +2349,39 @@ const handleDeleteStage = (stageId) => {
         return;
       }
     }
+
+    // Validate parameter if it exists and has values
+    const parameter = editFormData.parameter;
+    if (parameter && parameter.min && parameter.max) {
+      const minVal = parseFloat(parameter.min);
+      const maxVal = parseFloat(parameter.max);
+      if (isNaN(minVal) || isNaN(maxVal)) {
+        toast.error("Parameter values must be valid numbers");
+        return;
+      }
+      if (minVal < 0 || maxVal < 0) {
+        toast.error("Parameter values cannot be negative");
+        return;
+      }
+      if (minVal >= maxVal) {
+        toast.error("Parameter min value must be less than max value");
+        return;
+      }
+    }
+
     const minTime = showEditTimeFields
       ? formatTime(
-          editFormData.minTime.hours,
-          editFormData.minTime.minutes,
-          editFormData.minTime.seconds
-        )
+        editFormData.minTime.hours,
+        editFormData.minTime.minutes,
+        editFormData.minTime.seconds
+      )
       : "";
     const maxTime = showEditTimeFields
       ? formatTime(
-          editFormData.maxTime.hours,
-          editFormData.maxTime.minutes,
-          editFormData.maxTime.seconds
-        )
+        editFormData.maxTime.hours,
+        editFormData.maxTime.minutes,
+        editFormData.maxTime.seconds
+      )
       : "";
     setStages((prev) =>
       updateItem(prev, editItemId, {
@@ -2299,9 +2392,11 @@ const handleDeleteStage = (stageId) => {
         images: editFormData.images,
         galleryTitle: editFormData.galleryTitle?.trim() || "",
         galleryDescription: editFormData.galleryDescription?.trim() || "",
+        parameter: editFormData.parameter && editFormData.parameter.min ? editFormData.parameter : null,
       })
     );
     setEditItemId(null);
+    setCurrentEditItemId(null);
     setEditFormData({
       title: "",
       description: "",
@@ -2311,12 +2406,14 @@ const handleDeleteStage = (stageId) => {
       galleryTitle: "",
       galleryDescription: "",
       bulkDescription: "",
+      parameter: { label: "Pressure", min: "", max: "" },
     });
     setShowEditTimeFields(true);
     setShowImageModal(false);
     clearEditErrors();
     toast.success(`"${editFormData.title}" updated successfully!`);
   };
+
   const handleDelete = (id) => {
     console.log("Deleting item with ID:", id);
     const item = findItemById(stages, id);
@@ -2345,6 +2442,7 @@ const handleDeleteStage = (stageId) => {
           return newStages;
         });
         setEditItemId(null);
+        setCurrentEditItemId(null);
         setShowEditTimeFields(true);
         setShowImageModal(false);
         setShowConfirmModal(false);
@@ -2353,11 +2451,13 @@ const handleDeleteStage = (stageId) => {
     });
     setShowConfirmModal(true);
   };
+
   const handleTaskDragStart = (event) => {
     const { active } = event;
     setActiveTaskId(active.id);
     setActiveTaskItem(findItem(stages, active.id));
   };
+
   const handleTaskDragEnd = (event) => {
     const { active, over } = event;
     if (!over) {
@@ -2380,6 +2480,7 @@ const handleDeleteStage = (stageId) => {
     setActiveTaskId(null);
     setActiveTaskItem(null);
   };
+
   const toggleTimeFields = (stageId, index) => {
     setShowTimeFields((prev) => ({
       ...prev,
@@ -2390,15 +2491,16 @@ const handleDeleteStage = (stageId) => {
         prev.map((task, i) =>
           i === index
             ? {
-                ...task,
-                minTime: { hours: "00", minutes: "00", seconds: "00" },
-                maxTime: { hours: "00", minutes: "00", seconds: "00" },
-              }
+              ...task,
+              minTime: { hours: "00", minutes: "00", seconds: "00" },
+              maxTime: { hours: "00", minutes: "00", seconds: "00" },
+            }
             : task
         )
       );
     }
   };
+
   const handleResetTime = () => {
     setShowEditTimeFields(false);
     setEditFormData((prev) => ({
@@ -2407,30 +2509,158 @@ const handleDeleteStage = (stageId) => {
       maxTime: { hours: "00", minutes: "00", seconds: "00" },
     }));
   };
+
   const handleSetTime = () => {
     setShowEditTimeFields(true);
   };
+
   const handleOpenTaskImageModal = (stageId, index) => {
     setShowTaskImageModal((prev) => ({
       ...prev,
       [`${stageId}_${index}`]: true,
     }));
   };
+
   const handleCloseTaskImageModal = (stageId, index) => {
     setShowTaskImageModal((prev) => ({
       ...prev,
       [`${stageId}_${index}`]: false,
     }));
   };
+
   const handleOpenSubtaskImageModal = (parentId, index) => {
     setShowSubtaskImageModal((prev) => ({ ...prev, [`${parentId}_${index}`]: true }));
   };
+
   const handleCloseSubtaskImageModal = (parentId, index) => {
     setShowSubtaskImageModal((prev) => ({ ...prev, [`${parentId}_${index}`]: false }));
   };
+
   const handleOpenImageModal = () => {
     setShowImageModal(true);
   };
+
+  const handleOpenParameterModal = (stageId, taskIndex) => {
+    setCurrentStageId(stageId);
+    setCurrentTaskIndex(taskIndex);
+
+    // Load existing parameter if any
+    const task = bulkTasks[taskIndex];
+    if (task?.parameter && task.parameter.min) {
+      setLabel(task.parameter.label || "Pressure");
+      setMin(task.parameter.min?.toString() || "");
+      setMax(task.parameter.max?.toString() || "");
+    } else {
+      setLabel("Pressure");
+      setMin("");
+      setMax("");
+    }
+
+    setShowModal(true);
+  };
+
+  const handleOpenEditParameterModal = () => {
+    // Load existing parameter from edit form
+    if (editFormData.parameter && editFormData.parameter.min) {
+      setLabel(editFormData.parameter.label || "Pressure");
+      setMin(editFormData.parameter.min?.toString() || "");
+      setMax(editFormData.parameter.max?.toString() || "");
+    } else {
+      setLabel("Pressure");
+      setMin("");
+      setMax("");
+    }
+
+    setShowModal(true);
+  };
+
+  const handleSaveParameter = () => {
+    // Validation
+    if (!label.trim()) {
+      toast.error("Label is required");
+      return;
+    }
+
+    const minVal = parseFloat(min);
+    const maxVal = parseFloat(max);
+
+    if (isNaN(minVal) || isNaN(maxVal)) {
+      toast.error("Please enter valid numeric values for Min and Max");
+      return;
+    }
+
+    if (minVal < 0 || maxVal < 0) {
+      toast.error("Values cannot be negative");
+      return;
+    }
+
+    if (minVal >= maxVal) {
+      toast.error("Min value must be less than Max value");
+      return;
+    }
+
+    // Check if we're editing an existing task
+    if (currentEditItemId) {
+      // Update edit form data
+      setEditFormData((prev) => ({
+        ...prev,
+        parameter: {
+          label: label.trim(),
+          min: minVal,
+          max: maxVal
+        }
+      }));
+    }
+    // Check if we're adding a new task
+    else if (currentStageId !== null && currentTaskIndex !== null) {
+      // Update bulk tasks
+      setBulkTasks((prev) =>
+        prev.map((task, i) =>
+          i === currentTaskIndex
+            ? {
+              ...task,
+              parameter: {
+                label: label.trim(),
+                min: minVal,
+                max: maxVal
+              }
+            }
+            : task
+        )
+      );
+    }
+    // Check if we're adding a subtask
+    else if (selectedParentId !== null && currentTaskIndex !== null) {
+      setBulkSubtasks((prev) => ({
+        ...prev,
+        [selectedParentId]: prev[selectedParentId].map((subtask, i) =>
+          i === currentTaskIndex
+            ? {
+              ...subtask,
+              parameter: {
+                label: label.trim(),
+                min: minVal,
+                max: maxVal
+              }
+            }
+            : subtask
+        ),
+      }));
+    }
+
+    console.log("Parameter saved:", { label, min, max });
+
+    // Clear fields
+    setLabel("Pressure");
+    setMin("");
+    setMax("");
+    setCurrentTaskIndex(null);
+    setCurrentStageId(null);
+    setCurrentEditItemId(null);
+    setShowModal(false);
+    toast.success("Parameter added successfully");
+  };
+
   const renderItems = (items, level = 1, parentStageId = null) =>
     items.map((item) => {
       const numbering = generateNumbering(stages, item.id);
@@ -2438,8 +2668,8 @@ const handleDeleteStage = (stageId) => {
       const itemType = item.id.startsWith("task")
         ? "Task"
         : item.id.startsWith("subtask")
-        ? "Subtask"
-        : "Item";
+          ? "Subtask"
+          : "Item";
       return (
         <div key={item.id} className={`${level > 1 ? "ml-6" : ""} mb-3`}>
           {editItemId === item.id ? (
@@ -2467,6 +2697,40 @@ const handleDeleteStage = (stageId) => {
                   required
                   error={errors.editForm.description}
                 />
+
+                {/* Parameter Section */}
+                {editFormData.parameter && editFormData.parameter.min ? (
+                  <div className="p-3 bg-purple-50 rounded-lg border border-purple-200">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-2">
+                        <Gauge className="w-4 h-4 text-purple-600" />
+                        <span className="text-sm font-medium text-purple-700">
+                          Parameter: {editFormData.parameter.label} ({editFormData.parameter.min} - {editFormData.parameter.max})
+                        </span>
+                      </div>
+                      <button
+                        onClick={() => {
+                          setEditFormData((prev) => ({
+                            ...prev,
+                            parameter: { label: "Pressure", min: "", max: "" }
+                          }));
+                        }}
+                        className="text-xs text-red-600 hover:text-red-700"
+                      >
+                        Remove
+                      </button>
+                    </div>
+                  </div>
+                ) : (
+                  <button
+                    onClick={handleOpenEditParameterModal}
+                    className="w-full px-3 py-2 bg-purple-100 text-purple-700 hover:bg-purple-200 text-sm rounded-lg flex items-center justify-center gap-2"
+                  >
+                    <Gauge className="w-4 h-4" />
+                    Add Parameter
+                  </button>
+                )}
+
                 {showEditTimeFields && (
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 p-3 bg-slate-50 rounded-lg">
                     <div>
@@ -2577,6 +2841,7 @@ const handleDeleteStage = (stageId) => {
                   <button
                     onClick={() => {
                       setEditItemId(null);
+                      setCurrentEditItemId(null);
                       setShowEditTimeFields(true);
                       setShowImageModal(false);
                       clearEditErrors();
@@ -2640,6 +2905,7 @@ const handleDeleteStage = (stageId) => {
                 galleryDescription={item.galleryDescription}
                 items={parentContainer?.container || []}
                 itemType={itemType}
+                parameter={item.parameter}
               />
               {showSubtaskForms[item.id] && (
                 <div className="ml-4 mt-3 p-4 bg-white rounded-lg border border-slate-200">
@@ -2674,6 +2940,54 @@ const handleDeleteStage = (stageId) => {
                         required
                         error={errors.subtaskForms[`${item.id}_${index}`]?.description}
                       />
+
+                      {/* Parameter Section for Subtask */}
+                      {subtask.parameter && subtask.parameter.min ? (
+                        <div className="p-2 bg-purple-50 rounded-lg border border-purple-200">
+                          <div className="flex items-center justify-between">
+                            <div className="flex items-center gap-2">
+                              <Gauge className="w-3 h-3 text-purple-600" />
+                              <span className="text-xs text-purple-700">
+                                Parameter: {subtask.parameter.label} ({subtask.parameter.min} - {subtask.parameter.max})
+                              </span>
+                            </div>
+                            <button
+                              onClick={() => {
+                                setBulkSubtasks((prev) => ({
+                                  ...prev,
+                                  [item.id]: prev[item.id].map((st, i) =>
+                                    i === index
+                                      ? {
+                                        ...st,
+                                        parameter: { label: "Pressure", min: "", max: "" }
+                                      }
+                                      : st
+                                  ),
+                                }));
+                              }}
+                              className="text-xs text-red-600 hover:text-red-700"
+                            >
+                              Remove
+                            </button>
+                          </div>
+                        </div>
+                      ) : (
+                        <button
+                          onClick={() => {
+                            setSelectedParentId(item.id);
+                            setCurrentTaskIndex(index);
+                            setLabel("Pressure");
+                            setMin("");
+                            setMax("");
+                            setShowModal(true);
+                          }}
+                          className="w-full px-3 py-2 bg-purple-100 text-purple-700 hover:bg-purple-200 text-sm rounded-lg flex items-center justify-center gap-2"
+                        >
+                          <Gauge className="w-4 h-4" />
+                          Add Parameter
+                        </button>
+                      )}
+
                       {showSubtaskTimeFields[`${item.id}_${index}`] && (
                         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 p-3 bg-slate-50 rounded-lg">
                           <div>
@@ -2782,11 +3096,10 @@ const handleDeleteStage = (stageId) => {
                         </button>
                         <button
                           onClick={() => toggleSubtaskTimeFields(item.id, index)}
-                          className={`px-3 py-1.5 text-sm rounded-lg flex items-center gap-1 ${
-                            showSubtaskTimeFields[`${item.id}_${index}`]
-                              ? "bg-blue-100 text-blue-700 hover:bg-blue-200"
-                              : "bg-gray-100 text-gray-700 hover:bg-gray-200"
-                          }`}
+                          className={`px-3 py-1.5 text-sm rounded-lg flex items-center gap-1 ${showSubtaskTimeFields[`${item.id}_${index}`]
+                            ? "bg-blue-100 text-blue-700 hover:bg-blue-200"
+                            : "bg-gray-100 text-gray-700 hover:bg-gray-200"
+                            }`}
                         >
                           <Clock size={17} />
                           {showSubtaskTimeFields[`${item.id}_${index}`]
@@ -2842,6 +3155,7 @@ const handleDeleteStage = (stageId) => {
         </div>
       );
     });
+
   const renderStageContent = (stageId) => {
     const stage = stages.find((s) => s.id === stageId);
     if (!stage) return null;
@@ -2896,6 +3210,46 @@ const handleDeleteStage = (stageId) => {
                   required
                   error={errors.taskForms[`${stageId}_${index}`]?.description}
                 />
+
+                {/* Parameter Section */}
+                {task.parameter && task.parameter.min ? (
+                  <div className="p-2 bg-purple-50 rounded-lg border border-purple-200">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-2">
+                        <Gauge className="w-3 h-3 text-purple-600" />
+                        <span className="text-xs text-purple-700">
+                          Parameter: {task.parameter.label} ({task.parameter.min} - {task.parameter.max})
+                        </span>
+                      </div>
+                      <button
+                        onClick={() => {
+                          setBulkTasks((prev) =>
+                            prev.map((t, i) =>
+                              i === index
+                                ? {
+                                  ...t,
+                                  parameter: { label: "Pressure", min: "", max: "" }
+                                }
+                                : t
+                            )
+                          );
+                        }}
+                        className="text-xs text-red-600 hover:text-red-700"
+                      >
+                        Remove
+                      </button>
+                    </div>
+                  </div>
+                ) : (
+                  <button
+                    onClick={() => handleOpenParameterModal(stageId, index)}
+                    className="w-full px-3 py-2 bg-purple-100 text-purple-700 hover:bg-purple-200 text-sm rounded-lg flex items-center justify-center gap-2"
+                  >
+                    <Gauge className="w-4 h-4" />
+                    Add Parameter
+                  </button>
+                )}
+
                 {showTimeFields[`${stageId}_${index}`] && (
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 p-3 bg-white rounded-lg border border-slate-200">
                     <div>
@@ -3001,11 +3355,10 @@ const handleDeleteStage = (stageId) => {
                   </button>
                   <button
                     onClick={() => toggleTimeFields(stageId, index)}
-                    className={`px-3 py-1.5 text-sm rounded-lg flex items-center gap-1 ${
-                      showTimeFields[`${stageId}_${index}`]
-                        ? "bg-blue-100 text-blue-700 hover:bg-blue-200"
-                        : "bg-gray-100 text-gray-700 hover:bg-gray-200"
-                    }`}
+                    className={`px-3 py-1.5 text-sm rounded-lg flex items-center gap-1 ${showTimeFields[`${stageId}_${index}`]
+                      ? "bg-blue-100 text-blue-700 hover:bg-blue-200"
+                      : "bg-gray-100 text-gray-700 hover:bg-gray-200"
+                      }`}
                   >
                     <Clock size={17} />
                     {showTimeFields[`${stageId}_${index}`]
@@ -3036,7 +3389,7 @@ const handleDeleteStage = (stageId) => {
                 }}
                 className="px-3 py-1.5 bg-red-100 text-red-700 hover:bg-red-200 text-sm rounded-lg"
               >
-                Cancel All Tasks
+                Cancel All Task
               </button>
             )}
           </div>
@@ -3071,6 +3424,7 @@ const handleDeleteStage = (stageId) => {
                 galleryDescription={activeTaskItem.galleryDescription}
                 items={findContainer(stages, activeTaskItem.id)?.container || []}
                 itemType={activeTaskItem.id.startsWith("task") ? "Task" : "Subtask"}
+                parameter={activeTaskItem.parameter}
               />
             ) : null}
           </DragOverlay>
@@ -3078,6 +3432,7 @@ const handleDeleteStage = (stageId) => {
       </>
     );
   };
+
   return (
     <div className="min-h-screen bg-slate-100 p-4 sm:p-6 lg:p-8">
       <Toaster />
@@ -3188,49 +3543,49 @@ const handleDeleteStage = (stageId) => {
                   {stages
                     .filter((s) => s.title !== "Default Stage")
                     .map((stage, idx) => (
-                    <div key={stage.id} className="relative group/stage">
-                      <SortableItem
-                        id={stage.id}
-                        title={stage.title}
-                        description={`${stage.tasks?.length || 0} tasks`}
-                        level={1}
-                        onEdit={() => {}}
-                        onDuplicate={() => {}}
-                        onAddSubtask={() => {}}
-                        onDelete={handleDeleteStage}
-                        numbering={idx + 1}
-                        showActionButtons={false}
-                        onClick={(id) => {
-                          setSelectedStageId(id);
-                          setShowVisualTable(false);
-                        }}
-                        items={stages}
-                        itemType="Stage"
-                      />
-                      <div className="flex items-center gap-1 absolute top-2 right-2 opacity-0 group-hover/stage:opacity-100 transition-opacity">
-                        <button
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            handleDuplicateStage(stage.id);
+                      <div key={stage.id} className="relative group/stage">
+                        <SortableItem
+                          id={stage.id}
+                          title={stage.title}
+                          description={`${stage.tasks?.length || 0} tasks`}
+                          level={1}
+                          onEdit={() => { }}
+                          onDuplicate={() => { }}
+                          onAddSubtask={() => { }}
+                          onDelete={handleDeleteStage}
+                          numbering={idx + 1}
+                          showActionButtons={false}
+                          onClick={(id) => {
+                            setSelectedStageId(id);
+                            setShowVisualTable(false);
                           }}
-                          className="p-1.5 text-slate-500 hover:text-green-600 hover:bg-green-50 rounded-md transition-colors"
-                          title={`Duplicate stage "${stage.title}"`}
-                        >
-                          <Copy className="w-3 h-3" />
-                        </button>
-                        <button
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            handleDeleteStage(stage.id);
-                          }}
-                          className="p-1.5 bg-red-500 text-white rounded-full hover:bg-red-600 transition-colors"
-                          title={`Delete stage "${stage.title}"`}
-                        >
-                          <Trash className="w-3 h-3" />
-                        </button>
+                          items={stages}
+                          itemType="Stage"
+                        />
+                        <div className="flex items-center gap-1 absolute top-2 right-2 opacity-0 group-hover/stage:opacity-100 transition-opacity">
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleDuplicateStage(stage.id);
+                            }}
+                            className="p-1.5 text-slate-500 hover:text-green-600 hover:bg-green-50 rounded-md transition-colors"
+                            title={`Duplicate stage "${stage.title}"`}
+                          >
+                            <Copy className="w-3 h-3" />
+                          </button>
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleDeleteStage(stage.id);
+                            }}
+                            className="p-1.5 bg-red-500 text-white rounded-full hover:bg-red-600 transition-colors"
+                            title={`Delete stage "${stage.title}"`}
+                          >
+                            <Trash className="w-3 h-3" />
+                          </button>
+                        </div>
                       </div>
-                    </div>
-                  ))}
+                    ))}
                 </div>
               </SortableContext>
               <DragOverlay className="z-50">
@@ -3260,7 +3615,7 @@ const handleDeleteStage = (stageId) => {
                   d="M3 10h18M3 14h18m-9-4v8m-7 0h14a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z"
                 />
               </svg>
-             Visual Representation
+              Visual Representation
             </button>
             {stages.find((s) => s.title === "Default Stage") && (
               <button
@@ -3271,11 +3626,10 @@ const handleDeleteStage = (stageId) => {
                     setShowVisualTable(false);
                   }
                 }}
-                className={`w-full p-3 rounded-lg border text-left transition-all duration-200 ${
-                  selectedStageId === stages.find((s) => s.title === "Default Stage")?.id && !showVisualTable
-                    ? "border-blue-500 bg-blue-50 shadow-sm"
-                    : "border-slate-200 bg-white hover:border-slate-300 hover:shadow-sm"
-                }`}
+                className={`w-full p-3 rounded-lg border text-left transition-all duration-200 ${selectedStageId === stages.find((s) => s.title === "Default Stage")?.id && !showVisualTable
+                  ? "border-blue-500 bg-blue-50 shadow-sm"
+                  : "border-slate-200 bg-white hover:border-slate-300 hover:shadow-sm"
+                  }`}
               >
                 <div className="font-medium text-slate-900 text-sm">Default Stage</div>
                 <div className="text-xs text-slate-500 mt-1">
@@ -3308,17 +3662,17 @@ const handleDeleteStage = (stageId) => {
                   </div>
                 </div>
                 <div className="mb-4">
-  <button
-    onClick={() => setShowRecordCountModal(true)} // Open modal instead of direct add
-    className="px-4 py-2 bg-blue-600 text-white text-sm font-medium rounded-lg hover:bg-blue-700 transition-colors flex items-center gap-2"
-  >
-    <Plus className="w-4 h-4" />
-    Add Record(s)
-  </button>
-  {tableData.length === 0 && (
-    <p className="text-sm text-gray-500 mt-2">No records yet. Add rows using the modal above.</p>
-  )}
-</div>
+                  <button
+                    onClick={() => setShowRecordCountModal(true)} // Open modal instead of direct add
+                    className="px-4 py-2 bg-blue-600 text-white text-sm font-medium rounded-lg hover:bg-blue-700 transition-colors flex items-center gap-2"
+                  >
+                    <Plus className="w-4 h-4" />
+                    Add Record(s)
+                  </button>
+                  {tableData.length === 0 && (
+                    <p className="text-sm text-gray-500 mt-2">No records yet. Add rows using the modal above.</p>
+                  )}
+                </div>
                 <div className="overflow-x-auto">
                   <table className="min-w-full bg-white border border-gray-200">
                     <thead>
@@ -3363,7 +3717,7 @@ const handleDeleteStage = (stageId) => {
                     No stage selected
                   </h3>
                   <p className="text-slate-600 text-sm">
-                     Select a stage from the sidebar to view and manage its tasks
+                    Select a stage from the sidebar to view and manage its tasks
                   </p>
                 </div>
               </div>
@@ -3523,56 +3877,56 @@ const handleDeleteStage = (stageId) => {
             </div>
           )}
           {showRecordCountModal && (
-  <div className="fixed inset-0 pl-64 z-50 flex items-center justify-center p-4">
-    <div
-      className="absolute inset-0 bg-black/40 backdrop-blur-sm"
-      onClick={() => setShowRecordCountModal(false)}
-    />
-    <div className="relative bg-white rounded-2xl shadow-2xl w-full max-w-sm p-6">
-      <div className="flex items-center justify-between mb-4">
-        <h4 className="text-lg font-semibold text-gray-900">
-          Add Records
-        </h4>
-        <button
-          onClick={() => setShowRecordCountModal(false)}
-          className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
-        >
-          <X className="w-5 h-5 text-gray-600" />
-        </button>
-      </div>
-      <div className="mb-6">
-        <InputField
-          label="Number of Records"
-          type="number"
-          name="recordCount"
-          value={recordCount}
-          onChange={(e) => setRecordCount(parseInt(e.target.value) || 1)}
-          placeholder="Enter number of records"
-          min="1"
-          max="10"
-          required
-        />
-        <p className="text-xs text-gray-500 mt-2">
-          Enter the number of records you want to create (1-10).
-        </p>
-      </div>
-      <div className="flex justify-end gap-3">
-        <button
-          onClick={() => setShowRecordCountModal(false)}
-          className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50"
-        >
-          Cancel
-        </button>
-        <button
-          onClick={handleRecordCountConfirm}
-          className="px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-lg hover:bg-blue-700"
-        >
-          Confirm
-        </button>
-      </div>
-    </div>
-  </div>
-)}
+            <div className="fixed inset-0 pl-64 z-50 flex items-center justify-center p-4">
+              <div
+                className="absolute inset-0 bg-black/40 backdrop-blur-sm"
+                onClick={() => setShowRecordCountModal(false)}
+              />
+              <div className="relative bg-white rounded-2xl shadow-2xl w-full max-w-sm p-6">
+                <div className="flex items-center justify-between mb-4">
+                  <h4 className="text-lg font-semibold text-gray-900">
+                    Add Records
+                  </h4>
+                  <button
+                    onClick={() => setShowRecordCountModal(false)}
+                    className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+                  >
+                    <X className="w-5 h-5 text-gray-600" />
+                  </button>
+                </div>
+                <div className="mb-6">
+                  <InputField
+                    label="Number of Records"
+                    type="number"
+                    name="recordCount"
+                    value={recordCount}
+                    onChange={(e) => setRecordCount(parseInt(e.target.value) || 1)}
+                    placeholder="Enter number of records"
+                    min="1"
+                    max="10"
+                    required
+                  />
+                  <p className="text-xs text-gray-500 mt-2">
+                    Enter the number of records you want to create (1-10).
+                  </p>
+                </div>
+                <div className="flex justify-end gap-3">
+                  <button
+                    onClick={() => setShowRecordCountModal(false)}
+                    className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    onClick={handleRecordCountConfirm}
+                    className="px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-lg hover:bg-blue-700"
+                  >
+                    Confirm
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
           {bulkTasks.map(
             (task, index) =>
               showTaskImageModal[`${selectedStageId}_${index}`] && (
@@ -3703,13 +4057,13 @@ const handleDeleteStage = (stageId) => {
                                             prev.map((t, i) =>
                                               i === index
                                                 ? {
-                                                    ...t,
-                                                    images: t.images.map((img, idx) =>
-                                                      idx === imageIndex
-                                                        ? { ...img, title: e.target.value, titleError: "" }
-                                                        : img
-                                                    ),
-                                                  }
+                                                  ...t,
+                                                  images: t.images.map((img, idx) =>
+                                                    idx === imageIndex
+                                                      ? { ...img, title: e.target.value, titleError: "" }
+                                                      : img
+                                                  ),
+                                                }
                                                 : t
                                             )
                                           );
@@ -3914,13 +4268,13 @@ const handleDeleteStage = (stageId) => {
                                             [parentId]: prev[parentId].map((st, i) =>
                                               i === index
                                                 ? {
-                                                    ...st,
-                                                    images: st.images.map((img, idx) =>
-                                                      idx === imageIndex
-                                                        ? { ...img, title: e.target.value, titleError: "" }
-                                                        : img
-                                                    ),
-                                                  }
+                                                  ...st,
+                                                  images: st.images.map((img, idx) =>
+                                                    idx === imageIndex
+                                                      ? { ...img, title: e.target.value, titleError: "" }
+                                                      : img
+                                                  ),
+                                                }
                                                 : st
                                             ),
                                           }));
@@ -4301,6 +4655,55 @@ const handleDeleteStage = (stageId) => {
                 >
                   OK
                 </button>
+              </div>
+            </div>
+          )}
+          {showModal && (
+            <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50 z-50">
+              <div className="bg-white p-6 rounded-xl w-96 shadow-lg">
+
+                <h2 className="text-xl font-semibold mb-4">Add Parameter</h2>
+
+                <input
+                  type="text"
+                  placeholder="Enter Label"
+                  value={label}
+                  onChange={(e) => setLabel(e.target.value)}
+                  className="w-full border p-2 rounded mb-3"
+                />
+
+                <input
+                  type="number"
+                  placeholder="Enter Min"
+                  value={min}
+                  onChange={(e) => setMin(e.target.value)}
+                  className="w-full border p-2 rounded mb-3"
+                />
+
+                <input
+                  type="number"
+                  placeholder="Enter Max"
+                  value={max}
+                  onChange={(e) => setMax(e.target.value)}
+                  className="w-full border p-2 rounded mb-4"
+                />
+
+                <div className="flex justify-end gap-3">
+                  <button
+                    onClick={() => setShowModal(false)}
+                    className="px-4 py-2 bg-gray-400 text-white rounded"
+                  >
+                    Cancel
+                  </button>
+
+                  <button
+                    onClick={handleSaveParameter}
+                    className="px-4 py-2 bg-green-600 text-white rounded"
+                  >
+                    Save
+                  </button>
+                </div>
+
               </div>
             </div>
           )}

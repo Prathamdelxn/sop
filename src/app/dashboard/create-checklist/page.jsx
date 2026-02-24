@@ -1170,6 +1170,17 @@ const SOPDashboard = () => {
               <p className="text-sm text-gray-700 ml-6">{task.description}</p>
             </div>
           )}
+          {task.parameter && (
+            <div className="flex">
+              <div className="flex items-center gap-2 text-sm mb-1">
+                <FileText className="w-4 h-4 text-gray-500" />
+                <span className="font-medium">Parameter:</span>
+              </div>
+              <p className="text-sm text-gray-700 ml-6">{task.parameter.label}</p>
+              <p className="text-sm text-gray-700 ml-6">{task.parameter.min}</p>
+              <p className="text-sm text-gray-700 ml-6">{task.parameter.max}</p>
+            </div>
+          )}
 
           {shouldShowDurationInfo && (
             <div className="bg-white p-3 rounded-lg border">
@@ -1558,13 +1569,13 @@ const SOPDashboard = () => {
                         <div className="flex h-8 items-center justify-end gap-6">
                           <div className="flex justify-end space-x-2">
                             {sop.status == 'InProgress' || sop.status == 'Rejected' || sop.status == 'Rejected Review' ?
-                             <button
-                              onClick={() => handleEdit(sop)}
-                              className="p-2 bg-yellow-100 text-yellow-600 rounded-lg hover:bg-yellow-200"
-                              title="Edit"
-                            >
-                              <Edit className="w-4 h-4" />
-                            </button> : <></>}
+                              <button
+                                onClick={() => handleEdit(sop)}
+                                className="p-2 bg-yellow-100 text-yellow-600 rounded-lg hover:bg-yellow-200"
+                                title="Edit"
+                              >
+                                <Edit className="w-4 h-4" />
+                              </button> : <></>}
 
                             <button
                               onClick={() => handleView(sop)}
@@ -1731,38 +1742,38 @@ const SOPDashboard = () => {
                     return 0;
                   })
                   .map((stage, stageIndex) => (
-                  <div
-                    key={stage._id}
-                    className="border border-gray-300 overflow-hidden rounded-xl"
-                  >
-                    <div className="bg-gray-50 px-5 py-3 border-b border-gray-200">
-                      <div className="flex items-center">
-                        <h3 className="font-bold text-lg text-gray-800">{stage.title}</h3>
-                        <span className="ml-auto text-sm text-gray-500">
-                          {stage.tasks?.length || 0} tasks
-                        </span>
-                      </div>
-                      {stage.description && (
-                        <p className="mt-2 text-sm text-gray-600 ml-9">
-                          {stage.description}
-                        </p>
-                      )}
-                    </div>
-
-                    <div className="divide-y divide-gray-100">
-                      {stage.tasks?.length > 0 ? (
-                        stage.tasks.map((task, taskIndex) =>
-                          renderTask(task, 0, `${stageIndex + 1}.${taskIndex + 1}`)
-                        )
-                      ) : (
-                        <div className="text-center py-8 text-gray-500 bg-gray-50">
-                          <FileText className="w-8 h-8 mx-auto mb-2 text-gray-400" />
-                          <p>No tasks in this stage</p>
+                    <div
+                      key={stage._id}
+                      className="border border-gray-300 overflow-hidden rounded-xl"
+                    >
+                      <div className="bg-gray-50 px-5 py-3 border-b border-gray-200">
+                        <div className="flex items-center">
+                          <h3 className="font-bold text-lg text-gray-800">{stage.title}</h3>
+                          <span className="ml-auto text-sm text-gray-500">
+                            {stage.tasks?.length || 0} tasks
+                          </span>
                         </div>
-                      )}
+                        {stage.description && (
+                          <p className="mt-2 text-sm text-gray-600 ml-9">
+                            {stage.description}
+                          </p>
+                        )}
+                      </div>
+
+                      <div className="divide-y divide-gray-100">
+                        {stage.tasks?.length > 0 ? (
+                          stage.tasks.map((task, taskIndex) =>
+                            renderTask(task, 0, `${stageIndex + 1}.${taskIndex + 1}`)
+                          )
+                        ) : (
+                          <div className="text-center py-8 text-gray-500 bg-gray-50">
+                            <FileText className="w-8 h-8 mx-auto mb-2 text-gray-400" />
+                            <p>No tasks in this stage</p>
+                          </div>
+                        )}
+                      </div>
                     </div>
-                  </div>
-                ))}
+                  ))}
 
 
                 <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
@@ -1862,33 +1873,33 @@ const SOPDashboard = () => {
                   </div>
                 </div>
 
-{/* Default Stage (below Visual Representation) */}
-{selectedSop?.defaultStage && (
-  <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
-    <div className="bg-gray-50 px-6 py-4 border-b border-gray-200">
-      <h3 className="text-lg font-semibold text-gray-900 flex items-center gap-2">
-        <ListChecks className="w-4 h-4 text-blue-600" />
-        {/* Default Stage{selectedSop.defaultStage.title ? `: ${selectedSop.defaultStage.title}` : ""} */}
-        Default Stage
-      </h3>
-    </div>
+                {/* Default Stage (below Visual Representation) */}
+                {selectedSop?.defaultStage && (
+                  <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
+                    <div className="bg-gray-50 px-6 py-4 border-b border-gray-200">
+                      <h3 className="text-lg font-semibold text-gray-900 flex items-center gap-2">
+                        <ListChecks className="w-4 h-4 text-blue-600" />
+                        {/* Default Stage{selectedSop.defaultStage.title ? `: ${selectedSop.defaultStage.title}` : ""} */}
+                        Default Stage
+                      </h3>
+                    </div>
 
-    <div className="divide-y divide-gray-100">
-      {Array.isArray(selectedSop.defaultStage.tasks) && selectedSop.defaultStage.tasks.length > 0 ? (
-        selectedSop.defaultStage.tasks.map((task, taskIndex) =>
-          // Reuse your existing task renderer
-          renderTask(task, 0, `D.${taskIndex + 1}`)
-        )
-      ) : (
-        <div className="text-center py-8 text-gray-500 bg-gray-50">
-          <FileText className="w-8 h-8 mx-auto mb-2 text-gray-400" />
-          <p>No tasks in the default stage</p>
-        </div>
-      )}
-    </div>
-  </div>
-)}
-                
+                    <div className="divide-y divide-gray-100">
+                      {Array.isArray(selectedSop.defaultStage.tasks) && selectedSop.defaultStage.tasks.length > 0 ? (
+                        selectedSop.defaultStage.tasks.map((task, taskIndex) =>
+                          // Reuse your existing task renderer
+                          renderTask(task, 0, `D.${taskIndex + 1}`)
+                        )
+                      ) : (
+                        <div className="text-center py-8 text-gray-500 bg-gray-50">
+                          <FileText className="w-8 h-8 mx-auto mb-2 text-gray-400" />
+                          <p>No tasks in the default stage</p>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                )}
+
 
 
                 {/* ---- Contributors Section ---- */}

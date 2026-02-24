@@ -58,11 +58,14 @@ const TaskExecutionPage = () => {
     // Router navigation would go here
   };
   const [userData, setUser] = useState();
+  const [loading, setLoading] = useState(true);
   useEffect(() => {
     const storedUser = localStorage.getItem("user");
     if (storedUser) {
       const data = JSON.parse(storedUser);
       setUser(data);
+
+      setLoading(true);
 
       // ✅ call fetch here after setting
       fetch(`/api/assignment/execution/${data.companyId}/${data.id}`)
@@ -71,7 +74,12 @@ const TaskExecutionPage = () => {
           console.log("Assignments:", data);
           setTasks(data);
         })
-        .catch((err) => console.error("Error:", err));
+        .catch((err) => console.error("Error:", err))
+        .finally(() => {
+          setLoading(false);
+        });
+    } else {
+      setLoading(false);
     }
   }, []);
 
@@ -144,12 +152,8 @@ const TaskExecutionPage = () => {
                 <p className="text-gray-600 mt-2 text-md">Manage and Execute your assigned task </p>
               </div>
             </div>
-
-
           </div>
         </div>
-        {/* Header */}
-
 
         {/* Modern Card Container */}
         <div className="bg-white mt-4 rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
@@ -161,119 +165,123 @@ const TaskExecutionPage = () => {
                 <h2 className="text-lg font-semibold text-gray-900">Active Tasks</h2>
               </div>
               <div className="text-sm text-gray-500">
-                {tasks.length} tasks total
+                {!loading && `${tasks.length} tasks total`}
               </div>
             </div>
           </div>
 
-          {/* Modern Table */}
+          {/* Conditional Rendering: Loader vs Table vs Empty State */}
           <div className="overflow-x-auto">
-            <table className="w-full">
-              <thead>
-                <tr className="border-b border-gray-100">
-                  <th className="px-6 py-4 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">
-                    <div className="flex items-center gap-2">
-                      <Package className="h-4 w-4" />
-                      Equipment
-                    </div>
-                  </th>
-                  <th className="px-6 py-4 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">
-                    <div className="flex items-center gap-2">
-                      <Eye className="h-4 w-4" />
-                      Prototype
-                    </div>
-                  </th>
-                  <th className="px-6 py-4 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">
-                    <div className="flex items-center gap-2">
-                      <Hash className="h-4 w-4" />
-                      ID
-                    </div>
-                  </th>
-
-
-                  <th className="px-6 py-4 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">
-                    <div className="flex items-center gap-2">
-                      <Clock className="h-4 w-4" />
-                      Status
-                    </div>
-                  </th>
-                  <th className="px-6 py-4 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">
-                    Actions
-                  </th>
-                </tr>
-              </thead>
-              <tbody>
-                {tasks.map((task, index) => {
-                  const statusConfig = getStatusConfig(task.status);
-                  return (
-                    <tr
-                      key={task._id}
-                      className={`border-b border-gray-50 hover:bg-gray-50/50 transition-colors duration-200 ${index % 2 === 0 ? 'bg-white' : 'bg-gray-50/20'
-                        }`}
-                    >
-                      <td className="px-6 py-5">
-                        <div className="flex items-center gap-3">
-                          <div className="flex-shrink-0">
-                            <div className="w-10 h-10 bg-blue-100 rounded-lg flex items-center justify-center">
-                              <Package className="h-5 w-5 text-blue-600" />
+            {loading ? (
+              /* --- LOADER STATE --- */
+              <div className="flex flex-col items-center justify-center py-20">
+                <div className="relative">
+                  <div className="w-12 h-12 border-4 border-blue-100 rounded-full"></div>
+                  <div className="w-12 h-12 border-4 border-blue-600 border-t-transparent rounded-full animate-spin absolute top-0 left-0"></div>
+                </div>
+                <p className="mt-4 text-gray-500 font-medium animate-pulse">Fetching your tasks...</p>
+              </div>
+            ) : tasks.length > 0 ? (
+              /* --- TABLE STATE --- */
+              <table className="w-full">
+                <thead>
+                  <tr className="border-b border-gray-100">
+                    <th className="px-6 py-4 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">
+                      <div className="flex items-center gap-2">
+                        <Package className="h-4 w-4" />
+                        Equipment
+                      </div>
+                    </th>
+                    <th className="px-6 py-4 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">
+                      <div className="flex items-center gap-2">
+                        <Eye className="h-4 w-4" />
+                        Prototype
+                      </div>
+                    </th>
+                    <th className="px-6 py-4 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">
+                      <div className="flex items-center gap-2">
+                        <Hash className="h-4 w-4" />
+                        ID
+                      </div>
+                    </th>
+                    <th className="px-6 py-4 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">
+                      <div className="flex items-center gap-2">
+                        <Clock className="h-4 w-4" />
+                        Status
+                      </div>
+                    </th>
+                    <th className="px-6 py-4 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">
+                      Actions
+                    </th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {tasks.map((task, index) => {
+                    const statusConfig = getStatusConfig(task.status);
+                    return (
+                      <tr
+                        key={task._id}
+                        className={`border-b border-gray-50 hover:bg-gray-50/50 transition-colors duration-200 ${index % 2 === 0 ? 'bg-white' : 'bg-gray-50/20'
+                          }`}
+                      >
+                        <td className="px-6 py-5">
+                          <div className="flex items-center gap-3">
+                            <div className="flex-shrink-0">
+                              <div className="w-10 h-10 bg-blue-100 rounded-lg flex items-center justify-center">
+                                <Package className="h-5 w-5 text-blue-600" />
+                              </div>
+                            </div>
+                            <div>
+                              <div className="text-sm font-medium text-gray-900">
+                                {task.equipment.name}
+                              </div>
                             </div>
                           </div>
-                          <div>
-                            <div className="text-sm font-medium text-gray-900">
-                              {task.equipment.name}
-                            </div>
-
+                        </td>
+                        <td className="px-6 py-5">
+                          <div className="text-sm font-medium text-gray-900">
+                            {task.prototypeData.name}
                           </div>
-                        </div>
-                      </td>
-                      <td className="px-6 py-5">
-                        <div className="text-sm font-medium text-gray-900">
-                          {task.prototypeData.name}
-                        </div>
-                      </td>
-                      <td className="px-6 py-5">
-                        <span className="inline-flex items-center px-3 py-1 rounded-lg text-xs font-medium bg-gray-100 text-gray-700 border border-gray-200">
-                          {task.generatedId}
-                        </span>
-                      </td>
-
-                      <td className="px-6 py-5">
-                        <span className={`inline-flex items-center gap-2 px-3 py-1 rounded-xl text-sm font-medium  ${statusConfig.bg} ${statusConfig.text}`}>
-                          {/* <span>{statusConfig.icon}</span> */}
-                          {statusConfig.label}
-                        </span>
-                      </td>
-                      <td className="px-6 py-5">
-                        <div className="flex items-center gap-2">
-
-                          <button
-                            onClick={() => handleExecuteTask(task._id)}
-                            disabled={task.prototypeData.status === 'completed'}
-                            className={`inline-flex items-center gap-2 px-4 py-2 text-sm font-medium rounded-lg transition-all duration-200 shadow-sm hover:shadow ${task.prototypeData.status === 'completed'
-                              ? 'text-gray-400 bg-gray-50 border border-gray-200 cursor-not-allowed'
-                              : 'text-white bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 border border-transparent'
-                              }`}
-                          >
-                            <Play className="h-4 w-4" />
-                            {task.prototypeData.status === 'completed' ? 'Complete' : 'Execute'}
-                          </button>
-                        </div>
-                      </td>
-                    </tr>
-                  );
-                })}
-              </tbody>
-            </table>
+                        </td>
+                        <td className="px-6 py-5">
+                          <span className="inline-flex items-center px-3 py-1 rounded-lg text-xs font-medium bg-gray-100 text-gray-700 border border-gray-200">
+                            {task.generatedId}
+                          </span>
+                        </td>
+                        <td className="px-6 py-5">
+                          <span className={`inline-flex items-center gap-2 px-3 py-1 rounded-xl text-sm font-medium  ${statusConfig.bg} ${statusConfig.text}`}>
+                            {statusConfig.label}
+                          </span>
+                        </td>
+                        <td className="px-6 py-5">
+                          <div className="flex items-center gap-2">
+                            <button
+                              onClick={() => handleExecuteTask(task._id)}
+                              disabled={task.prototypeData.status === 'completed'}
+                              className={`inline-flex items-center gap-2 px-4 py-2 text-sm font-medium rounded-lg transition-all duration-200 shadow-sm hover:shadow ${task.prototypeData.status === 'completed'
+                                  ? 'text-gray-400 bg-gray-50 border border-gray-200 cursor-not-allowed'
+                                  : 'text-white bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 border border-transparent'
+                                }`}
+                            >
+                              <Play className="h-4 w-4" />
+                              {task.prototypeData.status === 'completed' ? 'Complete' : 'Execute'}
+                            </button>
+                          </div>
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            ) : (
+              /* --- EMPTY STATE --- */
+              <div className="text-center py-12">
+                <Package className="h-12 w-12 text-gray-300 mx-auto mb-4" />
+                <h3 className="text-lg font-medium text-gray-900 mb-2">No tasks found</h3>
+                <p className="text-gray-500">There are no tasks assigned to you at the moment.</p>
+              </div>
+            )}
           </div>
-
-          {/* Empty State (if no tasks) */}
-          {tasks.length === 0 && (
-            <div className="text-center py-12">
-              <Package className="h-12 w-12 text-gray-300 mx-auto mb-4" />
-              <h3 className="text-lg font-medium text-gray-900 mb-2">No tasks found</h3>
-              <p className="text-gray-500">There are no tasks assigned to you at the moment.</p>
-            </div>
-          )}
         </div>
       </div>
     </div>

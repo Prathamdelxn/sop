@@ -947,10 +947,10 @@ const ApprovePage = () => {
                                                                 </span>
                                                             </div>
                                                             <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${review.status === 'Approved'
-                                                                    ? 'bg-green-100 text-green-800'
-                                                                    : review.status === 'Rejected'
-                                                                        ? 'bg-red-100 text-red-800'
-                                                                        : 'bg-yellow-100 text-yellow-800'
+                                                                ? 'bg-green-100 text-green-800'
+                                                                : review.status === 'Rejected'
+                                                                    ? 'bg-red-100 text-red-800'
+                                                                    : 'bg-yellow-100 text-yellow-800'
                                                                 }`}>
                                                                 {review.status}
                                                             </span>
@@ -993,10 +993,10 @@ const ApprovePage = () => {
                                                                 </span>
                                                             </div>
                                                             <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${approver.status === 'Approved'
-                                                                    ? 'bg-green-100 text-green-800'
-                                                                    : approver.status === 'Rejected'
-                                                                        ? 'bg-red-100 text-red-800'
-                                                                        : 'bg-yellow-100 text-yellow-800'
+                                                                ? 'bg-green-100 text-green-800'
+                                                                : approver.status === 'Rejected'
+                                                                    ? 'bg-red-100 text-red-800'
+                                                                    : 'bg-yellow-100 text-yellow-800'
                                                                 }`}>
                                                                 {approver.status}
                                                             </span>
@@ -1067,10 +1067,10 @@ const ApprovePage = () => {
                                                                         </td>
                                                                         <td className="px-4 py-3 whitespace-nowrap">
                                                                             <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${review.status === 'Approved'
-                                                                                    ? 'bg-green-100 text-green-800'
-                                                                                    : review.status === 'Rejected'
-                                                                                        ? 'bg-red-100 text-red-800'
-                                                                                        : 'bg-yellow-100 text-yellow-800'
+                                                                                ? 'bg-green-100 text-green-800'
+                                                                                : review.status === 'Rejected'
+                                                                                    ? 'bg-red-100 text-red-800'
+                                                                                    : 'bg-yellow-100 text-yellow-800'
                                                                                 }`}>
                                                                                 {review.status === 'Approved' && <Check className="w-3 h-3 mr-1" />}
                                                                                 {review.status === 'Rejected' && <X className="w-3 h-3 mr-1" />}
@@ -1150,10 +1150,10 @@ const ApprovePage = () => {
                                                                         </td>
                                                                         <td className="px-4 py-3 whitespace-nowrap">
                                                                             <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${approver.status === 'Approved'
-                                                                                    ? 'bg-green-100 text-green-800'
-                                                                                    : approver.status === 'Rejected'
-                                                                                        ? 'bg-red-100 text-red-800'
-                                                                                        : 'bg-yellow-100 text-yellow-800'
+                                                                                ? 'bg-green-100 text-green-800'
+                                                                                : approver.status === 'Rejected'
+                                                                                    ? 'bg-red-100 text-red-800'
+                                                                                    : 'bg-yellow-100 text-yellow-800'
                                                                                 }`}>
                                                                                 {approver.status === 'Approved' && <Check className="w-3 h-3 mr-1" />}
                                                                                 {approver.status === 'Rejected' && <X className="w-3 h-3 mr-1" />}
