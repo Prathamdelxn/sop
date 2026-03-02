@@ -1009,20 +1009,60 @@ export default function NestedDragDrop() {
     return false;
   };
 
-  const generateNumbering = (items, id, parentNumbers = []) => {
-    for (let i = 0; i < items.length; i++) {
-      const currentNumbers = [...parentNumbers, i + 1];
-      if (items[i].id === id) return currentNumbers.join(".");
-      if (items[i].tasks?.length) {
-        const result = generateNumbering(items[i].tasks, id, currentNumbers);
-        if (result) return result;
+  const generateNumbering = (id) => {
+    // Helper function to find item and build numbering
+    const findNumbering = (items, parentNumbers = [], isStageLevel = true) => {
+      for (let i = 0; i < items.length; i++) {
+        const item = items[i];
+
+        // For stage level, we need to track the actual stage number (excluding Default Stage from task numbering)
+        let currentNumbers = [...parentNumbers];
+
+        if (isStageLevel) {
+          // If this is a stage, only increment counter for non-Default stages when building task numbers
+          // But for the stage itself, we want to show its position
+          if (item.id === id && item.title === "Default Stage") {
+            // If we're looking for the Default Stage itself, return "Default"
+            return "Default";
+          }
+
+          // For tasks and subtasks, we need the actual stage index (1-based, excluding Default Stage)
+          if (item.title !== "Default Stage") {
+            currentNumbers = [...parentNumbers, i + 1 - (items.findIndex(s => s.title === "Default Stage") !== -1 ? 1 : 0)];
+          } else {
+            currentNumbers = [...parentNumbers];
+          }
+        } else {
+          currentNumbers = [...parentNumbers, i + 1];
+        }
+
+        // If this is the item we're looking for
+        if (item.id === id) {
+          return currentNumbers.join(".");
+        }
+
+        // Check tasks
+        if (item.tasks && item.tasks.length > 0) {
+          const taskResult = findNumbering(item.tasks, currentNumbers, false);
+          if (taskResult) return taskResult;
+        }
+
+        // Check subtasks
+        if (item.subtasks && item.subtasks.length > 0) {
+          const subtaskResult = findNumbering(item.subtasks, currentNumbers, false);
+          if (subtaskResult) return subtaskResult;
+        }
       }
-      if (items[i].subtasks?.length) {
-        const result = generateNumbering(items[i].subtasks, id, currentNumbers);
-        if (result) return result;
-      }
-    }
-    return null;
+      return null;
+    };
+
+    // Start the search from stages level
+    const numbering = findNumbering(stages, [], true);
+
+    // Handle special cases
+    if (numbering === "Default") return null; // Don't show number for Default Stage
+
+    return numbering;
   };
 
   const formatTime = (hours, minutes, seconds) => {
@@ -2661,15 +2701,17 @@ export default function NestedDragDrop() {
     toast.success("Parameter added successfully");
   };
 
-  const renderItems = (items, level = 1, parentStageId = null) =>
+  const renderItems = (items, level = 1, parentStageId = null, stageIndex = null) =>
     items.map((item) => {
-      const numbering = generateNumbering(stages, item.id);
+      const numbering = generateNumbering(item.id);
+
       const parentContainer = findContainer(stages, item.id);
       const itemType = item.id.startsWith("task")
         ? "Task"
         : item.id.startsWith("subtask")
           ? "Subtask"
           : "Item";
+
       return (
         <div key={item.id} className={`${level > 1 ? "ml-6" : ""} mb-3`}>
           {editItemId === item.id ? (
@@ -3157,8 +3199,14 @@ export default function NestedDragDrop() {
     });
 
   const renderStageContent = (stageId) => {
+    console.log("Rendering stage with ID:", stageId);
+    console.log("All stages:", stages.map(s => ({ id: s.id, title: s.title })));
     const stage = stages.find((s) => s.id === stageId);
     if (!stage) return null;
+
+    // Find the index of this stage in the stages array
+    const stageIndex = stages.findIndex((s) => s.id === stageId) + 1; // +1 because numbering starts from 1
+
     return (
       <>
         <div className="flex items-center justify-between mb-6">
@@ -3405,7 +3453,7 @@ export default function NestedDragDrop() {
               items={stage.tasks?.map((t) => t.id) || []}
               strategy={verticalListSortingStrategy}
             >
-              {renderItems(stage.tasks || [], 1, stageId)}
+              {renderItems(stage.tasks || [], 1, stageId, stageIndex)}
             </SortableContext>
           </div>
           <DragOverlay className="z-50">
@@ -3416,7 +3464,7 @@ export default function NestedDragDrop() {
                 description={activeTaskItem.description}
                 minTime={activeTaskItem.minTime}
                 maxTime={activeTaskItem.maxTime}
-                numbering={generateNumbering(stages, activeTaskItem.id)}
+                numbering={generateNumbering(activeTaskItem.id)}
                 showActionButtons={true}
                 onDelete={handleDelete}
                 images={activeTaskItem.images}
