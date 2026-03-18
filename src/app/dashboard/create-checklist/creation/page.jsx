@@ -2856,9 +2856,10 @@ const addTask = (stageId, index) => {
     toast.success("Parameter added successfully");
   };
 
-  const renderItems = (items, level = 1, parentStageId = null) =>
+  const renderItems = (items, level = 1, parentStageId = null, stageIndex = null) =>
     items.map((item) => {
-      const numbering = generateNumbering(stages, item.id);
+      const numbering = generateNumbering(item.id);
+
       const parentContainer = findContainer(stages, item.id);
       const itemType = item.id.startsWith("task")
         ? "Task"
@@ -3379,8 +3380,14 @@ const addTask = (stageId, index) => {
     });
 
   const renderStageContent = (stageId) => {
+    console.log("Rendering stage with ID:", stageId);
+    console.log("All stages:", stages.map(s => ({ id: s.id, title: s.title })));
     const stage = stages.find((s) => s.id === stageId);
     if (!stage) return null;
+
+    // Find the index of this stage in the stages array
+    const stageIndex = stages.findIndex((s) => s.id === stageId) + 1; // +1 because numbering starts from 1
+
     return (
       <>
         <div className="flex items-center justify-between mb-6">
@@ -3651,7 +3658,7 @@ const addTask = (stageId, index) => {
               items={stage.tasks?.map((t) => t.id) || []}
               strategy={verticalListSortingStrategy}
             >
-              {renderItems(stage.tasks || [], 1, stageId)}
+              {renderItems(stage.tasks || [], 1, stageId, stageIndex)}
             </SortableContext>
           </div>
           <DragOverlay className="z-50">
@@ -3662,7 +3669,7 @@ const addTask = (stageId, index) => {
                 description={activeTaskItem.description}
                 minTime={activeTaskItem.minTime}
                 maxTime={activeTaskItem.maxTime}
-                numbering={generateNumbering(stages, activeTaskItem.id)}
+                numbering={generateNumbering(activeTaskItem.id)}
                 showActionButtons={true}
                 onDelete={handleDelete}
                 images={activeTaskItem.images}
