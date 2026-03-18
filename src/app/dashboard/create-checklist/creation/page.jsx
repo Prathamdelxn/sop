@@ -121,7 +121,7 @@ const InputField = ({
   );
 };
 
-// Text Area Field Component
+
 const TextAreaField = ({
   label,
   name,
@@ -194,7 +194,7 @@ const ConfirmationModal = ({ isOpen, onClose, onConfirm, title, message }) => {
   );
 };
 
-// Sortable Item Component
+
 const SortableItem = ({
   id,
   title,
@@ -215,6 +215,9 @@ const SortableItem = ({
   items,
   itemType = "Item",
   parameter,
+  showStopCheckbox = false, // New prop for stop checkbox
+  isStopChecked = false, // New prop for stop state
+  onStopCheckboxChange, // New prop for stop handler
 }) => {
   const {
     attributes,
@@ -237,13 +240,19 @@ const SortableItem = ({
         ref={setNodeRef}
         style={style}
         onClick={(e) => {
-          e.stopPropagation();
-          onClick?.(id);
+          // Prevent click when clicking on checkbox
+          if (e.target.type !== 'checkbox') {
+            e.stopPropagation();
+            onClick?.(id);
+          }
         }}
         className={`group p-3 rounded-lg border border-slate-200 bg-white hover:border-slate-300 hover:shadow-sm transition-all duration-200 ${onClick ? "cursor-pointer" : ""
           }`}
       >
         <div className="flex items-start gap-3">
+         
+       
+          
           {showActionButtons && (
             <div
               className="flex-shrink-0 mt-1 text-slate-400 hover:text-slate-600 cursor-grab"
@@ -262,12 +271,16 @@ const SortableItem = ({
                       {numbering}
                     </span>
                   )}
-                  <h3 className="text-sm font-medium text-slate-900 leading-tight truncate w-[150px]">
+                  <h3 className={`text-sm font-medium leading-tight truncate w-[150px] ${
+                    isStopChecked ? 'text-red-600' : 'text-slate-900'
+                  }`}>
                     {title}
                   </h3>
                 </div>
                 {description && (
-                  <p className="text-xs text-slate-600 mb-1 truncate">
+                  <p className={`text-xs mb-1 truncate ${
+                    isStopChecked ? 'text-red-500' : 'text-slate-600'
+                  }`}>
                     {description}
                   </p>
                 )}
@@ -300,10 +313,31 @@ const SortableItem = ({
                       {galleryTitle ? ` - ${galleryTitle}` : ""}
                     </div>
                   )}
+                  {isStopChecked && (
+                    <div className="text-xs font-medium text-red-600 bg-red-100 px-2 py-0.5 rounded-full">
+                      Add Stop Enable
+                    </div>
+                  )}
                 </div>
               </div>
               {showActionButtons && (
                 <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                  {showStopCheckbox && (
+            <div className="flex-shrink-0 mt-1">
+              <label className="flex items-center gap-1 cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={isStopChecked}
+                  onChange={(e) => {
+                    e.stopPropagation();
+                    onStopCheckboxChange?.(id);
+                  }}
+                  className="w-4 h-4 text-red-600 bg-gray-100 border-gray-300 rounded focus:ring-red-500 focus:ring-2"
+                />
+                <span className="text-xs font-medium text-red-600">Add Stop</span>
+              </label>
+            </div>
+          )}
                   <button
                     onClick={(e) => {
                       e.stopPropagation();
@@ -366,6 +400,8 @@ export default function NestedDragDrop() {
   const [tableErrors, setTableErrors] = useState({});
   const [selectedStageId, setSelectedStageId] = useState(null);
   const [showGoBackConfirmModal, setShowGoBackConfirmModal] = useState(false);
+  // Add this near your other useState declarations (around line 150-200)
+const [taskStopStates, setTaskStopStates] = useState({});
   const [showVisualTable, setShowVisualTable] = useState(false);
   const [showModal, setShowModal] = useState(false);
   const [label, setLabel] = useState("Pressure");
@@ -449,6 +485,17 @@ export default function NestedDragDrop() {
   });
   const [tableData, setTableData] = useState([]); // Independent, persistent table data
 
+  // Add these functions near your other handler functions (around line 400-500)
+const handleTaskStopChange = (taskId) => {
+  setTaskStopStates(prev => ({
+    ...prev,
+    [taskId]: !prev[taskId]
+  }));
+};
+
+const hasTaskStop = (taskId) => {
+  return taskStopStates[taskId] || false;
+};
   const handleCheckPointChange = (id, value) => {
     setTableData((prev) =>
       prev.map((row) => (row.id === id ? { ...row, checkpoint: { ...row.checkpoint, title: value } } : row))
@@ -466,6 +513,28 @@ export default function NestedDragDrop() {
       setStages([defaultStage]);
     }
   }, []);
+  // Add this near your other useEffect hooks (around line 450-500)
+useEffect(() => {
+  // Sync task stop states from stages data
+  const newStopStates = {};
+  
+  const syncTaskStopStates = (items) => {
+    items.forEach(item => {
+      if (item.id?.startsWith('task')) {
+        newStopStates[item.id] = item.addStop || false;
+      }
+      if (item.tasks) {
+        syncTaskStopStates(item.tasks);
+      }
+      if (item.subtasks) {
+        syncTaskStopStates(item.subtasks);
+      }
+    });
+  };
+  
+  syncTaskStopStates(stages);
+  setTaskStopStates(newStopStates);
+}, [stages]);
 
   const handleCleaningStatusChange = (id, value) => {
     setTableData((prev) =>
@@ -962,6 +1031,7 @@ export default function NestedDragDrop() {
   const cloneItem = (item) => ({
     ...item,
     id: generateId(item.id.split("-")[0]),
+    addStop: item.addStop || false,
     tasks: item.tasks ? item.tasks.map(cloneItem) : undefined,
     subtasks: item.subtasks ? item.subtasks.map(cloneItem) : undefined,
   });
@@ -1009,22 +1079,37 @@ export default function NestedDragDrop() {
     return false;
   };
 
-  const generateNumbering = (items, id, parentNumbers = []) => {
-    for (let i = 0; i < items.length; i++) {
-      const currentNumbers = [...parentNumbers, i + 1];
-      if (items[i].id === id) return currentNumbers.join(".");
-      if (items[i].tasks?.length) {
-        const result = generateNumbering(items[i].tasks, id, currentNumbers);
-        if (result) return result;
-      }
-      if (items[i].subtasks?.length) {
-        const result = generateNumbering(items[i].subtasks, id, currentNumbers);
-        if (result) return result;
-      }
-    }
-    return null;
-  };
 
+
+
+  const generateNumbering = (items, id, parentNumbers = []) => {
+  // Filter out default stage if we're at the root level (stages)
+  const itemsToProcess = parentNumbers.length === 0 
+    ? items.filter(item => item.title !== "Default Stage")
+    : items;
+  
+  for (let i = 0; i < itemsToProcess.length; i++) {
+    const currentNumbers = [...parentNumbers, i + 1];
+    
+    // If this is the item we're looking for
+    if (itemsToProcess[i].id === id) {
+      return currentNumbers.join(".");
+    }
+    
+    // Check if this is a stage with tasks
+    if (itemsToProcess[i].tasks && itemsToProcess[i].tasks.length > 0) {
+      const taskResult = generateNumbering(itemsToProcess[i].tasks, id, currentNumbers);
+      if (taskResult) return taskResult;
+    }
+    
+    // Check if this item has subtasks
+    if (itemsToProcess[i].subtasks && itemsToProcess[i].subtasks.length > 0) {
+      const subtaskResult = generateNumbering(itemsToProcess[i].subtasks, id, currentNumbers);
+      if (subtaskResult) return subtaskResult;
+    }
+  }
+  return null;
+};
   const formatTime = (hours, minutes, seconds) => {
     return `${hours.toString().padStart(2, "0")}:${minutes
       .toString()
@@ -1067,6 +1152,7 @@ export default function NestedDragDrop() {
         galleryTitle: task.galleryTitle || "",
         images: task.images || [], // Assuming images are already URL strings after upload
         parameter: task.parameter || null, // Include parameter in transformation
+        addStop: task.addStop || false,
         subtasks: task.subtasks ? transformTasksForSchema(task.subtasks) : [],
       })) || [],
     }));
@@ -1083,6 +1169,7 @@ export default function NestedDragDrop() {
       galleryTitle: task.galleryTitle || "",
       images: task.images || [],
       parameter: task.parameter || null, // Include parameter in transformation
+      addStop: task.addStop || false,
       subtasks: task.subtasks ? transformTasksForSchema(task.subtasks) : [],
     }));
   };
@@ -1334,6 +1421,7 @@ export default function NestedDragDrop() {
         ...task,
         id: generateId("task"),
         parameter: task.parameter ? { ...task.parameter } : null, // Copy parameter
+        addStop: task.addStop || false,
         subtasks: task.subtasks
           ? task.subtasks.map((sub) => ({
             ...sub,
@@ -1403,6 +1491,7 @@ export default function NestedDragDrop() {
         galleryTitle: "",
         galleryDescription: "",
         parameter: { label: "Pressure", min: "", max: "" }, // Initialize parameter
+        addStop: false, 
       }))
     );
     setShowTimeFields((prev) => ({
@@ -1654,98 +1743,197 @@ export default function NestedDragDrop() {
     }
   };
 
-  const addTask = (stageId, index) => {
-    const task = bulkTasks[index];
-    if (!validateTask(task, stageId, index)) {
-      return;
-    }
-    const stage = stages.find((s) => s.id === stageId);
-    if (!stage) return;
-    if (checkDuplicateTitle(stage.tasks || [], task.title, null, "task")) {
-      setErrors((prev) => ({
-        ...prev,
-        taskForms: {
-          ...prev.taskForms,
-          [`${stageId}_${index}`]: {
-            ...prev.taskForms[`${stageId}_${index}`],
-            title: `A task with the title "${task.title}" already exists in this stage. Please use a different title.`,
-          },
+  // const addTask = (stageId, index) => {
+  //   const task = bulkTasks[index];
+  //   if (!validateTask(task, stageId, index)) {
+  //     return;
+  //   }
+  //   const stage = stages.find((s) => s.id === stageId);
+  //   if (!stage) return;
+  //   if (checkDuplicateTitle(stage.tasks || [], task.title, null, "task")) {
+  //     setErrors((prev) => ({
+  //       ...prev,
+  //       taskForms: {
+  //         ...prev.taskForms,
+  //         [`${stageId}_${index}`]: {
+  //           ...prev.taskForms[`${stageId}_${index}`],
+  //           title: `A task with the title "${task.title}" already exists in this stage. Please use a different title.`,
+  //         },
+  //       },
+  //     }));
+  //     return;
+  //   }
+  //   let minTime = "";
+  //   let maxTime = "";
+  //   if (showTimeFields[`${stageId}_${index}`]) {
+  //     minTime = formatTime(
+  //       task.minTime.hours,
+  //       task.minTime.minutes,
+  //       task.minTime.seconds
+  //     );
+  //     maxTime = formatTime(
+  //       task.maxTime.hours,
+  //       task.maxTime.minutes,
+  //       task.maxTime.seconds
+  //     );
+  //   }
+
+  //   // Validate parameter if it exists and has values
+  //   const parameter = task.parameter;
+  //   if (parameter && parameter.min && parameter.max) {
+  //     const minVal = parseFloat(parameter.min);
+  //     const maxVal = parseFloat(parameter.max);
+  //     if (isNaN(minVal) || isNaN(maxVal)) {
+  //       toast.error("Parameter values must be valid numbers");
+  //       return;
+  //     }
+  //     if (minVal < 0 || maxVal < 0) {
+  //       toast.error("Parameter values cannot be negative");
+  //       return;
+  //     }
+  //     if (minVal >= maxVal) {
+  //       toast.error("Parameter min value must be less than max value");
+  //       return;
+  //     }
+  //   }
+
+  //   const newTaskItem = {
+  //     id: generateId("task"),
+  //     title: task.title.trim(),
+  //     description: task.description?.trim() || "",
+  //     minTime: minTime,
+  //     maxTime: maxTime,
+  //     subtasks: [],
+  //     images: task.images || [],
+  //     galleryTitle: task.galleryTitle?.trim() || "",
+  //     galleryDescription: task.galleryDescription?.trim() || "",
+  //     parameter: task.parameter && task.parameter.min ? task.parameter : null, // Include parameter if it has values
+  //   };
+  //   setStages((prev) =>
+  //     prev.map((stage) =>
+  //       stage.id === stageId
+  //         ? {
+  //           ...stage,
+  //           tasks: [...(stage.tasks || []), newTaskItem],
+  //         }
+  //         : stage
+  //     )
+  //   );
+  //   setBulkTasks((prev) => prev.filter((_, i) => i !== index));
+  //   setShowTimeFields((prev) => ({
+  //     ...prev,
+  //     [`${stageId}_${index}`]: false,
+  //   }));
+  //   setShowTaskImageModal((prev) => ({
+  //     ...prev,
+  //     [`${stageId}_${index}`]: false,
+  //   }));
+  //   clearTaskErrors(stageId, index);
+  //   toast.success(`Task "${task.title}" added successfully!`);
+  //   if (bulkTasks.length === 1) {
+  //     setShowTaskForms((prev) => ({ ...prev, [stageId]: false }));
+  //   }
+  // };
+const addTask = (stageId, index) => {
+  const task = bulkTasks[index];
+  if (!validateTask(task, stageId, index)) {
+    return;
+  }
+  const stage = stages.find((s) => s.id === stageId);
+  if (!stage) return;
+  if (checkDuplicateTitle(stage.tasks || [], task.title, null, "task")) {
+    setErrors((prev) => ({
+      ...prev,
+      taskForms: {
+        ...prev.taskForms,
+        [`${stageId}_${index}`]: {
+          ...prev.taskForms[`${stageId}_${index}`],
+          title: `A task with the title "${task.title}" already exists in this stage. Please use a different title.`,
         },
-      }));
+      },
+    }));
+    return;
+  }
+  let minTime = "";
+  let maxTime = "";
+  if (showTimeFields[`${stageId}_${index}`]) {
+    minTime = formatTime(
+      task.minTime.hours,
+      task.minTime.minutes,
+      task.minTime.seconds
+    );
+    maxTime = formatTime(
+      task.maxTime.hours,
+      task.maxTime.minutes,
+      task.maxTime.seconds
+    );
+  }
+
+  // Validate parameter if it exists and has values
+  const parameter = task.parameter;
+  if (parameter && parameter.min && parameter.max) {
+    const minVal = parseFloat(parameter.min);
+    const maxVal = parseFloat(parameter.max);
+    if (isNaN(minVal) || isNaN(maxVal)) {
+      toast.error("Parameter values must be valid numbers");
       return;
     }
-    let minTime = "";
-    let maxTime = "";
-    if (showTimeFields[`${stageId}_${index}`]) {
-      minTime = formatTime(
-        task.minTime.hours,
-        task.minTime.minutes,
-        task.minTime.seconds
-      );
-      maxTime = formatTime(
-        task.maxTime.hours,
-        task.maxTime.minutes,
-        task.maxTime.seconds
-      );
+    if (minVal < 0 || maxVal < 0) {
+      toast.error("Parameter values cannot be negative");
+      return;
     }
-
-    // Validate parameter if it exists and has values
-    const parameter = task.parameter;
-    if (parameter && parameter.min && parameter.max) {
-      const minVal = parseFloat(parameter.min);
-      const maxVal = parseFloat(parameter.max);
-      if (isNaN(minVal) || isNaN(maxVal)) {
-        toast.error("Parameter values must be valid numbers");
-        return;
-      }
-      if (minVal < 0 || maxVal < 0) {
-        toast.error("Parameter values cannot be negative");
-        return;
-      }
-      if (minVal >= maxVal) {
-        toast.error("Parameter min value must be less than max value");
-        return;
-      }
+    if (minVal >= maxVal) {
+      toast.error("Parameter min value must be less than max value");
+      return;
     }
+  }
 
-    const newTaskItem = {
-      id: generateId("task"),
-      title: task.title.trim(),
-      description: task.description?.trim() || "",
-      minTime: minTime,
-      maxTime: maxTime,
-      subtasks: [],
-      images: task.images || [],
-      galleryTitle: task.galleryTitle?.trim() || "",
-      galleryDescription: task.galleryDescription?.trim() || "",
-      parameter: task.parameter && task.parameter.min ? task.parameter : null, // Include parameter if it has values
-    };
-    setStages((prev) =>
-      prev.map((stage) =>
-        stage.id === stageId
-          ? {
+  const newTaskItem = {
+    id: generateId("task"),
+    title: task.title.trim(),
+    description: task.description?.trim() || "",
+    minTime: minTime,
+    maxTime: maxTime,
+    subtasks: [],
+    images: task.images || [],
+    galleryTitle: task.galleryTitle?.trim() || "",
+    galleryDescription: task.galleryDescription?.trim() || "",
+    parameter: task.parameter && task.parameter.min ? task.parameter : null,
+       addStop: task.addStop || false, // Initialize addStop as false for new tasks
+  };
+  
+  setStages((prev) =>
+    prev.map((stage) =>
+      stage.id === stageId
+        ? {
             ...stage,
             tasks: [...(stage.tasks || []), newTaskItem],
           }
-          : stage
-      )
-    );
-    setBulkTasks((prev) => prev.filter((_, i) => i !== index));
-    setShowTimeFields((prev) => ({
-      ...prev,
-      [`${stageId}_${index}`]: false,
-    }));
-    setShowTaskImageModal((prev) => ({
-      ...prev,
-      [`${stageId}_${index}`]: false,
-    }));
-    clearTaskErrors(stageId, index);
-    toast.success(`Task "${task.title}" added successfully!`);
-    if (bulkTasks.length === 1) {
-      setShowTaskForms((prev) => ({ ...prev, [stageId]: false }));
-    }
-  };
-
+        : stage
+    )
+  );
+  
+  // Initialize task stop state for this task
+ setTaskStopStates(prev => ({
+    ...prev,
+    [newTaskItem.id]: task.addStop || false  // Use task.addStop value
+  }));
+  
+  setBulkTasks((prev) => prev.filter((_, i) => i !== index));
+  setShowTimeFields((prev) => ({
+    ...prev,
+    [`${stageId}_${index}`]: false,
+  }));
+  setShowTaskImageModal((prev) => ({
+    ...prev,
+    [`${stageId}_${index}`]: false,
+  }));
+  clearTaskErrors(stageId, index);
+  toast.success(`Task "${task.title}" added successfully!`);
+  if (bulkTasks.length === 1) {
+    setShowTaskForms((prev) => ({ ...prev, [stageId]: false }));
+  }
+};
   const toggleSubtaskForm = (parentId) => {
     setShowSubtaskCountModal(true);
     setSelectedParentId(parentId);
@@ -2192,6 +2380,7 @@ export default function NestedDragDrop() {
         galleryDescription: item.galleryDescription || "",
         bulkDescription: "",
         parameter: item.parameter || { label: "Pressure", min: "", max: "" },
+          addStop: item.addStop || false,
       });
       setShowEditTimeFields(!!item.minTime || !!item.maxTime);
       clearEditErrors();
@@ -2393,8 +2582,13 @@ export default function NestedDragDrop() {
         galleryTitle: editFormData.galleryTitle?.trim() || "",
         galleryDescription: editFormData.galleryDescription?.trim() || "",
         parameter: editFormData.parameter && editFormData.parameter.min ? editFormData.parameter : null,
+        addStop: editFormData.addStop,
       })
     );
+    setTaskStopStates(prev => ({
+    ...prev,
+    [editItemId]: editFormData.addStop
+  }));
     setEditItemId(null);
     setCurrentEditItemId(null);
     setEditFormData({
@@ -2407,6 +2601,7 @@ export default function NestedDragDrop() {
       galleryDescription: "",
       bulkDescription: "",
       parameter: { label: "Pressure", min: "", max: "" },
+      addStop: false,
     });
     setShowEditTimeFields(true);
     setShowImageModal(false);
@@ -2670,12 +2865,36 @@ export default function NestedDragDrop() {
         : item.id.startsWith("subtask")
           ? "Subtask"
           : "Item";
+          const showStopCheckbox = item.id.startsWith("task");
       return (
         <div key={item.id} className={`${level > 1 ? "ml-6" : ""} mb-3`}>
           {editItemId === item.id ? (
             <div className="p-4 bg-white rounded-lg border border-slate-200 shadow-sm">
               <h4 className="text-sm font-semibold text-slate-900 mb-3">Edit Item</h4>
               <div className="space-y-3">
+                {item.id.startsWith("task") && (
+                <div className="p-3 bg-red-50 rounded-lg border border-red-200">
+                  <label className="flex items-center gap-2 cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={editFormData.addStop || false}
+                      onChange={(e) => {
+                        setEditFormData(prev => ({
+                          ...prev,
+                          addStop: e.target.checked
+                        }));
+                      }}
+                      className="w-4 h-4 text-red-600 bg-gray-100 border-gray-300 rounded focus:ring-red-500 focus:ring-2"
+                    />
+                    <span className="text-sm font-medium text-red-700">
+                      Add Stop to this task
+                    </span>
+                  </label>
+                  <p className="text-xs text-red-600 mt-1">
+                    When enabled, this task will be marked as a stop point
+                  </p>
+                </div>
+              )}
                 <InputField
                   label="Title"
                   name="title"
@@ -2906,6 +3125,9 @@ export default function NestedDragDrop() {
                 items={parentContainer?.container || []}
                 itemType={itemType}
                 parameter={item.parameter}
+                 showStopCheckbox={showStopCheckbox} // New prop
+              isStopChecked={hasTaskStop(item.id)} // New prop
+              onStopCheckboxChange={handleTaskStopChange}
               />
               {showSubtaskForms[item.id] && (
                 <div className="ml-4 mt-3 p-4 bg-white rounded-lg border border-slate-200">
@@ -3190,6 +3412,30 @@ export default function NestedDragDrop() {
                 <h5 className="text-sm font-medium text-slate-700">
                   Task {index + 1}
                 </h5>
+                 <div className="p-3 bg-red-50 rounded-lg border border-red-200">
+    <label className="flex items-center gap-2 cursor-pointer">
+      <input
+        type="checkbox"
+        checked={task.addStop || false}
+        onChange={(e) => {
+          setBulkTasks((prev) =>
+            prev.map((t, i) =>
+              i === index
+                ? { ...t, addStop: e.target.checked }
+                : t
+            )
+          );
+        }}
+        className="w-4 h-4 text-red-600 bg-gray-100 border-gray-300 rounded focus:ring-red-500 focus:ring-2"
+      />
+      <span className="text-sm font-medium text-red-700">
+        Add Stop to this task
+      </span>
+    </label>
+    <p className="text-xs text-red-600 mt-1">
+      When enabled, this task will be marked as a stop point
+    </p>
+  </div>
                 <InputField
                   label="Task Title"
                   name="title"
@@ -3425,6 +3671,9 @@ export default function NestedDragDrop() {
                 items={findContainer(stages, activeTaskItem.id)?.container || []}
                 itemType={activeTaskItem.id.startsWith("task") ? "Task" : "Subtask"}
                 parameter={activeTaskItem.parameter}
+                 showStopCheckbox={activeTaskItem.id.startsWith("task")} // Add this
+      isStopChecked={hasTaskStop(activeTaskItem.id)} // Add this
+      onStopCheckboxChange={handleTaskStopChange}
               />
             ) : null}
           </DragOverlay>

@@ -19,6 +19,7 @@ const checklistStageSchema = new mongoose.Schema({
     min: { type: Number },
     max: { type: Number }
   },
+  addStop: { type: Boolean, default: false },
   subtasks: [], // recursion will be added later
 
 });

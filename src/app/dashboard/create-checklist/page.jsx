@@ -34,6 +34,9 @@ import {
   ImageIcon, ListChecks,
   Check,
   Circle,
+  ChevronLeft,
+  ChevronsLeft,
+  ChevronsRight,
 } from "lucide-react"
 import { SendHorizontal } from 'lucide-react';
 import { useRouter } from "next/navigation";
@@ -73,6 +76,10 @@ const SOPDashboard = () => {
     status: 'pending'
   })
   const [showApproversReviewersTable, setShowApproversReviewersTable] = useState(false);
+  
+  // Pagination states
+  const [currentPage, setCurrentPage] = useState(1);
+  const [itemsPerPage] = useState(10);
 
   const ImageAttachmentModal = ({
     onClose,
@@ -1295,6 +1302,7 @@ const SOPDashboard = () => {
           setSopData(filtered)
           setFiltering(false)
           setLoading(false)
+          setCurrentPage(1) // Reset to first page when data changes
         }, 500)
       } catch (err) {
         console.error("Failed to fetch SOPs:", err)
@@ -1308,7 +1316,27 @@ const SOPDashboard = () => {
     }
   }, [companyData])
 
-  const enhancedSopData = sopData.map((item, index) => {
+  // Pagination logic
+  const totalPages = Math.ceil(sopData.length / itemsPerPage);
+  
+  const goToNextPage = () => {
+    setCurrentPage(prev => Math.min(prev + 1, totalPages));
+  };
+
+  const goToPreviousPage = () => {
+    setCurrentPage(prev => Math.max(prev - 1, 1));
+  };
+
+  const goToPage = (page) => {
+    setCurrentPage(Math.min(Math.max(page, 1), totalPages));
+  };
+
+  // Get current page data
+  const indexOfLastItem = currentPage * itemsPerPage;
+  const indexOfFirstItem = indexOfLastItem - itemsPerPage;
+  const currentItems = sopData.slice(indexOfFirstItem, indexOfLastItem);
+
+  const enhancedSopData = currentItems.map((item, index) => {
     const Icon = icons[index % icons.length]
     const color = colors[index % colors.length]
     return {
@@ -1487,71 +1515,69 @@ const SOPDashboard = () => {
             </div>
           </div>
         ) : enhancedSopData.length > 0 ? (
-          <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
-            <div className="overflow-x-auto">
-              <table className="min-w-full divide-y divide-gray-200">
-                <thead className="bg-gray-50">
-                  <tr>
-                    <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Checklist
-                    </th>
-                    <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Stages
-                    </th>
-                    <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Status
-                    </th>
-                    <th scope="col" className="px-8 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Created At
-                    </th>
-                    <th scope="col" className="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Approval / Review
-                    </th>
-                    <th scope="col" className="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Actions
-                    </th>
-                  </tr>
-                </thead>
-                <tbody className="bg-white divide-y divide-gray-200">
-                  {enhancedSopData.map((sop) => (
-                    <tr key={sop.id} className="hover:bg-gray-50">
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <div className="flex items-center">
-                          {/* <div className={`flex-shrink-0 h-10 w-10 rounded-lg flex items-center justify-center ${sop.bgColor}`}>
-                            {sop.icon}
-                          </div> */}
-                          <div className="ml-4">
-                            <div className="text-sm font-medium text-gray-900 truncate max-w-[180px] capitalize" title={sop.name} >{sop.name}</div>
+          <>
+            <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
+              <div className="overflow-x-auto">
+                <table className="min-w-full divide-y divide-gray-200">
+                  <thead className="bg-gray-50">
+                    <tr>
+                      <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        Checklist
+                      </th>
+                      <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        Stages
+                      </th>
+                      <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        Status
+                      </th>
+                      <th scope="col" className="px-8 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        Created At
+                      </th>
+                      <th scope="col" className="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        Approval / Review
+                      </th>
+                      <th scope="col" className="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        Actions
+                      </th>
+                    </tr>
+                  </thead>
+                  <tbody className="bg-white divide-y divide-gray-200">
+                    {enhancedSopData.map((sop) => (
+                      <tr key={sop.id} className="hover:bg-gray-50">
+                        <td className="px-6 py-4 whitespace-nowrap">
+                          <div className="flex items-center">
+                            <div className="ml-4">
+                              <div className="text-sm font-medium text-gray-900 truncate max-w-[180px] capitalize" title={sop.name} >{sop.name}</div>
+                            </div>
                           </div>
-                        </div>
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <div className="text-sm text-gray-900">{sop.stages?.length || 0}</div>
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        {getStatusBadge(sop.status)}
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <div className="text-sm text-gray-900 uppercase"> {new Date(sop.createdAt).toLocaleString("en-IN", {
-                          day: "2-digit",
-                          month: "short",
-                          year: "numeric",
-                          hour: "2-digit",
-                          minute: "2-digit",
-                          hour12: true,
-                        })}</div>
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-center text-sm font-medium">
-                        {sop.status === "InProgress" || sop.status === "Under Review" || sop.status === "Rejected Review" ?
-                          (<div className=" py-4 whitespace-nowrap text-center">
-                            <button
-                              onClick={() => handleSendForReview(sop.id)}
-                              className={`px-3 py-1.5 border border-transparent text-xs font-medium rounded-full shadow-sm text-white  hover:bg-[#2791b8] ${sop.status === "Under Review" ? "bg-orange-400" : sop.status === "Rejected Review" ? "bg-red-400" : "bg-green-500"}`}
-                              title="Send for Review"
-                            >
-                              {sop.status === "Under Review" || sop.status === "Rejected Review" ? "View Reviewer's" : "Send for Review"}
-                            </button>
-                          </div>
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap">
+                          <div className="text-sm text-gray-900">{sop.stages?.length || 0}</div>
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap">
+                          {getStatusBadge(sop.status)}
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap">
+                          <div className="text-sm text-gray-900 uppercase"> {new Date(sop.createdAt).toLocaleString("en-IN", {
+                            day: "2-digit",
+                            month: "short",
+                            year: "numeric",
+                            hour: "2-digit",
+                            minute: "2-digit",
+                            hour12: true,
+                          })}</div>
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap text-center text-sm font-medium">
+                          {sop.status === "InProgress" || sop.status === "Under Review" || sop.status === "Rejected Review" ?
+                            (<div className=" py-4 whitespace-nowrap text-center">
+                              <button
+                                onClick={() => handleSendForReview(sop.id)}
+                                className={`px-3 py-1.5 border border-transparent text-xs font-medium rounded-full shadow-sm text-white  hover:bg-[#2791b8] ${sop.status === "Under Review" ? "bg-orange-400" : sop.status === "Rejected Review" ? "bg-red-400" : "bg-green-500"}`}
+                                title="Send for Review"
+                              >
+                                {sop.status === "Under Review" || sop.status === "Rejected Review" ? "View Reviewer's" : "Send for Review"}
+                              </button>
+                            </div>
                           ) : sop.status === "Approved Review" || sop.status == "Pending Approval" || sop.status == "Rejected" ? (
                             <div className=" py-4 whitespace-nowrap text-center">
                               <button
@@ -1564,42 +1590,170 @@ const SOPDashboard = () => {
                             </div>
                           ) : (<></>
                           )}
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-center text-sm font-medium">
-                        <div className="flex h-8 items-center justify-end gap-6">
-                          <div className="flex justify-end space-x-2">
-                            {sop.status == 'InProgress' || sop.status == 'Rejected' || sop.status == 'Rejected Review' ?
-                              <button
-                                onClick={() => handleEdit(sop)}
-                                className="p-2 bg-yellow-100 text-yellow-600 rounded-lg hover:bg-yellow-200"
-                                title="Edit"
-                              >
-                                <Edit className="w-4 h-4" />
-                              </button> : <></>}
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap text-center text-sm font-medium">
+                          <div className="flex h-8 items-center justify-end gap-6">
+                            <div className="flex justify-end space-x-2">
+                              {sop.status == 'InProgress' || sop.status == 'Rejected' || sop.status == 'Rejected Review' ?
+                                <button
+                                  onClick={() => handleEdit(sop)}
+                                  className="p-2 bg-yellow-100 text-yellow-600 rounded-lg hover:bg-yellow-200"
+                                  title="Edit"
+                                >
+                                  <Edit className="w-4 h-4" />
+                                </button> : <></>}
 
-                            <button
-                              onClick={() => handleView(sop)}
-                              className="p-2 bg-blue-100 text-blue-600 rounded-lg hover:bg-blue-200"
-                              title="View"
-                            >
-                              <Eye className="w-4 h-4" />
-                            </button>
-                            <button
-                              onClick={() => handleDelete(sop.id)}
-                              className="p-2 bg-red-100 text-red-600 rounded-lg hover:bg-red-200"
-                              title="Delete"
-                            >
-                              <Trash2 className="w-4 h-4" />
-                            </button>
+                              <button
+                                onClick={() => handleView(sop)}
+                                className="p-2 bg-blue-100 text-blue-600 rounded-lg hover:bg-blue-200"
+                                title="View"
+                              >
+                                <Eye className="w-4 h-4" />
+                              </button>
+                              <button
+                                onClick={() => handleDelete(sop.id)}
+                                className="p-2 bg-red-100 text-red-600 rounded-lg hover:bg-red-200"
+                                title="Delete"
+                              >
+                                <Trash2 className="w-4 h-4" />
+                              </button>
+                            </div>
                           </div>
-                        </div>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
             </div>
-          </div>
+
+            {/* Pagination Controls */}
+            {totalPages > 1 && (
+              <div className="mt-6 flex items-center justify-between bg-white px-4 py-3 sm:px-6 rounded-xl shadow-sm border border-gray-200">
+                <div className="flex flex-1 justify-between sm:hidden">
+                  <button
+                    onClick={goToPreviousPage}
+                    disabled={currentPage === 1}
+                    className={`relative inline-flex items-center rounded-md border border-gray-300 bg-white px-4 py-2 text-sm font-medium ${currentPage === 1
+                      ? 'text-gray-300 cursor-not-allowed'
+                      : 'text-gray-700 hover:bg-gray-50'
+                      }`}
+                  >
+                    Previous
+                  </button>
+                  <button
+                    onClick={goToNextPage}
+                    disabled={currentPage === totalPages}
+                    className={`relative ml-3 inline-flex items-center rounded-md border border-gray-300 bg-white px-4 py-2 text-sm font-medium ${currentPage === totalPages
+                      ? 'text-gray-300 cursor-not-allowed'
+                      : 'text-gray-700 hover:bg-gray-50'
+                      }`}
+                  >
+                    Next
+                  </button>
+                </div>
+                <div className="hidden sm:flex sm:flex-1 sm:items-center sm:justify-between">
+                  <div>
+                    <p className="text-sm text-gray-700">
+                      Showing <span className="font-medium">{indexOfFirstItem + 1}</span> to{' '}
+                      <span className="font-medium">
+                        {Math.min(indexOfLastItem, sopData.length)}
+                      </span>{' '}
+                      of <span className="font-medium">{sopData.length}</span> results
+                    </p>
+                  </div>
+                  <div>
+                    <nav className="isolate inline-flex -space-x-px rounded-md shadow-sm" aria-label="Pagination">
+                      <button
+                        onClick={() => goToPage(1)}
+                        disabled={currentPage === 1}
+                        className={`relative inline-flex items-center rounded-l-md px-2 py-2 text-gray-400 ring-1 ring-inset ring-gray-300 ${currentPage === 1
+                          ? 'cursor-not-allowed'
+                          : 'hover:bg-gray-50 focus:z-20 focus:outline-offset-0'
+                          }`}
+                      >
+                        <span className="sr-only">First</span>
+                        <ChevronsLeft className="h-5 w-5" aria-hidden="true" />
+                      </button>
+                      <button
+                        onClick={goToPreviousPage}
+                        disabled={currentPage === 1}
+                        className={`relative inline-flex items-center px-2 py-2 text-gray-400 ring-1 ring-inset ring-gray-300 ${currentPage === 1
+                          ? 'cursor-not-allowed'
+                          : 'hover:bg-gray-50 focus:z-20 focus:outline-offset-0'
+                          }`}
+                      >
+                        <span className="sr-only">Previous</span>
+                        <ChevronLeft className="h-5 w-5" aria-hidden="true" />
+                      </button>
+                      
+                      {/* Page Numbers */}
+                      {[...Array(totalPages)].map((_, i) => {
+                        const pageNumber = i + 1;
+                        // Show first page, last page, and pages around current page
+                        if (
+                          pageNumber === 1 ||
+                          pageNumber === totalPages ||
+                          (pageNumber >= currentPage - 1 && pageNumber <= currentPage + 1)
+                        ) {
+                          return (
+                            <button
+                              key={pageNumber}
+                              onClick={() => goToPage(pageNumber)}
+                              className={`relative inline-flex items-center px-4 py-2 text-sm font-semibold ring-1 ring-inset ring-gray-300 focus:z-20 focus:outline-offset-0 ${currentPage === pageNumber
+                                ? 'z-10 bg-blue-600 text-white focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-600'
+                                : 'text-gray-900 hover:bg-gray-50'
+                                }`}
+                            >
+                              {pageNumber}
+                            </button>
+                          );
+                        }
+                        // Show ellipsis
+                        if (
+                          (pageNumber === 2 && currentPage > 3) ||
+                          (pageNumber === totalPages - 1 && currentPage < totalPages - 2)
+                        ) {
+                          return (
+                            <span
+                              key={pageNumber}
+                              className="relative inline-flex items-center px-4 py-2 text-sm font-semibold text-gray-700 ring-1 ring-inset ring-gray-300"
+                            >
+                              ...
+                            </span>
+                          );
+                        }
+                        return null;
+                      })}
+                      
+                      <button
+                        onClick={goToNextPage}
+                        disabled={currentPage === totalPages}
+                        className={`relative inline-flex items-center px-2 py-2 text-gray-400 ring-1 ring-inset ring-gray-300 ${currentPage === totalPages
+                          ? 'cursor-not-allowed'
+                          : 'hover:bg-gray-50 focus:z-20 focus:outline-offset-0'
+                          }`}
+                      >
+                        <span className="sr-only">Next</span>
+                        <ChevronRight className="h-5 w-5" aria-hidden="true" />
+                      </button>
+                      <button
+                        onClick={() => goToPage(totalPages)}
+                        disabled={currentPage === totalPages}
+                        className={`relative inline-flex items-center rounded-r-md px-2 py-2 text-gray-400 ring-1 ring-inset ring-gray-300 ${currentPage === totalPages
+                          ? 'cursor-not-allowed'
+                          : 'hover:bg-gray-50 focus:z-20 focus:outline-offset-0'
+                          }`}
+                      >
+                        <span className="sr-only">Last</span>
+                        <ChevronsRight className="h-5 w-5" aria-hidden="true" />
+                      </button>
+                    </nav>
+                  </div>
+                </div>
+              </div>
+            )}
+          </>
         ) : (
           <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-8 text-center">
             <div className="flex flex-col items-center justify-center space-y-4">
@@ -2588,4 +2742,4 @@ const SOPDashboard = () => {
   )
 }
 
-export default SOPDashboard
+export default SOPDashboard;

@@ -1,7 +1,9 @@
+
+
 'use client'
 import React, { useState, useEffect } from 'react';
 import { useParams } from 'next/navigation';
-import { ArrowLeft, ArrowRight, ChevronDown, ChevronRight, Clock, Image, CheckCircle, XCircle, Users, Loader2 } from "lucide-react";
+import { ArrowLeft, ArrowRight, ChevronDown, ChevronRight, Clock, Image, CheckCircle, XCircle, Users, Loader2, AlertCircle } from "lucide-react";
 
 const TaskPage = () => {
   const params = useParams();
@@ -18,20 +20,32 @@ const TaskPage = () => {
     startTime: null,
     elapsedTime: 0
   });
+  const [userdata, setUserData] = useState();
+  
+  // Modal states
+  const [showReasonModal, setShowReasonModal] = useState(false);
+  const [reasonType, setReasonType] = useState(null); // 'min' or 'max'
+  const [reasonText, setReasonText] = useState('');
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  
+  // Warning modal for addStop dependency
+  const [showDependencyModal, setShowDependencyModal] = useState(false);
+  const [dependencyMessage, setDependencyMessage] = useState('');
 
   // Fetch assignment data using existing execution API and filter by ID
   useEffect(() => {
     if (!id) return;
-
+ 
     const fetchAssignment = async () => {
       try {
         setLoading(true);
         const storedUser = localStorage.getItem("user");
+       
         if (!storedUser) {
           throw new Error("User not found. Please log in again.");
         }
         const userData = JSON.parse(storedUser);
-
+        setUserData(userData);
         const res = await fetch(`/api/assignment/execution/${userData.companyId}/${userData.id}`);
         if (!res.ok) {
           throw new Error("Failed to fetch assignments");
@@ -90,21 +104,103 @@ const TaskPage = () => {
   };
 
   const handleTaskClick = (stage, task, stageIndex) => {
-    setSelectedTask({ ...task, stageName: stage.name || `Stage ${stageIndex + 1}`, stageIndex });
     // Reset timer when selecting a new task
     setTaskTimer({
       isRunning: false,
       startTime: null,
       elapsedTime: 0
     });
+    setSelectedTask({ ...task, stageName: stage.name || `Stage ${stageIndex + 1}`, stageIndex });
+  };
+
+  const checkPreviousTaskStatus = (currentStage, currentTask, stageIndex) => {
+    if (!currentStage || !currentStage.tasks) return true;
+    
+    // Find the current task index in the stage
+    const taskIndex = currentStage.tasks.findIndex(t => 
+      (t._id || t.taskId) === (currentTask._id || currentTask.taskId)
+    );
+    
+    console.log("Current task index:", taskIndex);
+    console.log("Current stage tasks:", currentStage.tasks);
+    
+    // If it's the first task in the stage or task not found, no previous task to check
+    if (taskIndex <= 0) return true;
+    
+    // Get the previous task
+    const previousTask = currentStage.tasks[taskIndex - 1];
+    console.log("Previous task:", previousTask);
+    console.log("Previous task status:", previousTask?.status);
+    
+    // Check if previous task status is completed
+    return previousTask?.status === 'completed';
+  };
+
+  const handleStartTimerClick = () => {
+    if (!selectedTask) return;
+    
+    console.log("Selected task:", selectedTask);
+    console.log("AddStop value:", selectedTask.addStop);
+    
+    // Find the current stage
+    const currentStage = stages[selectedTask.stageIndex];
+    console.log("Current stage:", currentStage);
+    
+    // Check if task has addStop: true
+    if (selectedTask.addStop === true) {
+      // Check if previous task is completed
+      const isPreviousCompleted = checkPreviousTaskStatus(currentStage, selectedTask, selectedTask.stageIndex);
+      console.log("Is previous completed:", isPreviousCompleted);
+      
+      if (!isPreviousCompleted) {
+        // Find the previous task name for the message
+        const taskIndex = currentStage.tasks.findIndex(t => 
+          (t._id || t.taskId) === (selectedTask._id || selectedTask.taskId)
+        );
+        const previousTask = taskIndex > 0 ? currentStage.tasks[taskIndex - 1] : null;
+        
+        setDependencyMessage(
+          previousTask 
+            ? `Cannot start "${selectedTask.title}" until "${previousTask.title}" is completed.`
+            : `Cannot start this task until the previous task is completed.`
+        );
+        setShowDependencyModal(true);
+        return;
+      }
+    }
+    
+    // If no dependency issue, start the timer
+    startTimer();
+  };
+
+  const startTimer = () => {
+    setTaskTimer({
+      isRunning: true,
+      startTime: Date.now(),
+      elapsedTime: 0
+    });
   };
 
   const formatDuration = (duration) => {
-    // Handle empty strings or falsy values from real API data
+    console.log("Formatting duration:", duration);
+
     if (!duration || duration === "") return "N/A";
 
-    // If it's an object like { hours, minutes, seconds }
-    if (typeof duration === 'object') {
+    // Handle HH:MM:SS string format
+    if (typeof duration === "string") {
+      const parts = duration.split(":").map(Number);
+      const [hours = 0, minutes = 0, seconds = 0] = parts;
+
+      let result = [];
+      if (hours > 0) result.push(`${hours}h`);
+      if (minutes > 0) result.push(`${minutes}m`);
+      if (seconds > 0 || result.length === 0) result.push(`${seconds}s`);
+
+      return result.join(" ");
+    }
+
+    // Handle object format
+    if (typeof duration === "object") {
       const { hours = 0, minutes = 0, seconds = 0 } = duration;
       let parts = [];
       if (hours > 0) parts.push(`${hours}h`);
@@ -113,14 +209,14 @@ const TaskPage = () => {
       return parts.join(" ");
     }
 
-    // If it's a number (minutes)
-    if (typeof duration === 'number') {
+    // Handle number (minutes)
+    if (typeof duration === "number") {
       const hours = Math.floor(duration / 60);
       const minutes = duration % 60;
       let parts = [];
       if (hours > 0) parts.push(`${hours}h`);
       if (minutes > 0) parts.push(`${minutes}m`);
-      if (parts.length === 0) parts.push('0s');
+      if (parts.length === 0) parts.push("0s");
       return parts.join(" ");
     }
 
@@ -138,12 +234,25 @@ const TaskPage = () => {
     return `${mins}:${secs.toString().padStart(2, '0')}`;
   };
 
-  const handleStartTimer = () => {
-    setTaskTimer({
-      isRunning: true,
-      startTime: Date.now() - (taskTimer.elapsedTime * 1000),
-      elapsedTime: taskTimer.elapsedTime
-    });
+  const convertToSeconds = (duration) => {
+    if (!duration || duration === "N/A" || duration === "") return null;
+    
+    if (typeof duration === "string") {
+      const parts = duration.split(":").map(Number);
+      const [hours = 0, minutes = 0, seconds = 0] = parts;
+      return hours * 3600 + minutes * 60 + seconds;
+    }
+    
+    if (typeof duration === "object") {
+      const { hours = 0, minutes = 0, seconds = 0 } = duration;
+      return hours * 3600 + minutes * 60 + seconds;
+    }
+    
+    if (typeof duration === "number") {
+      return duration * 60; // Assuming number is in minutes
+    }
+    
+    return null;
   };
 
   const handleStopTimer = () => {
@@ -154,12 +263,117 @@ const TaskPage = () => {
   };
 
   const handleSubmitTask = () => {
-    alert(`Task completed in ${formatSeconds(taskTimer.elapsedTime)}`);
-    setTaskTimer({
-      isRunning: false,
-      startTime: null,
-      elapsedTime: 0
-    });
+    // Check if task has min/max time constraints
+    const minSeconds = convertToSeconds(selectedTask?.minTime);
+    const maxSeconds = convertToSeconds(selectedTask?.maxTime);
+    
+    // If both min and max are N/A or not provided, submit directly
+    if (minSeconds === null && maxSeconds === null) {
+      completeTaskSubmission();
+      return;
+    }
+    
+    // Check time violations only if values exist
+    if (minSeconds !== null && taskTimer.elapsedTime < minSeconds) {
+      // Time is less than minimum - show reason modal
+      setReasonType('min');
+      setShowReasonModal(true);
+    } else if (maxSeconds !== null && taskTimer.elapsedTime > maxSeconds) {
+      // Time exceeds maximum - show reason modal
+      setReasonType('max');
+      setShowReasonModal(true);
+    } else {
+      // Time is within range or only one constraint exists and is satisfied
+      completeTaskSubmission();
+    }
+  };
+
+  const completeTaskSubmission = async () => {
+    setIsSubmitting(true);
+    
+    try {
+      // Here you would make an API call to submit the task completion
+      // with the reason if provided
+      const submissionData = {
+        taskId: selectedTask._id || selectedTask.taskId,
+        elapsedTime: taskTimer.elapsedTime,
+        completedAt: new Date().toISOString(),
+        reason: reasonType ? { type: reasonType, text: reasonText } : null,
+        status: 'completed'
+      };
+      
+      console.log("Submitting task:", submissionData);
+      
+      // Simulate API call
+      await new Promise(resolve => setTimeout(resolve, 1000));
+      
+      alert(`Task completed in ${formatSeconds(taskTimer.elapsedTime)}${reasonText ? `\nReason: ${reasonText}` : ''}`);
+      
+      // Update the task status in the assignmentData
+      if (assignmentData && assignmentData.prototypeData && selectedTask) {
+        const updatedStages = [...stages];
+        const stageIndex = selectedTask.stageIndex;
+        const taskIndex = updatedStages[stageIndex].tasks.findIndex(t => 
+          (t._id || t.taskId) === (selectedTask._id || selectedTask.taskId)
+        );
+        
+        if (taskIndex !== -1) {
+          // Create a deep copy to avoid mutation issues
+          updatedStages[stageIndex].tasks[taskIndex] = {
+            ...updatedStages[stageIndex].tasks[taskIndex],
+            status: 'completed'
+          };
+          
+          setAssignmentData({
+            ...assignmentData,
+            prototypeData: {
+              ...assignmentData.prototypeData,
+              stages: updatedStages
+            }
+          });
+          
+          // Also update the selected task
+          setSelectedTask({
+            ...selectedTask,
+            status: 'completed'
+          });
+        }
+      }
+      
+      // Reset states
+      setTaskTimer({
+        isRunning: false,
+        startTime: null,
+        elapsedTime: 0
+      });
+      setShowReasonModal(false);
+      setReasonText('');
+      setReasonType(null);
+      
+    } catch (error) {
+      console.error("Error submitting task:", error);
+      alert("Failed to submit task. Please try again.");
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  const handleReasonSubmit = () => {
+    if (!reasonText.trim()) {
+      alert("Please provide a reason");
+      return;
+    }
+    completeTaskSubmission();
+  };
+
+  const handleReasonCancel = () => {
+    setShowReasonModal(false);
+    setReasonText('');
+    setReasonType(null);
+  };
+
+  const handleDependencyConfirm = () => {
+    setShowDependencyModal(false);
   };
 
   const getStatusColor = (status) => {
@@ -221,12 +435,9 @@ const TaskPage = () => {
           {/* Title + Status + Equipment */}
           <div className="gap-4 flex items-center">
             <h1 className="text-lg font-semibold">{prototypeData?.name || 'Untitled SOP'}</h1>
-            <span className={`py-1 px-2 text-sm capitalize rounded-2xl border ${getStatusColor(assignmentData.status)}`}>
-              {assignmentData.status || 'Unknown'}
-            </span>
             {equipment?.name && (
               <span className="text-sm text-gray-500 flex items-center gap-1">
-                | <span className="font-medium text-gray-700">{equipment.name}</span>
+                | <span className="font-medium text-gray-700 capitalize">{equipment.name}</span>
                 {equipment.model && <span className="text-gray-400">({equipment.model})</span>}
               </span>
             )}
@@ -270,25 +481,35 @@ const TaskPage = () => {
                           >
                             {expandedStages[stageKey] ? <ChevronDown size={18} /> : <ChevronRight size={18} />}
                             <span className="font-medium">{stageName}</span>
-                            {stage.status && (
-                              <span className={`text-xs px-2 py-0.5 rounded-full ml-auto ${getStatusColor(stage.status)}`}>
-                                {stage.status}
-                              </span>
-                            )}
                           </div>
                           {expandedStages[stageKey] && (
                             <div className="bg-white p-2">
                               {stage.tasks && stage.tasks.map((task, taskIndex) => {
                                 const taskKey = task._id || task.taskId || `task-${stageIndex}-${taskIndex}`;
                                 const taskNumber = `${stageIndex + 1}.${taskIndex + 1}`;
+                                const isCompleted = task.status === 'completed';
+                                const isSelected = selectedTask?._id === task._id || selectedTask?.taskId === task.taskId;
+                                
                                 return (
                                   <div
                                     key={taskKey}
-                                    className={`p-2 text-sm flex items-center gap-2 font-semibold hover:bg-blue-50 cursor-pointer ${selectedTask?._id === task._id || selectedTask?.taskId === task.taskId ? 'text-blue-500' : ''}`}
+                                    className={`p-2 text-sm flex items-center gap-2 font-semibold hover:bg-blue-50 cursor-pointer ${
+                                      isSelected ? 'text-blue-500' : ''
+                                    } ${isCompleted ? 'text-green-600' : ''}`}
                                     onClick={() => handleTaskClick(stage, task, stageIndex)}
                                   >
-                                    <div className={`w-2 h-6 rounded-sm ${selectedTask?._id === task._id || selectedTask?.taskId === task.taskId ? 'bg-blue-500' : 'bg-gray-300'}`}></div>
-                                    {taskNumber}: {task.title}
+                                    <div className={`w-2 h-6 rounded-sm ${
+                                      isSelected 
+                                        ? 'bg-blue-500' 
+                                        : isCompleted 
+                                          ? 'bg-green-500' 
+                                          : 'bg-gray-300'
+                                    }`}></div>
+                                    <span className="flex-1">{taskNumber}: {task.title}</span>
+                                    {isCompleted && <CheckCircle size={14} className="text-green-500" />}
+                                    {task.addStop && !isCompleted && (
+                                      <AlertCircle size={14} className="text-amber-500" />
+                                    )}
                                   </div>
                                 )
                               })}
@@ -317,10 +538,11 @@ const TaskPage = () => {
                             {stage.tasks && stage.tasks.map((task, taskIndex) => {
                               const taskKey = task._id || task.taskId || `task-${stageIndex}-${taskIndex}`;
                               const taskNumber = `${stageIndex + 1}.${taskIndex + 1}`;
+                              const isCompleted = task.status === 'completed';
                               return (
                                 <div
                                   key={taskKey}
-                                  className="p-1 text-xs text-center hover:bg-blue-50 cursor-pointer mb-1 last:mb-0"
+                                  className={`p-1 text-xs text-center hover:bg-blue-50 cursor-pointer mb-1 last:mb-0 ${isCompleted ? 'text-green-600' : ''}`}
                                   onClick={() => handleTaskClick(stage, task, stageIndex)}
                                 >
                                   {taskNumber}
@@ -355,14 +577,21 @@ const TaskPage = () => {
                         {selectedTask.stageIndex + 1}.{(stages[selectedTask.stageIndex]?.tasks?.findIndex(t => (t._id || t.taskId) === (selectedTask._id || selectedTask.taskId)) || 0) + 1} {selectedTask.title}
                       </h2>
                       <p className="text-gray-600 mt-1">{selectedTask.stageName}</p>
-                    </div>
-                    <div className="flex items-center gap-4">
-                      {/* Task Status Badge */}
-                      {selectedTask.status && (
-                        <span className={`text-xs font-medium px-2.5 py-1 rounded-full border ${getStatusColor(selectedTask.status)}`}>
-                          {selectedTask.status}
+                      {selectedTask.status === 'completed' && (
+                        <span className="inline-flex items-center gap-1 mt-2 text-xs bg-green-100 text-green-700 px-2 py-1 rounded-md">
+                          <CheckCircle size={12} />
+                          Completed
                         </span>
                       )}
+                      {selectedTask.addStop && selectedTask.status !== 'completed' && (
+                        <span className="inline-flex items-center gap-1 mt-2 text-xs bg-amber-100 text-amber-700 px-2 py-1 rounded-md">
+                          <AlertCircle size={12} />
+                          Requires previous task completion
+                        </span>
+                      )}
+                    </div>
+                    <div className="flex items-center gap-4">
+                      
                       {/* Timer display */}
                       {taskTimer.elapsedTime > 0 && (
                         <div className="flex items-center gap-2 bg-gray-100 px-3 py-1 rounded-md">
@@ -371,40 +600,45 @@ const TaskPage = () => {
                         </div>
                       )}
                       {/* Timer controls */}
-                      {!taskTimer.isRunning ? (
-                        taskTimer.elapsedTime === 0 ? (
-                          <button
-                            onClick={handleStartTimer}
-                            className="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-md flex items-center gap-2"
-                          >
-                            <CheckCircle size={16} />
-                            Start
-                          </button>
-                        ) : (
-                          <div className="flex gap-2">
+                      {userdata && selectedTask.assignedWorker && 
+                       selectedTask.assignedWorker.some(worker => worker.id === userdata.id) ? (
+                        // User is assigned - show timer controls
+                        selectedTask.status === 'completed' ? (
+                          <div className="text-sm text-gray-500 italic px-3 py-2 bg-gray-100 rounded-md">
+                            Task Completed
+                          </div>
+                        ) : !taskTimer.isRunning ? (
+                          taskTimer.elapsedTime === 0 ? (
                             <button
-                              onClick={handleStartTimer}
-                              className="bg-blue-600 hover:bg-blue-700 text-white px-3 py-1 rounded-md"
+                              onClick={handleStartTimerClick}
+                              className="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-md flex items-center gap-2"
                             >
-                              Resume
+                              <CheckCircle size={16} />
+                              Start
                             </button>
+                          ) : (
                             <button
                               onClick={handleSubmitTask}
-                              className="bg-green-600 hover:bg-green-700 text-white px-3 py-1 rounded-md flex items-center gap-1"
+                              className="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-md flex items-center gap-2"
                             >
-                              <CheckCircle size={14} />
+                              <CheckCircle size={16} />
                               Submit
                             </button>
-                          </div>
+                          )
+                        ) : (
+                          <button
+                            onClick={handleStopTimer}
+                            className="bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-md flex items-center gap-2"
+                          >
+                            <XCircle size={16} />
+                            Stop
+                          </button>
                         )
                       ) : (
-                        <button
-                          onClick={handleStopTimer}
-                          className="bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-md flex items-center gap-2"
-                        >
-                          <XCircle size={16} />
-                          Stop
-                        </button>
+                        // User is not assigned - show read-only message or nothing
+                        <div className="text-sm text-gray-500 italic px-3 py-2 bg-gray-100 rounded-md">
+                          View Only
+                        </div>
                       )}
                     </div>
                   </div>
@@ -414,28 +648,6 @@ const TaskPage = () => {
                     <h3 className="text-lg font-medium text-gray-800 mb-2">Description</h3>
                     <p className="text-gray-700">{selectedTask.description || 'No description provided.'}</p>
                   </div>
-
-                  {/* Assigned Workers */}
-                  {selectedTask.assignedWorker && selectedTask.assignedWorker.length > 0 && (
-                    <div className="mb-6">
-                      <h3 className="text-lg font-medium text-gray-800 mb-3 flex items-center gap-2">
-                        <Users size={20} /> Assigned Workers
-                      </h3>
-                      <div className="flex flex-wrap gap-2">
-                        {selectedTask.assignedWorker.map((worker, index) => (
-                          <span
-                            key={worker.id || index}
-                            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-blue-50 text-blue-700 border border-blue-200 text-sm font-medium"
-                          >
-                            <div className="w-5 h-5 rounded-full bg-blue-200 flex items-center justify-center text-xs font-bold text-blue-700">
-                              {worker.name?.charAt(0)?.toUpperCase() || '?'}
-                            </div>
-                            {worker.name}
-                          </span>
-                        ))}
-                      </div>
-                    </div>
-                  )}
 
                   {/* Min/Max Duration */}
                   <div className="grid grid-cols-2 gap-4 mb-6">
@@ -550,6 +762,85 @@ const TaskPage = () => {
           </div>
         </div>
       </div>
+
+      {/* Reason Modal */}
+      {showReasonModal && (
+        <div className="fixed inset-0 bg-transparent backdrop-blur-sm shadow-xl pl-64 border-2 bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-lg p-6 max-w-md w-full mx-4">
+            <div className="flex items-center gap-3 mb-4">
+              <AlertCircle className={`w-6 h-6 ${reasonType === 'min' ? 'text-yellow-500' : 'text-red-500'}`} />
+              <h3 className="text-lg font-semibold">
+                {reasonType === 'min' ? 'Task Completed Too Quickly' : 'Task Exceeded Time Limit'}
+              </h3>
+            </div>
+            
+            <p className="text-gray-600 mb-4">
+              {reasonType === 'min' 
+                ? `The task was completed in ${formatSeconds(taskTimer.elapsedTime)} which is less than the minimum required time of ${formatDuration(selectedTask?.minTime)}. Please provide a reason.`
+                : `The task took ${formatSeconds(taskTimer.elapsedTime)} which exceeds the maximum allowed time of ${formatDuration(selectedTask?.maxTime)}. Please provide a reason.`
+              }
+            </p>
+
+            <textarea
+              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 mb-4"
+              rows="4"
+              placeholder="Enter your reason here..."
+              value={reasonText}
+              onChange={(e) => setReasonText(e.target.value)}
+              disabled={isSubmitting}
+            />
+
+            <div className="flex justify-end gap-3">
+              <button
+                onClick={handleReasonCancel}
+                className="px-4 py-2 text-gray-600 hover:text-gray-800 border border-gray-300 rounded-md"
+                disabled={isSubmitting}
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleReasonSubmit}
+                className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+                disabled={isSubmitting || !reasonText.trim()}
+              >
+                {isSubmitting ? (
+                  <>
+                    <Loader2 size={16} className="animate-spin" />
+                    Submitting...
+                  </>
+                ) : (
+                  'Submit'
+                )}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Dependency Warning Modal */}
+      {showDependencyModal && (
+        <div className="fixed inset-0 bg-transparent backdrop-blur-sm shadow-xl pl-64 border-2 bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-lg p-6 max-w-md w-full mx-4">
+            <div className="flex items-center gap-3 mb-4">
+              <AlertCircle className="w-6 h-6 text-amber-500" />
+              <h3 className="text-lg font-semibold">Cannot Start Task</h3>
+            </div>
+            
+            <p className="text-gray-600 mb-4">
+              {dependencyMessage}
+            </p>
+
+            <div className="flex justify-end gap-3">
+              <button
+                onClick={handleDependencyConfirm}
+                className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700"
+              >
+                OK
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
