@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useEffect, useState, useRef } from 'react';
@@ -12,29 +11,42 @@ import {
   X,
   Search,
   ChevronRight,
-  ListChecks ,
+  ListChecks,
   Eye,
-  Layers ,
+  Layers,
   LogOut,
   ClipboardList,
   PlayCircle,
   Link,
   CheckCircle2,
-  UserCheck
+  UserCheck,
+  ChevronDown,
+  Settings2,
+  Activity,
+  ShieldCheck,
+  UserCog
 } from 'lucide-react';
 
 const allNavigationItems = [
-  { name: 'Dashboard', href: '/dashboard/', icon: Home, current: true },
-  { name: 'Create Checklist', href: '/dashboard/create-checklist', icon: Wrench, current: false },
-  { name: 'Create Equipment', href: '/dashboard/create-equipment', icon: HardHat, current: false },
-  { name: 'Assign Task', href: '/dashboard/assign-task', icon: ClipboardList, current: false },
-  { name: 'Task Execution', href: '/dashboard/task-execution', icon: PlayCircle, current: false },
-  { name: 'Assign Checklist to Equipment', href: '/dashboard/assign-checklist-to-equipment', icon: Link, current: false },
-  { name: 'Approve Equipment', href: '/dashboard/approve-equipment',  icon: CheckCircle2, current: false },
-  { name: 'Approve Task', href: '/dashboard/approve-task',  icon: UserCheck, current: false },
-  { name: 'Approve Checklist', href: '/dashboard/approve-checklist', icon: ListChecks, current: false },
-  { name: 'Review Access', href: '/dashboard/review-page', icon: Eye, current: false },
-  { name: 'Approve Tagged Chechlist with Equipment', href: '/dashboard/approve-assign-checklist-to-equipment', icon: Layers, current: false },
+  { name: 'Dashboard', href: '/dashboard/', icon: Home, current: true, category: 'Core' },
+  { name: 'Review Access', href: '/dashboard/review-page', icon: Eye, current: false, category: 'Admin' },
+  { name: 'Create Checklist', href: '/dashboard/create-checklist', icon: Wrench, current: false, category: 'Management' },
+  { name: 'Create Equipment', href: '/dashboard/create-equipment', icon: HardHat, current: false, category: 'Management' },
+  { name: 'Assign Checklist to Equipment', href: '/dashboard/assign-checklist-to-equipment', icon: Link, current: false, category: 'Management' },
+  { name: 'Assign Task', href: '/dashboard/assign-task', icon: ClipboardList, current: false, category: 'Operations' },
+  { name: 'Task Execution', href: '/dashboard/task-execution', icon: PlayCircle, current: false, category: 'Operations' },
+  { name: 'Approve Equipment', href: '/dashboard/approve-equipment', icon: CheckCircle2, current: false, category: 'Approvals' },
+  { name: 'Approve Task', href: '/dashboard/approve-task', icon: UserCheck, current: false, category: 'Approvals' },
+  { name: 'Approve Checklist', href: '/dashboard/approve-checklist', icon: ListChecks, current: false, category: 'Approvals' },
+  { name: 'Approve Tagged Chechlist with Equipment', href: '/dashboard/approve-assign-checklist-to-equipment', icon: Layers, current: false, category: 'Approvals' },
+];
+
+const categories = [
+  { id: 'Core', name: 'General', icon: Home },
+  { id: 'Management', name: 'Resources', icon: Settings2 },
+  { id: 'Operations', name: 'Workflows', icon: Activity },
+  { id: 'Approvals', name: 'Approvals', icon: ShieldCheck },
+  { id: 'Admin', name: 'System', icon: UserCog },
 ];
 
 // Loading skeleton component for sidebar items
@@ -65,13 +77,20 @@ export default function DashboardLayout({ children }) {
   const [companyData, setCompanyData] = useState();
   const [isProfileDropdownOpen, setIsProfileDropdownOpen] = useState(false);
   const [isSidebarLoading, setIsSidebarLoading] = useState(true); // Separate loading state for sidebar
+  const [expandedCategories, setExpandedCategories] = useState({
+    Core: true,
+    Management: true,
+    Operations: true,
+    Approvals: true,
+    Admin: true
+  });
   const dropdownRef = useRef(null);
 
   useEffect(() => {
     const userdata = localStorage.getItem('user');
     const data = JSON.parse(userdata);
     setUserData(data);
-   
+
     const datafetch = async () => {
       const res = await fetch(`/api/superAdmin/fetchById/${data.companyId}`);
       const da = await res.json();
@@ -102,12 +121,12 @@ export default function DashboardLayout({ children }) {
 
   const fetchUser = async () => {
     if (!userData?.id) return;
-   
+
     try {
       setIsSidebarLoading(true); // Only set sidebar loading
       const res = await fetch(`/api/superAdmin/users/fetch-by-id/${userData?.id}`);
       const details = await res.json();
-     
+
       const filteredNavigation = [{
         ...allNavigationItems[0],
         current: isActiveRoute(allNavigationItems[0].href, pathname)
@@ -150,7 +169,7 @@ export default function DashboardLayout({ children }) {
   //   }
   // }, [userData, pathname]);
 
- useEffect(() => {
+  useEffect(() => {
     if (userData?.id) {
       fetchUser(true);
     } else {
@@ -173,6 +192,13 @@ export default function DashboardLayout({ children }) {
     router.push(href);
   };
 
+  const toggleCategory = (categoryId) => {
+    setExpandedCategories(prev => ({
+      ...prev,
+      [categoryId]: !prev[categoryId]
+    }));
+  };
+
   const handleLogout = () => {
     localStorage.removeItem('token');
     localStorage.removeItem('user');
@@ -185,7 +211,7 @@ export default function DashboardLayout({ children }) {
       <div className="absolute inset-0 overflow-hidden pointer-events-none">
         <div className="absolute top-0 right-0 w-96 h-96 bg-gradient-to-br from-violet-400/20 to-purple-600/20 rounded-full mix-blend-soft-light filter blur-3xl opacity-40 animate-pulse"></div>
         <div className="absolute top-1/3 -left-20 w-80 h-80 bg-gradient-to-br from-blue-400/15 to-cyan-500/15 rounded-full mix-blend-soft-light filter blur-3xl opacity-50 animate-bounce"></div>
-        <div className="absolute bottom-0 right-1/3 w-72 h-72 bg-gradient-to-br from-pink-400/10 to-rose-500/10 rounded-full mix-blend-soft-light filter blur-3xl opacity-30 animate-pulse" style={{animationDelay: '2s'}}></div>
+        <div className="absolute bottom-0 right-1/3 w-72 h-72 bg-gradient-to-br from-pink-400/10 to-rose-500/10 rounded-full mix-blend-soft-light filter blur-3xl opacity-30 animate-pulse" style={{ animationDelay: '2s' }}></div>
       </div>
 
       {/* Mobile sidebar */}
@@ -206,31 +232,53 @@ export default function DashboardLayout({ children }) {
               <X className="h-5 w-5" />
             </button>
           </div>
-          <nav className="mt-8 px-4 flex-1">
+          <nav className="mt-4 px-4 flex-1 overflow-y-auto hide-scrollbar">
             {isSidebarLoading ? (
               <SidebarSkeleton isMobile={true} />
             ) : (
-              navigation.map((item, index) => (
-                <button
-                  key={item.name}
-                  onClick={() => handleNavigation(item.href)}
-                  className={`group flex items-center justify-between rounded-xl px-4 py-3.5 text-sm font-medium mb-2 transition-all duration-300 hover:scale-[1.02] w-full text-left ${
-                    item.current
-                      ? 'bg-gradient-to-r from-indigo-500/10 via-purple-500/10 to-pink-500/5 text-indigo-700 shadow-md border border-indigo-100'
-                      : 'text-gray-600 hover:bg-white/60 hover:text-gray-900 hover:shadow-md'
-                  }`}
-                  style={{animationDelay: `${index * 50}ms`}}
-                >
-                  <div className="flex items-center">
-                    <item.icon className={`mr-3 h-5 w-5 flex-shrink-0 transition-transform duration-300 group-hover:scale-110 ${item.current ? 'text-indigo-600' : 'text-gray-500 group-hover:text-gray-700'}`} />
-                    {item.name}
+              categories.map((category) => {
+                const categoryItems = navigation.filter(item => item.category === category.id);
+                if (categoryItems.length === 0) return null;
+                const isExpanded = expandedCategories[category.id];
+
+                return (
+                  <div key={category.id} className="mb-4">
+                    <button
+                      onClick={() => toggleCategory(category.id)}
+                      className="flex items-center justify-between w-full px-2 py-1 mb-1 text-[10px] font-bold text-gray-400 uppercase tracking-widest hover:text-indigo-600 transition-colors"
+                    >
+                      <div className="flex items-center">
+                        <category.icon className="w-3 h-3 mr-2" />
+                        {category.name}
+                      </div>
+                      <ChevronDown className={`w-3 h-3 transition-transform duration-300 ${isExpanded ? 'rotate-180' : ''}`} />
+                    </button>
+                    {isExpanded && (
+                      <div className="space-y-1">
+                        {categoryItems.map((item, index) => (
+                          <button
+                            key={item.name}
+                            onClick={() => handleNavigation(item.href)}
+                            className={`group flex items-center justify-between rounded-lg px-3 py-2 text-xs font-medium transition-all duration-300 hover:scale-[1.01] w-full text-left ${item.current
+                              ? 'bg-gradient-to-r from-indigo-500/10 to-purple-500/5 text-indigo-700 shadow-sm border border-indigo-100'
+                              : 'text-gray-600 hover:bg-white/60 hover:text-gray-900 hover:shadow-sm'
+                              }`}
+                          >
+                            <div className="flex items-center">
+                              <item.icon className={`mr-2.5 h-4 w-4 flex-shrink-0 transition-transform duration-300 group-hover:scale-110 ${item.current ? 'text-indigo-600' : 'text-gray-400 group-hover:text-gray-600'}`} />
+                              {item.name}
+                            </div>
+                            {item.current && <ChevronRight className="h-3 w-3 opacity-60" />}
+                          </button>
+                        ))}
+                      </div>
+                    )}
                   </div>
-                  {item.current && <ChevronRight className="h-4 w-4 opacity-60 animate-pulse" />}
-                </button>
-              ))
+                );
+              })
             )}
           </nav>
-         
+
           <div className="px-4 pb-4 mt-auto">
             <div className="border-t border-gray-200/50 pt-4">
               <button onClick={handleLogout} className="w-full flex items-center px-4 py-3 text-sm font-medium text-gray-600 hover:text-red-600 hover:bg-gradient-to-r hover:from-red-50/50 hover:to-pink-50/50 rounded-xl transition-all duration-300">
@@ -248,7 +296,7 @@ export default function DashboardLayout({ children }) {
           <div className="flex h-16 shrink-0 items-center space-x-3">
             <div className="w-10 h-10 overflow-hidden to-pink-600 rounded-xl flex items-center justify-center shadow-lg rotate-3 hover:rotate-0 transition-transform duration-300">
               {companyData?.logo ? (
-                <img src={companyData.logo} alt="" className='h-full w-full'/>
+                <img src={companyData.logo} alt="" className='h-full w-full' />
               ) : (
                 <div className="w-full h-full bg-gradient-to-br from-indigo-600 via-purple-600 to-pink-600 rounded-xl flex items-center justify-center">
                   <div className="w-4 h-4 bg-white rounded-md"></div>
@@ -259,31 +307,55 @@ export default function DashboardLayout({ children }) {
               {companyData?.name || "Company Name"}
             </h1>
           </div>
-          <nav className="flex flex-1 flex-col mt-2">
-            <ul className="flex flex-1 flex-col gap-y-1">
+          <nav className="flex flex-1 flex-col mt-4 overflow-y-auto hide-scrollbar">
+            <div className="flex flex-1 flex-col gap-y-4">
               {isSidebarLoading ? (
                 <SidebarSkeleton />
               ) : (
-                navigation.map((item, index) => (
-                  <li key={item.name} className="animate-fade-in" style={{animationDelay: `${index * 50}ms`}}>
-                    <button
-                      onClick={() => handleNavigation(item.href)}
-                      className={`group flex items-center justify-between rounded-xl px-4 py-3.5 text-sm font-medium leading-6 transition-all duration-300 hover:scale-[1.02] w-full text-left ${
-                        item.current
-                          ? 'bg-gradient-to-r from-indigo-500/10 via-purple-500/10 to-pink-500/5 text-indigo-700 shadow-lg border border-indigo-100/50'
-                          : 'text-gray-600 hover:bg-white/60 hover:text-gray-900 hover:shadow-md'
-                      }`}
-                    >
-                      <div className="flex items-center">
-                        <item.icon className={`h-5 w-5 shrink-0 mr-3 transition-transform duration-300 group-hover:scale-110 ${item.current ? 'text-indigo-600' : 'text-gray-500 group-hover:text-gray-700'}`} />
-                        {item.name}
-                      </div>
-                      {item.current && <ChevronRight className="h-4 w-4 opacity-60 animate-pulse" />}
-                    </button>
-                  </li>
-                ))
+                categories.map((category) => {
+                  const categoryItems = navigation.filter(item => item.category === category.id);
+                  if (categoryItems.length === 0) return null;
+                  const isExpanded = expandedCategories[category.id];
+
+                  return (
+                    <div key={category.id} className="animate-fade-in">
+                      <button
+                        onClick={() => toggleCategory(category.id)}
+                        className="flex items-center justify-between w-full px-2 py-1 mb-1 text-[10px] font-bold text-gray-400 uppercase tracking-widest hover:text-indigo-600 transition-colors"
+                      >
+                        <div className="flex items-center">
+                          <category.icon className="w-3 h-3 mr-2" />
+                          {category.name}
+                        </div>
+                        <ChevronDown className={`w-3 h-3 transition-transform duration-300 ${isExpanded ? 'rotate-180' : ''}`} />
+                      </button>
+                      
+                      {isExpanded && (
+                        <ul className="space-y-1">
+                          {categoryItems.map((item, index) => (
+                            <li key={item.name}>
+                              <button
+                                onClick={() => handleNavigation(item.href)}
+                                className={`group flex items-center justify-between rounded-lg px-3 py-2 text-xs font-medium leading-5 transition-all duration-300 hover:scale-[1.01] w-full text-left ${item.current
+                                  ? 'bg-gradient-to-r from-indigo-500/10 to-purple-500/5 text-indigo-700 shadow-sm border border-indigo-100/50'
+                                  : 'text-gray-600 hover:bg-white/60 hover:text-gray-900 hover:shadow-sm'
+                                  }`}
+                              >
+                                <div className="flex items-center">
+                                  <item.icon className={`h-4 w-4 shrink-0 mr-2.5 transition-transform duration-300 group-hover:scale-110 ${item.current ? 'text-indigo-600' : 'text-gray-400 group-hover:text-gray-600'}`} />
+                                  {item.name}
+                                </div>
+                                {item.current && <ChevronRight className="h-3 h-3 opacity-60" />}
+                              </button>
+                            </li>
+                          ))}
+                        </ul>
+                      )}
+                    </div>
+                  );
+                })
               )}
-            </ul>
+            </div>
           </nav>
         </div>
       </div>
@@ -299,14 +371,14 @@ export default function DashboardLayout({ children }) {
           >
             <Menu className="h-5 w-5" />
           </button>
-        
+
           <div className="flex flex-1 gap-x-4 self-stretch justify-between items-center">
             <div className="relative flex flex-1 items-center max-w-2xl">
               <h1 className="text-lg font-black bg-gradient-to-r font-semibold capitalize from-gray-800 to-gray-600 bg-clip-text text-transparent">
                 {userData?.role || "User"} Dashboard
               </h1>
             </div>
-          
+
             <div className="flex items-center justify-between gap-x-3">
               <button className="relative rounded-xl p-2.5 text-gray-500 hover:text-gray-700 hover:bg-white/50 transition-all duration-300 hover:shadow-md hover:scale-105">
                 <Bell className="h-5 w-5" />
@@ -341,10 +413,10 @@ export default function DashboardLayout({ children }) {
                       </span>
                     </div>
                   </button>
-                
+
                   {/* Dropdown menu */}
                   {isProfileDropdownOpen && (
-                    <div 
+                    <div
                       ref={dropdownRef}
                       className="absolute right-0 mt-2 w-48 bg-white rounded-md shadow-lg py-1 z-50 border border-gray-200"
                     >
@@ -362,7 +434,7 @@ export default function DashboardLayout({ children }) {
             </div>
           </div>
         </div>
-      
+
         {/* Page content - Made scrollable */}
         <div className="flex-1 overflow-y-auto">
           <div className="mx-auto max-w-7xl px-2 h-full lg:px-2">

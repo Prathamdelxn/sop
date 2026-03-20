@@ -249,9 +249,22 @@ const TaskExecutionPage = () => {
                           </span>
                         </td>
                         <td className="px-6 py-5">
-                          <span className={`inline-flex items-center gap-2 px-3 py-1 rounded-xl text-sm font-medium  ${statusConfig.bg} ${statusConfig.text}`}>
-                            {statusConfig.label}
-                          </span>
+                          <div className="flex flex-col gap-1">
+                            <span className={`inline-flex items-center gap-2 px-3 py-1 rounded-xl text-sm font-medium w-fit ${statusConfig.bg} ${statusConfig.text}`}>
+                              {statusConfig.label}
+                            </span>
+                            {task.status === 'Completed' && task.completedBy && (
+                              <div className="text-xs text-gray-500 mt-1">
+                                <span className="font-medium text-gray-700">By:</span> {task.completedBy.name}<br/>
+                                <span className="font-medium text-gray-700">At:</span> {new Date(task.completedAt).toLocaleString()}
+                                {task.reason && (
+                                  <div className="mt-1 text-amber-600 italic">
+                                    Reason: {task.reason.text}
+                                  </div>
+                                )}
+                              </div>
+                            )}
+                          </div>
                         </td>
                         <td className="px-6 py-5">
                           <div className="flex items-center gap-2">

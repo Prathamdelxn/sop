@@ -21,13 +21,13 @@ const TaskPage = () => {
     elapsedTime: 0
   });
   const [userdata, setUserData] = useState();
-  
+
   // Modal states
   const [showReasonModal, setShowReasonModal] = useState(false);
   const [reasonType, setReasonType] = useState(null); // 'min' or 'max'
   const [reasonText, setReasonText] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
-  
+
   // Warning modal for addStop dependency
   const [showDependencyModal, setShowDependencyModal] = useState(false);
   const [dependencyMessage, setDependencyMessage] = useState('');
@@ -35,12 +35,12 @@ const TaskPage = () => {
   // Fetch assignment data using existing execution API and filter by ID
   useEffect(() => {
     if (!id) return;
- 
+
     const fetchAssignment = async () => {
       try {
         setLoading(true);
         const storedUser = localStorage.getItem("user");
-       
+
         if (!storedUser) {
           throw new Error("User not found. Please log in again.");
         }
@@ -115,52 +115,52 @@ const TaskPage = () => {
 
   const checkPreviousTaskStatus = (currentStage, currentTask, stageIndex) => {
     if (!currentStage || !currentStage.tasks) return true;
-    
+
     // Find the current task index in the stage
-    const taskIndex = currentStage.tasks.findIndex(t => 
+    const taskIndex = currentStage.tasks.findIndex(t =>
       (t._id || t.taskId) === (currentTask._id || currentTask.taskId)
     );
-    
+
     console.log("Current task index:", taskIndex);
     console.log("Current stage tasks:", currentStage.tasks);
-    
+
     // If it's the first task in the stage or task not found, no previous task to check
     if (taskIndex <= 0) return true;
-    
+
     // Get the previous task
     const previousTask = currentStage.tasks[taskIndex - 1];
     console.log("Previous task:", previousTask);
     console.log("Previous task status:", previousTask?.status);
-    
+
     // Check if previous task status is completed
     return previousTask?.status === 'completed';
   };
 
   const handleStartTimerClick = () => {
     if (!selectedTask) return;
-    
+
     console.log("Selected task:", selectedTask);
     console.log("AddStop value:", selectedTask.addStop);
-    
+
     // Find the current stage
     const currentStage = stages[selectedTask.stageIndex];
     console.log("Current stage:", currentStage);
-    
+
     // Check if task has addStop: true
     if (selectedTask.addStop === true) {
       // Check if previous task is completed
       const isPreviousCompleted = checkPreviousTaskStatus(currentStage, selectedTask, selectedTask.stageIndex);
       console.log("Is previous completed:", isPreviousCompleted);
-      
+
       if (!isPreviousCompleted) {
         // Find the previous task name for the message
-        const taskIndex = currentStage.tasks.findIndex(t => 
+        const taskIndex = currentStage.tasks.findIndex(t =>
           (t._id || t.taskId) === (selectedTask._id || selectedTask.taskId)
         );
         const previousTask = taskIndex > 0 ? currentStage.tasks[taskIndex - 1] : null;
-        
+
         setDependencyMessage(
-          previousTask 
+          previousTask
             ? `Cannot start "${selectedTask.title}" until "${previousTask.title}" is completed.`
             : `Cannot start this task until the previous task is completed.`
         );
@@ -168,7 +168,7 @@ const TaskPage = () => {
         return;
       }
     }
-    
+
     // If no dependency issue, start the timer
     startTimer();
   };
@@ -236,22 +236,22 @@ const TaskPage = () => {
 
   const convertToSeconds = (duration) => {
     if (!duration || duration === "N/A" || duration === "") return null;
-    
+
     if (typeof duration === "string") {
       const parts = duration.split(":").map(Number);
       const [hours = 0, minutes = 0, seconds = 0] = parts;
       return hours * 3600 + minutes * 60 + seconds;
     }
-    
+
     if (typeof duration === "object") {
       const { hours = 0, minutes = 0, seconds = 0 } = duration;
       return hours * 3600 + minutes * 60 + seconds;
     }
-    
+
     if (typeof duration === "number") {
       return duration * 60; // Assuming number is in minutes
     }
-    
+
     return null;
   };
 
@@ -266,13 +266,13 @@ const TaskPage = () => {
     // Check if task has min/max time constraints
     const minSeconds = convertToSeconds(selectedTask?.minTime);
     const maxSeconds = convertToSeconds(selectedTask?.maxTime);
-    
+
     // If both min and max are N/A or not provided, submit directly
     if (minSeconds === null && maxSeconds === null) {
       completeTaskSubmission();
       return;
     }
-    
+
     // Check time violations only if values exist
     if (minSeconds !== null && taskTimer.elapsedTime < minSeconds) {
       // Time is less than minimum - show reason modal
@@ -289,41 +289,63 @@ const TaskPage = () => {
   };
 
   const completeTaskSubmission = async () => {
+    if (showReasonModal && !reasonText.trim()) {
+      alert("Please provide a reason before submitting.");
+      return;
+    }
+
     setIsSubmitting(true);
-    
+
     try {
-      // Here you would make an API call to submit the task completion
-      // with the reason if provided
       const submissionData = {
-        taskId: selectedTask._id || selectedTask.taskId,
-        elapsedTime: taskTimer.elapsedTime,
+        completedBy: { id: userdata.id, name: userdata.name },
         completedAt: new Date().toISOString(),
+        actualDuration: formatSeconds(taskTimer.elapsedTime),
+        elapsedTime: taskTimer.elapsedTime,
         reason: reasonType ? { type: reasonType, text: reasonText } : null,
-        status: 'completed'
+        status: 'completed',
+        minTime: selectedTask.minTime,
+        maxTime: selectedTask.maxTime
       };
-      
-      console.log("Submitting task:", submissionData);
-      
-      // Simulate API call
-      await new Promise(resolve => setTimeout(resolve, 1000));
-      
-      alert(`Task completed in ${formatSeconds(taskTimer.elapsedTime)}${reasonText ? `\nReason: ${reasonText}` : ''}`);
-      
-      // Update the task status in the assignmentData
+
+      const stage = stages[selectedTask.stageIndex];
+      const stageId = stage?._id || stage?.stageId;
+      const taskId = selectedTask._id || selectedTask.taskId;
+
+      const res = await fetch('/api/assignment/task-execution/complete', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          assignmentId: id,
+          stageId,
+          taskId,
+          executionData: submissionData
+        })
+      });
+
+      const result = await res.json();
+
+      if (!res.ok || !result.success) {
+        throw new Error(result.message || "Failed to submit task");
+      }
+
+      alert(`Task completed successfully!`);
+
+      // Update the local state
       if (assignmentData && assignmentData.prototypeData && selectedTask) {
         const updatedStages = [...stages];
         const stageIndex = selectedTask.stageIndex;
-        const taskIndex = updatedStages[stageIndex].tasks.findIndex(t => 
+        const taskIndex = updatedStages[stageIndex].tasks.findIndex(t =>
           (t._id || t.taskId) === (selectedTask._id || selectedTask.taskId)
         );
-        
+
         if (taskIndex !== -1) {
-          // Create a deep copy to avoid mutation issues
           updatedStages[stageIndex].tasks[taskIndex] = {
             ...updatedStages[stageIndex].tasks[taskIndex],
-            status: 'completed'
+            status: 'completed',
+            ...submissionData
           };
-          
+
           setAssignmentData({
             ...assignmentData,
             prototypeData: {
@@ -331,15 +353,15 @@ const TaskPage = () => {
               stages: updatedStages
             }
           });
-          
-          // Also update the selected task
+
           setSelectedTask({
             ...selectedTask,
-            status: 'completed'
+            status: 'completed',
+            ...submissionData
           });
         }
       }
-      
+
       // Reset states
       setTaskTimer({
         isRunning: false,
@@ -349,10 +371,10 @@ const TaskPage = () => {
       setShowReasonModal(false);
       setReasonText('');
       setReasonType(null);
-      
+
     } catch (error) {
       console.error("Error submitting task:", error);
-      alert("Failed to submit task. Please try again.");
+      alert(error.message || "Failed to submit task. Please try again.");
     } finally {
       setIsSubmitting(false);
     }
@@ -360,7 +382,7 @@ const TaskPage = () => {
 
   const handleReasonSubmit = () => {
     if (!reasonText.trim()) {
-      alert("Please provide a reason");
+      alert("Please provide a reason. A reason is mandatory for early or late completions.");
       return;
     }
     completeTaskSubmission();
@@ -489,22 +511,20 @@ const TaskPage = () => {
                                 const taskNumber = `${stageIndex + 1}.${taskIndex + 1}`;
                                 const isCompleted = task.status === 'completed';
                                 const isSelected = selectedTask?._id === task._id || selectedTask?.taskId === task.taskId;
-                                
+
                                 return (
                                   <div
                                     key={taskKey}
-                                    className={`p-2 text-sm flex items-center gap-2 font-semibold hover:bg-blue-50 cursor-pointer ${
-                                      isSelected ? 'text-blue-500' : ''
-                                    } ${isCompleted ? 'text-green-600' : ''}`}
+                                    className={`p-2 text-sm flex items-center gap-2 font-semibold hover:bg-blue-50 cursor-pointer ${isSelected ? 'text-blue-500' : ''
+                                      } ${isCompleted ? 'text-green-600' : ''}`}
                                     onClick={() => handleTaskClick(stage, task, stageIndex)}
                                   >
-                                    <div className={`w-2 h-6 rounded-sm ${
-                                      isSelected 
-                                        ? 'bg-blue-500' 
-                                        : isCompleted 
-                                          ? 'bg-green-500' 
-                                          : 'bg-gray-300'
-                                    }`}></div>
+                                    <div className={`w-2 h-6 rounded-sm ${isSelected
+                                      ? 'bg-blue-500'
+                                      : isCompleted
+                                        ? 'bg-green-500'
+                                        : 'bg-gray-300'
+                                      }`}></div>
                                     <span className="flex-1">{taskNumber}: {task.title}</span>
                                     {isCompleted && <CheckCircle size={14} className="text-green-500" />}
                                     {task.addStop && !isCompleted && (
@@ -591,21 +611,21 @@ const TaskPage = () => {
                       )}
                     </div>
                     <div className="flex items-center gap-4">
-                      
-                      {/* Timer display */}
-                      {taskTimer.elapsedTime > 0 && (
-                        <div className="flex items-center gap-2 bg-gray-100 px-3 py-1 rounded-md">
-                          <Clock size={16} className="text-gray-600" />
-                          <span className="font-mono font-medium">{formatSeconds(taskTimer.elapsedTime)}</span>
-                        </div>
-                      )}
-                      {/* Timer controls */}
-                      {userdata && selectedTask.assignedWorker && 
-                       selectedTask.assignedWorker.some(worker => worker.id === userdata.id) ? (
-                        // User is assigned - show timer controls
+
+                      {/* Timer controls - UPDATED with completion time display */}
+                      {userdata && selectedTask.assignedWorker &&
+                        selectedTask.assignedWorker.some(worker => worker.id === userdata.id) ? (
+                        // User is assigned - show timer controls or completion time
                         selectedTask.status === 'completed' ? (
-                          <div className="text-sm text-gray-500 italic px-3 py-2 bg-gray-100 rounded-md">
-                            Task Completed
+                          // Show completion time instead of "Task Completed"
+                          <div className="flex items-center gap-2 bg-green-50 px-3 py-2 rounded-md border border-green-200">
+                            <CheckCircle size={16} className="text-green-600" />
+                            <div className="flex flex-col items-start">
+                              <span className="text-xs text-green-600 font-medium">Completed in</span>
+                              <span className="font-mono font-semibold text-green-700">
+                                {selectedTask.actualDuration || formatSeconds(selectedTask.elapsedTime) || 'N/A'}
+                              </span>
+                            </div>
                           </div>
                         ) : !taskTimer.isRunning ? (
                           taskTimer.elapsedTime === 0 ? (
@@ -635,10 +655,22 @@ const TaskPage = () => {
                           </button>
                         )
                       ) : (
-                        // User is not assigned - show read-only message or nothing
-                        <div className="text-sm text-gray-500 italic px-3 py-2 bg-gray-100 rounded-md">
-                          View Only
-                        </div>
+                        // User is not assigned - show completion time if task is completed, otherwise "View Only"
+                        selectedTask.status === 'completed' ? (
+                          <div className="flex items-center gap-2 bg-green-50 px-3 py-2 rounded-md border border-green-200">
+                            <CheckCircle size={16} className="text-green-600" />
+                            <div className="flex flex-col items-start">
+                              <span className="text-xs text-green-600 font-medium">Completed in</span>
+                              <span className="font-mono font-semibold text-green-700">
+                                {selectedTask.actualDuration || formatSeconds(selectedTask.elapsedTime) || 'N/A'}
+                              </span>
+                            </div>
+                          </div>
+                        ) : (
+                          <div className="text-sm text-gray-500 italic px-3 py-2 bg-gray-100 rounded-md">
+                            View Only
+                          </div>
+                        )
                       )}
                     </div>
                   </div>
@@ -648,6 +680,14 @@ const TaskPage = () => {
                     <h3 className="text-lg font-medium text-gray-800 mb-2">Description</h3>
                     <p className="text-gray-700">{selectedTask.description || 'No description provided.'}</p>
                   </div>
+
+                  {/* COMPLETION INFO - Ultra compact */}
+                  {selectedTask.status === 'completed' && selectedTask.completedBy && (
+                    <div className="mb-4 text-sm bg-green-50 text-green-700 px-3 py-2 rounded-lg border border-green-200">
+                      <CheckCircle size={14} className="inline mr-1" />
+                      Completed by <span className="font-semibold">{selectedTask.completedBy.name || selectedTask.completedBy.id}</span> • {new Date(selectedTask.completedAt).toLocaleString()}
+                    </div>
+                  )}
 
                   {/* Min/Max Duration */}
                   <div className="grid grid-cols-2 gap-4 mb-6">
@@ -773,9 +813,9 @@ const TaskPage = () => {
                 {reasonType === 'min' ? 'Task Completed Too Quickly' : 'Task Exceeded Time Limit'}
               </h3>
             </div>
-            
+
             <p className="text-gray-600 mb-4">
-              {reasonType === 'min' 
+              {reasonType === 'min'
                 ? `The task was completed in ${formatSeconds(taskTimer.elapsedTime)} which is less than the minimum required time of ${formatDuration(selectedTask?.minTime)}. Please provide a reason.`
                 : `The task took ${formatSeconds(taskTimer.elapsedTime)} which exceeds the maximum allowed time of ${formatDuration(selectedTask?.maxTime)}. Please provide a reason.`
               }
@@ -825,7 +865,7 @@ const TaskPage = () => {
               <AlertCircle className="w-6 h-6 text-amber-500" />
               <h3 className="text-lg font-semibold">Cannot Start Task</h3>
             </div>
-            
+
             <p className="text-gray-600 mb-4">
               {dependencyMessage}
             </p>
