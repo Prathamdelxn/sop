@@ -1,7 +1,7 @@
 "use client";
 import { useRouter } from 'next/navigation';
 import React, { useState, useEffect } from 'react';
-import { Play, Eye, Clock, User, Package, Hash, Zap, Sparkles } from 'lucide-react';
+import { Play, Eye, Clock, User, Package, Hash, Zap, Sparkles, Loader2 } from 'lucide-react';
 
 const TaskExecutionPage = () => {
   const router = useRouter();
@@ -109,9 +109,21 @@ const TaskExecutionPage = () => {
     // Router navigation would go here
   };
 
-  const getStatusConfig = (status) => {
+  const getStatusConfig = (task) => {
+    const status = task.status;
+    const hasReason = !!task.reason;
+
     switch (status) {
       case 'Completed':
+        if (hasReason) {
+            return {
+                bg: 'bg-blue-50',
+                text: 'text-blue-700',
+                border: 'border-blue-200',
+                icon: 'ℹ️',
+                label: 'Completed with Reason'
+              };
+        }
         return {
           bg: 'bg-emerald-50',
           text: 'text-emerald-700',
@@ -217,7 +229,7 @@ const TaskExecutionPage = () => {
                 </thead>
                 <tbody>
                   {tasks.map((task, index) => {
-                    const statusConfig = getStatusConfig(task.status);
+                    const statusConfig = getStatusConfig(task);
                     return (
                       <tr
                         key={task._id}
@@ -255,7 +267,7 @@ const TaskExecutionPage = () => {
                             </span>
                             {task.status === 'Completed' && task.completedBy && (
                               <div className="text-xs text-gray-500 mt-1">
-                                <span className="font-medium text-gray-700">By:</span> {task.completedBy.name}<br/>
+                                <span className="font-medium text-gray-700">By:</span> {task.completedBy.name}<br />
                                 <span className="font-medium text-gray-700">At:</span> {new Date(task.completedAt).toLocaleString()}
                                 {task.reason && (
                                   <div className="mt-1 text-amber-600 italic">
@@ -264,20 +276,50 @@ const TaskExecutionPage = () => {
                                 )}
                               </div>
                             )}
+                            {task.status === 'Under Execution' && task.startedBy && (
+                              <div className="text-xs text-blue-500 mt-1">
+                                <span className="font-medium">Started by:</span> {task.startedBy.name}<br />
+                                <span className="font-medium">At:</span> {new Date(task.startedAt).toLocaleString()}
+                              </div>
+                            )}
                           </div>
                         </td>
                         <td className="px-6 py-5">
                           <div className="flex items-center gap-2">
                             <button
                               onClick={() => handleExecuteTask(task._id)}
-                              disabled={task.prototypeData.status === 'completed'}
-                              className={`inline-flex items-center gap-2 px-4 py-2 text-sm font-medium rounded-lg transition-all duration-200 shadow-sm hover:shadow ${task.prototypeData.status === 'completed'
-                                  ? 'text-gray-400 bg-gray-50 border border-gray-200 cursor-not-allowed'
-                                  : 'text-white bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 border border-transparent'
+                              disabled={false}
+                              className={`inline-flex items-center gap-2 px-4 py-2 text-sm font-medium rounded-lg transition-all duration-200 shadow-sm hover:shadow ${
+                                task.status === 'Completed'
+                                ? 'text-gray-600 bg-gray-50 border border-gray-200 hover:bg-gray-100'
+                                : task.status === 'Under Execution' && (task.startedBy?.id || task.startedBy?._id) !== (userData?.id || userData?._id)
+                                ? 'text-blue-600 bg-blue-50 border border-blue-200 hover:bg-blue-100'
+                                : 'text-white bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 border border-transparent'
                                 }`}
                             >
-                              <Play className="h-4 w-4" />
-                              {task.prototypeData.status === 'completed' ? 'Complete' : 'Execute'}
+                              {task.status === 'Under Execution' ? (
+                                (task.startedBy?.id || task.startedBy?._id) === (userData?.id || userData?._id) ? (
+                                  <>
+                                    <Loader2 className="h-4 w-4 animate-spin" />
+                                    Resume
+                                  </>
+                                ) : (
+                                  <>
+                                    <Eye className="h-4 w-4" />
+                                    View
+                                  </>
+                                )
+                              ) : task.status === 'Completed' ? (
+                                <>
+                                  <Eye className="h-4 w-4" />
+                                  View
+                                </>
+                              ) : (
+                                <>
+                                  <Play className="h-4 w-4" />
+                                  Execute
+                                </>
+                              )}
                             </button>
                           </div>
                         </td>

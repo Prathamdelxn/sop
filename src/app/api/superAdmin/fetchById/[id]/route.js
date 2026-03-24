@@ -9,7 +9,7 @@ export async function GET(req, { params }) {
   await connectDB();
 
   try {
-    const { id } = params;
+    const { id } = await params;
 
     const superAdmin = await SuperAdmin.findById(id);
 

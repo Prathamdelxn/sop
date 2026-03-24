@@ -15,7 +15,7 @@ export async function OPTIONS() {
 export async function DELETE(_, { params }) {
   await dbConnect();
 
-  const { id } = params;
+  const { id } = await params;
 
   try {
     if (!id) {

@@ -9,7 +9,7 @@ export async function PUT(req, { params }) {
   await connectDB();
 
   try {
-    const { id } = params;
+    const { id } = await params;
     const body = await req.json();
 console.log(body);
     const {

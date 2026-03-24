@@ -7,7 +7,7 @@ export async function PUT(request) {
     await connectDB();
 
     const body = await request.json();
-    const { assignmentId, stageId, taskId, executionData } = body;
+    const { assignmentId, stageId, taskId, subtaskId, executionData } = body;
 
     if (!assignmentId || !stageId || !taskId || !executionData) {
       return NextResponse.json(
@@ -72,14 +72,40 @@ export async function PUT(request) {
         if (stage._id?.toString() === stageId || stage.stageId === stageId) {
           for (let task of stage.tasks) {
             if (task._id?.toString() === taskId || task.taskId === taskId) {
-              // Update task execution details
-              task.status = status || 'completed';
-              task.completedBy = completedBy;
-              task.completedAt = completedAt;
-              task.actualDuration = actualDuration;
-              task.elapsedTime = elapsedTime;
-              task.reason = reason;
-              taskFound = true;
+              if (subtaskId) {
+                // Update subtask within task
+                let subtaskFound = false;
+                if (task.subtasks) {
+                  for (let subtask of task.subtasks) {
+                    if (subtask._id?.toString() === subtaskId || subtask.subtaskId === subtaskId) {
+                      subtask.status = status || 'completed';
+                      subtask.completedBy = completedBy;
+                      subtask.completedAt = completedAt;
+                      subtask.actualDuration = actualDuration;
+                      subtask.elapsedTime = elapsedTime;
+                      subtask.reason = reason;
+                      subtaskFound = true;
+                      taskFound = true;
+                      break;
+                    }
+                  }
+                }
+                if (!subtaskFound) {
+                  return NextResponse.json(
+                    { success: false, message: 'Subtask not found in this task' },
+                    { status: 404 }
+                  );
+                }
+              } else {
+                // Update main task execution details
+                task.status = status || 'completed';
+                task.completedBy = completedBy;
+                task.completedAt = completedAt;
+                task.actualDuration = actualDuration;
+                task.elapsedTime = elapsedTime;
+                task.reason = reason;
+                taskFound = true;
+              }
               break;
             }
           }

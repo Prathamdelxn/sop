@@ -5,7 +5,7 @@ import Assignment from "@/model/NewAssignment"; // your Mongoose schema
 
 export async function GET(req, { params }) {
   try {
-    const { companyId, workerId } = params;
+    const { companyId, workerId } = await params;
 
     // Query: check worker inside stage, task, or subtask
     const assignments = await Assignment.find({

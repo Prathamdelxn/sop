@@ -8,7 +8,7 @@ import Prototype from "@/model/Task";
 export async function PATCH(request, { params }) {
   await connectDB();
 
-  const { id } = params;
+  const { id } = await params;
 
   try {
     const body = await request.json();

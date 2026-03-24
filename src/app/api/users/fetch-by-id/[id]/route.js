@@ -7,7 +7,7 @@ export async function GET(req, { params }) {
   try {
     await connectToDB();
 
-    const { id } = params;
+    const { id } = await params;
     if (!id) {
       return NextResponse.json(
         { success: false, message: "User ID is required" },

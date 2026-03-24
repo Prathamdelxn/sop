@@ -7,7 +7,7 @@ export const dynamic = "force-dynamic";
 export async function GET(req, { params }) {
   await connectDB();
 
-  const { id } = params;
+  const { id } = await params;
 
   try {
     const user = await User.findById(id).lean();

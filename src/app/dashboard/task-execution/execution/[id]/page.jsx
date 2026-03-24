@@ -3,7 +3,7 @@
 'use client'
 import React, { useState, useEffect } from 'react';
 import { useParams } from 'next/navigation';
-import { ArrowLeft, ArrowRight, ChevronDown, ChevronRight, Clock, Image, CheckCircle, XCircle, Users, Loader2, AlertCircle } from "lucide-react";
+import { ArrowLeft, ArrowRight, ChevronDown, ChevronRight, Clock, Image, CheckCircle, XCircle, Users, Loader2, AlertCircle, Play } from "lucide-react";
 
 const TaskPage = () => {
   const params = useParams();
@@ -21,6 +21,8 @@ const TaskPage = () => {
     elapsedTime: 0
   });
   const [userdata, setUserData] = useState();
+  const [subtaskTimers, setSubtaskTimers] = useState({}); // { subtaskId: { isRunning, startTime, elapsedTime } }
+  const [activeValidationItem, setActiveValidationItem] = useState(null); // { type: 'main'|'sub', item: selectedTask|subtask }
 
   // Modal states
   const [showReasonModal, setShowReasonModal] = useState(false);
@@ -64,7 +66,25 @@ const TaskPage = () => {
 
         // Expand first stage by default
         if (data?.prototypeData?.stages?.length > 0) {
-          setExpandedStages({ [data.prototypeData.stages[0]._id || data.prototypeData.stages[0].stageId]: true });
+          setExpandedStages(prev => {
+              if (Object.keys(prev).length === 0) {
+                  return { [data.prototypeData.stages[0]._id || data.prototypeData.stages[0].stageId]: true };
+              }
+              return prev;
+          });
+        }
+
+        // Sync selected task if it exists
+        if (selectedTask) {
+           let found = false;
+           data.prototypeData.stages.forEach((stage, stageIdx) => {
+             const task = stage.tasks.find(t => (t._id || t.taskId) === (selectedTask._id || selectedTask.taskId));
+             if (task) {
+               setSelectedTask({ ...task, stageName: stage.name || `Stage ${stageIdx + 1}`, stageIndex: stageIdx });
+               found = true;
+             }
+           });
+           if (!found) setSelectedTask(null);
         }
       } catch (err) {
         console.error("Error fetching assignment:", err);
@@ -80,17 +100,38 @@ const TaskPage = () => {
   // Timer effect
   useEffect(() => {
     let interval;
-    if (taskTimer.isRunning) {
+    const runningSubtaskIds = Object.keys(subtaskTimers).filter(id => subtaskTimers[id]?.isRunning);
+    
+    if (taskTimer.isRunning || runningSubtaskIds.length > 0) {
       interval = setInterval(() => {
-        setTaskTimer(prev => ({
-          ...prev,
-          elapsedTime: Math.floor((Date.now() - prev.startTime) / 1000)
-        }));
+        // Update main task timer
+        if (taskTimer.isRunning) {
+          setTaskTimer(prev => ({
+            ...prev,
+            elapsedTime: Math.floor((Date.now() - prev.startTime) / 1000)
+          }));
+        }
+        
+        // Update subtask timers
+        if (runningSubtaskIds.length > 0) {
+          setSubtaskTimers(prev => {
+            const next = { ...prev };
+            runningSubtaskIds.forEach(id => {
+              if (next[id]?.isRunning) {
+                next[id] = {
+                  ...next[id],
+                  elapsedTime: Math.floor((Date.now() - next[id].startTime) / 1000)
+                };
+              }
+            });
+            return next;
+          });
+        }
       }, 1000);
     }
 
     return () => clearInterval(interval);
-  }, [taskTimer.isRunning]);
+  }, [taskTimer.isRunning, JSON.stringify(Object.keys(subtaskTimers).filter(id => subtaskTimers[id]?.isRunning))]);
 
   const toggleStage = (stageId) => {
     setExpandedStages(prev => ({
@@ -104,12 +145,41 @@ const TaskPage = () => {
   };
 
   const handleTaskClick = (stage, task, stageIndex) => {
-    // Reset timer when selecting a new task
-    setTaskTimer({
-      isRunning: false,
-      startTime: null,
-      elapsedTime: 0
-    });
+    // Check if task is under execution by current user to resume timer
+    const currentUserId = userdata?.id || userdata?._id || JSON.parse(localStorage.getItem("user"))?.id || JSON.parse(localStorage.getItem("user"))?._id;
+    
+    if (task.status === 'Under Execution' && (task.startedBy?.id || task.startedBy?._id) === currentUserId) {
+        const startTime = new Date(task.startedAt).getTime();
+        setTaskTimer({
+            isRunning: true,
+            startTime: startTime,
+            elapsedTime: Math.floor((Date.now() - startTime) / 1000)
+        });
+    } else {
+        // Reset timer when selecting a new task
+        setTaskTimer({
+            isRunning: false,
+            startTime: null,
+            elapsedTime: 0
+        });
+    }
+
+    // Initialize subtask timers if they are under execution by current user
+    const newSubtaskTimers = {};
+    if (task.subtasks) {
+        task.subtasks.forEach(st => {
+            if (st.status === 'Under Execution' && (st.startedBy?.id || st.startedBy?._id) === currentUserId) {
+                const startTime = new Date(st.startedAt).getTime();
+                newSubtaskTimers[st._id || st.taskId] = {
+                    isRunning: true,
+                    startTime: startTime,
+                    elapsedTime: Math.floor((Date.now() - startTime) / 1000)
+                };
+            }
+        });
+    }
+    setSubtaskTimers(newSubtaskTimers);
+
     setSelectedTask({ ...task, stageName: stage.name || `Stage ${stageIndex + 1}`, stageIndex });
   };
 
@@ -136,7 +206,7 @@ const TaskPage = () => {
     return previousTask?.status === 'completed';
   };
 
-  const handleStartTimerClick = () => {
+  const handleStartTimerClick = async () => {
     if (!selectedTask) return;
 
     console.log("Selected task:", selectedTask);
@@ -169,8 +239,67 @@ const TaskPage = () => {
       }
     }
 
-    // If no dependency issue, start the timer
-    startTimer();
+    // Call backend to mark task as started
+    try {
+      setIsSubmitting(true);
+      const res = await fetch('/api/assignment/task-execution/start', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          assignmentId: id,
+          stageId: currentStage._id || currentStage.stageId,
+          taskId: selectedTask._id || selectedTask.taskId,
+          startedBy: { id: userdata.id || userdata._id, name: userdata.name }
+        })
+      });
+
+      const result = await res.json();
+
+      if (!res.ok) {
+        throw new Error(result.message || "Failed to start task");
+      }
+
+      // Update local state to reflect "Under Execution"
+      const updatedStages = [...stages];
+      const taskIndex = updatedStages[selectedTask.stageIndex].tasks.findIndex(t =>
+        (t._id || t.taskId) === (selectedTask._id || selectedTask.taskId)
+      );
+      
+      if (taskIndex !== -1) {
+        updatedStages[selectedTask.stageIndex].tasks[taskIndex] = {
+          ...updatedStages[selectedTask.stageIndex].tasks[taskIndex],
+          status: 'Under Execution',
+          startedBy: { id: userdata.id || userdata._id, name: userdata.name },
+          startedAt: new Date().toISOString()
+        };
+
+        setAssignmentData({
+          ...assignmentData,
+          prototypeData: {
+            ...assignmentData.prototypeData,
+            stages: updatedStages
+          }
+        });
+
+        setSelectedTask(prev => ({
+          ...prev,
+          status: 'Under Execution',
+          startedBy: { id: userdata.id, name: userdata.name },
+          startedAt: new Date().toISOString()
+        }));
+      }
+
+      // If no dependency issue, start the timer
+      startTimer();
+    } catch (err) {
+      console.error("Error starting task:", err);
+      alert(err.message || "Failed to start task. It might be already in progress.");
+      
+      // Optionally refresh data if out of sync
+      // window.location.reload(); 
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   const startTimer = () => {
@@ -182,12 +311,10 @@ const TaskPage = () => {
   };
 
   const formatDuration = (duration) => {
-    console.log("Formatting duration:", duration);
-
     if (!duration || duration === "") return "N/A";
 
     // Handle HH:MM:SS string format
-    if (typeof duration === "string") {
+    if (typeof duration === "string" && duration.includes(":")) {
       const parts = duration.split(":").map(Number);
       const [hours = 0, minutes = 0, seconds = 0] = parts;
 
@@ -237,7 +364,7 @@ const TaskPage = () => {
   const convertToSeconds = (duration) => {
     if (!duration || duration === "N/A" || duration === "") return null;
 
-    if (typeof duration === "string") {
+    if (typeof duration === "string" && duration.includes(":")) {
       const parts = duration.split(":").map(Number);
       const [hours = 0, minutes = 0, seconds = 0] = parts;
       return hours * 3600 + minutes * 60 + seconds;
@@ -262,10 +389,128 @@ const TaskPage = () => {
     }));
   };
 
+  const handleStartSubtaskTimer = async (subtask) => {
+    const subtaskId = subtask._id || subtask.taskId;
+    const currentStage = stages[selectedTask.stageIndex];
+
+    try {
+      setIsSubmitting(true);
+      const res = await fetch('/api/assignment/task-execution/start', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          assignmentId: id,
+          stageId: currentStage._id || currentStage.stageId,
+          taskId: selectedTask._id || selectedTask.taskId,
+          subtaskId: subtaskId,
+          startedBy: { id: userdata.id || userdata._id, name: userdata.name }
+        })
+      });
+
+      const result = await res.json();
+
+      if (!res.ok) {
+        throw new Error(result.message || "Failed to start subtask");
+      }
+
+      // Update local state
+      const updatedStages = [...stages];
+      const taskIndex = updatedStages[selectedTask.stageIndex].tasks.findIndex(t =>
+        (t._id || t.taskId) === (selectedTask._id || selectedTask.taskId)
+      );
+
+      if (taskIndex !== -1) {
+        const subtaskIndex = updatedStages[selectedTask.stageIndex].tasks[taskIndex].subtasks.findIndex(st =>
+          (st._id || st.taskId) === subtaskId
+        );
+
+        if (subtaskIndex !== -1) {
+          const startInfo = {
+            status: 'Under Execution',
+            startedBy: { id: userdata.id || userdata._id, name: userdata.name },
+            startedAt: new Date().toISOString()
+          };
+
+          updatedStages[selectedTask.stageIndex].tasks[taskIndex].subtasks[subtaskIndex] = {
+            ...updatedStages[selectedTask.stageIndex].tasks[taskIndex].subtasks[subtaskIndex],
+            ...startInfo
+          };
+
+          setAssignmentData({
+            ...assignmentData,
+            prototypeData: {
+              ...assignmentData.prototypeData,
+              stages: updatedStages
+            }
+          });
+
+          // Also update selected task's subtask list
+          const updatedSubtasks = [...selectedTask.subtasks];
+          updatedSubtasks[subtaskIndex] = {
+            ...updatedSubtasks[subtaskIndex],
+            ...startInfo
+          };
+          setSelectedTask({
+            ...selectedTask,
+            subtasks: updatedSubtasks
+          });
+        }
+      }
+
+      setSubtaskTimers(prev => ({
+        ...prev,
+        [subtaskId]: {
+          isRunning: true,
+          startTime: Date.now(),
+          elapsedTime: 0
+        }
+      }));
+    } catch (err) {
+      console.error("Error starting subtask:", err);
+      alert(err.message || "Failed to start subtask.");
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  const handleStopSubtaskTimer = (subtask) => {
+    const subtaskId = subtask._id || subtask.taskId;
+    setSubtaskTimers(prev => ({
+      ...prev,
+      [subtaskId]: {
+        ...prev[subtaskId],
+        isRunning: false
+      }
+    }));
+  };
+
+  const handleSubmitSubtask = (subtask) => {
+    const subtaskId = subtask._id || subtask.taskId;
+    const timer = subtaskTimers[subtaskId];
+    if (!timer) return;
+
+    const minSeconds = convertToSeconds(subtask?.minTime);
+    const maxSeconds = convertToSeconds(subtask?.maxTime);
+
+    setActiveValidationItem({ type: 'sub', item: subtask, timer });
+
+    if (minSeconds !== null && timer.elapsedTime < minSeconds) {
+      setReasonType('min');
+      setShowReasonModal(true);
+    } else if (maxSeconds !== null && timer.elapsedTime > maxSeconds) {
+      setReasonType('max');
+      setShowReasonModal(true);
+    } else {
+      completeTaskSubmission(subtask);
+    }
+  };
+
   const handleSubmitTask = () => {
     // Check if task has min/max time constraints
     const minSeconds = convertToSeconds(selectedTask?.minTime);
     const maxSeconds = convertToSeconds(selectedTask?.maxTime);
+
+    setActiveValidationItem({ type: 'main', item: selectedTask, timer: taskTimer });
 
     // If both min and max are N/A or not provided, submit directly
     if (minSeconds === null && maxSeconds === null) {
@@ -288,7 +533,13 @@ const TaskPage = () => {
     }
   };
 
-  const completeTaskSubmission = async () => {
+  const completeTaskSubmission = async (subtask = null) => {
+    // Determine which item we are submitting
+    const isSubtask = !!subtask;
+    const item = isSubtask ? subtask : selectedTask;
+    const subtaskId = isSubtask ? (subtask._id || subtask.taskId) : null;
+    const timer = isSubtask ? subtaskTimers[subtaskId] : taskTimer;
+
     if (showReasonModal && !reasonText.trim()) {
       alert("Please provide a reason before submitting.");
       return;
@@ -298,14 +549,14 @@ const TaskPage = () => {
 
     try {
       const submissionData = {
-        completedBy: { id: userdata.id, name: userdata.name },
+        completedBy: { id: userdata.id || userdata._id, name: userdata.name },
         completedAt: new Date().toISOString(),
-        actualDuration: formatSeconds(taskTimer.elapsedTime),
-        elapsedTime: taskTimer.elapsedTime,
+        actualDuration: formatSeconds(timer.elapsedTime),
+        elapsedTime: timer.elapsedTime,
         reason: reasonType ? { type: reasonType, text: reasonText } : null,
         status: 'completed',
-        minTime: selectedTask.minTime,
-        maxTime: selectedTask.maxTime
+        minTime: item.minTime,
+        maxTime: item.maxTime
       };
 
       const stage = stages[selectedTask.stageIndex];
@@ -319,6 +570,7 @@ const TaskPage = () => {
           assignmentId: id,
           stageId,
           taskId,
+          subtaskId,
           executionData: submissionData
         })
       });
@@ -329,7 +581,7 @@ const TaskPage = () => {
         throw new Error(result.message || "Failed to submit task");
       }
 
-      alert(`Task completed successfully!`);
+      alert(`${isSubtask ? 'Subtask' : 'Task'} completed successfully!`);
 
       // Update the local state
       if (assignmentData && assignmentData.prototypeData && selectedTask) {
@@ -340,11 +592,26 @@ const TaskPage = () => {
         );
 
         if (taskIndex !== -1) {
-          updatedStages[stageIndex].tasks[taskIndex] = {
-            ...updatedStages[stageIndex].tasks[taskIndex],
-            status: 'completed',
-            ...submissionData
-          };
+          if (isSubtask) {
+            // Update subtask in local state
+            const subtaskIndex = updatedStages[stageIndex].tasks[taskIndex].subtasks.findIndex(st =>
+              (st._id || st.taskId) === subtaskId
+            );
+            if (subtaskIndex !== -1) {
+              updatedStages[stageIndex].tasks[taskIndex].subtasks[subtaskIndex] = {
+                ...updatedStages[stageIndex].tasks[taskIndex].subtasks[subtaskIndex],
+                status: 'completed',
+                ...submissionData
+              };
+            }
+          } else {
+            // Update main task in local state
+            updatedStages[stageIndex].tasks[taskIndex] = {
+              ...updatedStages[stageIndex].tasks[taskIndex],
+              status: 'completed',
+              ...submissionData
+            };
+          }
 
           setAssignmentData({
             ...assignmentData,
@@ -354,27 +621,53 @@ const TaskPage = () => {
             }
           });
 
-          setSelectedTask({
-            ...selectedTask,
-            status: 'completed',
-            ...submissionData
-          });
+          // Also update selectedTask if it's the one we're viewing
+          if (isSubtask) {
+            const updatedSubtasks = [...selectedTask.subtasks];
+            const subIndex = updatedSubtasks.findIndex(st => (st._id || st.taskId) === subtaskId);
+            if (subIndex !== -1) {
+              updatedSubtasks[subIndex] = {
+                ...updatedSubtasks[subIndex],
+                status: 'completed',
+                ...submissionData
+              };
+              setSelectedTask({
+                ...selectedTask,
+                subtasks: updatedSubtasks
+              });
+            }
+          } else {
+            setSelectedTask({
+              ...selectedTask,
+              status: 'completed',
+              ...submissionData
+            });
+          }
         }
       }
 
       // Reset states
-      setTaskTimer({
-        isRunning: false,
-        startTime: null,
-        elapsedTime: 0
-      });
+      if (isSubtask) {
+        setSubtaskTimers(prev => {
+          const next = { ...prev };
+          delete next[subtaskId];
+          return next;
+        });
+      } else {
+        setTaskTimer({
+          isRunning: false,
+          startTime: null,
+          elapsedTime: 0
+        });
+      }
       setShowReasonModal(false);
       setReasonText('');
       setReasonType(null);
+      setActiveValidationItem(null);
 
     } catch (error) {
-      console.error("Error submitting task:", error);
-      alert(error.message || "Failed to submit task. Please try again.");
+      console.error(`Error submitting ${isSubtask ? 'subtask' : 'task'}:`, error);
+      alert(error.message || `Failed to submit ${isSubtask ? 'subtask' : 'task'}. Please try again.`);
     } finally {
       setIsSubmitting(false);
     }
@@ -385,13 +678,14 @@ const TaskPage = () => {
       alert("Please provide a reason. A reason is mandatory for early or late completions.");
       return;
     }
-    completeTaskSubmission();
+    completeTaskSubmission(activeValidationItem?.type === 'sub' ? activeValidationItem.item : null);
   };
 
   const handleReasonCancel = () => {
     setShowReasonModal(false);
     setReasonText('');
     setReasonType(null);
+    setActiveValidationItem(null);
   };
 
   const handleDependencyConfirm = () => {
@@ -516,17 +810,19 @@ const TaskPage = () => {
                                   <div
                                     key={taskKey}
                                     className={`p-2 text-sm flex items-center gap-2 font-semibold hover:bg-blue-50 cursor-pointer ${isSelected ? 'text-blue-500' : ''
-                                      } ${isCompleted ? 'text-green-600' : ''}`}
+                                      } ${isCompleted ? (task.reason ? 'text-blue-600' : 'text-green-600') : ''}`}
                                     onClick={() => handleTaskClick(stage, task, stageIndex)}
                                   >
                                     <div className={`w-2 h-6 rounded-sm ${isSelected
                                       ? 'bg-blue-500'
                                       : isCompleted
-                                        ? 'bg-green-500'
+                                        ? (task.reason ? 'bg-blue-500' : 'bg-green-500')
                                         : 'bg-gray-300'
                                       }`}></div>
                                     <span className="flex-1">{taskNumber}: {task.title}</span>
-                                    {isCompleted && <CheckCircle size={14} className="text-green-500" />}
+                                    {isCompleted && (
+                                        task.reason ? <AlertCircle size={14} className="text-blue-500" /> : <CheckCircle size={14} className="text-green-500" />
+                                    )}
                                     {task.addStop && !isCompleted && (
                                       <AlertCircle size={14} className="text-amber-500" />
                                     )}
@@ -598,9 +894,9 @@ const TaskPage = () => {
                       </h2>
                       <p className="text-gray-600 mt-1">{selectedTask.stageName}</p>
                       {selectedTask.status === 'completed' && (
-                        <span className="inline-flex items-center gap-1 mt-2 text-xs bg-green-100 text-green-700 px-2 py-1 rounded-md">
-                          <CheckCircle size={12} />
-                          Completed
+                        <span className={`inline-flex items-center gap-1 mt-2 text-xs ${selectedTask.reason ? 'bg-blue-100 text-blue-700' : 'bg-green-100 text-green-700'} px-2 py-1 rounded-md`}>
+                          {selectedTask.reason ? <AlertCircle size={12} /> : <CheckCircle size={12} />}
+                          {selectedTask.reason ? 'Completed with Reason' : 'Completed'}
                         </span>
                       )}
                       {selectedTask.addStop && selectedTask.status !== 'completed' && (
@@ -612,12 +908,11 @@ const TaskPage = () => {
                     </div>
                     <div className="flex items-center gap-4">
 
-                      {/* Timer controls - UPDATED with completion time display */}
+                      {/* Timer controls - UPDATED with locking logic */}
                       {userdata && selectedTask.assignedWorker &&
-                        selectedTask.assignedWorker.some(worker => worker.id === userdata.id) ? (
-                        // User is assigned - show timer controls or completion time
+                        selectedTask.assignedWorker.some(worker => (worker.id || worker._id) === (userdata.id || userdata._id)) ? (
+                        // User is assigned
                         selectedTask.status === 'completed' ? (
-                          // Show completion time instead of "Task Completed"
                           <div className="flex items-center gap-2 bg-green-50 px-3 py-2 rounded-md border border-green-200">
                             <CheckCircle size={16} className="text-green-600" />
                             <div className="flex flex-col items-start">
@@ -627,21 +922,35 @@ const TaskPage = () => {
                               </span>
                             </div>
                           </div>
+                        ) : selectedTask.status === 'Under Execution' && (selectedTask.startedBy?.id || selectedTask.startedBy?._id) !== (userdata.id || userdata._id) ? (
+                          // Task is being executed by someone else
+                          <div className="flex flex-col items-end gap-1">
+                            <div className="flex items-center gap-2 bg-blue-50 px-3 py-2 rounded-md border border-blue-200">
+                              <Loader2 size={16} className="text-blue-600 animate-spin" />
+                              <div className="flex flex-col items-start">
+                                <span className="text-xs text-blue-600 font-medium">Under Execution by</span>
+                                <span className="font-semibold text-blue-700">{selectedTask.startedBy?.name}</span>
+                              </div>
+                            </div>
+                            <span className="text-[10px] text-gray-500 italic">Self-start disabled</span>
+                          </div>
                         ) : !taskTimer.isRunning ? (
                           taskTimer.elapsedTime === 0 ? (
                             <button
                               onClick={handleStartTimerClick}
-                              className="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-md flex items-center gap-2"
+                              disabled={isSubmitting}
+                              className={`bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-md flex items-center gap-2 ${isSubmitting ? 'opacity-50 cursor-not-allowed' : ''}`}
                             >
-                              <CheckCircle size={16} />
+                              {isSubmitting ? <Loader2 size={16} className="animate-spin" /> : <Play size={16} />}
                               Start
                             </button>
                           ) : (
                             <button
                               onClick={handleSubmitTask}
-                              className="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-md flex items-center gap-2"
+                              disabled={isSubmitting}
+                              className={`bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-md flex items-center gap-2 ${isSubmitting ? 'opacity-50 cursor-not-allowed' : ''}`}
                             >
-                              <CheckCircle size={16} />
+                              {isSubmitting ? <Loader2 size={16} className="animate-spin" /> : <CheckCircle size={16} />}
                               Submit
                             </button>
                           )
@@ -655,7 +964,7 @@ const TaskPage = () => {
                           </button>
                         )
                       ) : (
-                        // User is not assigned - show completion time if task is completed, otherwise "View Only"
+                        // User is not assigned
                         selectedTask.status === 'completed' ? (
                           <div className="flex items-center gap-2 bg-green-50 px-3 py-2 rounded-md border border-green-200">
                             <CheckCircle size={16} className="text-green-600" />
@@ -666,6 +975,14 @@ const TaskPage = () => {
                               </span>
                             </div>
                           </div>
+                        ) : selectedTask.status === 'Under Execution' ? (
+                            <div className="flex items-center gap-2 bg-blue-50 px-3 py-2 rounded-md border border-blue-200">
+                                <Loader2 size={16} className="text-blue-600 animate-spin" />
+                                <div className="flex flex-col items-start">
+                                    <span className="text-xs text-blue-600 font-medium">Under Execution by</span>
+                                    <span className="font-semibold text-blue-700">{selectedTask.startedBy?.name || 'Worker'}</span>
+                                </div>
+                            </div>
                         ) : (
                           <div className="text-sm text-gray-500 italic px-3 py-2 bg-gray-100 rounded-md">
                             View Only
@@ -748,34 +1065,136 @@ const TaskPage = () => {
                     <div>
                       <h3 className="text-lg font-medium text-gray-800 mb-3">Subtasks</h3>
                       <div className="space-y-3">
-                        {selectedTask.subtasks.map((subtask, index) => (
-                          <div key={subtask._id || index} className="border-l-4 border-blue-500 pl-4 py-2 bg-gray-50 rounded-r">
-                            <h4 className="font-medium">{subtask.title}</h4>
-                            {subtask.description && (
-                              <p className="text-sm text-gray-600 mt-1">{subtask.description}</p>
-                            )}
-                            <div className="flex gap-4 mt-2">
-                              <div className="text-xs">
-                                <span className="text-gray-500">Min: </span>
-                                {formatDuration(subtask.minTime)}
-                              </div>
-                              <div className="text-xs">
-                                <span className="text-gray-500">Max: </span>
-                                {formatDuration(subtask.maxTime)}
+                        {selectedTask.subtasks.map((subtask, index) => {
+                          const subtaskId = subtask._id || subtask.taskId;
+                          const timer = subtaskTimers[subtaskId];
+                          const isCompleted = subtask.status === 'completed';
+                          const isAssigned = userdata && subtask.assignedWorker &&
+                            subtask.assignedWorker.some(worker => (worker.id || worker._id) === (userdata.id || userdata._id));
+
+                          return (
+                            <div key={subtaskId || index} className={`border-l-4 ${isCompleted ? 'border-green-500 bg-green-50/30' : 'border-blue-500 bg-gray-50'} pl-4 py-3 rounded-r relative shadow-sm`}>
+                              <div className="flex justify-between items-start">
+                                <div className="flex-1">
+                                  <div className="flex items-center gap-2">
+                                    <h4 className="font-semibold text-gray-800">{subtask.title}</h4>
+                                    {isCompleted && (
+                                      <span className={`text-[10px] ${subtask.reason ? 'bg-blue-100 text-blue-700' : 'bg-green-100 text-green-700'} px-1.5 py-0.5 rounded font-medium flex items-center gap-0.5`}>
+                                        {subtask.reason ? <AlertCircle size={10} /> : <CheckCircle size={10} />}
+                                        {subtask.reason ? 'Done (Reason)' : 'Done'}
+                                      </span>
+                                    )}
+                                  </div>
+                                  {subtask.description && (
+                                    <p className="text-sm text-gray-600 mt-1">{subtask.description}</p>
+                                  )}
+
+                                  {isCompleted && subtask.completedBy && (
+                                    <div className="mt-2 text-[10px] text-green-700 font-medium flex items-center gap-1">
+                                      <CheckCircle size={10} />
+                                      <span>
+                                        Completed by <span className="font-bold">{subtask.completedBy.name || subtask.completedBy.id}</span>
+                                        {subtask.completedAt && ` • ${new Date(subtask.completedAt).toLocaleString()}`}
+                                      </span>
+                                    </div>
+                                  )}
+                                  
+                                  <div className="flex gap-4 mt-2 text-[11px] text-gray-500">
+                                    <div className="flex items-center gap-1">
+                                      <Clock size={12} />
+                                      <span>Min: {formatDuration(subtask.minTime)}</span>
+                                    </div>
+                                    <div className="flex items-center gap-1">
+                                      <Clock size={12} />
+                                      <span>Max: {formatDuration(subtask.maxTime)}</span>
+                                    </div>
+                                  </div>
+
+                                  {/* Subtask assigned workers */}
+                                  {subtask.assignedWorker && subtask.assignedWorker.length > 0 && (
+                                    <div className="flex flex-wrap gap-1 mt-2">
+                                      {subtask.assignedWorker.map((worker, wIndex) => (
+                                        <span key={(worker.id || worker._id) || wIndex} className="text-[10px] px-1.5 py-0.5 rounded-full bg-white text-blue-600 border border-blue-100 shadow-sm flex items-center gap-1">
+                                          <Users size={10} /> {worker.name}
+                                        </span>
+                                      ))}
+                                    </div>
+                                  )}
+                                </div>
+
+                                {/* Subtask Controls */}
+                                <div className="flex flex-col items-end gap-2 ml-4">
+                                  {isCompleted ? (
+                                    <div className="flex flex-col items-end">
+                                      <span className="text-[10px] text-green-600 font-medium">Completed in</span>
+                                      <span className="font-mono font-bold text-green-700 text-sm">
+                                        {subtask.actualDuration || formatSeconds(subtask.elapsedTime) || 'N/A'}
+                                      </span>
+                                    </div>
+                                  ) : subtask.status === 'Under Execution' && (subtask.startedBy?.id || subtask.startedBy?._id) !== (userdata.id || userdata._id) ? (
+                                    <div className="flex flex-col items-end gap-1">
+                                      <div className="flex items-center gap-1.5 bg-blue-50 px-2 py-1 rounded border border-blue-100">
+                                        <Loader2 size={12} className="text-blue-600 animate-spin" />
+                                        <div className="flex flex-col items-start">
+                                          <span className="text-[8px] text-blue-600 font-medium">Executing by</span>
+                                          <span className="text-[10px] font-bold text-blue-700">{subtask.startedBy?.name || 'Other'}</span>
+                                        </div>
+                                      </div>
+                                    </div>
+                                  ) : (userdata && subtask.assignedWorker && subtask.assignedWorker.some(worker => (worker.id || worker._id) === (userdata.id || userdata._id))) ? (
+                                    <div className="flex flex-col items-end gap-2">
+                                      {timer?.isRunning ? (
+                                        <div className="flex flex-col items-end gap-1">
+                                          <div className="flex items-center gap-1.5 bg-blue-100 text-blue-700 px-2 py-1 rounded font-mono font-bold animate-pulse text-sm">
+                                            <Loader2 size={12} className="animate-spin" />
+                                            {formatSeconds(timer.elapsedTime)}
+                                          </div>
+                                          <button
+                                            onClick={() => handleStopSubtaskTimer(subtask)}
+                                            className="text-[11px] bg-red-500 hover:bg-red-600 text-white px-3 py-1 rounded shadow-sm transition-colors"
+                                          >
+                                            Stop
+                                          </button>
+                                        </div>
+                                      ) : (
+                                        <div className="flex flex-col items-end gap-1">
+                                          {(timer?.elapsedTime || 0) > 0 && (
+                                            <span className="font-mono text-xs font-bold text-gray-600 bg-gray-200 px-2 py-0.5 rounded">
+                                              {formatSeconds(timer.elapsedTime)}
+                                            </span>
+                                          )}
+                                          <button
+                                            onClick={() => (timer?.elapsedTime || 0) === 0 ? handleStartSubtaskTimer(subtask) : handleSubmitSubtask(subtask)}
+                                            disabled={isSubmitting}
+                                            className={`text-[11px] ${ (timer?.elapsedTime || 0) === 0 ? 'bg-green-600 hover:bg-green-700' : 'bg-blue-600 hover:bg-blue-700' } text-white px-4 py-1.5 rounded shadow-sm transition-colors flex items-center gap-1.5 ${isSubmitting ? 'opacity-50 cursor-not-allowed' : ''}`}
+                                          >
+                                            {(timer?.elapsedTime || 0) === 0 ? (
+                                              isSubmitting ? <Loader2 size={12} className="animate-spin" /> : <><Clock size={12} /> Start</>
+                                            ) : (
+                                              isSubmitting ? <Loader2 size={12} className="animate-spin" /> : <><CheckCircle size={12} /> Submit</>
+                                            )}
+                                          </button>
+                                        </div>
+                                      )}
+                                    </div>
+                                  ) : subtask.status === 'Under Execution' ? (
+                                      <div className="flex items-center gap-1.5 bg-blue-50 px-2 py-1 rounded border border-blue-100">
+                                          <Loader2 size={12} className="text-blue-600 animate-spin" />
+                                          <div className="flex flex-col items-start">
+                                              <span className="text-[8px] text-blue-600 font-medium">Executing by</span>
+                                              <span className="text-[10px] font-bold text-blue-700">{subtask.startedBy?.name || 'Other'}</span>
+                                          </div>
+                                      </div>
+                                  ) : (
+                                    <span className="text-[10px] text-gray-400 italic bg-gray-100 px-2 py-1 rounded">
+                                      View Only
+                                    </span>
+                                  )}
+                                </div>
                               </div>
                             </div>
-                            {/* Subtask assigned workers */}
-                            {subtask.assignedWorker && subtask.assignedWorker.length > 0 && (
-                              <div className="flex flex-wrap gap-1 mt-2">
-                                {subtask.assignedWorker.map((worker, wIndex) => (
-                                  <span key={worker.id || wIndex} className="text-xs px-2 py-0.5 rounded-full bg-blue-50 text-blue-600 border border-blue-100">
-                                    {worker.name}
-                                  </span>
-                                ))}
-                              </div>
-                            )}
-                          </div>
-                        ))}
+                          );
+                        })}
                       </div>
                     </div>
                   )}
@@ -816,8 +1235,8 @@ const TaskPage = () => {
 
             <p className="text-gray-600 mb-4">
               {reasonType === 'min'
-                ? `The task was completed in ${formatSeconds(taskTimer.elapsedTime)} which is less than the minimum required time of ${formatDuration(selectedTask?.minTime)}. Please provide a reason.`
-                : `The task took ${formatSeconds(taskTimer.elapsedTime)} which exceeds the maximum allowed time of ${formatDuration(selectedTask?.maxTime)}. Please provide a reason.`
+                ? `The ${activeValidationItem?.type === 'sub' ? 'subtask' : 'task'} "${activeValidationItem?.item?.title}" was completed in ${formatSeconds(activeValidationItem?.timer?.elapsedTime)} which is less than the minimum required time of ${formatDuration(activeValidationItem?.item?.minTime)}. Please provide a reason.`
+                : `The ${activeValidationItem?.type === 'sub' ? 'subtask' : 'task'} "${activeValidationItem?.item?.title}" took ${formatSeconds(activeValidationItem?.timer?.elapsedTime)} which exceeds the maximum allowed time of ${formatDuration(activeValidationItem?.item?.maxTime)}. Please provide a reason.`
               }
             </p>
 

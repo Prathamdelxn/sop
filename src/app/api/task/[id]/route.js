@@ -63,7 +63,7 @@ export async function PUT(req, { params }) {
   await dbConnect();
 
   try {
-    const { id } = params;
+    const { id } = await params;
 
     if (!mongoose.Types.ObjectId.isValid(id)) {
       return NextResponse.json({ error: "Invalid checklist ID" }, { status: 400 });
