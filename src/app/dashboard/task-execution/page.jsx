@@ -116,13 +116,13 @@ const TaskExecutionPage = () => {
     switch (status) {
       case 'Completed':
         if (hasReason) {
-            return {
-                bg: 'bg-blue-50',
-                text: 'text-blue-700',
-                border: 'border-blue-200',
-                icon: 'ℹ️',
-                label: 'Completed with Reason'
-              };
+          return {
+            bg: 'bg-red-50',
+            text: 'text-red-700',
+            border: 'border-red-200',
+            icon: 'ℹ️',
+            label: 'Completed with Exception'
+          };
         }
         return {
           bg: 'bg-emerald-50',
@@ -289,12 +289,11 @@ const TaskExecutionPage = () => {
                             <button
                               onClick={() => handleExecuteTask(task._id)}
                               disabled={false}
-                              className={`inline-flex items-center gap-2 px-4 py-2 text-sm font-medium rounded-lg transition-all duration-200 shadow-sm hover:shadow ${
-                                task.status === 'Completed'
+                              className={`inline-flex items-center gap-2 px-4 py-2 text-sm font-medium rounded-lg transition-all duration-200 shadow-sm hover:shadow ${task.status === 'Completed'
                                 ? 'text-gray-600 bg-gray-50 border border-gray-200 hover:bg-gray-100'
                                 : task.status === 'Under Execution' && (task.startedBy?.id || task.startedBy?._id) !== (userData?.id || userData?._id)
-                                ? 'text-blue-600 bg-blue-50 border border-blue-200 hover:bg-blue-100'
-                                : 'text-white bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 border border-transparent'
+                                  ? 'text-blue-600 bg-blue-50 border border-blue-200 hover:bg-blue-100'
+                                  : 'text-white bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 border border-transparent'
                                 }`}
                             >
                               {task.status === 'Under Execution' ? (

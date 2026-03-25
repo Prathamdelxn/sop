@@ -149,17 +149,17 @@
 //     }
 // const isAllItemsAssigned = () => {
 //   if (!selectedAssignment || !selectedAssignment.prototypeData?.stages) return false
-  
+
 //   const stages = selectedAssignment.prototypeData.stages
-  
+
 //   // Check all stages and tasks
 //   return stages.every((stage, stageIndex) => {
 //     const stageKey = `stage-${stageIndex}`
 //     const stageWorkers = assignedWorkers[stageKey]
-    
+
 //     // If stage has workers assigned, it's considered assigned
 //     if (stageWorkers && stageWorkers.length > 0) return true
-    
+
 //     // Check if all tasks in the stage are assigned
 //     if (stage.tasks && stage.tasks.length > 0) {
 //       return stage.tasks.every((task, taskIndex) => {
@@ -168,7 +168,7 @@
 //         return taskWorkers && taskWorkers.length > 0
 //       })
 //     }
-    
+
 //     return false
 //   })
 // }
@@ -279,15 +279,15 @@
 //   if (!selectedAssignment || !selectedAssignment.prototypeData?.stages) {
 //     return { assignedCount: 0, totalCount: 0 }
 //   }
-  
+
 //   const stages = selectedAssignment.prototypeData.stages
 //   let assignedCount = 0
 //   let totalCount = 0
-  
+
 //   stages.forEach((stage, stageIndex) => {
 //     const stageKey = `stage-${stageIndex}`
 //     totalCount++ // Count stage as an item
-    
+
 //     if (assignedWorkers[stageKey]?.length > 0) {
 //       assignedCount++ // Stage is assigned
 //     } else if (stage.tasks) {
@@ -295,14 +295,14 @@
 //       stage.tasks.forEach((task, taskIndex) => {
 //         const taskKey = `stage-${stageIndex}-task-${taskIndex}`
 //         totalCount++ // Count task as an item
-        
+
 //         if (assignedWorkers[taskKey]?.length > 0) {
 //           assignedCount++ // Task is assigned
 //         }
 //       })
 //     }
 //   })
-  
+
 //   return { assignedCount, totalCount }
 // }
 //     const handleUpdateAssignment = async () => {
@@ -524,7 +524,7 @@
 //                         </div>
 
 //                         <div className="flex-1 overflow-y-auto p-6">
-                         
+
 
 // {!viewMode && (
 //   <div className="mb-6 flex justify-between items-center">
@@ -735,8 +735,8 @@
 //                             </div>
 //                         </div>
 
-                     
-                               
+
+
 //                                 {!viewMode && (
 //   <div className="flex justify-end p-6 border-t border-gray-200 bg-gray-50 gap-3">
 //     <button
@@ -758,7 +758,7 @@
 //     </button>
 //   </div>
 // )}
-                         
+
 //                         {viewMode && (
 //                             <div className="flex justify-end p-6 border-t border-gray-200 bg-gray-50 gap-3">
 //                                 <button
@@ -1018,26 +1018,27 @@ export default function AssignWorkerPage() {
 
     const isAllItemsAssigned = () => {
         if (!selectedAssignment || !selectedAssignment.prototypeData?.stages) return false
-        
+
         const stages = selectedAssignment.prototypeData.stages
-        
-        return stages.every((stage, stageIndex) => {
-            const stageKey = `stage-${stageIndex}`
-            const stageWorkers = assignedWorkers[stageKey]
-            
-            if (stageWorkers && stageWorkers.length > 0) return true
-            
+        let totalTasks = 0
+        let assignedTasks = 0
+
+        stages.forEach((stage, stageIndex) => {
             if (stage.tasks && stage.tasks.length > 0) {
-                return stage.tasks.every((task, taskIndex) => {
+                stage.tasks.forEach((task, taskIndex) => {
+                    totalTasks++
                     const taskKey = `stage-${stageIndex}-task-${taskIndex}`
                     const taskWorkers = assignedWorkers[taskKey]
-                    return taskWorkers && taskWorkers.length > 0
+                    if (taskWorkers && taskWorkers.length > 0) {
+                        assignedTasks++
+                    }
                 })
             }
-            
-            return false
         })
+
+        return totalTasks > 0 && assignedTasks === totalTasks
     }
+
 
     const handleViewWorkers = (assignment) => {
         setSelectedAssignment(assignment)
@@ -1051,8 +1052,8 @@ export default function AssignWorkerPage() {
             stages.forEach((stage, stageIndex) => {
                 const stageKey = `stage-${stageIndex}`
                 if (stage.assignedWorker) {
-                    workersMap[stageKey] = Array.isArray(stage.assignedWorker) 
-                        ? stage.assignedWorker 
+                    workersMap[stageKey] = Array.isArray(stage.assignedWorker)
+                        ? stage.assignedWorker
                         : [stage.assignedWorker]
                 }
 
@@ -1060,8 +1061,8 @@ export default function AssignWorkerPage() {
                     stage.tasks.forEach((task, taskIndex) => {
                         const taskKey = `stage-${stageIndex}-task-${taskIndex}`
                         if (task.assignedWorker) {
-                            workersMap[taskKey] = Array.isArray(task.assignedWorker) 
-                                ? task.assignedWorker 
+                            workersMap[taskKey] = Array.isArray(task.assignedWorker)
+                                ? task.assignedWorker
                                 : [task.assignedWorker]
                         }
                     })
@@ -1093,8 +1094,8 @@ export default function AssignWorkerPage() {
             stages.forEach((stage, stageIndex) => {
                 const stageKey = `stage-${stageIndex}`
                 if (stage.assignedWorker) {
-                    workersMap[stageKey] = Array.isArray(stage.assignedWorker) 
-                        ? stage.assignedWorker 
+                    workersMap[stageKey] = Array.isArray(stage.assignedWorker)
+                        ? stage.assignedWorker
                         : [stage.assignedWorker]
                 }
 
@@ -1102,8 +1103,8 @@ export default function AssignWorkerPage() {
                     stage.tasks.forEach((task, taskIndex) => {
                         const taskKey = `stage-${stageIndex}-task-${taskIndex}`
                         if (task.assignedWorker) {
-                            workersMap[taskKey] = Array.isArray(task.assignedWorker) 
-                                ? task.assignedWorker 
+                            workersMap[taskKey] = Array.isArray(task.assignedWorker)
+                                ? task.assignedWorker
                                 : [task.assignedWorker]
                         }
                     })
@@ -1124,8 +1125,8 @@ export default function AssignWorkerPage() {
 
     const filteredAssignments = assignments.filter(assignment => {
         const matchesSearch = assignment.equipment?.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                            assignment.prototypeData?.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                            assignment.generatedId?.toLowerCase().includes(searchTerm.toLowerCase())
+            assignment.prototypeData?.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+            assignment.generatedId?.toLowerCase().includes(searchTerm.toLowerCase())
         const matchesStatus = statusFilter === 'all' || assignment.status === statusFilter
         return matchesSearch && matchesStatus
     })
@@ -1135,15 +1136,7 @@ export default function AssignWorkerPage() {
         worker.role.toLowerCase().includes(workerSearchTerm.toLowerCase())
     )
 
-    const isStageFullyAssigned = (stageIndex) => {
-        const stage = selectedAssignment.prototypeData.stages[stageIndex]
-        if (!stage.tasks || stage.tasks.length === 0) return false
 
-        return stage.tasks.every((task, taskIndex) => {
-            const taskKey = `stage-${stageIndex}-task-${taskIndex}`
-            return assignedWorkers[taskKey]?.length > 0
-        })
-    }
 
     const prepareAssignmentData = () => {
         if (!selectedAssignment) return null
@@ -1153,13 +1146,12 @@ export default function AssignWorkerPage() {
             assignedDate: new Date().toISOString(),
             status: "Assigned",
             stages: selectedAssignment.prototypeData?.stages?.map((stage, stageIndex) => {
-                const stageKey = `stage-${stageIndex}`
-                const stageWorkers = assignedWorkers[stageKey] || []
+                // Remove stage-level worker assignment - only tasks get workers
                 return {
                     ...stage,
                     stageId: stage._id || `stage-${stageIndex}`,
-                    assignedWorker: stageWorkers,
-                    status: stageWorkers.length > 0 ? "Assigned" : "Unassigned",
+                    assignedWorker: [], // Stage no longer gets assigned workers
+                    status: "Unassigned", // Stage status is now determined by tasks
                     tasks: stage.tasks?.map((task, taskIndex) => {
                         const taskKey = `stage-${stageIndex}-task-${taskIndex}`
                         const taskWorkers = assignedWorkers[taskKey] || []
@@ -1190,29 +1182,24 @@ export default function AssignWorkerPage() {
         if (!selectedAssignment || !selectedAssignment.prototypeData?.stages) {
             return { assignedCount: 0, totalCount: 0 }
         }
-        
+
         const stages = selectedAssignment.prototypeData.stages
         let assignedCount = 0
         let totalCount = 0
-        
+
         stages.forEach((stage, stageIndex) => {
-            const stageKey = `stage-${stageIndex}`
-            totalCount++
-            
-            if (assignedWorkers[stageKey]?.length > 0) {
-                assignedCount++
-            } else if (stage.tasks) {
+            if (stage.tasks && stage.tasks.length > 0) {
                 stage.tasks.forEach((task, taskIndex) => {
                     const taskKey = `stage-${stageIndex}-task-${taskIndex}`
                     totalCount++
-                    
+
                     if (assignedWorkers[taskKey]?.length > 0) {
                         assignedCount++
                     }
                 })
             }
         })
-        
+
         return { assignedCount, totalCount }
     }
 
@@ -1221,7 +1208,7 @@ export default function AssignWorkerPage() {
             alert("Please assign workers to all tasks and stages before saving.")
             return
         }
-        
+
         const updatedData = prepareAssignmentData()
         const res = await fetch(`/api/assignment/update-assignment-for-assign/${selectedAssignment._id}`, {
             method: "PUT",
@@ -1248,17 +1235,7 @@ export default function AssignWorkerPage() {
         resetModal()
     }
 
-    const isStagePartiallyAssigned = (stageIndex) => {
-        const stage = selectedAssignment.prototypeData.stages[stageIndex]
-        if (!stage.tasks || stage.tasks.length === 0) return false
 
-        const assignedCount = stage.tasks.filter((task, taskIndex) => {
-            const taskKey = `stage-${stageIndex}-task-${taskIndex}`
-            return assignedWorkers[taskKey]?.length > 0
-        }).length
-
-        return assignedCount > 0 && assignedCount < stage.tasks.length
-    }
 
     return (
         <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 p-4 relative">
@@ -1367,12 +1344,11 @@ export default function AssignWorkerPage() {
                                                 {assignment.generatedId}
                                             </td>
                                             <td className="px-6 py-4 whitespace-nowrap">
-                                                <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${
-                                                    assignment.status === 'Approved' ? 'bg-green-100 text-green-800' :
+                                                <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${assignment.status === 'Approved' ? 'bg-green-100 text-green-800' :
                                                     assignment.status === 'Assigned' ? 'bg-blue-100 text-blue-800' :
-                                                    assignment.status === 'Pending' ? 'bg-yellow-100 text-yellow-800' :
-                                                    'bg-red-100 text-red-800'
-                                                }`}>
+                                                        assignment.status === 'Pending' ? 'bg-yellow-100 text-yellow-800' :
+                                                            'bg-red-100 text-red-800'
+                                                    }`}>
                                                     {assignment.status}
                                                 </span>
                                             </td>
@@ -1410,7 +1386,7 @@ export default function AssignWorkerPage() {
                                                                 onClick={() => handleEditAssignment(assignment)}
                                                             >
                                                                 <Edit className="w-4 h-4" />
-                                                              
+
                                                             </button>
                                                         </>
                                                     )}
@@ -1465,11 +1441,10 @@ export default function AssignWorkerPage() {
                                     </div>
                                     {!viewMode && (
                                         <button
-                                            className={`px-4 py-2 rounded-lg flex items-center gap-2 transition-colors ${
-                                                Object.values(selectedItems).some(item => item)
-                                                    ? 'bg-blue-600 text-white hover:bg-blue-700 shadow-md'
-                                                    : 'bg-gray-200 text-gray-500 cursor-not-allowed'
-                                            }`}
+                                            className={`px-4 py-2 rounded-lg flex items-center gap-2 transition-colors ${Object.values(selectedItems).some(item => item)
+                                                ? 'bg-blue-600 text-white hover:bg-blue-700 shadow-md'
+                                                : 'bg-gray-200 text-gray-500 cursor-not-allowed'
+                                                }`}
                                             disabled={!Object.values(selectedItems).some(item => item)}
                                             onClick={() => setShowWorkerList(true)}
                                         >
@@ -1483,34 +1458,14 @@ export default function AssignWorkerPage() {
                             <div className="space-y-6">
                                 {selectedAssignment.prototypeData?.stages?.map((stage, stageIndex) => {
                                     const stageKey = `stage-${stageIndex}`
-                                    const isStageSelected = selectedItems[stageKey] || isStageFullyAssigned(stageIndex)
-                                    const stageWorkers = assignedWorkers[stageKey] || []
+                                    const isStageSelected = selectedItems[stageKey] || false
                                     const isExpanded = expandedStages[stageIndex]
 
                                     return (
                                         <div key={stage._id || stageIndex} className="border border-gray-200 rounded-xl shadow-sm">
                                             <div className="p-4 bg-gradient-to-r from-gray-50 to-gray-100 flex items-center justify-between rounded-t-xl">
                                                 <div className="flex items-center gap-4">
-                                                    {!viewMode && (
-                                                        <div className="relative">
-                                                            <input
-                                                                type="checkbox"
-                                                                checked={isStageSelected || false}
-                                                                onChange={() => toggleSelection('stage', stageIndex)}
-                                                                disabled={stageWorkers.length > 0 && !editMode}
-                                                                className={`h-5 w-5 rounded border-2 focus:ring-blue-500 ${
-                                                                    stageWorkers.length > 0 && !editMode
-                                                                        ? 'border-gray-300 bg-gray-100 text-gray-400'
-                                                                        : 'border-gray-300 text-blue-600'
-                                                                }`}
-                                                            />
-                                                            {isStagePartiallyAssigned(stageIndex) && !isStageSelected && (
-                                                                <div className="absolute inset-0 flex items-center justify-center">
-                                                                    <div className="w-3 h-0.5 bg-blue-600"></div>
-                                                                </div>
-                                                            )}
-                                                        </div>
-                                                    )}
+
                                                     <div>
                                                         <h5 className="font-semibold text-gray-900 text-lg">
                                                             Stage {stageIndex + 1}: {stage.name}
@@ -1521,26 +1476,7 @@ export default function AssignWorkerPage() {
                                                     </div>
                                                 </div>
                                                 <div className="flex items-center gap-3">
-                                                    {stageWorkers.length > 0 && (
-                                                        <div className="flex flex-wrap gap-2">
-                                                            {stageWorkers.map(worker => (
-                                                                <span
-                                                                    key={worker.id}
-                                                                    className="text-sm bg-blue-100 text-blue-800 px-3 py-1 rounded-full font-medium border border-blue-200 flex items-center gap-2"
-                                                                >
-                                                                    {worker.name || 'Unknown'}
-                                                                    {!viewMode && (
-                                                                        <button
-                                                                            onClick={() => removeWorker(stageKey, worker.id)}
-                                                                            className="text-blue-600 hover:text-blue-800"
-                                                                        >
-                                                                            <X className="w-4 h-4" />
-                                                                        </button>
-                                                                    )}
-                                                                </span>
-                                                            ))}
-                                                        </div>
-                                                    )}
+
                                                     <button
                                                         className="text-gray-500 hover:text-gray-700 p-2 rounded-full hover:bg-gray-200 transition-colors"
                                                         onClick={() => toggleStage(stageIndex)}
@@ -1574,11 +1510,10 @@ export default function AssignWorkerPage() {
                                                                                             type="checkbox"
                                                                                             checked={isTaskSelected || false}
                                                                                             onChange={() => toggleSelection('task', stageIndex, taskIndex)}
-                                                                                            className={`h-4 w-4 rounded border-2 focus:ring-blue-500 ${
-                                                                                                taskWorkers.length > 0 && !editMode
-                                                                                                    ? 'border-gray-300 bg-gray-100 text-gray-400'
-                                                                                                    : 'border-gray-300 text-blue-600'
-                                                                                            }`}
+                                                                                            className={`h-4 w-4 rounded border-2 focus:ring-blue-500 ${taskWorkers.length > 0 && !editMode
+                                                                                                ? 'border-gray-300 bg-gray-100 text-gray-400'
+                                                                                                : 'border-gray-300 text-blue-600'
+                                                                                                }`}
                                                                                         />
                                                                                         {taskWorkers.length > 0 && (
                                                                                             <Check className="absolute top-0 left-0 w-4 h-4 text-white bg-blue-600 rounded pointer-events-none" />
@@ -1679,11 +1614,10 @@ export default function AssignWorkerPage() {
                                     Cancel
                                 </button>
                                 <button
-                                    className={`px-6 py-2 rounded-lg transition-colors font-medium shadow-md ${
-                                        isAllItemsAssigned()
-                                            ? 'bg-blue-600 text-white hover:bg-blue-700'
-                                            : 'bg-gray-300 text-gray-500 cursor-not-allowed'
-                                    }`}
+                                    className={`px-6 py-2 rounded-lg transition-colors font-medium shadow-md ${isAllItemsAssigned()
+                                        ? 'bg-blue-600 text-white hover:bg-blue-700'
+                                        : 'bg-gray-300 text-gray-500 cursor-not-allowed'
+                                        }`}
                                     disabled={!isAllItemsAssigned()}
                                     onClick={handleUpdateAssignment}
                                 >
@@ -1691,7 +1625,7 @@ export default function AssignWorkerPage() {
                                 </button>
                             </div>
                         )}
-                        
+
                         {viewMode && (
                             <div className="flex justify-end p-6 border-t border-gray-200 bg-gray-50 gap-3">
                                 <button
@@ -1778,11 +1712,10 @@ export default function AssignWorkerPage() {
                                 Cancel
                             </button>
                             <button
-                                className={`px-6 py-2 rounded-lg flex items-center gap-2 transition-colors ${
-                                    selectedWorkers.length > 0
-                                        ? 'bg-blue-600 text-white hover:bg-blue-700 shadow-md'
-                                        : 'bg-gray-200 text-gray-500 cursor-not-allowed'
-                                }`}
+                                className={`px-6 py-2 rounded-lg flex items-center gap-2 transition-colors ${selectedWorkers.length > 0
+                                    ? 'bg-blue-600 text-white hover:bg-blue-700 shadow-md'
+                                    : 'bg-gray-200 text-gray-500 cursor-not-allowed'
+                                    }`}
                                 disabled={selectedWorkers.length === 0}
                                 onClick={assignWorker}
                             >

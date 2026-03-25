@@ -1,5 +1,3 @@
-
-
 "use client"
 import { useEffect, useState, useRef } from "react"
 import {
@@ -67,6 +65,7 @@ const SOPDashboard = () => {
   const [expandedTasks, setExpandedTasks] = useState({})
   const [modalActionType, setModalActionType] = useState('');
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [searchTerm, setSearchTerm] = useState('');
   const [sopToDelete, setSopToDelete] = useState(null);
   const [editingSop, setEditingSop] = useState({
     name: '',
@@ -76,7 +75,7 @@ const SOPDashboard = () => {
     status: 'pending'
   })
   const [showApproversReviewersTable, setShowApproversReviewersTable] = useState(false);
-  
+
   // Pagination states
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage] = useState(10);
@@ -338,7 +337,6 @@ const SOPDashboard = () => {
     Workflow,
     Star,
     Eye,
-
     Heart,
     Bookmark,
     FileText,
@@ -592,7 +590,7 @@ const SOPDashboard = () => {
   }) => {
     const isUnderReview = sopStatus === "Under Review" || sopStatus === "Approved Review" || sopStatus === "Rejected Review";
     const isPendingApproval = sopStatus === "Pending Approval" || sopStatus === "Approved" || sopStatus === "Rejected";
-    const [searchTerm, setSearchTerm] = useState("");
+    const [searchTermLocal, setSearchTermLocal] = useState("");
 
     const toggleWorkerSelection = (workerId) => {
       setSelectedWorkers(prev =>
@@ -603,8 +601,8 @@ const SOPDashboard = () => {
     };
 
     const filteredWorkers = workers.filter(worker =>
-      worker.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      worker.role.toLowerCase().includes(searchTerm.toLowerCase())
+      worker.name.toLowerCase().includes(searchTermLocal.toLowerCase()) ||
+      worker.role.toLowerCase().includes(searchTermLocal.toLowerCase())
     );
 
     const getModalTitle = () => {
@@ -750,12 +748,12 @@ const SOPDashboard = () => {
                       type="text"
                       placeholder="Search by name or role..."
                       className="block w-full pl-10 pr-3 py-2 border border-gray-300 rounded-lg bg-gray-50 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm"
-                      value={searchTerm}
-                      onChange={(e) => setSearchTerm(e.target.value)}
+                      value={searchTermLocal}
+                      onChange={(e) => setSearchTermLocal(e.target.value)}
                     />
-                    {searchTerm && (
+                    {searchTermLocal && (
                       <button
-                        onClick={() => setSearchTerm("")}
+                        onClick={() => setSearchTermLocal("")}
                         className="absolute inset-y-0 right-0 pr-3 flex items-center"
                       >
                         <X className="h-4 w-4 text-gray-400 hover:text-gray-600" />
@@ -1283,7 +1281,6 @@ const SOPDashboard = () => {
 
   const [companyData, setCompanyData] = useState();
 
-
   useEffect(() => {
     const userData = localStorage.getItem('user')
     const data = JSON.parse(userData)
@@ -1302,7 +1299,7 @@ const SOPDashboard = () => {
           setSopData(filtered)
           setFiltering(false)
           setLoading(false)
-          setCurrentPage(1) // Reset to first page when data changes
+          setCurrentPage(1)
         }, 500)
       } catch (err) {
         console.error("Failed to fetch SOPs:", err)
@@ -1318,7 +1315,7 @@ const SOPDashboard = () => {
 
   // Pagination logic
   const totalPages = Math.ceil(sopData.length / itemsPerPage);
-  
+
   const goToNextPage = () => {
     setCurrentPage(prev => Math.min(prev + 1, totalPages));
   };
@@ -1349,6 +1346,22 @@ const SOPDashboard = () => {
       status: item.status || "Pending Approval",
     }
   })
+
+  // Filter data based on search term
+  const filteredSopData = enhancedSopData.filter(sop => {
+    if (!searchTerm.trim()) return true;
+
+    const searchLower = searchTerm.toLowerCase().trim();
+    const nameMatch = sop.name?.toLowerCase().includes(searchLower);
+    const docNumberMatch = sop.documentNumber?.toLowerCase().includes(searchLower);
+
+    return nameMatch || docNumberMatch;
+  });
+
+  // Update pagination for filtered data
+  const filteredTotalPages = Math.ceil(filteredSopData.length / itemsPerPage);
+  const filteredIndexLastItem = currentPage * itemsPerPage;
+  const filteredIndexFirstItem = filteredIndexLastItem - itemsPerPage;
 
   const getStatusBadge = (status) => {
     const statusMap = {
@@ -1398,19 +1411,18 @@ const SOPDashboard = () => {
       </span>
     )
   }
+
   useEffect(() => {
-
     fetchUserById(selectedSop?.userId);
-
   }, [selectedSop]);
+
   const [name, setNAme] = useState();
   const fetchUserById = async (id) => {
     const res = await fetch(`/api/users/fetch-by-id/${id}`);
     const data = await res.json();
-    console.log("asdfasdf", data?.user?.name);
     setNAme(data?.user?.name);
-
   };
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 p-4 relative ">
       <div className="bg-white border-b border-gray-200 rounded-xl mx-2 mt-4 shadow-sm">
@@ -1458,8 +1470,13 @@ const SOPDashboard = () => {
               </div>
               <input
                 type="text"
-                placeholder="Search checklists..."
+                placeholder="Search by checklist name or document number..."
                 className="block w-full pl-10 pr-3 py-2 border border-gray-300 rounded-lg bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                value={searchTerm}
+                onChange={(e) => {
+                  setSearchTerm(e.target.value);
+                  setCurrentPage(1);
+                }}
               />
             </div>
             <div className="flex items-center space-x-2">
@@ -1514,7 +1531,7 @@ const SOPDashboard = () => {
               </table>
             </div>
           </div>
-        ) : enhancedSopData.length > 0 ? (
+        ) : filteredSopData.length > 0 ? (
           <>
             <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
               <div className="overflow-x-auto">
@@ -1542,12 +1559,21 @@ const SOPDashboard = () => {
                     </tr>
                   </thead>
                   <tbody className="bg-white divide-y divide-gray-200">
-                    {enhancedSopData.map((sop) => (
+                    {filteredSopData.map((sop) => (
                       <tr key={sop.id} className="hover:bg-gray-50">
                         <td className="px-6 py-4 whitespace-nowrap">
                           <div className="flex items-center">
                             <div className="ml-4">
-                              <div className="text-sm font-medium text-gray-900 truncate max-w-[180px] capitalize" title={sop.name} >{sop.name}</div>
+                              <div
+                                className="text-sm font-medium text-gray-900 truncate max-w-[220px]"
+                                title={`${sop.documentNumber || 'N/A'} - ${sop.name}`}
+                              >
+                                <span className="font-mono text-xs text-gray-500">
+                                  {sop.documentNumber || 'N/A'}
+                                </span>
+                                <span className="mx-1">-</span>
+                                <span className="capitalize">{sop.name}</span>
+                              </div>
                             </div>
                           </div>
                         </td>
@@ -1578,18 +1604,18 @@ const SOPDashboard = () => {
                                 {sop.status === "Under Review" || sop.status === "Rejected Review" ? "View Reviewer's" : "Send for Review"}
                               </button>
                             </div>
-                          ) : sop.status === "Approved Review" || sop.status == "Pending Approval" || sop.status == "Rejected" ? (
-                            <div className=" py-4 whitespace-nowrap text-center">
-                              <button
-                                onClick={() => handleSendForApproval(sop.id)}
-                                className="px-3 py-1.5 border border-transparent text-xs font-medium rounded-full shadow-sm text-white bg-blue-500 hover:bg-[#2791b8]"
-                                title="Send for Approval"
-                              >
-                                {sop.status == "Pending Approval" || sop.status == "Rejected" ? "View Approver's" : " Send for Approval"}
-                              </button>
-                            </div>
-                          ) : (<></>
-                          )}
+                            ) : sop.status === "Approved Review" || sop.status == "Pending Approval" || sop.status == "Rejected" ? (
+                              <div className=" py-4 whitespace-nowrap text-center">
+                                <button
+                                  onClick={() => handleSendForApproval(sop.id)}
+                                  className="px-3 py-1.5 border border-transparent text-xs font-medium rounded-full shadow-sm text-white bg-blue-500 hover:bg-[#2791b8]"
+                                  title="Send for Approval"
+                                >
+                                  {sop.status == "Pending Approval" || sop.status == "Rejected" ? "View Approver's" : " Send for Approval"}
+                                </button>
+                              </div>
+                            ) : (<></>
+                            )}
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap text-center text-sm font-medium">
                           <div className="flex h-8 items-center justify-end gap-6">
@@ -1628,7 +1654,7 @@ const SOPDashboard = () => {
             </div>
 
             {/* Pagination Controls */}
-            {totalPages > 1 && (
+            {filteredTotalPages > 1 && (
               <div className="mt-6 flex items-center justify-between bg-white px-4 py-3 sm:px-6 rounded-xl shadow-sm border border-gray-200">
                 <div className="flex flex-1 justify-between sm:hidden">
                   <button
@@ -1643,8 +1669,8 @@ const SOPDashboard = () => {
                   </button>
                   <button
                     onClick={goToNextPage}
-                    disabled={currentPage === totalPages}
-                    className={`relative ml-3 inline-flex items-center rounded-md border border-gray-300 bg-white px-4 py-2 text-sm font-medium ${currentPage === totalPages
+                    disabled={currentPage === filteredTotalPages}
+                    className={`relative ml-3 inline-flex items-center rounded-md border border-gray-300 bg-white px-4 py-2 text-sm font-medium ${currentPage === filteredTotalPages
                       ? 'text-gray-300 cursor-not-allowed'
                       : 'text-gray-700 hover:bg-gray-50'
                       }`}
@@ -1655,11 +1681,11 @@ const SOPDashboard = () => {
                 <div className="hidden sm:flex sm:flex-1 sm:items-center sm:justify-between">
                   <div>
                     <p className="text-sm text-gray-700">
-                      Showing <span className="font-medium">{indexOfFirstItem + 1}</span> to{' '}
+                      Showing <span className="font-medium">{filteredIndexFirstItem + 1}</span> to{' '}
                       <span className="font-medium">
-                        {Math.min(indexOfLastItem, sopData.length)}
+                        {Math.min(filteredIndexLastItem, filteredSopData.length)}
                       </span>{' '}
-                      of <span className="font-medium">{sopData.length}</span> results
+                      of <span className="font-medium">{filteredSopData.length}</span> results
                     </p>
                   </div>
                   <div>
@@ -1686,14 +1712,13 @@ const SOPDashboard = () => {
                         <span className="sr-only">Previous</span>
                         <ChevronLeft className="h-5 w-5" aria-hidden="true" />
                       </button>
-                      
+
                       {/* Page Numbers */}
-                      {[...Array(totalPages)].map((_, i) => {
+                      {[...Array(filteredTotalPages)].map((_, i) => {
                         const pageNumber = i + 1;
-                        // Show first page, last page, and pages around current page
                         if (
                           pageNumber === 1 ||
-                          pageNumber === totalPages ||
+                          pageNumber === filteredTotalPages ||
                           (pageNumber >= currentPage - 1 && pageNumber <= currentPage + 1)
                         ) {
                           return (
@@ -1709,10 +1734,9 @@ const SOPDashboard = () => {
                             </button>
                           );
                         }
-                        // Show ellipsis
                         if (
                           (pageNumber === 2 && currentPage > 3) ||
-                          (pageNumber === totalPages - 1 && currentPage < totalPages - 2)
+                          (pageNumber === filteredTotalPages - 1 && currentPage < filteredTotalPages - 2)
                         ) {
                           return (
                             <span
@@ -1725,11 +1749,11 @@ const SOPDashboard = () => {
                         }
                         return null;
                       })}
-                      
+
                       <button
                         onClick={goToNextPage}
-                        disabled={currentPage === totalPages}
-                        className={`relative inline-flex items-center px-2 py-2 text-gray-400 ring-1 ring-inset ring-gray-300 ${currentPage === totalPages
+                        disabled={currentPage === filteredTotalPages}
+                        className={`relative inline-flex items-center px-2 py-2 text-gray-400 ring-1 ring-inset ring-gray-300 ${currentPage === filteredTotalPages
                           ? 'cursor-not-allowed'
                           : 'hover:bg-gray-50 focus:z-20 focus:outline-offset-0'
                           }`}
@@ -1738,9 +1762,9 @@ const SOPDashboard = () => {
                         <ChevronRight className="h-5 w-5" aria-hidden="true" />
                       </button>
                       <button
-                        onClick={() => goToPage(totalPages)}
-                        disabled={currentPage === totalPages}
-                        className={`relative inline-flex items-center rounded-r-md px-2 py-2 text-gray-400 ring-1 ring-inset ring-gray-300 ${currentPage === totalPages
+                        onClick={() => goToPage(filteredTotalPages)}
+                        disabled={currentPage === filteredTotalPages}
+                        className={`relative inline-flex items-center rounded-r-md px-2 py-2 text-gray-400 ring-1 ring-inset ring-gray-300 ${currentPage === filteredTotalPages
                           ? 'cursor-not-allowed'
                           : 'hover:bg-gray-50 focus:z-20 focus:outline-offset-0'
                           }`}
@@ -1762,9 +1786,13 @@ const SOPDashboard = () => {
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
                 </svg>
               </div>
-              <h3 className="text-lg font-medium text-gray-900">No checklists available</h3>
+              <h3 className="text-lg font-medium text-gray-900">
+                {searchTerm ? "No matching checklists found" : "No checklists available"}
+              </h3>
               <p className="text-gray-500 max-w-md">
-                You haven't created any checklists yet. Get started by creating your first checklist.
+                {searchTerm
+                  ? `No checklists match "${searchTerm}". Try a different search term.`
+                  : "You haven't created any checklists yet. Get started by creating your first checklist."}
               </p>
             </div>
           </div>
@@ -1778,7 +1806,6 @@ const SOPDashboard = () => {
             className="relative  rounded-xl bg-white shadow-xl w-full max-w-5xl h-[85vh] flex flex-col mx-4"
             onClick={(e) => e.stopPropagation()}
           >
-            {/* Sticky Header */}
             <div className="sticky top-0 bg-white rounded-t-xl p-4  pb-4 border-b flex items-start justify-between z-20">
               <div>
                 <h2 className="text-2xl font-bold text-gray-900 capitalize">{selectedSop.name}</h2>
@@ -1801,7 +1828,6 @@ const SOPDashboard = () => {
               </div>
 
               <div className="flex items-center gap-3">
-                {/* Close button */}
                 <button
                   onClick={closeModal}
                   className="p-2 rounded-full bg-white shadow hover:bg-gray-100 transition-colors"
@@ -1811,7 +1837,6 @@ const SOPDashboard = () => {
               </div>
             </div>
 
-            {/* Scrollable Content */}
             <div className="p-6 space-y-8 overflow-y-auto flex-1 hide-scrollbar">
               <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
                 <div className="bg-gray-50 px-6 py-4 border-b border-gray-200">
@@ -1823,7 +1848,6 @@ const SOPDashboard = () => {
 
                 <div className="p-6">
                   <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                    {/* Checklist Name */}
                     <div>
                       <label className="block text-sm font-medium text-gray-700 mb-2">
                         Checklist Name
@@ -1835,7 +1859,6 @@ const SOPDashboard = () => {
                       </div>
                     </div>
 
-                    {/* Department */}
                     <div>
                       <label className="block text-sm font-medium text-gray-700 mb-2">
                         Department
@@ -1847,7 +1870,6 @@ const SOPDashboard = () => {
                       </div>
                     </div>
 
-                    {/* Document Number */}
                     <div>
                       <label className="block text-sm font-medium text-gray-700 mb-2">
                         Document Number
@@ -1859,7 +1881,6 @@ const SOPDashboard = () => {
                       </div>
                     </div>
 
-                    {/* Version */}
                     <div>
                       <label className="block text-sm font-medium text-gray-700 mb-2">
                         Version
@@ -1871,7 +1892,6 @@ const SOPDashboard = () => {
                       </div>
                     </div>
 
-                    {/* QMS Number */}
                     <div>
                       <label className="block text-sm font-medium text-gray-700 mb-2">
                         QMS Number
@@ -1882,13 +1902,10 @@ const SOPDashboard = () => {
                         </p>
                       </div>
                     </div>
-
-
                   </div>
                 </div>
               </div>
               <div className="space-y-6">
-                {/* ---- Stages ---- */}
                 {[...selectedSop.stages || []]
                   .sort((a, b) => {
                     if (a.title === "Default Stage") return 1;
@@ -1929,7 +1946,6 @@ const SOPDashboard = () => {
                     </div>
                   ))}
 
-
                 <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
                   <div className="bg-gray-50 px-6 py-4 border-b border-gray-200">
                     <h3 className="text-lg font-semibold text-gray-900 flex items-center gap-2">
@@ -1959,15 +1975,12 @@ const SOPDashboard = () => {
                       <tbody className="bg-white divide-y divide-gray-200">
                         {selectedSop.visualRepresntation?.map((item, index) => (
                           <tr key={index} className="hover:bg-gray-50 transition-colors">
-                            {/* Check Point Column */}
                             <td className="px-6 py-4 whitespace-nowrap">
                               <div className="flex items-center gap-3">
-
                                 <div className="flex-1 min-w-0">
                                   <div className="text-sm font-medium text-gray-900 capitalize">
                                     {item.checkPoint?.title || 'No Title'}
                                   </div>
-                                  {/* Images */}
                                   {item.checkPoint?.images && item.checkPoint.images.length > 0 && (
                                     <div className="flex items-center gap-1 mt-2">
                                       {item.checkPoint.images.map((image, imgIndex) => (
@@ -1984,37 +1997,26 @@ const SOPDashboard = () => {
                                 </div>
                               </div>
                             </td>
-
-                            {/* Status Column */}
                             <td className="px-6 py-4 whitespace-nowrap text-center">
                               <span className={`inline-flex items-center px-3 py-1 rounded-full text-sm font-medium`}>
-
                                 {item.cleaningStatus === 'Visually Clean' ? 'Clean' : (item.cleaningStatus || 'Clean')}
                               </span>
                             </td>
-
-                            {/* Production Column */}
                             <td className="px-6 py-4 whitespace-nowrap text-center">
                               <span className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-medium `}>
-
                                 {item.production || 'Not Set'}
                               </span>
                             </td>
-
-                            {/* QA Column */}
                             <td className="px-6 py-4 whitespace-nowrap text-center">
                               <span className="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium ">
-
                                 {item.qa || 'Not Set'}
                               </span>
                             </td>
                           </tr>
                         ))}
-
                       </tbody>
                     </table>
 
-                    {/* Empty State */}
                     {(!selectedSop.visualRepresntation || selectedSop.visualRepresntation.length === 0) && (
                       <div className="text-center py-12 bg-gray-50">
                         <Table className="w-12 h-12 text-gray-400 mx-auto mb-3" />
@@ -2027,13 +2029,11 @@ const SOPDashboard = () => {
                   </div>
                 </div>
 
-                {/* Default Stage (below Visual Representation) */}
                 {selectedSop?.defaultStage && (
                   <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
                     <div className="bg-gray-50 px-6 py-4 border-b border-gray-200">
                       <h3 className="text-lg font-semibold text-gray-900 flex items-center gap-2">
                         <ListChecks className="w-4 h-4 text-blue-600" />
-                        {/* Default Stage{selectedSop.defaultStage.title ? `: ${selectedSop.defaultStage.title}` : ""} */}
                         Default Stage
                       </h3>
                     </div>
@@ -2041,7 +2041,6 @@ const SOPDashboard = () => {
                     <div className="divide-y divide-gray-100">
                       {Array.isArray(selectedSop.defaultStage.tasks) && selectedSop.defaultStage.tasks.length > 0 ? (
                         selectedSop.defaultStage.tasks.map((task, taskIndex) =>
-                          // Reuse your existing task renderer
                           renderTask(task, 0, `D.${taskIndex + 1}`)
                         )
                       ) : (
@@ -2054,9 +2053,6 @@ const SOPDashboard = () => {
                   </div>
                 )}
 
-
-
-                {/* ---- Contributors Section ---- */}
                 <div className="bg-gray-50 rounded-xl p-6 border border-gray-200">
                   <h3 className="text-xl font-semibold text-gray-900 mb-6 flex items-center gap-2">
                     <Users className="w-6 h-6 text-blue-600" />
@@ -2064,7 +2060,6 @@ const SOPDashboard = () => {
                   </h3>
 
                   <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-                    {/* Created By */}
                     <div className="bg-white rounded-lg p-4 border border-gray-200 shadow-sm">
                       <div className="flex items-center gap-3 mb-3">
                         <div className="w-10 h-10 bg-blue-100 rounded-full flex items-center justify-center">
@@ -2073,7 +2068,6 @@ const SOPDashboard = () => {
                         <div>
                           <h4 className="font-medium text-gray-900">Created By</h4>
                           <p className="text-sm text-gray-500 uppercase">
-
                             {selectedSop.createdAt ? new Date(selectedSop.createdAt).toLocaleString("en-IN", {
                               day: "2-digit",
                               month: "short",
@@ -2083,7 +2077,6 @@ const SOPDashboard = () => {
                               hour12: true,
                             }) : 'Not reviewed'}
                           </p>
-
                         </div>
                       </div>
                       <div className="flex items-center gap-3 p-2 bg-blue-50 rounded-md">
@@ -2091,13 +2084,11 @@ const SOPDashboard = () => {
                           {companyData.name?.charAt(0) || 'C'}
                         </div>
                         <span className="text-sm font-medium text-gray-900">
-
                           {name}
                         </span>
                       </div>
                     </div>
 
-                    {/* Reviewers */}
                     <div className="bg-white rounded-lg p-4 border border-gray-200 shadow-sm">
                       <div className="flex items-center justify-between mb-3">
                         <div className="flex items-center gap-3">
@@ -2143,7 +2134,6 @@ const SOPDashboard = () => {
                       </div>
                     </div>
 
-                    {/* Approvers */}
                     <div className="bg-white rounded-lg p-4 border border-gray-200 shadow-sm">
                       <div className="flex items-center justify-between mb-3">
                         <div className="flex items-center gap-3">
@@ -2190,11 +2180,9 @@ const SOPDashboard = () => {
                     </div>
                   </div>
 
-                  {/* Detailed Tables (Collapsible) */}
                   {(selectedSop.reviews && selectedSop.reviews.length > 0) ||
                     (selectedSop.approvers && selectedSop.approvers.length > 0) ? (
                     <div className="mt-6 space-y-4">
-                      {/* Reviewers Table */}
                       {selectedSop.reviews && selectedSop.reviews.length > 0 && (
                         <div className="bg-white rounded-lg border border-gray-200 overflow-hidden">
                           <div className="bg-gray-50 px-4 py-3 border-b">
@@ -2207,21 +2195,11 @@ const SOPDashboard = () => {
                             <table className="min-w-full divide-y divide-gray-200">
                               <thead className="bg-gray-50">
                                 <tr>
-                                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                    Reviewer
-                                  </th>
-                                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                    Role
-                                  </th>
-                                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                    Status
-                                  </th>
-                                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                    Date
-                                  </th>
-                                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                    Comments
-                                  </th>
+                                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Reviewer</th>
+                                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Role</th>
+                                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
+                                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Date</th>
+                                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Comments</th>
                                 </tr>
                               </thead>
                               <tbody className="bg-white divide-y divide-gray-200">
@@ -2277,7 +2255,6 @@ const SOPDashboard = () => {
                         </div>
                       )}
 
-                      {/* Approvers Table */}
                       {selectedSop.approvers && selectedSop.approvers.length > 0 && (
                         <div className="bg-white rounded-lg border border-gray-200 overflow-hidden">
                           <div className="bg-gray-50 px-4 py-3 border-b">
@@ -2290,21 +2267,11 @@ const SOPDashboard = () => {
                             <table className="min-w-full divide-y divide-gray-200">
                               <thead className="bg-gray-50">
                                 <tr>
-                                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                    Approver
-                                  </th>
-                                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                    Role
-                                  </th>
-                                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                    Status
-                                  </th>
-                                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                    Date
-                                  </th>
-                                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                    Comments
-                                  </th>
+                                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Approver</th>
+                                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Role</th>
+                                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
+                                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Date</th>
+                                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Comments</th>
                                 </tr>
                               </thead>
                               <tbody className="bg-white divide-y divide-gray-200">
@@ -2376,8 +2343,6 @@ const SOPDashboard = () => {
         </div>
       )}
 
-
-      {/* Approvers/Reviewers Table Modal */}
       {showApproversReviewersTable && selectedSop && (
         <div className="fixed pl-64 inset-0 z-50 overflow-auto bg-gray-900/20 backdrop-blur-sm flex items-center justify-center p-4">
           <div
@@ -2399,7 +2364,6 @@ const SOPDashboard = () => {
             </div>
 
             <div className="p-6">
-              {/* Reviewers Table */}
               {selectedSop.reviews && selectedSop.reviews.length > 0 && (
                 <div className="mb-8">
                   <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center gap-2">
@@ -2410,21 +2374,11 @@ const SOPDashboard = () => {
                     <table className="min-w-full divide-y divide-gray-200">
                       <thead className="bg-gray-50">
                         <tr>
-                          <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                            Name
-                          </th>
-                          <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                            Role
-                          </th>
-                          <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                            Status
-                          </th>
-                          <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                            Review Date
-                          </th>
-                          <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                            Comments
-                          </th>
+                          <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Name</th>
+                          <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Role</th>
+                          <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
+                          <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Review Date</th>
+                          <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Comments</th>
                         </tr>
                       </thead>
                       <tbody className="bg-white divide-y divide-gray-200">
@@ -2480,7 +2434,6 @@ const SOPDashboard = () => {
                 </div>
               )}
 
-              {/* Approvers Table */}
               {selectedSop.approvers && selectedSop.approvers.length > 0 && (
                 <div>
                   <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center gap-2">
@@ -2491,21 +2444,11 @@ const SOPDashboard = () => {
                     <table className="min-w-full divide-y divide-gray-200">
                       <thead className="bg-gray-50">
                         <tr>
-                          <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                            Name
-                          </th>
-                          <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                            Role
-                          </th>
-                          <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                            Status
-                          </th>
-                          <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                            Approval Date
-                          </th>
-                          <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                            Comments
-                          </th>
+                          <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Name</th>
+                          <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Role</th>
+                          <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
+                          <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Approval Date</th>
+                          <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Comments</th>
                         </tr>
                       </thead>
                       <tbody className="bg-white divide-y divide-gray-200">
@@ -2561,7 +2504,6 @@ const SOPDashboard = () => {
                 </div>
               )}
 
-              {/* Empty State */}
               {(!selectedSop.reviews || selectedSop.reviews.length === 0) &&
                 (!selectedSop.approvers || selectedSop.approvers.length === 0) && (
                   <div className="text-center py-12">
@@ -2577,7 +2519,6 @@ const SOPDashboard = () => {
         </div>
       )}
 
-      {/* Other Modals */}
       {showDurationModal && (
         <DurationModal
           onClose={() => setShowDurationModal(false)}

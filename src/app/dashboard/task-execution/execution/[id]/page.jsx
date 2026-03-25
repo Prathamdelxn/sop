@@ -67,24 +67,24 @@ const TaskPage = () => {
         // Expand first stage by default
         if (data?.prototypeData?.stages?.length > 0) {
           setExpandedStages(prev => {
-              if (Object.keys(prev).length === 0) {
-                  return { [data.prototypeData.stages[0]._id || data.prototypeData.stages[0].stageId]: true };
-              }
-              return prev;
+            if (Object.keys(prev).length === 0) {
+              return { [data.prototypeData.stages[0]._id || data.prototypeData.stages[0].stageId]: true };
+            }
+            return prev;
           });
         }
 
         // Sync selected task if it exists
         if (selectedTask) {
-           let found = false;
-           data.prototypeData.stages.forEach((stage, stageIdx) => {
-             const task = stage.tasks.find(t => (t._id || t.taskId) === (selectedTask._id || selectedTask.taskId));
-             if (task) {
-               setSelectedTask({ ...task, stageName: stage.name || `Stage ${stageIdx + 1}`, stageIndex: stageIdx });
-               found = true;
-             }
-           });
-           if (!found) setSelectedTask(null);
+          let found = false;
+          data.prototypeData.stages.forEach((stage, stageIdx) => {
+            const task = stage.tasks.find(t => (t._id || t.taskId) === (selectedTask._id || selectedTask.taskId));
+            if (task) {
+              setSelectedTask({ ...task, stageName: stage.name || `Stage ${stageIdx + 1}`, stageIndex: stageIdx });
+              found = true;
+            }
+          });
+          if (!found) setSelectedTask(null);
         }
       } catch (err) {
         console.error("Error fetching assignment:", err);
@@ -101,7 +101,7 @@ const TaskPage = () => {
   useEffect(() => {
     let interval;
     const runningSubtaskIds = Object.keys(subtaskTimers).filter(id => subtaskTimers[id]?.isRunning);
-    
+
     if (taskTimer.isRunning || runningSubtaskIds.length > 0) {
       interval = setInterval(() => {
         // Update main task timer
@@ -111,7 +111,7 @@ const TaskPage = () => {
             elapsedTime: Math.floor((Date.now() - prev.startTime) / 1000)
           }));
         }
-        
+
         // Update subtask timers
         if (runningSubtaskIds.length > 0) {
           setSubtaskTimers(prev => {
@@ -147,36 +147,36 @@ const TaskPage = () => {
   const handleTaskClick = (stage, task, stageIndex) => {
     // Check if task is under execution by current user to resume timer
     const currentUserId = userdata?.id || userdata?._id || JSON.parse(localStorage.getItem("user"))?.id || JSON.parse(localStorage.getItem("user"))?._id;
-    
+
     if (task.status === 'Under Execution' && (task.startedBy?.id || task.startedBy?._id) === currentUserId) {
-        const startTime = new Date(task.startedAt).getTime();
-        setTaskTimer({
-            isRunning: true,
-            startTime: startTime,
-            elapsedTime: Math.floor((Date.now() - startTime) / 1000)
-        });
+      const startTime = new Date(task.startedAt).getTime();
+      setTaskTimer({
+        isRunning: true,
+        startTime: startTime,
+        elapsedTime: Math.floor((Date.now() - startTime) / 1000)
+      });
     } else {
-        // Reset timer when selecting a new task
-        setTaskTimer({
-            isRunning: false,
-            startTime: null,
-            elapsedTime: 0
-        });
+      // Reset timer when selecting a new task
+      setTaskTimer({
+        isRunning: false,
+        startTime: null,
+        elapsedTime: 0
+      });
     }
 
     // Initialize subtask timers if they are under execution by current user
     const newSubtaskTimers = {};
     if (task.subtasks) {
-        task.subtasks.forEach(st => {
-            if (st.status === 'Under Execution' && (st.startedBy?.id || st.startedBy?._id) === currentUserId) {
-                const startTime = new Date(st.startedAt).getTime();
-                newSubtaskTimers[st._id || st.taskId] = {
-                    isRunning: true,
-                    startTime: startTime,
-                    elapsedTime: Math.floor((Date.now() - startTime) / 1000)
-                };
-            }
-        });
+      task.subtasks.forEach(st => {
+        if (st.status === 'Under Execution' && (st.startedBy?.id || st.startedBy?._id) === currentUserId) {
+          const startTime = new Date(st.startedAt).getTime();
+          newSubtaskTimers[st._id || st.taskId] = {
+            isRunning: true,
+            startTime: startTime,
+            elapsedTime: Math.floor((Date.now() - startTime) / 1000)
+          };
+        }
+      });
     }
     setSubtaskTimers(newSubtaskTimers);
 
@@ -264,7 +264,7 @@ const TaskPage = () => {
       const taskIndex = updatedStages[selectedTask.stageIndex].tasks.findIndex(t =>
         (t._id || t.taskId) === (selectedTask._id || selectedTask.taskId)
       );
-      
+
       if (taskIndex !== -1) {
         updatedStages[selectedTask.stageIndex].tasks[taskIndex] = {
           ...updatedStages[selectedTask.stageIndex].tasks[taskIndex],
@@ -294,7 +294,7 @@ const TaskPage = () => {
     } catch (err) {
       console.error("Error starting task:", err);
       alert(err.message || "Failed to start task. It might be already in progress.");
-      
+
       // Optionally refresh data if out of sync
       // window.location.reload(); 
     } finally {
@@ -810,18 +810,18 @@ const TaskPage = () => {
                                   <div
                                     key={taskKey}
                                     className={`p-2 text-sm flex items-center gap-2 font-semibold hover:bg-blue-50 cursor-pointer ${isSelected ? 'text-blue-500' : ''
-                                      } ${isCompleted ? (task.reason ? 'text-blue-600' : 'text-green-600') : ''}`}
+                                      } ${isCompleted ? (task.reason ? 'text-red-600' : 'text-green-600') : ''}`}
                                     onClick={() => handleTaskClick(stage, task, stageIndex)}
                                   >
                                     <div className={`w-2 h-6 rounded-sm ${isSelected
                                       ? 'bg-blue-500'
                                       : isCompleted
-                                        ? (task.reason ? 'bg-blue-500' : 'bg-green-500')
+                                        ? (task.reason ? 'bg-red-500' : 'bg-green-500')
                                         : 'bg-gray-300'
                                       }`}></div>
                                     <span className="flex-1">{taskNumber}: {task.title}</span>
                                     {isCompleted && (
-                                        task.reason ? <AlertCircle size={14} className="text-blue-500" /> : <CheckCircle size={14} className="text-green-500" />
+                                      task.reason ? <AlertCircle size={14} className="text-red-500" /> : <CheckCircle size={14} className="text-green-500" />
                                     )}
                                     {task.addStop && !isCompleted && (
                                       <AlertCircle size={14} className="text-amber-500" />
@@ -894,9 +894,9 @@ const TaskPage = () => {
                       </h2>
                       <p className="text-gray-600 mt-1">{selectedTask.stageName}</p>
                       {selectedTask.status === 'completed' && (
-                        <span className={`inline-flex items-center gap-1 mt-2 text-xs ${selectedTask.reason ? 'bg-blue-100 text-blue-700' : 'bg-green-100 text-green-700'} px-2 py-1 rounded-md`}>
+                        <span className={`inline-flex items-center gap-1 mt-2 text-xs ${selectedTask.reason ? 'bg-red-100 text-red-700' : 'bg-green-100 text-green-700'} px-2 py-1 rounded-md`}>
                           {selectedTask.reason ? <AlertCircle size={12} /> : <CheckCircle size={12} />}
-                          {selectedTask.reason ? 'Completed with Reason' : 'Completed'}
+                          {selectedTask.reason ? 'Completed with Exception' : 'Completed'}
                         </span>
                       )}
                       {selectedTask.addStop && selectedTask.status !== 'completed' && (
@@ -976,13 +976,13 @@ const TaskPage = () => {
                             </div>
                           </div>
                         ) : selectedTask.status === 'Under Execution' ? (
-                            <div className="flex items-center gap-2 bg-blue-50 px-3 py-2 rounded-md border border-blue-200">
-                                <Loader2 size={16} className="text-blue-600 animate-spin" />
-                                <div className="flex flex-col items-start">
-                                    <span className="text-xs text-blue-600 font-medium">Under Execution by</span>
-                                    <span className="font-semibold text-blue-700">{selectedTask.startedBy?.name || 'Worker'}</span>
-                                </div>
+                          <div className="flex items-center gap-2 bg-blue-50 px-3 py-2 rounded-md border border-blue-200">
+                            <Loader2 size={16} className="text-blue-600 animate-spin" />
+                            <div className="flex flex-col items-start">
+                              <span className="text-xs text-blue-600 font-medium">Under Execution by</span>
+                              <span className="font-semibold text-blue-700">{selectedTask.startedBy?.name || 'Worker'}</span>
                             </div>
+                          </div>
                         ) : (
                           <div className="text-sm text-gray-500 italic px-3 py-2 bg-gray-100 rounded-md">
                             View Only
@@ -1098,7 +1098,7 @@ const TaskPage = () => {
                                       </span>
                                     </div>
                                   )}
-                                  
+
                                   <div className="flex gap-4 mt-2 text-[11px] text-gray-500">
                                     <div className="flex items-center gap-1">
                                       <Clock size={12} />
@@ -1114,7 +1114,7 @@ const TaskPage = () => {
                                   {subtask.assignedWorker && subtask.assignedWorker.length > 0 && (
                                     <div className="flex flex-wrap gap-1 mt-2">
                                       {subtask.assignedWorker.map((worker, wIndex) => (
-                                        <span key={(worker.id || worker._id) || wIndex} className="text-[10px] px-1.5 py-0.5 rounded-full bg-white text-blue-600 border border-blue-100 shadow-sm flex items-center gap-1">
+                                        <span key={(worker.id || worker._id) || wIndex} className="text-[10px] px-1.5 py-0.5 rounded-full bg-white text-red-600 border border-blue-100 shadow-sm flex items-center gap-1">
                                           <Users size={10} /> {worker.name}
                                         </span>
                                       ))}
@@ -1166,7 +1166,7 @@ const TaskPage = () => {
                                           <button
                                             onClick={() => (timer?.elapsedTime || 0) === 0 ? handleStartSubtaskTimer(subtask) : handleSubmitSubtask(subtask)}
                                             disabled={isSubmitting}
-                                            className={`text-[11px] ${ (timer?.elapsedTime || 0) === 0 ? 'bg-green-600 hover:bg-green-700' : 'bg-blue-600 hover:bg-blue-700' } text-white px-4 py-1.5 rounded shadow-sm transition-colors flex items-center gap-1.5 ${isSubmitting ? 'opacity-50 cursor-not-allowed' : ''}`}
+                                            className={`text-[11px] ${(timer?.elapsedTime || 0) === 0 ? 'bg-green-600 hover:bg-green-700' : 'bg-blue-600 hover:bg-blue-700'} text-white px-4 py-1.5 rounded shadow-sm transition-colors flex items-center gap-1.5 ${isSubmitting ? 'opacity-50 cursor-not-allowed' : ''}`}
                                           >
                                             {(timer?.elapsedTime || 0) === 0 ? (
                                               isSubmitting ? <Loader2 size={12} className="animate-spin" /> : <><Clock size={12} /> Start</>
@@ -1178,13 +1178,13 @@ const TaskPage = () => {
                                       )}
                                     </div>
                                   ) : subtask.status === 'Under Execution' ? (
-                                      <div className="flex items-center gap-1.5 bg-blue-50 px-2 py-1 rounded border border-blue-100">
-                                          <Loader2 size={12} className="text-blue-600 animate-spin" />
-                                          <div className="flex flex-col items-start">
-                                              <span className="text-[8px] text-blue-600 font-medium">Executing by</span>
-                                              <span className="text-[10px] font-bold text-blue-700">{subtask.startedBy?.name || 'Other'}</span>
-                                          </div>
+                                    <div className="flex items-center gap-1.5 bg-blue-50 px-2 py-1 rounded border border-blue-100">
+                                      <Loader2 size={12} className="text-blue-600 animate-spin" />
+                                      <div className="flex flex-col items-start">
+                                        <span className="text-[8px] text-blue-600 font-medium">Executing by</span>
+                                        <span className="text-[10px] font-bold text-blue-700">{subtask.startedBy?.name || 'Other'}</span>
                                       </div>
+                                    </div>
                                   ) : (
                                     <span className="text-[10px] text-gray-400 italic bg-gray-100 px-2 py-1 rounded">
                                       View Only

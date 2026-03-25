@@ -32,6 +32,19 @@ import {
 import Link from "next/link";
 import toast, { Toaster } from "react-hot-toast";
 
+// ─── LocalStorage draft key ───────────────────────────────────────────────────
+const CHECKLIST_DRAFT_KEY = "checklist_creation_draft";
+
+const loadDraft = () => {
+  if (typeof window === "undefined") return null;
+  try {
+    const raw = localStorage.getItem(CHECKLIST_DRAFT_KEY);
+    return raw ? JSON.parse(raw) : null;
+  } catch {
+    return null;
+  }
+};
+
 // Loading Spinner Component
 const LoadingSpinner = () => (
   <div className="flex items-center justify-center">
@@ -406,6 +419,7 @@ export default function NestedDragDrop() {
   const [min, setMin] = useState("");
   const [max, setMax] = useState("");
   const [currentTaskIndex, setCurrentTaskIndex] = useState(null);
+  const [uploadingImages, setUploadingImages] = useState({}); // Track upload state per record
   const [currentStageId, setCurrentStageId] = useState(null);
   const [currentEditItemId, setCurrentEditItemId] = useState(null);
   const [checklistData, setChecklistData] = useState({
@@ -475,7 +489,11 @@ export default function NestedDragDrop() {
   const [bulkSubtasks, setBulkSubtasks] = useState({});
   const [showStageCountModal, setShowStageCountModal] = useState(false);
   const [stageCount, setStageCount] = useState(1);
+  const [bulkStageNames, setBulkStageNames] = useState([]);
+  const [editingStageId, setEditingStageId] = useState(null);
+  const [editingStageName, setEditingStageName] = useState("");
   const [showConfirmModal, setShowConfirmModal] = useState(false);
+
   const [confirmModalData, setConfirmModalData] = useState({
     title: "",
     message: "",
@@ -496,11 +514,36 @@ export default function NestedDragDrop() {
   };
   const handleCheckPointChange = (id, value) => {
     setTableData((prev) =>
-      prev.map((row) => (row.id === id ? { ...row, checkpoint: { ...row.checkpoint, title: value } } : row))
+      prev.map((row) =>
+        row.id === id
+          ? { ...row, checkpoint: { ...row.checkpoint, title: value } }
+          : row
+      )
     );
     setTableErrors((prev) => ({ ...prev, [id]: "" }));
   };
 
+  // On mount (client-only): load draft and populate state, then show a toast
+  useEffect(() => {
+    const draft = loadDraft();
+    if (!draft) return;
+    if (draft.checklistData) setChecklistData(draft.checklistData);
+    if (draft.stages?.length) setStages(draft.stages);
+    if (draft.tableData?.length) setTableData(draft.tableData);
+    if (draft.taskStopStates) setTaskStopStates(draft.taskStopStates);
+    toast.success("Draft restored — your previous work has been recovered.", { duration: 4000 });
+  }, []);
+
+  // Auto-save all key state to localStorage whenever any of them change
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    localStorage.setItem(
+      CHECKLIST_DRAFT_KEY,
+      JSON.stringify({ checklistData, stages, tableData, taskStopStates })
+    );
+  }, [checklistData, stages, tableData, taskStopStates]);
+
+  // Add default stage only when there is no existing draft
   useEffect(() => {
     if (stages.length === 0) {
       const defaultStage = {
@@ -511,6 +554,24 @@ export default function NestedDragDrop() {
       setStages([defaultStage]);
     }
   }, []);
+
+  // Handler to clear the draft and reset the form
+  const handleClearDraft = () => {
+    setConfirmModalData({
+      title: "Clear Draft",
+      message: "Are you sure you want to clear the saved draft? All unsaved progress will be lost.",
+      onConfirm: () => {
+        localStorage.removeItem(CHECKLIST_DRAFT_KEY);
+        setChecklistData({ name: "", department: "", documentNumber: "", qms_number: "", version: "" });
+        setStages([{ id: `stage-${Date.now()}`, title: "Default Stage", tasks: [] }]);
+        setTableData([]);
+        setTaskStopStates({});
+        setShowConfirmModal(false);
+        toast.success("Draft cleared.");
+      },
+    });
+    setShowConfirmModal(true);
+  };
   // Add this near your other useEffect hooks (around line 450-500)
   useEffect(() => {
     // Sync task stop states from stages data
@@ -536,15 +597,17 @@ export default function NestedDragDrop() {
 
   const handleCleaningStatusChange = (id, value) => {
     setTableData((prev) =>
-      prev.map((row) => (row.id === id ? { ...row, cleaningStatus: value } : row))
+      prev.map((row) =>
+        row.id === id ? { ...row, cleaningStatus: value } : row
+      )
     );
   };
 
   const handleImageUpload = async (id, event) => {
-    setIsUploading(true);
+    setUploadingImages(prev => ({ ...prev, [id]: true }));
     const files = Array.from(event.target.files);
     if (!files.length) {
-      setIsUploading(false);
+      setUploadingImages(prev => ({ ...prev, [id]: false })); // Reset on no files
       return;
     }
     const maxSize = 10 * 1024 * 1024; // 10MB
@@ -553,12 +616,15 @@ export default function NestedDragDrop() {
     if (validFiles.length < files.length) {
       toast.error("Some images exceed the 10MB limit.");
     }
+
+    // Get current images for this specific record
     const currentImages = tableData.find((row) => row.id === id)?.checkpoint?.images || [];
     if (currentImages.length + validFiles.length > maxImages) {
       toast.error(`Maximum ${maxImages} images allowed per row.`);
-      setIsUploading(false);
+      setUploadingImages(prev => ({ ...prev, [id]: false })); // Reset on error
       return;
     }
+
     try {
       const uploadPromises = validFiles.map(async (file) => {
         const formData = new FormData();
@@ -581,12 +647,17 @@ export default function NestedDragDrop() {
         };
       });
       const uploadedImages = await Promise.all(uploadPromises);
+
+      // Update only the specific record
       setTableData((prev) =>
         prev.map((row) => {
           if (row.id === id) {
             return {
               ...row,
-              checkpoint: { ...row.checkpoint, images: [...currentImages, ...uploadedImages] },
+              checkpoint: {
+                ...row.checkpoint,
+                images: [...currentImages, ...uploadedImages]
+              },
             };
           }
           return row;
@@ -597,21 +668,23 @@ export default function NestedDragDrop() {
       console.error("Error uploading images:", error);
       toast.error("Failed to upload images. Please try again.");
     } finally {
-      setIsUploading(false);
+      setUploadingImages(prev => ({ ...prev, [id]: false })); // Reset loading state
     }
     event.target.value = "";
   };
 
   const handleRemoveImage = (id, imageIndex) => {
     setTableData((prev) =>
-      prev.map((row) =>
-        row.id === id
-          ? {
+      prev.map((row) => {
+        if (row.id === id) {
+          const updatedImages = row.checkpoint.images.filter((_, idx) => idx !== imageIndex);
+          return {
             ...row,
-            checkpoint: { ...row.checkpoint, images: row.checkpoint.images.filter((_, idx) => idx !== imageIndex) },
-          }
-          : row
-      )
+            checkpoint: { ...row.checkpoint, images: updatedImages },
+          };
+        }
+        return row;
+      })
     );
     toast.success("Image removed successfully!");
   };
@@ -631,11 +704,12 @@ export default function NestedDragDrop() {
 
   const addNewRows = (count) => {
     const newRows = Array.from({ length: count }, () => ({
-      id: `visual-${Date.now()}-${Math.floor(Math.random() * 1000)}`, // Unique persistent ID
+      id: `visual-${Date.now()}-${Math.floor(Math.random() * 1000)}`,
       checkpoint: { title: "", images: [] },
-      cleaningStatus: "Clean",
-      production: "-",
-      qa: "-",
+      cleaningStatus: "Visually Clean",
+      production: "",
+      qa: "",
+      saved: false, // Optional: track saved state
     }));
     setTableData((prev) => [...prev, ...newRows]);
   };
@@ -646,6 +720,7 @@ export default function NestedDragDrop() {
       message: "Are you sure you want to clear all rows? This action cannot be undone.",
       onConfirm: () => {
         setTableData([]);
+        setTableErrors({});
         setShowConfirmModal(false);
         toast.success("All rows cleared!");
       },
@@ -659,6 +734,7 @@ export default function NestedDragDrop() {
       const hasError = !!error;
       const baseClasses = "w-full px-2 py-1 text-sm border rounded-lg focus:ring-2 focus:ring-blue-500 transition-colors";
       const errorClasses = hasError ? "border-red-500 focus:border-red-500 focus:ring-red-300" : "border-slate-300 focus:border-blue-500";
+
       return (
         <tr key={item.id} className="border-b border-gray-200 hover:bg-gray-50">
           <td className="py-3 px-4 text-sm text-gray-700">
@@ -707,18 +783,18 @@ export default function NestedDragDrop() {
                   accept="image/*"
                   multiple
                   onChange={(e) => handleImageUpload(item.id, e)}
-                  disabled={isUploading}
+                  disabled={uploadingImages[item.id]}
                   className="hidden"
                   id={`image-upload-${item.id}`}
                 />
                 <label
                   htmlFor={`image-upload-${item.id}`}
-                  className={`cursor-pointer p-1 bg-green-100 text-green-700 hover:bg-green-200 rounded-lg flex items-center gap-1 text-xs ${isUploading ? "opacity-50 cursor-not-allowed" : ""
+                  className={`cursor-pointer p-1 bg-green-100 text-green-700 hover:bg-green-200 rounded-lg flex items-center gap-1 text-xs ${uploadingImages[item.id] ? "opacity-50 cursor-not-allowed" : ""
                     }`}
                   title="Upload images"
                 >
-                  {isUploading ? <LoadingSpinner /> : <ImageIcon className="w-4 h-4" />}
-                  {isUploading ? "Uploading..." : "Upload"}
+                  {uploadingImages[item.id] ? <LoadingSpinner /> : <ImageIcon className="w-4 h-4" />}
+                  {uploadingImages[item.id] ? "Uploading..." : "Upload"}
                 </label>
               </div>
             </div>
@@ -734,20 +810,82 @@ export default function NestedDragDrop() {
               <option value="NA">NA</option>
             </select>
           </td>
-          <td className="py-3 px-4 text-sm text-gray-600">{item.production}</td>
-          <td className="py-3 px-4 text-sm text-gray-600">{item.qa}</td>
+          <td className="py-3 px-4 text-sm text-gray-600">
+            <input
+              type="text"
+              value={item.production || ""}
+              onChange={(e) => handleProductionChange(item.id, e.target.value)}
+              className="w-full px-2 py-1 text-sm border rounded-lg focus:ring-2 focus:ring-blue-500 transition-colors border-slate-300 focus:border-blue-500"
+              placeholder="Production notes"
+            />
+          </td>
+          <td className="py-3 px-4 text-sm text-gray-600">
+            <input
+              type="text"
+              value={item.qa || ""}
+              onChange={(e) => handleQAChange(item.id, e.target.value)}
+              className="w-full px-2 py-1 text-sm border rounded-lg focus:ring-2 focus:ring-blue-500 transition-colors border-slate-300 focus:border-blue-500"
+              placeholder="QA notes"
+            />
+          </td>
           <td className="py-3 px-4 text-sm text-gray-700">
-            <button
-              onClick={() => handleDeleteRow(item.id)}
-              className="p-1.5 text-slate-500 hover:text-red-600 hover:bg-red-50 rounded-md transition-colors"
-              title="Delete Row"
-            >
-              <Trash className="w-4 h-4" />
-            </button>
+            <div className="flex items-center gap-2">
+              <button
+                onClick={() => handleSaveRow(item.id)}
+                className="p-1.5 bg-green-600 text-white hover:bg-green-700 rounded-md transition-colors"
+                title="Save Row"
+              >
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7" />
+                </svg>
+              </button>
+              <button
+                onClick={() => handleDeleteRow(item.id)}
+                className="p-1.5 text-slate-500 hover:text-red-600 hover:bg-red-50 rounded-md transition-colors"
+                title="Delete Row"
+              >
+                <Trash className="w-4 h-4" />
+              </button>
+            </div>
           </td>
         </tr>
       );
     });
+  };
+
+
+  // Handle production field changes
+  const handleProductionChange = (id, value) => {
+    setTableData((prev) =>
+      prev.map((row) =>
+        row.id === id ? { ...row, production: value } : row
+      )
+    );
+  };
+
+  // Handle QA field changes
+  const handleQAChange = (id, value) => {
+    setTableData((prev) =>
+      prev.map((row) =>
+        row.id === id ? { ...row, qa: value } : row
+      )
+    );
+  };
+
+  // Handle saving a single row
+  const handleSaveRow = (id) => {
+    const rowToSave = tableData.find(row => row.id === id);
+
+    if (!rowToSave.checkpoint?.title?.trim()) {
+      setTableErrors((prev) => ({ ...prev, [id]: "Check Point title is required" }));
+      toast.error("Please fill the Check Point title before saving.");
+      return;
+    }
+
+    // Here you could also save to backend if needed
+    // For now, just show success with the actual data
+    toast.success(`Row "${rowToSave.checkpoint?.title}" saved successfully!`);
+    setTableErrors((prev) => ({ ...prev, [id]: "" }));
   };
 
   const sensors = useSensors(
@@ -1292,6 +1430,10 @@ export default function NestedDragDrop() {
         return;
       }
       const result = await response.json();
+      // Clear draft from localStorage now that the checklist is saved to DB
+      if (typeof window !== "undefined") {
+        localStorage.removeItem(CHECKLIST_DRAFT_KEY);
+      }
       setIsSaving(false);
       setAddedmodalnew(true);
     } catch (error) {
@@ -1368,16 +1510,31 @@ export default function NestedDragDrop() {
       toast.error("Please enter a number between 1 and 10.");
       return;
     }
-    const currentLength = stages.length;
-    const newStages = Array.from({ length: stageCount }, (_, idx) => ({
-      id: generateId("stage"), // Use generateId for unique IDs
-      title: (currentLength + idx) === 0 ? "Default Stage" : `Stage ${currentLength + idx}`, // Continue sequential numbering
+    // Validate all stage names are filled
+    const hasEmpty = bulkStageNames.some((name) => !name.trim());
+    if (hasEmpty) {
+      toast.error("Please enter a title for each stage.");
+      return;
+    }
+    // Check for duplicates within the new names and existing stages
+    const allTitles = [...stages.map((s) => s.title.toLowerCase().trim()), ...bulkStageNames.map((n) => n.toLowerCase().trim())];
+    const seen = new Set();
+    for (const t of allTitles) {
+      if (seen.has(t)) {
+        toast.error(`Duplicate stage title "${t}" found. Please use unique titles.`);
+        return;
+      }
+      seen.add(t);
+    }
+    const newStages = bulkStageNames.map((name) => ({
+      id: generateId("stage"),
+      title: name.trim(),
       tasks: [],
     }));
-    setStages((prev) => [...prev, ...newStages]); // Append to existing stages
+    setStages((prev) => [...prev, ...newStages]);
     setShowStageCountModal(false);
     setStageCount(1);
-    // Select the last newly added stage (or fallback to first if none exist)
+    setBulkStageNames([]);
     setSelectedStageId(newStages[newStages.length - 1]?.id || stages[0]?.id || null);
     toast.success(`${stageCount} new stage(s) added successfully!`);
   };
@@ -1391,12 +1548,7 @@ export default function NestedDragDrop() {
       message: `Are you sure you want to delete the stage "${stageToDelete.title}" and all its tasks/subtasks? This action cannot be undone.`,
       onConfirm: () => {
         setStages((prev) =>
-          prev
-            .filter((s) => s.id !== stageId)
-            .map((s, idx) => ({
-              ...s,
-              title: idx === 0 ? "Default Stage" : `Stage ${idx}`,
-            }))
+          prev.filter((s) => s.id !== stageId)
         );
         if (selectedStageId === stageId) {
           setSelectedStageId(stages[0]?.id || null);
@@ -1432,15 +1584,11 @@ export default function NestedDragDrop() {
     setStages((prev) => {
       const index = prev.findIndex((s) => s.id === stageId);
       if (index === -1) return prev;
-      const updatedStages = [
+      return [
         ...prev.slice(0, index + 1),
         newStage,
         ...prev.slice(index + 1),
       ];
-      return updatedStages.map((stage, idx) => ({
-        ...stage,
-        title: idx === 0 ? "Default Stage" : `Stage ${idx}`,
-      }));
     });
     setSelectedStageId(newStage.id);
     toast.success(`Duplicated "${stageToDuplicate.title}"`);
@@ -3701,6 +3849,14 @@ export default function NestedDragDrop() {
         <h1 className="text-2xl sm:text-3xl md:text-4xl font-bold text-gray-900 tracking-tight">
           Checklist Creation
         </h1>
+        <button
+          onClick={handleClearDraft}
+          className="ml-auto inline-flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium text-red-600 bg-red-50 border border-red-200 rounded-lg hover:bg-red-100 transition-colors"
+          title="Discard the auto-saved draft and reset the form"
+        >
+          <Trash className="w-3.5 h-3.5" />
+          Clear Draft
+        </button>
       </div>
       <div className="max-w-7xl mx-auto">
         <section className="bg-white rounded-xl shadow-md p-6 mb-8">
@@ -3778,7 +3934,7 @@ export default function NestedDragDrop() {
               </span>
             </div>
             <button
-              onClick={() => setShowStageCountModal(true)}
+              onClick={() => { setShowStageCountModal(true); setStageCount(1); setBulkStageNames([""]); }}
               className="w-full px-4 py-2 bg-blue-600 text-white text-sm font-medium rounded-lg hover:bg-blue-700 transition-colors flex items-center justify-center gap-2 mb-4"
             >
               <Plus className="w-4 h-4" /> New Stage
@@ -3798,46 +3954,98 @@ export default function NestedDragDrop() {
                     .filter((s) => s.title !== "Default Stage")
                     .map((stage, idx) => (
                       <div key={stage.id} className="relative group/stage">
-                        <SortableItem
-                          id={stage.id}
-                          title={stage.title}
-                          description={`${stage.tasks?.length || 0} tasks`}
-                          level={1}
-                          onEdit={() => { }}
-                          onDuplicate={() => { }}
-                          onAddSubtask={() => { }}
-                          onDelete={handleDeleteStage}
-                          numbering={idx + 1}
-                          showActionButtons={false}
-                          onClick={(id) => {
-                            setSelectedStageId(id);
-                            setShowVisualTable(false);
-                          }}
-                          items={stages}
-                          itemType="Stage"
-                        />
-                        <div className="flex items-center gap-1 absolute top-2 right-2 opacity-0 group-hover/stage:opacity-100 transition-opacity">
-                          <button
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              handleDuplicateStage(stage.id);
-                            }}
-                            className="p-1.5 text-slate-500 hover:text-green-600 hover:bg-green-50 rounded-md transition-colors"
-                            title={`Duplicate stage "${stage.title}"`}
-                          >
-                            <Copy className="w-3 h-3" />
-                          </button>
-                          <button
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              handleDeleteStage(stage.id);
-                            }}
-                            className="p-1.5 bg-red-500 text-white rounded-full hover:bg-red-600 transition-colors"
-                            title={`Delete stage "${stage.title}"`}
-                          >
-                            <Trash className="w-3 h-3" />
-                          </button>
-                        </div>
+                        {editingStageId === stage.id ? (
+                          <div className="p-3 rounded-lg border border-blue-400 bg-blue-50 shadow-sm">
+                            <input
+                              type="text"
+                              value={editingStageName}
+                              onChange={(e) => setEditingStageName(e.target.value)}
+                              onKeyDown={(e) => {
+                                if (e.key === "Enter") {
+                                  if (!editingStageName.trim()) {
+                                    toast.error("Stage title cannot be empty.");
+                                    return;
+                                  }
+                                  if (checkDuplicateTitle(stages, editingStageName, stage.id, "stage")) return;
+                                  setStages((prev) => prev.map((s) => s.id === stage.id ? { ...s, title: editingStageName.trim() } : s));
+                                  setEditingStageId(null);
+                                  setEditingStageName("");
+                                  toast.success("Stage renamed successfully!");
+                                } else if (e.key === "Escape") {
+                                  setEditingStageId(null);
+                                  setEditingStageName("");
+                                }
+                              }}
+                              onBlur={() => {
+                                if (editingStageName.trim() && editingStageName.trim() !== stage.title) {
+                                  if (!checkDuplicateTitle(stages, editingStageName, stage.id, "stage")) {
+                                    setStages((prev) => prev.map((s) => s.id === stage.id ? { ...s, title: editingStageName.trim() } : s));
+                                    toast.success("Stage renamed successfully!");
+                                  }
+                                }
+                                setEditingStageId(null);
+                                setEditingStageName("");
+                              }}
+                              autoFocus
+                              className="w-full px-2 py-1 text-sm border border-blue-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white"
+                            />
+                            <p className="text-xs text-slate-500 mt-1">Press Enter to save, Escape to cancel</p>
+                          </div>
+                        ) : (
+                          <>
+                            <SortableItem
+                              id={stage.id}
+                              title={stage.title}
+                              description={`${stage.tasks?.length || 0} tasks`}
+                              level={1}
+                              onEdit={() => { }}
+                              onDuplicate={() => { }}
+                              onAddSubtask={() => { }}
+                              onDelete={handleDeleteStage}
+                              numbering={idx + 1}
+                              showActionButtons={false}
+                              onClick={(id) => {
+                                setSelectedStageId(id);
+                                setShowVisualTable(false);
+                              }}
+                              items={stages}
+                              itemType="Stage"
+                            />
+                            <div className="flex items-center gap-1 absolute top-2 right-2 opacity-0 group-hover/stage:opacity-100 transition-opacity">
+                              <button
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  setEditingStageId(stage.id);
+                                  setEditingStageName(stage.title);
+                                }}
+                                className="p-1.5 text-slate-500 hover:text-blue-600 hover:bg-blue-50 rounded-md transition-colors"
+                                title={`Rename stage "${stage.title}"`}
+                              >
+                                <Edit className="w-3 h-3" />
+                              </button>
+                              <button
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  handleDuplicateStage(stage.id);
+                                }}
+                                className="p-1.5 text-slate-500 hover:text-green-600 hover:bg-green-50 rounded-md transition-colors"
+                                title={`Duplicate stage "${stage.title}"`}
+                              >
+                                <Copy className="w-3 h-3" />
+                              </button>
+                              <button
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  handleDeleteStage(stage.id);
+                                }}
+                                className="p-1.5 bg-red-500 text-white rounded-full hover:bg-red-600 transition-colors"
+                                title={`Delete stage "${stage.title}"`}
+                              >
+                                <Trash className="w-3 h-3" />
+                              </button>
+                            </div>
+                          </>
+                        )}
                       </div>
                     ))}
                 </div>
@@ -3915,16 +4123,37 @@ export default function NestedDragDrop() {
                     </button>
                   </div>
                 </div>
-                <div className="mb-4">
-                  <button
-                    onClick={() => setShowRecordCountModal(true)} // Open modal instead of direct add
-                    className="px-4 py-2 bg-blue-600 text-white text-sm font-medium rounded-lg hover:bg-blue-700 transition-colors flex items-center gap-2"
-                  >
-                    <Plus className="w-4 h-4" />
-                    Add Record(s)
-                  </button>
+
+                <div className="mb-4 flex items-center justify-between">
+                  <div className="flex gap-2">
+                    <button
+                      onClick={() => setShowRecordCountModal(true)}
+                      className="px-4 py-2 bg-blue-600 text-white text-sm font-medium rounded-lg hover:bg-blue-700 transition-colors flex items-center gap-2"
+                    >
+                      <Plus className="w-4 h-4" />
+                      Add Record(s)
+                    </button>
+                    <button
+                      onClick={() => {
+                        // Optional: Save all rows button
+                        const allValid = tableData.every(row => row.checkpoint?.title?.trim());
+                        if (!allValid) {
+                          toast.error("Please fill all Check Point titles before saving all.");
+                          return;
+                        }
+                        toast.success("All rows saved successfully!");
+                        // Here you could also save all to backend
+                      }}
+                      className="px-4 py-2 bg-green-600 text-white text-sm font-medium rounded-lg hover:bg-green-700 transition-colors flex items-center gap-2"
+                    >
+                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7" />
+                      </svg>
+                      Save All
+                    </button>
+                  </div>
                   {tableData.length === 0 && (
-                    <p className="text-sm text-gray-500 mt-2">No records yet. Add rows using the modal above.</p>
+                    <p className="text-sm text-gray-500">No records yet. Add rows using the button above.</p>
                   )}
                 </div>
                 <div className="overflow-x-auto">
@@ -3981,27 +4210,40 @@ export default function NestedDragDrop() {
             <div className="fixed inset-0 pl-64 z-50 flex items-center justify-center p-4">
               <div
                 className="absolute inset-0 bg-black/40 backdrop-blur-sm"
-                onClick={() => setShowStageCountModal(false)}
+                onClick={() => { setShowStageCountModal(false); setBulkStageNames([]); setStageCount(1); }}
               />
-              <div className="relative bg-white rounded-2xl shadow-2xl w-full max-w-sm p-6">
+              <div className="relative bg-white rounded-2xl shadow-2xl w-full max-w-md p-6 max-h-[90vh] overflow-y-auto">
                 <div className="flex items-center justify-between mb-4">
                   <h4 className="text-lg font-semibold text-gray-900">
                     Add Stages
                   </h4>
                   <button
-                    onClick={() => setShowStageCountModal(false)}
+                    onClick={() => { setShowStageCountModal(false); setBulkStageNames([]); setStageCount(1); }}
                     className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
                   >
                     <X className="w-5 h-5 text-gray-600" />
                   </button>
                 </div>
-                <div className="mb-6">
+                <div className="mb-4">
                   <InputField
                     label="Number of Stages"
                     type="number"
                     name="stageCount"
                     value={stageCount}
-                    onChange={(e) => setStageCount(parseInt(e.target.value) || 1)}
+                    onChange={(e) => {
+                      const raw = e.target.value;
+                      if (raw === "") {
+                        setStageCount("");
+                        setBulkStageNames([]);
+                        return;
+                      }
+                      const count = Math.max(1, Math.min(10, parseInt(raw) || 1));
+                      setStageCount(count);
+                      setBulkStageNames((prev) => {
+                        const newNames = Array.from({ length: count }, (_, i) => prev[i] || "");
+                        return newNames;
+                      });
+                    }}
                     placeholder="Enter number of stages"
                     min="1"
                     max="10"
@@ -4011,9 +4253,28 @@ export default function NestedDragDrop() {
                     Enter the number of stages you want to create (1-10).
                   </p>
                 </div>
+                {bulkStageNames.length > 0 && (
+                  <div className="mb-4 space-y-3">
+                    <label className="block text-xs font-medium text-slate-700">Stage Titles</label>
+                    {bulkStageNames.map((name, idx) => (
+                      <div key={idx}>
+                        <InputField
+                          label={`Stage ${idx + 1} Title`}
+                          name={`stageName_${idx}`}
+                          value={name}
+                          onChange={(e) => {
+                            setBulkStageNames((prev) => prev.map((n, i) => i === idx ? e.target.value : n));
+                          }}
+                          placeholder={`e.g. Planning, Development, Testing...`}
+                          required
+                        />
+                      </div>
+                    ))}
+                  </div>
+                )}
                 <div className="flex justify-end gap-3">
                   <button
-                    onClick={() => setShowStageCountModal(false)}
+                    onClick={() => { setShowStageCountModal(false); setBulkStageNames([]); setStageCount(1); }}
                     className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50"
                   >
                     Cancel
@@ -4021,6 +4282,7 @@ export default function NestedDragDrop() {
                   <button
                     onClick={handleStageCountConfirm}
                     className="px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-lg hover:bg-blue-700"
+                    disabled={bulkStageNames.length === 0}
                   >
                     Confirm
                   </button>
@@ -4052,7 +4314,7 @@ export default function NestedDragDrop() {
                     type="number"
                     name="taskCount"
                     value={taskCount}
-                    onChange={(e) => setTaskCount(parseInt(e.target.value) || 1)}
+                    onChange={(e) => { const v = e.target.value; setTaskCount(v === "" ? "" : Math.max(1, Math.min(10, parseInt(v) || 1))); }}
                     placeholder="Enter number of tasks"
                     min="1"
                     max="10"
@@ -4103,7 +4365,7 @@ export default function NestedDragDrop() {
                     type="number"
                     name="subtaskCount"
                     value={subtaskCount}
-                    onChange={(e) => setSubtaskCount(parseInt(e.target.value) || 1)}
+                    onChange={(e) => { const v = e.target.value; setSubtaskCount(v === "" ? "" : Math.max(1, Math.min(10, parseInt(v) || 1))); }}
                     placeholder="Enter number of subtasks"
                     min="1"
                     max="10"
@@ -4154,7 +4416,7 @@ export default function NestedDragDrop() {
                     type="number"
                     name="recordCount"
                     value={recordCount}
-                    onChange={(e) => setRecordCount(parseInt(e.target.value) || 1)}
+                    onChange={(e) => { const v = e.target.value; setRecordCount(v === "" ? "" : Math.max(1, Math.min(10, parseInt(v) || 1))); }}
                     placeholder="Enter number of records"
                     min="1"
                     max="10"
