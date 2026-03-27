@@ -139,6 +139,14 @@ const TaskExecutionPage = () => {
           icon: '🔄',
           label: 'In Progress'
         };
+      case 'Paused':
+        return {
+          bg: 'bg-orange-50',
+          text: 'text-orange-700',
+          border: 'border-orange-200',
+          icon: '⏸️',
+          label: 'Paused'
+        };
       default:
         return {
           bg: 'bg-amber-50',
@@ -282,6 +290,12 @@ const TaskExecutionPage = () => {
                                 <span className="font-medium">At:</span> {new Date(task.startedAt).toLocaleString()}
                               </div>
                             )}
+                            {task.status === 'Paused' && (
+                              <div className="text-xs text-orange-500 mt-1">
+                                <span className="font-medium">Paused at:</span> {new Date(task.pausedAt).toLocaleString()}<br />
+                                {task.totalActiveSeconds && <span>🕒 Total: {Math.floor(task.totalActiveSeconds / 60)}m {task.totalActiveSeconds % 60}s</span>}
+                              </div>
+                            )}
                           </div>
                         </td>
                         <td className="px-6 py-5">
@@ -291,13 +305,15 @@ const TaskExecutionPage = () => {
                               disabled={false}
                               className={`inline-flex items-center gap-2 px-4 py-2 text-sm font-medium rounded-lg transition-all duration-200 shadow-sm hover:shadow ${task.status === 'Completed'
                                 ? 'text-gray-600 bg-gray-50 border border-gray-200 hover:bg-gray-100'
-                                : task.status === 'Under Execution' && (task.startedBy?.id || task.startedBy?._id) !== (userData?.id || userData?._id)
+                                : task.status === 'Under Execution' && (task.lockedBy?.id || task.startedBy?.id) !== (userData?.id || userData?._id)
                                   ? 'text-blue-600 bg-blue-50 border border-blue-200 hover:bg-blue-100'
-                                  : 'text-white bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 border border-transparent'
+                                  : task.status === 'Paused'
+                                    ? 'text-white bg-gradient-to-r from-orange-500 to-orange-600 hover:from-orange-600 hover:to-orange-700 border border-transparent'
+                                    : 'text-white bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 border border-transparent'
                                 }`}
                             >
                               {task.status === 'Under Execution' ? (
-                                (task.startedBy?.id || task.startedBy?._id) === (userData?.id || userData?._id) ? (
+                                (task.lockedBy?.id || task.startedBy?.id) === (userData?.id || userData?._id) ? (
                                   <>
                                     <Loader2 className="h-4 w-4 animate-spin" />
                                     Resume
@@ -308,6 +324,11 @@ const TaskExecutionPage = () => {
                                     View
                                   </>
                                 )
+                              ) : task.status === 'Paused' ? (
+                                <>
+                                  <Play className="h-4 w-4" />
+                                  Resume
+                                </>
                               ) : task.status === 'Completed' ? (
                                 <>
                                   <Eye className="h-4 w-4" />

@@ -7,16 +7,15 @@ export async function PUT(request) {
     await connectDB();
 
     const body = await request.json();
-    const { assignmentId, stageId, taskId, subtaskId, startedBy } = body;
+    const { assignmentId, stageId, taskId, subtaskId, pausedBy } = body;
 
-    if (!assignmentId || !stageId || !taskId || !startedBy) {
+    if (!assignmentId || !stageId || !taskId || !pausedBy) {
       return NextResponse.json(
         { success: false, message: 'Missing required fields' },
         { status: 400 }
       );
     }
 
-    // Fetch assignment
     const assignment = await NewAssignment.findById(assignmentId);
     if (!assignment) {
       return NextResponse.json(
@@ -62,73 +61,55 @@ export async function PUT(request) {
       );
     }
 
-    // CONCURRENCY CHECK:
-    // If status is "Under Execution" and it's NOT the same user
-    if (itemToUpdate.status === 'Under Execution' && (itemToUpdate.lockedBy?.id || itemToUpdate.startedBy?.id) !== startedBy.id) {
+    // Only current lock holder can pause
+    if (itemToUpdate.status !== 'Under Execution' || itemToUpdate.lockedBy?.id !== pausedBy.id) {
       return NextResponse.json({
         success: false,
-        message: `Task is already being executed by ${itemToUpdate.lockedBy?.name || itemToUpdate.startedBy?.name || 'another worker'}.`,
-        currentExecutor: itemToUpdate.lockedBy || itemToUpdate.startedBy
-      }, { status: 409 });
+        message: 'You do not have the active lock on this task.',
+      }, { status: 403 });
     }
 
-    // If status is "Paused", user must resume instead
-    if (itemToUpdate.status === 'Paused') {
-      return NextResponse.json({
-        success: false,
-        message: 'Task is paused. Please use the Resume option.',
-      }, { status: 409 });
-    }
-
-    // If status is already "completed", don't allow starting again
-    if (itemToUpdate.status === 'completed') {
-      return NextResponse.json({
-        success: false,
-        message: 'Task is already completed.'
-      }, { status: 400 });
-    }
-
-    // Update status and starter info
     const now = new Date().toISOString();
-    itemToUpdate.status = 'Under Execution';
-    itemToUpdate.lockedBy = startedBy;
-    itemToUpdate.startedBy = startedBy;
-    itemToUpdate.startedAt = now;
+    const startedAt = new Date(itemToUpdate.startedAt).getTime();
+    const endedAt = new Date(now).getTime();
+    const durationSeconds = Math.max(0, Math.floor((endedAt - startedAt) / 1000));
 
-    // Initialize sessions array if it doesn't exist
-    if (!itemToUpdate.sessions) {
-      itemToUpdate.sessions = [];
-    }
+    // Initialize tracking fields if they don't exist (plain objects)
+    if (!itemToUpdate.sessions) itemToUpdate.sessions = [];
+    if (itemToUpdate.totalActiveSeconds === undefined) itemToUpdate.totalActiveSeconds = 0;
 
-    // IMPORTANT: DO NOT create a session here
-    // The session will be created when the task is paused or completed
-    // This prevents empty sessions or duplicate entries
+    // Record session - this creates one session per work period
+    itemToUpdate.sessions.push({
+      workerId: pausedBy.id,
+      workerName: pausedBy.name,
+      startedAt: itemToUpdate.startedAt,
+      endedAt: now,
+      durationSeconds: durationSeconds
+    });
 
-    if (itemToUpdate.totalActiveSeconds === undefined) {
-      itemToUpdate.totalActiveSeconds = 0;
-    }
-
-    // Also update top-level assignment status if it's not already completed
-    if (assignment.status !== 'Completed') {
-      assignment.status = 'Under Execution';
-    }
+    itemToUpdate.totalActiveSeconds += durationSeconds;
+    itemToUpdate.status = 'Paused';
+    itemToUpdate.lockedBy = null;
+    itemToUpdate.lastWorker = { id: pausedBy.id, name: pausedBy.name };
+    itemToUpdate.pausedAt = now;
+    itemToUpdate.startedAt = null; // Clear startedAt after recording session
 
     assignment.markModified('prototypeData.stages');
-    assignment.markModified('status');
     await assignment.save();
 
     return NextResponse.json({
       success: true,
-      message: 'Task started successfully',
+      message: 'Task paused successfully',
       data: {
         status: itemToUpdate.status,
-        startedBy: itemToUpdate.startedBy,
-        startedAt: itemToUpdate.startedAt
+        totalActiveSeconds: itemToUpdate.totalActiveSeconds,
+        sessions: itemToUpdate.sessions,
+        lastWorker: itemToUpdate.lastWorker
       }
     });
 
   } catch (error) {
-    console.error('Error starting task:', error);
+    console.error('Error pausing task:', error);
     return NextResponse.json(
       { success: false, message: 'Internal server error', error: error.message },
       { status: 500 }

@@ -16,12 +16,12 @@ export async function PUT(request) {
       );
     }
 
-    const { 
-      completedBy, 
-      completedAt, 
-      actualDuration, 
+    const {
+      completedBy,
+      completedAt,
+      actualDuration,
       elapsedTime,
-      reason, 
+      reason,
       status,
       minTime,
       maxTime
@@ -46,8 +46,8 @@ export async function PUT(request) {
     const minSeconds = convertToSeconds(minTime);
     const maxSeconds = convertToSeconds(maxTime);
 
-    const needsReason = (minSeconds !== null && elapsedTime < minSeconds) || 
-                        (maxSeconds !== null && elapsedTime > maxSeconds);
+    const needsReason = (minSeconds !== null && elapsedTime < minSeconds) ||
+      (maxSeconds !== null && elapsedTime > maxSeconds);
 
     if (needsReason && (!reason || !reason.text || reason.text.trim() === "")) {
       return NextResponse.json(
@@ -78,12 +78,52 @@ export async function PUT(request) {
                 if (task.subtasks) {
                   for (let subtask of task.subtasks) {
                     if (subtask._id?.toString() === subtaskId || subtask.subtaskId === subtaskId) {
+
+                      // CHECK IF THE LAST SESSION IS ALREADY RECORDED
+                      // We only want to record a final session if the task is currently active
+                      const isCurrentlyActive = subtask.status === 'Under Execution';
+
+                      if (isCurrentlyActive && subtask.startedAt) {
+                        // LOG FINAL SESSION BEFORE COMPLETING
+                        const now = new Date().toISOString();
+                        const startedAt = new Date(subtask.startedAt).getTime();
+                        const endedAt = new Date(now).getTime();
+                        const sessionDuration = Math.max(0, Math.floor((endedAt - startedAt) / 1000));
+
+                        if (!subtask.sessions) subtask.sessions = [];
+                        if (subtask.totalActiveSeconds === undefined) subtask.totalActiveSeconds = 0;
+
+                        // Check if we already have an open session (last session without endedAt)
+                        const lastSession = subtask.sessions[subtask.sessions.length - 1];
+                        const hasOpenSession = lastSession && !lastSession.endedAt;
+
+                        if (hasOpenSession) {
+                          // Update the open session instead of creating a new one
+                          lastSession.endedAt = now;
+                          lastSession.durationSeconds = sessionDuration;
+                          subtask.totalActiveSeconds = (subtask.totalActiveSeconds - lastSession.durationSeconds) + sessionDuration;
+                        } else {
+                          // Create new session
+                          subtask.sessions.push({
+                            workerId: completedBy.id,
+                            workerName: completedBy.name,
+                            startedAt: subtask.startedAt,
+                            endedAt: now,
+                            durationSeconds: sessionDuration
+                          });
+                          subtask.totalActiveSeconds += sessionDuration;
+                        }
+                        subtask.startedAt = null; // Prevent overlapping if called again
+                      }
+
                       subtask.status = status || 'completed';
                       subtask.completedBy = completedBy;
                       subtask.completedAt = completedAt;
                       subtask.actualDuration = actualDuration;
-                      subtask.elapsedTime = elapsedTime;
+                      subtask.elapsedTime = subtask.totalActiveSeconds || elapsedTime;
                       subtask.reason = reason;
+                      subtask.lockedBy = null; // Release lock
+                      subtask.startedAt = null; // Clear startedAt for completed task
                       subtaskFound = true;
                       taskFound = true;
                       break;
@@ -97,13 +137,53 @@ export async function PUT(request) {
                   );
                 }
               } else {
+                // Update main task
+
+                // CHECK IF THE LAST SESSION IS ALREADY RECORDED
+                const isCurrentlyActive = task.status === 'Under Execution';
+
+                if (isCurrentlyActive && task.startedAt) {
+                  // LOG FINAL SESSION BEFORE COMPLETING
+                  const now = new Date().toISOString();
+                  const startedAt = new Date(task.startedAt).getTime();
+                  const endedAt = new Date(now).getTime();
+                  const sessionDuration = Math.max(0, Math.floor((endedAt - startedAt) / 1000));
+
+                  if (!task.sessions) task.sessions = [];
+                  if (task.totalActiveSeconds === undefined) task.totalActiveSeconds = 0;
+
+                  // Check if we already have an open session (last session without endedAt)
+                  const lastSession = task.sessions[task.sessions.length - 1];
+                  const hasOpenSession = lastSession && !lastSession.endedAt;
+
+                  if (hasOpenSession) {
+                    // Update the open session instead of creating a new one
+                    lastSession.endedAt = now;
+                    lastSession.durationSeconds = sessionDuration;
+                    task.totalActiveSeconds = (task.totalActiveSeconds - lastSession.durationSeconds) + sessionDuration;
+                  } else {
+                    // Create new session
+                    task.sessions.push({
+                      workerId: completedBy.id,
+                      workerName: completedBy.name,
+                      startedAt: task.startedAt,
+                      endedAt: now,
+                      durationSeconds: sessionDuration
+                    });
+                    task.totalActiveSeconds += sessionDuration;
+                  }
+                  task.startedAt = null; // Prevent overlapping if called again
+                }
+
                 // Update main task execution details
                 task.status = status || 'completed';
                 task.completedBy = completedBy;
                 task.completedAt = completedAt;
                 task.actualDuration = actualDuration;
-                task.elapsedTime = elapsedTime;
+                task.elapsedTime = task.totalActiveSeconds || elapsedTime;
                 task.reason = reason;
+                task.lockedBy = null; // Release lock on completion
+                task.startedAt = null; // Clear startedAt for completed task
                 taskFound = true;
               }
               break;
