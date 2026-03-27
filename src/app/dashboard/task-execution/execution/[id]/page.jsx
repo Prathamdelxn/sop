@@ -39,6 +39,30 @@ const TaskPage = () => {
     const { prototypeData, equipment } = assignmentData || {};
     const stages = prototypeData?.stages || [];
 
+    // --- CHECKPOINT LOGIC ---
+    const getFirstUncompletedStop = () => {
+        if (!stages) return null;
+        for (let sIdx = 0; sIdx < stages.length; sIdx++) {
+            const stage = stages[sIdx];
+            if (!stage.tasks) continue;
+            for (let tIdx = 0; tIdx < stage.tasks.length; tIdx++) {
+                const task = stage.tasks[tIdx];
+                if (task.addStop && task.status !== 'completed') {
+                    return { stageIndex: sIdx, taskIndex: tIdx };
+                }
+            }
+        }
+        return null;
+    };
+    const firstStopPoint = getFirstUncompletedStop();
+    const isTaskBlockedByStop = (sIdx, tIdx) => {
+        if (!firstStopPoint) return false;
+        if (sIdx > firstStopPoint.stageIndex) return true;
+        if (sIdx === firstStopPoint.stageIndex && tIdx > firstStopPoint.taskIndex) return true;
+        return false;
+    };
+    // ------------------------
+
     // Auto-scroll to subtask when focused
     useEffect(() => {
         if (focusedSubtaskId) {
@@ -950,6 +974,15 @@ const TaskPage = () => {
     };
 
     const handleSubmitTask = async () => {
+        // Enforce all subtasks must be completed before the main task can be submitted
+        if (selectedTask?.subtasks && selectedTask.subtasks.length > 0) {
+            const hasIncompleteSubtasks = selectedTask.subtasks.some(st => st.status !== 'completed');
+            if (hasIncompleteSubtasks) {
+                alert("You cannot submit this task until all of its subtasks are fully completed.");
+                return;
+            }
+        }
+
         // Check if task has min/max time constraints
         const minSeconds = convertToSeconds(selectedTask?.minTime);
         const maxSeconds = convertToSeconds(selectedTask?.maxTime);
@@ -1274,36 +1307,46 @@ const TaskPage = () => {
                                                                 const taskNumber = `${stageIndex + 1}.${taskIndex + 1}`;
                                                                 const isCompleted = task.status === 'completed';
                                                                 const isSelected = selectedTask?._id === task._id || selectedTask?.taskId === task.taskId;
+                                                                const isBlocked = isTaskBlockedByStop(stageIndex, taskIndex);
 
                                                                 return (
                                                                     <div
                                                                         key={taskKey}
-                                                                        className={`p-2 text-sm flex items-center gap-2 font-semibold hover:bg-blue-50 cursor-pointer ${isSelected ? 'text-blue-500' : ''
-                                                                            } ${isCompleted ? (task.reason ? 'text-red-600' : 'text-green-600') : (task.status === 'Paused' ? 'text-orange-600' : '')}`}
-                                                                        onClick={() => handleTaskClick(stage, task, stageIndex)}
+                                                                        className={`p-2 text-sm flex items-center gap-2 font-semibold ${isBlocked ? 'opacity-50 bg-gray-50 cursor-not-allowed' : 'hover:bg-blue-50 cursor-pointer'} ${isSelected && !isBlocked ? 'text-blue-500' : ''
+                                                                            } ${isBlocked ? 'text-gray-400' : isCompleted ? (task.reason ? 'text-red-600' : 'text-green-600') : (task.status === 'Paused' ? 'text-orange-600' : 'text-gray-700')}`}
+                                                                        onClick={() => {
+                                                                            if (isBlocked) {
+                                                                                alert(`🔒 This task is locked! You must first complete the preceding task marked as a Stop Point.`);
+                                                                                return;
+                                                                            }
+                                                                            handleTaskClick(stage, task, stageIndex);
+                                                                        }}
                                                                     >
-                                                                        <div className={`w-2 h-6 rounded-sm ${isSelected
+                                                                        <div className={`w-2 h-6 rounded-sm shrink-0 ${isSelected && !isBlocked
                                                                             ? 'bg-blue-500'
-                                                                            : isCompleted
+                                                                            : isBlocked
+                                                                                ? 'bg-gray-200'
+                                                                                : isCompleted
                                                                                 ? (task.reason ? 'bg-red-500' : 'bg-green-500')
                                                                                 : task.status === 'Paused'
                                                                                     ? 'bg-orange-400'
                                                                                     : 'bg-gray-300'
                                                                             }`}></div>
                                                                         <span className="flex-1 truncate">{taskNumber}: {task.title}</span>
-                                                                        {task.status === 'Under Execution' && (
-                                                                            <div className="flex items-center gap-1">
+                                                                        {isBlocked && <AlertCircle size={14} className="text-gray-400 shrink-0" />}
+                                                                        {task.status === 'Under Execution' && !isBlocked && (
+                                                                            <div className="flex items-center gap-1 shrink-0">
                                                                                 <div className="w-2 h-2 bg-blue-500 rounded-full animate-pulse"></div>
                                                                                 <span className="text-[9px] bg-blue-100 text-blue-700 px-1 rounded font-bold uppercase">
                                                                                     {(task.lockedBy?.name || task.startedBy?.name || '??').split(' ').map(n => n[0]).join('')}
                                                                                 </span>
                                                                             </div>
                                                                         )}
-                                                                        {isCompleted && (
-                                                                            task.reason ? <AlertCircle size={14} className="text-red-500" /> : <CheckCircle size={14} className="text-green-500" />
+                                                                        {isCompleted && !isBlocked && (
+                                                                            task.reason ? <AlertCircle size={14} className="text-red-500 shrink-0" /> : <CheckCircle size={14} className="text-green-500 shrink-0" />
                                                                         )}
-                                                                        {task.addStop && !isCompleted && (
-                                                                            <AlertCircle size={14} className="text-amber-500" />
+                                                                        {task.addStop && !isCompleted && !isBlocked && (
+                                                                            <AlertCircle size={14} className="text-amber-500 shrink-0" title="Stop Point" />
                                                                         )}
                                                                     </div>
                                                                 )
@@ -1334,11 +1377,18 @@ const TaskPage = () => {
                                                             const taskKey = task._id || task.taskId || `task-${stageIndex}-${taskIndex}`;
                                                             const taskNumber = `${stageIndex + 1}.${taskIndex + 1}`;
                                                             const isCompleted = task.status === 'completed';
+                                                            const isBlocked = isTaskBlockedByStop(stageIndex, taskIndex);
                                                             return (
                                                                 <div
                                                                     key={taskKey}
-                                                                    className={`p-1 text-xs text-center hover:bg-blue-50 cursor-pointer mb-1 last:mb-0 ${isCompleted ? 'text-green-600' : ''}`}
-                                                                    onClick={() => handleTaskClick(stage, task, stageIndex)}
+                                                                    className={`p-1 text-xs text-center mb-1 last:mb-0 ${isBlocked ? 'opacity-50 cursor-not-allowed bg-gray-100 text-gray-400' : 'hover:bg-blue-50 cursor-pointer'} ${!isBlocked && isCompleted ? 'text-green-600' : ''}`}
+                                                                    onClick={() => {
+                                                                        if (isBlocked) {
+                                                                            alert(`🔒 This task is locked! You must first complete the preceding task marked as a Stop Point.`);
+                                                                            return;
+                                                                        }
+                                                                        handleTaskClick(stage, task, stageIndex);
+                                                                    }}
                                                                 >
                                                                     {taskNumber}
                                                                 </div>
@@ -1363,7 +1413,17 @@ const TaskPage = () => {
                     {/* Main Content Area */}
                     <div className="h-full flex-1 flex flex-col">
                         <div className="flex-1 w-full bg-gray-50 p-4 overflow-y-auto">
-                            {selectedTask ? (
+                            {selectedTask && isTaskBlockedByStop(selectedTask.stageIndex, stages[selectedTask.stageIndex]?.tasks?.findIndex(t => (t._id || t.taskId) === (selectedTask._id || selectedTask.taskId))) ? (
+                                <div className="bg-white rounded-lg shadow p-12 flex flex-col items-center justify-center text-center h-full">
+                                    <div className="bg-gray-100 p-6 rounded-full mb-6 relative">
+                                        <AlertCircle size={64} className="text-gray-400" />
+                                    </div>
+                                    <h2 className="text-2xl font-bold text-gray-800 mb-2">Task Locked</h2>
+                                    <p className="text-gray-500 max-w-md">
+                                        This task is locked behind an active Stop Point. You must complete the designated stop point task (and all its subtasks) before accessing this section.
+                                    </p>
+                                </div>
+                            ) : selectedTask ? (
                                 <div className="bg-white rounded-lg shadow p-6">
                                     {/* Task Header */}
                                     <div className="flex justify-between items-start mb-6">

@@ -325,7 +325,7 @@ const SortableItem = ({
                     </div>
                   )}
                   {isStopChecked && (
-                    <div className="text-xs font-medium text-red-600 bg-red-100 px-2 py-0.5 rounded-full">
+                    <div className="text-xs font-medium text-black bg-black-100 px-2 py-0.5 rounded-full">
                       Add Stop Enable
                     </div>
                   )}
@@ -343,9 +343,9 @@ const SortableItem = ({
                             e.stopPropagation();
                             onStopCheckboxChange?.(id);
                           }}
-                          className="w-4 h-4 text-red-600 bg-gray-100 border-gray-300 rounded focus:ring-red-500 focus:ring-2"
+                          className="w-4 h-4 text-black bg-gray-100 border-gray-300 rounded focus:ring-black focus:ring-2"
                         />
-                        <span className="text-xs font-medium text-red-600">Add Stop</span>
+                        <span className="text-xs font-medium text-black">Add Stop</span>
                       </label>
                     </div>
                   )}
@@ -503,10 +503,8 @@ export default function NestedDragDrop() {
 
   // Add these functions near your other handler functions (around line 400-500)
   const handleTaskStopChange = (taskId) => {
-    setTaskStopStates(prev => ({
-      ...prev,
-      [taskId]: !prev[taskId]
-    }));
+    const currentVal = taskStopStates[taskId] || false;
+    setStages(prev => updateItem(prev, taskId, { addStop: !currentVal }));
   };
 
   const hasTaskStop = (taskId) => {
@@ -3020,7 +3018,7 @@ export default function NestedDragDrop() {
               <h4 className="text-sm font-semibold text-slate-900 mb-3">Edit Item</h4>
               <div className="space-y-3">
                 {item.id.startsWith("task") && (
-                  <div className="p-3 bg-red-50 rounded-lg border border-red-200">
+                  <div className="p-3  rounded-lg border ">
                     <label className="flex items-center gap-2 cursor-pointer">
                       <input
                         type="checkbox"
@@ -3033,13 +3031,13 @@ export default function NestedDragDrop() {
                         }}
                         className="w-4 h-4 text-red-600 bg-gray-100 border-gray-300 rounded focus:ring-red-500 focus:ring-2"
                       />
-                      <span className="text-sm font-medium text-red-700">
+                      <span className="text-sm font-medium text-black-700">
                         Add Stop to this task
                       </span>
                     </label>
-                    <p className="text-xs text-red-600 mt-1">
+                    {/* <p className="text-xs text-red-600 mt-1">
                       When enabled, this task will be marked as a stop point
-                    </p>
+                    </p> */}
                   </div>
                 )}
                 <InputField
@@ -3565,7 +3563,7 @@ export default function NestedDragDrop() {
                 <h5 className="text-sm font-medium text-slate-700">
                   Task {index + 1}
                 </h5>
-                <div className="p-3 bg-red-50 rounded-lg border border-red-200">
+                <div className="p-3  rounded-lg border ">
                   <label className="flex items-center gap-2 cursor-pointer">
                     <input
                       type="checkbox"
@@ -3581,13 +3579,13 @@ export default function NestedDragDrop() {
                       }}
                       className="w-4 h-4 text-red-600 bg-gray-100 border-gray-300 rounded focus:ring-red-500 focus:ring-2"
                     />
-                    <span className="text-sm font-medium text-red-700">
+                    <span className="text-sm font-medium text-black-700">
                       Add Stop to this task
                     </span>
                   </label>
-                  <p className="text-xs text-red-600 mt-1">
+                  {/* <p className="text-xs text-red-600 mt-1">
                     When enabled, this task will be marked as a stop point
-                  </p>
+                  </p> */}
                 </div>
                 <InputField
                   label="Task Title"
