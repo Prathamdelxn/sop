@@ -34,10 +34,60 @@ const TaskPage = () => {
     const [focusedSubtaskId, setFocusedSubtaskId] = useState(null);
     const [showTaskHistory, setShowTaskHistory] = useState(false);
     const [showSubtaskHistory, setShowSubtaskHistory] = useState(false);
+    const [sendingForReview, setSendingForReview] = useState(false);
 
     // Derived data
     const { prototypeData, equipment } = assignmentData || {};
     const stages = prototypeData?.stages || [];
+
+    // Check if all tasks and subtasks are completed
+    const allTasksCompleted = stages.length > 0 && stages.every(stage =>
+        stage.tasks && stage.tasks.length > 0 && stage.tasks.every(task => {
+            if (task.status !== 'completed') return false;
+            if (task.subtasks && task.subtasks.length > 0) {
+                return task.subtasks.every(st => st.status === 'completed');
+            }
+            return true;
+        })
+    );
+
+    const isReworkRequired = assignmentData?.status === 'Rework Required' || assignmentData?.reviewStatus === 'Rework Required';
+    const isPendingReview = assignmentData?.status === 'Pending Review' || assignmentData?.reviewStatus === 'Pending Review';
+    const isAssignmentCompleted = assignmentData?.status === 'Completed' || assignmentData?.reviewStatus === 'Approved';
+
+    // Send for Review handler
+    const handleSendForReview = async () => {
+        if (!allTasksCompleted) {
+            alert('Please complete all tasks before sending for review.');
+            return;
+        }
+        try {
+            setSendingForReview(true);
+            const res = await fetch('/api/assignment/send-for-review', {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    assignmentId: id,
+                    sentBy: { id: userdata?.id || userdata?._id, name: userdata?.name }
+                })
+            });
+            const data = await res.json();
+            if (!res.ok) throw new Error(data.message || 'Failed to send for review');
+            
+            // Update local state
+            setAssignmentData(prev => ({
+                ...prev,
+                status: 'Pending Review',
+                reviewStatus: 'Pending Review'
+            }));
+            alert('Assignment sent for review successfully!');
+        } catch (err) {
+            console.error('Error sending for review:', err);
+            alert(err.message || 'Failed to send for review');
+        } finally {
+            setSendingForReview(false);
+        }
+    };
 
     // --- CHECKPOINT LOGIC ---
     const getFirstUncompletedStop = () => {
@@ -1248,6 +1298,39 @@ const TaskPage = () => {
     return (
         <div className="w-full h-full p-2">
             <div className="h-full w-full rounded-b-2xl border border-gray-300 overflow-hidden relative">
+                {/* Rework Required Banner */}
+                {isReworkRequired && assignmentData?.reviewNotes?.length > 0 && (
+                    <div className="w-full bg-rose-50 border-b border-rose-200 px-4 py-3">
+                        <div className="flex items-start gap-3">
+                            <AlertCircle className="w-5 h-5 text-rose-600 mt-0.5 shrink-0" />
+                            <div className="flex-1">
+                                <p className="text-sm font-semibold text-rose-800">Rework Required — Reviewer has reopened the following tasks:</p>
+                                <div className="mt-2 space-y-1">
+                                    {assignmentData.reviewNotes.filter(n => n.reopened).map((note, idx) => (
+                                        <div key={idx} className="text-sm text-rose-700 flex items-start gap-2">
+                                            <span className="font-medium">• {note.taskTitle}</span>
+                                            {note.note && <span className="text-rose-500 italic">— "{note.note}"</span>}
+                                        </div>
+                                    ))}
+                                </div>
+                                {assignmentData.reviewedBy?.name && (
+                                    <p className="text-xs text-rose-400 mt-2">Reviewed by: {assignmentData.reviewedBy.name}</p>
+                                )}
+                            </div>
+                        </div>
+                    </div>
+                )}
+
+                {/* Pending Review Banner */}
+                {isPendingReview && (
+                    <div className="w-full bg-purple-50 border-b border-purple-200 px-4 py-3">
+                        <div className="flex items-center gap-3">
+                            <Loader2 className="w-5 h-5 text-purple-600 animate-spin" />
+                            <p className="text-sm font-semibold text-purple-800">This assignment is currently under review. Please wait for the reviewer's feedback.</p>
+                        </div>
+                    </div>
+                )}
+
                 {/* Header */}
                 <div className="h-[7%] w-full flex items-center border-b border-gray-300 justify-between px-4">
                     {/* Title + Status + Equipment */}
@@ -1261,21 +1344,38 @@ const TaskPage = () => {
                         )}
                     </div>
 
-                    {/* Language Dropdown */}
-                    <div className="flex items-center gap-2">
-                        <label htmlFor="language" className="text-sm font-medium">
-                            Language:
-                        </label>
-                        <select
-                            id="language"
-                            className="px-2 py-1 text-sm rounded-md border border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                        >
-                            <option value="en">English</option>
-                            <option value="hi">Hindi</option>
-                            <option value="mr">Marathi</option>
-                            <option value="fr">French</option>
-                            <option value="es">Spanish</option>
-                        </select>
+                    {/* Right side: Send for Review + Language */}
+                    <div className="flex items-center gap-3">
+                        {/* Send for Review Button */}
+                        {allTasksCompleted && !isPendingReview && !isAssignmentCompleted && (
+                            <button
+                                onClick={handleSendForReview}
+                                disabled={sendingForReview}
+                                className="inline-flex items-center gap-2 px-4 py-1.5 text-sm font-medium text-white bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-700 hover:to-indigo-700 rounded-lg transition-all duration-200 shadow-sm hover:shadow disabled:opacity-50 disabled:cursor-not-allowed"
+                            >
+                                {sendingForReview ? (
+                                    <><Loader2 className="h-4 w-4 animate-spin" /> Sending...</>
+                                ) : (
+                                    <><CheckCircle className="h-4 w-4" /> Send for Review</>
+                                )}
+                            </button>
+                        )}
+
+                        <div className="flex items-center gap-2">
+                            <label htmlFor="language" className="text-sm font-medium">
+                                Language:
+                            </label>
+                            <select
+                                id="language"
+                                className="px-2 py-1 text-sm rounded-md border border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                            >
+                                <option value="en">English</option>
+                                <option value="hi">Hindi</option>
+                                <option value="mr">Marathi</option>
+                                <option value="fr">French</option>
+                                <option value="es">Spanish</option>
+                            </select>
+                        </div>
                     </div>
                 </div>
 
@@ -1521,7 +1621,7 @@ const TaskPage = () => {
                                                         )}
                                                     </div>
                                                 ) : !taskTimer.isRunning ? (
-                                                    (taskTimer.totalTrackedSeconds || 0) === 0 && taskTimer.elapsedTime === 0 ? (
+                                                    ((taskTimer.totalTrackedSeconds || 0) === 0 && taskTimer.elapsedTime === 0) || selectedTask.status === 'pending' ? (
                                                         <button
                                                             onClick={handleStartTimerClick}
                                                             disabled={isSubmitting}
@@ -1867,7 +1967,7 @@ const TaskPage = () => {
                                                                                                     </div>
                                                                                                 </div>
                                                                                             )}
-                                                                                            {((timer?.totalTrackedSeconds || 0) + (timer?.elapsedTime || 0)) === 0 ? (
+                                                                                            {((timer?.totalTrackedSeconds || 0) + (timer?.elapsedTime || 0)) === 0 || subtask.status === 'pending' ? (
                                                                                                 <button
                                                                                                     onClick={(e) => { e.stopPropagation(); handleStartSubtaskTimer(subtask); }}
                                                                                                     disabled={isSubmitting}

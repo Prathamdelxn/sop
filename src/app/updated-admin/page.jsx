@@ -558,7 +558,7 @@ const predefinedTasks = [
   'Assign Task',
   'Task Execution',
   'Approve Equipment',
-  'Approve Task',
+  'Review Task',
   'Approve Checklist',
   'Review Access',
   'Approve Tagged Chechlist with Equipment'

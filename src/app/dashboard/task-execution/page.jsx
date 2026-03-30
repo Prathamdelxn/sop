@@ -147,6 +147,22 @@ const TaskExecutionPage = () => {
           icon: '⏸️',
           label: 'Paused'
         };
+      case 'Pending Review':
+        return {
+          bg: 'bg-purple-50',
+          text: 'text-purple-700',
+          border: 'border-purple-200',
+          icon: '🔍',
+          label: 'Pending Review'
+        };
+      case 'Rework Required':
+        return {
+          bg: 'bg-rose-50',
+          text: 'text-rose-700',
+          border: 'border-rose-200',
+          icon: '🔄',
+          label: 'Rework Required'
+        };
       default:
         return {
           bg: 'bg-amber-50',
@@ -302,14 +318,18 @@ const TaskExecutionPage = () => {
                           <div className="flex items-center gap-2">
                             <button
                               onClick={() => handleExecuteTask(task._id)}
-                              disabled={false}
+                              disabled={task.status === 'Pending Review'}
                               className={`inline-flex items-center gap-2 px-4 py-2 text-sm font-medium rounded-lg transition-all duration-200 shadow-sm hover:shadow ${task.status === 'Completed'
                                 ? 'text-gray-600 bg-gray-50 border border-gray-200 hover:bg-gray-100'
-                                : task.status === 'Under Execution' && (task.lockedBy?.id || task.startedBy?.id) !== (userData?.id || userData?._id)
-                                  ? 'text-blue-600 bg-blue-50 border border-blue-200 hover:bg-blue-100'
-                                  : task.status === 'Paused'
-                                    ? 'text-white bg-gradient-to-r from-orange-500 to-orange-600 hover:from-orange-600 hover:to-orange-700 border border-transparent'
-                                    : 'text-white bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 border border-transparent'
+                                : task.status === 'Pending Review'
+                                  ? 'text-purple-600 bg-purple-50 border border-purple-200 cursor-not-allowed opacity-70'
+                                  : task.status === 'Rework Required'
+                                    ? 'text-white bg-gradient-to-r from-rose-500 to-rose-600 hover:from-rose-600 hover:to-rose-700 border border-transparent'
+                                    : task.status === 'Under Execution' && (task.lockedBy?.id || task.startedBy?.id) !== (userData?.id || userData?._id)
+                                      ? 'text-blue-600 bg-blue-50 border border-blue-200 hover:bg-blue-100'
+                                      : task.status === 'Paused'
+                                        ? 'text-white bg-gradient-to-r from-orange-500 to-orange-600 hover:from-orange-600 hover:to-orange-700 border border-transparent'
+                                        : 'text-white bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 border border-transparent'
                                 }`}
                             >
                               {task.status === 'Under Execution' ? (
@@ -333,6 +353,16 @@ const TaskExecutionPage = () => {
                                 <>
                                   <Eye className="h-4 w-4" />
                                   View
+                                </>
+                              ) : task.status === 'Pending Review' ? (
+                                <>
+                                  <Eye className="h-4 w-4" />
+                                  Under Review
+                                </>
+                              ) : task.status === 'Rework Required' ? (
+                                <>
+                                  <Play className="h-4 w-4" />
+                                  Rework
                                 </>
                               ) : (
                                 <>

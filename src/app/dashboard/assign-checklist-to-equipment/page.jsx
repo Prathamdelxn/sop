@@ -1953,8 +1953,11 @@ export default function AssignEquipmentPage() {
     return matchesSearch && matchesStatus;
   });
 
-  // Get equipment IDs that are already assigned (to any checklist)
-  const assignedEquipmentIds = assigndata.map(assignment => assignment.equipment?._id).filter(Boolean);
+  // Get equipment IDs that are already assigned (to any checklist) - exclude rejected ones
+  const assignedEquipmentIds = assigndata
+    .filter(assignment => assignment.status?.toLowerCase() !== 'rejected')
+    .map(assignment => assignment.equipment?._id)
+    .filter(Boolean);
 
   // Filter available equipments - exclude already assigned ones and apply search filter
   const filteredEquipments = equipmentList.filter(item =>
@@ -1967,11 +1970,12 @@ export default function AssignEquipmentPage() {
     item.name?.toLowerCase().includes(checklistSearch.toLowerCase())
   );
 
-  // Function to check if assignment already exists for specific equipment and prototype
+  // Function to check if active assignment already exists for specific equipment and prototype
   const checkExistingAssignment = (equipmentId, prototypeId) => {
     return assigndata.some(assignment =>
       assignment.equipment?._id === equipmentId &&
-      assignment.prototypeData?._id === prototypeId
+      assignment.prototypeData?._id === prototypeId &&
+      assignment.status?.toLowerCase() !== 'rejected'
     );
   };
 
@@ -2104,7 +2108,7 @@ export default function AssignEquipmentPage() {
     }
   };
 
-  const fetchAssignment = async () => {
+  const fetchAssignment = React.useCallback(async (isInitial = true) => {
     try {
       const res = await fetch('/api/assignment/fetchAll');
       const data = await res.json();
@@ -2112,9 +2116,9 @@ export default function AssignEquipmentPage() {
       setAssignData(filteredData);
     } catch (error) {
       console.error('Error fetching assignments:', error);
-      toast.error('Error fetching assignments');
+      if (isInitial) toast.error('Error fetching assignments');
     }
-  };
+  }, [companyData]);
 
   useEffect(() => {
     const userData = localStorage.getItem('user');
@@ -2123,9 +2127,9 @@ export default function AssignEquipmentPage() {
   }, []);
 
   useEffect(() => {
-    const fetchData = async () => {
+    const fetchData = async (isInitial = true) => {
       try {
-        setIsLoading(true);
+        if (isInitial) setIsLoading(true);
         const [equipmentRes, prototypesRes] = await Promise.all([
           fetch('/api/equipment/fetchAll'),
           fetch('/api/checklistapi/fetchAll')
@@ -2135,35 +2139,36 @@ export default function AssignEquipmentPage() {
           equipmentRes.json(),
           prototypesRes.json()
         ]);
-const currentDate = new Date();
-        // const approvedEquipments = equipmentData.data.filter(e => e.status === 'Approved' && e.companyId === companyData?.companyId );
+        const currentDate = new Date();
         const approvedEquipments = equipmentData.data.filter(e => {
-  const dueDate = new Date(e.qualificationDueDate);
-  return (
-    e.status === 'Approved' &&
-    e.companyId === companyData?.companyId &&
-    dueDate >= currentDate // ✅ keep only future or current due dates
-  );
-});
+          const dueDate = new Date(e.qualificationDueDate);
+          return (
+            e.status === 'Approved' &&
+            e.companyId === companyData?.companyId &&
+            dueDate >= currentDate
+          );
+        });
         setEquipmentList(approvedEquipments);
 
         const filteredPrototypes = prototypesData.data.filter((t) => t.status === 'Approved' && t.companyId === companyData?.companyId);
         setPrototypeList(filteredPrototypes);
 
-        await fetchAssignment();
-        toast.success('Data loaded successfully!');
+        await fetchAssignment(isInitial);
+        if (isInitial) toast.success('Data loaded successfully!');
       } catch (error) {
         console.error('Error fetching data:', error);
-        toast.error('Error loading data');
+        if (isInitial) toast.error('Error loading data');
       } finally {
-        setIsLoading(false);
+        if (isInitial) setIsLoading(false);
       }
     };
 
     if (companyData) {
       fetchData();
+      const interval = setInterval(() => fetchData(false), 5000);
+      return () => clearInterval(interval);
     }
-  }, [companyData]);
+  }, [companyData, fetchAssignment]);
 
   const SkeletonRow = () => (
     <tr className="animate-pulse">

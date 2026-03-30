@@ -36,7 +36,7 @@ const allNavigationItems = [
   { name: 'Assign Task', href: '/dashboard/assign-task', icon: ClipboardList, current: false, category: 'Operations' },
   { name: 'Task Execution', href: '/dashboard/task-execution', icon: PlayCircle, current: false, category: 'Operations' },
   { name: 'Approve Equipment', href: '/dashboard/approve-equipment', icon: CheckCircle2, current: false, category: 'Approvals' },
-  { name: 'Approve Task', href: '/dashboard/approve-task', icon: UserCheck, current: false, category: 'Approvals' },
+  { name: 'Review Task', href: '/dashboard/review-task', icon: UserCheck, current: false, category: 'Approvals' },
   { name: 'Approve Checklist', href: '/dashboard/approve-checklist', icon: ListChecks, current: false, category: 'Approvals' },
   { name: 'Approve Tagged Chechlist with Equipment', href: '/dashboard/approve-assign-checklist-to-equipment', icon: Layers, current: false, category: 'Approvals' },
 ];

@@ -20,6 +20,24 @@ const assignmentSchema = new mongoose.Schema({
   userId:{type:String},
   status:{type:String , default:"InProgress"},
   rejectionReason:{type:String},
+  // Task Review fields
+  reviewStatus: { type: String, default: null }, // "Pending Review", "Approved", "Rework Required"
+  reviewNotes: [{
+    taskPath: { type: String },        // e.g., "stages.0.tasks.1" or "stages.0.tasks.1.subtasks.0"
+    taskTitle: { type: String },
+    note: { type: String },
+    reopened: { type: Boolean, default: false },
+    reviewedBy: {
+      id: { type: String },
+      name: { type: String }
+    },
+    reviewedAt: { type: Date, default: Date.now }
+  }],
+  reviewedBy: {
+    id: { type: String },
+    name: { type: String }
+  },
+  reviewedAt: { type: Date },
   assignedAt: {
     type: Date,
     default: Date.now,

@@ -2,7 +2,7 @@
 
 "use client"
 
-import { useEffect, useState } from "react"
+import { useEffect, useState, useCallback, useMemo } from "react"
 import {
   CheckCircle,
   Eye,
@@ -314,9 +314,9 @@ const ApprovePage = () => {
     setCompanyData(data)
   }, [])
 
-  const fetchSops = async () => {
+  const fetchSops = useCallback(async (isInitial = true) => {
     try {
-      setLoading(true);
+      if (isInitial) setLoading(true);
       const res = await fetch("/api/checklistapi/fetch-for-approve", {
         method: "POST",
         headers: {
@@ -328,7 +328,7 @@ const ApprovePage = () => {
         }),
       });
       const data = await res.json();
-      console.log(data);
+      
       // Transform data to ensure nested structure
       const transformedData = data.map((sop) => ({
         ...sop,
@@ -345,18 +345,20 @@ const ApprovePage = () => {
         })),
       }));
       setData(transformedData);
-      setLoading(false);
     } catch (err) {
       console.error("Failed to fetch SOPs:", err);
-      setLoading(false);
+    } finally {
+      if (isInitial) setLoading(false);
     }
-  };
+  }, [companyData]);
 
   useEffect(() => {
     if (companyData) {
       fetchSops();
+      const interval = setInterval(() => fetchSops(false), 5000);
+      return () => clearInterval(interval);
     }
-  }, [companyData]);
+  }, [companyData, fetchSops]);
 
   const handleView = (sop) => {
     setSelectedSop(sop)
@@ -731,18 +733,22 @@ const ApprovePage = () => {
     );
   };
 
-  const filteredData = data.filter(item => {
-    const status = sopStatuses[item._id] || item.status
-    const matchesSearch = 
-      item.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      item.description?.toLowerCase().includes(searchTerm.toLowerCase())
-    
-    const matchesStatus = 
-      statusFilter === 'All Statuses' || 
-      status?.toLowerCase() === statusFilter.toLowerCase()
-    
-    return matchesSearch && matchesStatus
-  })
+  const filteredData = useMemo(() => {
+    return data
+      .filter((item) => {
+        const status = sopStatuses[item._id] || getReviewStatus(item)
+        const matchesSearch =
+          item.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+          item.description?.toLowerCase().includes(searchTerm.toLowerCase())
+
+        const matchesStatus =
+          statusFilter === 'All Statuses' ||
+          status?.toLowerCase() === statusFilter.toLowerCase()
+
+        return matchesSearch && matchesStatus
+      })
+      .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt))
+  }, [data, searchTerm, statusFilter, sopStatuses, companyData])
 
   const showActionButtons = (sop) => {
     if (!selectedSop) return false

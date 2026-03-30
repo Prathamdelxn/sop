@@ -48,12 +48,11 @@ export default function FacilityAdminDashboard() {
   };
 
   useEffect(() => {
-    const fetchEquipment = async () => {
+    const fetchEquipment = async (isInitial = true) => {
       try {
-        setIsLoading(true);
+        if (isInitial) setIsLoading(true);
         const res = await fetch('/api/equipment/fetchAll');
         const result = await res.json();
-        console.log(result);
         if (res.ok && result.success) {
           const filtered = result.data.filter(item => item.companyId === companyData?.companyId && item.userId === companyData?.id);
           setEquipmentList(filtered);
@@ -62,13 +61,18 @@ export default function FacilityAdminDashboard() {
         }
       } catch (err) {
         console.error('Error fetching equipment:', err);
-        setIsLoading(false);
       } finally {
-        setIsLoading(false);
+        if (isInitial) setIsLoading(false);
       }
     };
-    fetchEquipment();
+    
+    if (companyData) {
+      fetchEquipment();
+      const interval = setInterval(() => fetchEquipment(false), 5000);
+      return () => clearInterval(interval);
+    }
   }, [companyData]);
+
 
   const viewEquipmentDetails = (equipment) => {
     setViewingEquipment(equipment);
@@ -281,7 +285,8 @@ export default function FacilityAdminDashboard() {
             equipmentId: formData.equipmentId,
             preventiveMaintenaceDoneDate: formData.preventiveMaintenaceDoneDate,
             preventiveDueDate: formData.preventiveDueDate,
-            remark: formData.remark // Include remark in update
+            remark: formData.remark, // Include remark in update
+            rejectionReason: "" // Clear rejection reason on update
           })
         });
         result = await res.json();
@@ -689,7 +694,7 @@ export default function FacilityAdminDashboard() {
                         </span>
                       </td>
                       <td className="px-6 py-4 flex justify-center whitespace-nowrap">
-                        {getDisplayStatus(equipment) === 'InProgress' && (
+                        {getDisplayStatus(equipment) === 'InProgress' ? (
                           <>
                             {new Date(equipment.qualificationDueDate) >= new Date() && (
                               <button
@@ -701,7 +706,11 @@ export default function FacilityAdminDashboard() {
                               </button>
                             )}
                           </>
-                        )}
+                        ) : getDisplayStatus(equipment) === 'Rejected' ? (
+                          <span className="font-semibold text-xs text-red-600 px-3 py-1.5 bg-red-50 rounded-full border border-red-100">
+                            Rejected
+                          </span>
+                        ) : null}
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
                         <div className="flex justify-end space-x-2">
@@ -1121,6 +1130,15 @@ export default function FacilityAdminDashboard() {
                 </button>
               </div>
               <div className="px-6 pt-4">
+                {editingEquipment && editingEquipment.status === 'Rejected' && editingEquipment.rejectionReason && (
+                  <div className="bg-red-50 border border-red-200 rounded-xl p-4 mb-6">
+                    <div className="flex items-center gap-2 mb-1">
+                      <AlertCircle className="text-red-600 w-5 h-5" />
+                      <span className="font-bold text-red-800">Rejection Reason</span>
+                    </div>
+                    <p className="text-red-700 text-sm whitespace-pre-wrap">{editingEquipment.rejectionReason}</p>
+                  </div>
+                )}
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div>
                     <label className="block font-semibold mb-1">Equipment Name *</label>

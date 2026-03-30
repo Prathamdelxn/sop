@@ -1,5 +1,5 @@
 "use client";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import {
   DndContext,
   closestCenter,
@@ -429,6 +429,7 @@ export default function NestedDragDrop() {
     qms_number: "",
     version: "",
   });
+  const isHydrated = useRef(false);
   const [errors, setErrors] = useState({
     checklist: {
       name: "",
@@ -524,26 +525,14 @@ export default function NestedDragDrop() {
   // On mount (client-only): load draft and populate state, then show a toast
   useEffect(() => {
     const draft = loadDraft();
-    if (!draft) return;
-    if (draft.checklistData) setChecklistData(draft.checklistData);
-    if (draft.stages?.length) setStages(draft.stages);
-    if (draft.tableData?.length) setTableData(draft.tableData);
-    if (draft.taskStopStates) setTaskStopStates(draft.taskStopStates);
-    toast.success("Draft restored — your previous work has been recovered.", { duration: 4000 });
-  }, []);
-
-  // Auto-save all key state to localStorage whenever any of them change
-  useEffect(() => {
-    if (typeof window === "undefined") return;
-    localStorage.setItem(
-      CHECKLIST_DRAFT_KEY,
-      JSON.stringify({ checklistData, stages, tableData, taskStopStates })
-    );
-  }, [checklistData, stages, tableData, taskStopStates]);
-
-  // Add default stage only when there is no existing draft
-  useEffect(() => {
-    if (stages.length === 0) {
+    if (draft) {
+      if (draft.checklistData) setChecklistData(draft.checklistData);
+      if (draft.stages?.length) setStages(draft.stages);
+      if (draft.tableData?.length) setTableData(draft.tableData);
+      if (draft.taskStopStates) setTaskStopStates(draft.taskStopStates);
+      toast.success("Draft restored — your previous work has been recovered.", { duration: 4000 });
+    } else {
+      // Add default stage only when there is no existing draft
       const defaultStage = {
         id: `stage-${Date.now()}`,
         title: "Default Stage",
@@ -551,7 +540,19 @@ export default function NestedDragDrop() {
       };
       setStages([defaultStage]);
     }
+    isHydrated.current = true;
   }, []);
+
+  // Auto-save all key state to localStorage whenever any of them change
+  useEffect(() => {
+    if (typeof window === "undefined" || !isHydrated.current) return;
+    localStorage.setItem(
+      CHECKLIST_DRAFT_KEY,
+      JSON.stringify({ checklistData, stages, tableData, taskStopStates })
+    );
+  }, [checklistData, stages, tableData, taskStopStates]);
+
+
 
   // Handler to clear the draft and reset the form
   const handleClearDraft = () => {
@@ -1409,7 +1410,7 @@ export default function NestedDragDrop() {
       defaultStage: schemaDefaultStage,
       visualRepresntation: schemaVisualRepresentation,
       companyId: userData.companyId,
-      userId: userData.id,
+      userId: userData._id || userData.id,
     };
     console.log("ad", data);
     try {
@@ -4224,6 +4225,7 @@ export default function NestedDragDrop() {
                 </div>
                 <div className="mb-4">
                   <InputField
+                    className="no-spinner"
                     label="Number of Stages"
                     type="number"
                     name="stageCount"
@@ -4308,6 +4310,7 @@ export default function NestedDragDrop() {
                 </div>
                 <div className="mb-6">
                   <InputField
+                    className="no-spinner"
                     label="Number of Tasks"
                     type="number"
                     name="taskCount"
@@ -4359,6 +4362,7 @@ export default function NestedDragDrop() {
                 </div>
                 <div className="mb-6">
                   <InputField
+                    className="no-spinner"
                     label="Number of Subtasks"
                     type="number"
                     name="subtaskCount"
@@ -4410,6 +4414,7 @@ export default function NestedDragDrop() {
                 </div>
                 <div className="mb-6">
                   <InputField
+                    className="no-spinner"
                     label="Number of Records"
                     type="number"
                     name="recordCount"

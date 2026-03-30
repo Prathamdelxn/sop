@@ -746,15 +746,6 @@
 //   }, [companyData]);
 
 //   const filteredTasks = useMemo(() => {
-//     return tasks.filter(task => {
-//       const matchesSearch =
-//         task.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-//         task.type.toLowerCase().includes(searchQuery.toLowerCase()) ||
-//         (task.serial && task.serial.toLowerCase().includes(searchQuery.toLowerCase()));
-     
-//       const matchesType = !typeFilter || task.type.toLowerCase() === typeFilter.toLowerCase();
-//       const matchesStatus = !statusFilter || task.status.toLowerCase() === statusFilter.toLowerCase();
-     
 //       return matchesSearch && matchesType && matchesStatus;
 //     });
 //   }, [tasks, searchQuery, typeFilter, statusFilter]);
@@ -1410,6 +1401,19 @@ const TaskDetailsModal = ({ task, onClose, onBarcodeUpload, companyData, onAppro
     }
   };
 
+  const filteredAssignments = useMemo(() => {
+    return assignments
+      .filter((a) => {
+        const name = a.prototypeData?.name || "";
+        const equipment = a.prototypeData?.equipment?.name || "";
+        return (
+          name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+          equipment.toLowerCase().includes(searchTerm.toLowerCase())
+        );
+      })
+      .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+  }, [assignments, searchTerm]);
+
   const formatDate = (dateString) => {
     if (!dateString) return '—';
     return new Date(dateString).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' });
@@ -1668,10 +1672,10 @@ const Dashboard = () => {
     setIsLoading(false);
   }, []);
 
-  const fetchData = async () => {
+  const fetchData = useCallback(async (isInitial = true) => {
     if (!companyData) return;
     try {
-      setLoading(true);
+      if (isInitial) setLoading(true);
       const res = await fetch('/api/equipment/fetchAll');
       if (!res.ok) throw new Error('Failed to fetch equipment data');
       const data = await res.json();
@@ -1694,23 +1698,30 @@ const Dashboard = () => {
     } catch (err) {
       setError(err.message);
     } finally {
-      setLoading(false);
+      if (isInitial) setLoading(false);
     }
-  };
-
-  useEffect(() => {
-    if (companyData) fetchData();
   }, [companyData]);
 
+  useEffect(() => {
+    if (companyData) {
+      fetchData();
+      const interval = setInterval(() => fetchData(false), 5000);
+      return () => clearInterval(interval);
+    }
+  }, [companyData, fetchData]);
+
   const filteredTasks = useMemo(() => {
-    return tasks.filter(task => {
-      const matchesSearch = task.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        task.type.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        (task.serial && task.serial.toLowerCase().includes(searchQuery.toLowerCase()));
-      const matchesStatus = !statusFilter || task.status.toLowerCase() === statusFilter.toLowerCase();
-      return matchesSearch && matchesStatus;
-    });
-  }, [tasks, searchQuery, statusFilter]);
+    return tasks
+      .filter((task) => {
+        const matchesSearch =
+          task.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+          task.type.toLowerCase().includes(searchQuery.toLowerCase()) ||
+          (task.serial && task.serial.toLowerCase().includes(searchQuery.toLowerCase()))
+        const matchesStatus = !statusFilter || task.status.toLowerCase() === statusFilter.toLowerCase()
+        return matchesSearch && matchesStatus
+      })
+      .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt))
+  }, [tasks, searchQuery, statusFilter])
 
   const uploadImageToCloudinary = async (file) => {
     const formData = new FormData();

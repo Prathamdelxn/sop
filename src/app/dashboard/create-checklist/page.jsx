@@ -1,5 +1,5 @@
 "use client"
-import { useEffect, useState, useRef } from "react"
+import { useEffect, useState, useRef, useMemo } from "react"
 import {
   Plus,
   Sparkles,
@@ -76,9 +76,11 @@ const SOPDashboard = () => {
   })
   const [showApproversReviewersTable, setShowApproversReviewersTable] = useState(false);
 
+  const [statusFilter, setStatusFilter] = useState('All');
+
   // Pagination states
   const [currentPage, setCurrentPage] = useState(1);
-  const [itemsPerPage] = useState(10);
+  const [itemsPerPage] = useState(1000);
 
   const ImageAttachmentModal = ({
     onClose,
@@ -1288,36 +1290,90 @@ const SOPDashboard = () => {
   }, [])
 
   useEffect(() => {
-    const fetchSops = async () => {
+    const fetchSops = async (isInitial = true) => {
       try {
-        setLoading(true)
-        setFiltering(true)
+        if (isInitial) {
+          setLoading(true)
+          setFiltering(true)
+        }
         const res = await fetch("/api/checklistapi/fetchAll")
         const data = await res.json()
-        setTimeout(() => {
-          const filtered = data.data.filter(item => item.companyId === companyData?.companyId && item.userId == companyData?.id)
-          setSopData(filtered)
+        const currentUserId = companyData?.id || companyData?._id;
+        const filtered = data.data.filter(item => 
+          item.companyId === companyData?.companyId && 
+          (item.userId == currentUserId || !item.userId) // Allow if matching user OR if userId is missing (legacy)
+        )
+        setSopData(filtered)
+        if (isInitial) {
           setFiltering(false)
           setLoading(false)
           setCurrentPage(1)
-        }, 500)
+        }
       } catch (err) {
         console.error("Failed to fetch SOPs:", err)
-        setLoading(false)
-        setFiltering(false)
+        if (isInitial) {
+          setLoading(false)
+          setFiltering(false)
+        }
       }
     }
 
     if (companyData) {
       fetchSops()
+      const interval = setInterval(() => fetchSops(false), 5000)
+      return () => clearInterval(interval)
     }
   }, [companyData])
 
-  // Pagination logic
-  const totalPages = Math.ceil(sopData.length / itemsPerPage);
+
+  // Filter and Paginate Logic
+  const filteredSopDataList = useMemo(() => {
+    let result = sopData.map((item, index) => {
+      const Icon = icons[index % icons.length]
+      const color = colors[index % colors.length]
+      return {
+        ...item,
+        id: item._id,
+        icon: <Icon className={`w-5 h-5 ${color.text}`} />,
+        bgColor: color.bg,
+        gradient: color.gradient,
+        formattedDate: formatDate(item.createdAt),
+        status: item.status || "InProgress",
+      }
+    })
+
+    // Sort by Created At (Newest First)
+    result.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt))
+
+    // Apply Status Filter
+    if (statusFilter !== 'All') {
+      result = result.filter(sop => {
+        if (statusFilter === 'InProgress') return sop.status === 'InProgress';
+        if (statusFilter === 'Pending Approval') return sop.status === 'Pending Approval' || sop.status === 'Under Review';
+        if (statusFilter === 'Approved') return sop.status === 'Approved' || sop.status === 'Approved Review';
+        if (statusFilter === 'Rejected') return sop.status === 'Rejected' || sop.status === 'Rejected Review';
+        return sop.status === statusFilter;
+      });
+    }
+
+    // Apply Search Filter
+    if (searchTerm.trim()) {
+      const searchLower = searchTerm.toLowerCase().trim();
+      result = result.filter(sop => 
+        sop.name?.toLowerCase().includes(searchLower) ||
+        sop.documentNumber?.toLowerCase().includes(searchLower)
+      )
+    }
+    return result
+  }, [sopData, searchTerm, statusFilter])
+
+  const filteredTotalPages = Math.ceil(filteredSopDataList.length / itemsPerPage)
+  const filteredIndexLastItem = currentPage * itemsPerPage
+  const filteredIndexFirstItem = filteredIndexLastItem - itemsPerPage
+  const filteredSopData = filteredSopDataList.slice(filteredIndexFirstItem, filteredIndexLastItem)
 
   const goToNextPage = () => {
-    setCurrentPage(prev => Math.min(prev + 1, totalPages));
+    setCurrentPage(prev => Math.min(prev + 1, filteredTotalPages));
   };
 
   const goToPreviousPage = () => {
@@ -1325,43 +1381,8 @@ const SOPDashboard = () => {
   };
 
   const goToPage = (page) => {
-    setCurrentPage(Math.min(Math.max(page, 1), totalPages));
+    setCurrentPage(Math.min(Math.max(page, 1), filteredTotalPages));
   };
-
-  // Get current page data
-  const indexOfLastItem = currentPage * itemsPerPage;
-  const indexOfFirstItem = indexOfLastItem - itemsPerPage;
-  const currentItems = sopData.slice(indexOfFirstItem, indexOfLastItem);
-
-  const enhancedSopData = currentItems.map((item, index) => {
-    const Icon = icons[index % icons.length]
-    const color = colors[index % colors.length]
-    return {
-      ...item,
-      id: item._id,
-      icon: <Icon className={`w-5 h-5 ${color.text}`} />,
-      bgColor: color.bg,
-      gradient: color.gradient,
-      formattedDate: formatDate(item.createdAt),
-      status: item.status || "Pending Approval",
-    }
-  })
-
-  // Filter data based on search term
-  const filteredSopData = enhancedSopData.filter(sop => {
-    if (!searchTerm.trim()) return true;
-
-    const searchLower = searchTerm.toLowerCase().trim();
-    const nameMatch = sop.name?.toLowerCase().includes(searchLower);
-    const docNumberMatch = sop.documentNumber?.toLowerCase().includes(searchLower);
-
-    return nameMatch || docNumberMatch;
-  });
-
-  // Update pagination for filtered data
-  const filteredTotalPages = Math.ceil(filteredSopData.length / itemsPerPage);
-  const filteredIndexLastItem = currentPage * itemsPerPage;
-  const filteredIndexFirstItem = filteredIndexLastItem - itemsPerPage;
 
   const getStatusBadge = (status) => {
     const statusMap = {
@@ -1486,11 +1507,16 @@ const SOPDashboard = () => {
               <select
                 id="status-filter"
                 className="block w-full pl-3 pr-10 py-2 text-base border border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 sm:text-sm rounded-lg"
-                defaultValue="all"
+                value={statusFilter}
+                onChange={(e) => {
+                  setStatusFilter(e.target.value)
+                  setCurrentPage(1)
+                }}
               >
-                <option value="all">All Statuses</option>
+                <option value="All">All Statuses</option>
+                <option value="InProgress">InProgress</option>
+                <option value="Pending Approval">Pending Approval / Review</option>
                 <option value="Approved">Approved</option>
-                <option value="Pending Approval">Pending</option>
                 <option value="Rejected">Rejected</option>
               </select>
             </div>
