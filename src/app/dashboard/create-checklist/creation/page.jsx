@@ -2805,12 +2805,21 @@ export default function NestedDragDrop() {
       setActiveTaskItem(null);
       return;
     }
+
     if (active.id !== over.id) {
       setStages((prev) => {
         const newStages = JSON.parse(JSON.stringify(prev));
         const activeContainer = findContainer(newStages, active.id);
         const overContainer = findContainer(newStages, over.id);
-        if (activeContainer && overContainer) {
+
+        if (activeContainer && overContainer && activeContainer.container === overContainer.container) {
+          // If moving within the same container
+          const oldIndex = activeContainer.index;
+          const newIndex = overContainer.index;
+          activeContainer.container.splice(oldIndex, 1);
+          activeContainer.container.splice(newIndex, 0, findItem(prev, active.id));
+        } else if (activeContainer && overContainer) {
+          // If moving between different containers (e.g. between stages if supported)
           const [movedItem] = activeContainer.container.splice(activeContainer.index, 1);
           overContainer.container.splice(overContainer.index, 0, movedItem);
         }
@@ -3814,7 +3823,7 @@ export default function NestedDragDrop() {
                 description={activeTaskItem.description}
                 minTime={activeTaskItem.minTime}
                 maxTime={activeTaskItem.maxTime}
-                numbering={generateNumbering(activeTaskItem.id)}
+                numbering={generateNumbering(stages, activeTaskItem.id)}
                 showActionButtons={true}
                 onDelete={handleDelete}
                 images={activeTaskItem.images}
@@ -3823,8 +3832,8 @@ export default function NestedDragDrop() {
                 items={findContainer(stages, activeTaskItem.id)?.container || []}
                 itemType={activeTaskItem.id.startsWith("task") ? "Task" : "Subtask"}
                 parameter={activeTaskItem.parameter}
-                showStopCheckbox={activeTaskItem.id.startsWith("task")} // Add this
-                isStopChecked={hasTaskStop(activeTaskItem.id)} // Add this
+                showStopCheckbox={activeTaskItem.id.startsWith("task")}
+                isStopChecked={hasTaskStop(activeTaskItem.id)}
                 onStopCheckboxChange={handleTaskStopChange}
               />
             ) : null}

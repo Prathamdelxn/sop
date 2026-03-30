@@ -747,7 +747,11 @@ const ApprovePage = () => {
 
         return matchesSearch && matchesStatus
       })
-      .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt))
+      .sort((a, b) => {
+        const dateA = new Date(a.createdAt || a.updatedAt || 0);
+        const dateB = new Date(b.createdAt || b.updatedAt || 0);
+        return dateB - dateA;
+      });
   }, [data, searchTerm, statusFilter, sopStatuses, companyData])
 
   const showActionButtons = (sop) => {

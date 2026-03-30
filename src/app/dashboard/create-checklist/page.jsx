@@ -1328,7 +1328,38 @@ const SOPDashboard = () => {
 
   // Filter and Paginate Logic
   const filteredSopDataList = useMemo(() => {
-    let result = sopData.map((item, index) => {
+    let result = [...sopData];
+
+    // Apply Search Filter
+    if (searchTerm.trim()) {
+      const searchLower = searchTerm.toLowerCase().trim();
+      result = result.filter(sop =>
+        sop.name?.toLowerCase().includes(searchLower) ||
+        sop.documentNumber?.toLowerCase().includes(searchLower)
+      );
+    }
+
+    // Apply Status Filter
+    if (statusFilter !== 'All') {
+      result = result.filter(sop => {
+        const s = sop.status || "InProgress";
+        if (statusFilter === 'InProgress') return s === 'InProgress';
+        if (statusFilter === 'Pending Approval') return s === 'Pending Approval' || s === 'Under Review';
+        if (statusFilter === 'Approved') return s === 'Approved' || s === 'Approved Review';
+        if (statusFilter === 'Rejected') return s === 'Rejected' || s === 'Rejected Review';
+        return s === statusFilter;
+      });
+    }
+
+    // Sort by Created At (Newest First)
+    result.sort((a, b) => {
+      const dateA = new Date(a.createdAt || a.updatedAt || 0);
+      const dateB = new Date(b.createdAt || b.updatedAt || 0);
+      return dateB - dateA;
+    });
+
+    // Map to include UI properties
+    return result.map((item, index) => {
       const Icon = icons[index % icons.length]
       const color = colors[index % colors.length]
       return {
@@ -1340,32 +1371,8 @@ const SOPDashboard = () => {
         formattedDate: formatDate(item.createdAt),
         status: item.status || "InProgress",
       }
-    })
-
-    // Sort by Created At (Newest First)
-    result.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt))
-
-    // Apply Status Filter
-    if (statusFilter !== 'All') {
-      result = result.filter(sop => {
-        if (statusFilter === 'InProgress') return sop.status === 'InProgress';
-        if (statusFilter === 'Pending Approval') return sop.status === 'Pending Approval' || sop.status === 'Under Review';
-        if (statusFilter === 'Approved') return sop.status === 'Approved' || sop.status === 'Approved Review';
-        if (statusFilter === 'Rejected') return sop.status === 'Rejected' || sop.status === 'Rejected Review';
-        return sop.status === statusFilter;
-      });
-    }
-
-    // Apply Search Filter
-    if (searchTerm.trim()) {
-      const searchLower = searchTerm.toLowerCase().trim();
-      result = result.filter(sop => 
-        sop.name?.toLowerCase().includes(searchLower) ||
-        sop.documentNumber?.toLowerCase().includes(searchLower)
-      )
-    }
-    return result
-  }, [sopData, searchTerm, statusFilter])
+    });
+  }, [sopData, searchTerm, statusFilter]);
 
   const filteredTotalPages = Math.ceil(filteredSopDataList.length / itemsPerPage)
   const filteredIndexLastItem = currentPage * itemsPerPage

@@ -1,6 +1,6 @@
 'use client'
 
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useCallback } from 'react';
 import { Plus, Package, Users, X, Trash2, Sparkles, Eye, Check, Search, Filter, Loader2, ChevronDown, ChevronUp } from 'lucide-react';
 import PasswordModal from '../../components/PasswordModal'; // Import the PasswordModal component
 
@@ -19,21 +19,20 @@ export default function ApproveAssignEquipmentPage() {
   const [statusFilter, setStatusFilter] = useState('all');
   const [sortConfig, setSortConfig] = useState({ key: null, direction: 'ascending' });
 
-  const fetchAssignment = async () => {
+  const fetchAssignment = useCallback(async (isInitial = true) => {
     try {
-      setLoading(true);
+      if (isInitial) setLoading(true);
       const res = await fetch('/api/assignment/fetchAll');
       const data = await res.json();
-      console.log("asdf", data);
       
       const filteredData = data.data.filter((t) => t.companyId === companyData?.companyId && t.status !== "InProgress" && t.userId !== companyData.id);
       setAssignData(filteredData);
     } catch (error) {
       console.error('Error fetching assignments:', error);
     } finally {
-      setLoading(false);
+      if (isInitial) setLoading(false);
     }
-  };
+  }, [companyData]);
 
   useEffect(() => {
     const userData = localStorage.getItem('user');
@@ -42,8 +41,12 @@ export default function ApproveAssignEquipmentPage() {
   }, []);
 
   useEffect(() => {
-    fetchAssignment();
-  }, [companyData]);
+    if (companyData) {
+      fetchAssignment();
+      const interval = setInterval(() => fetchAssignment(false), 5000);
+      return () => clearInterval(interval);
+    }
+  }, [companyData, fetchAssignment]);
 
   const handleApprove = (assignment) => {
     setSelectedAssignment(assignment);
@@ -131,7 +134,11 @@ export default function ApproveAssignEquipmentPage() {
   };
 
   const sortedData = [...assigndata].sort((a, b) => {
-    if (!sortConfig.key) return 0;
+    if (!sortConfig.key) {
+      const dateA = new Date(a.createdAt || a.updatedAt || 0);
+      const dateB = new Date(b.createdAt || b.updatedAt || 0);
+      return dateB - dateA;
+    }
 
     const aValue = sortConfig.key === 'prototypeData.name' 
       ? a.prototypeData?.name 
