@@ -64,7 +64,7 @@ export async function PUT(request) {
       const reviewNotes = [];
 
       for (const item of reviewItems) {
-        const { stageIndex, taskIndex, subtaskIndex, note, taskTitle, taskPath } = item;
+        const { stageIndex, taskIndex, subtaskIndex, note, taskTitle, taskPath, assignedWorker } = item;
 
         if (stageIndex === undefined || taskIndex === undefined) continue;
 
@@ -85,6 +85,16 @@ export async function PUT(request) {
             subtask.actualDuration = null;
             subtask.elapsedTime = null;
             subtask.reason = null;
+            // Add assigned worker if provided (append to existing)
+            if (assignedWorker && Array.isArray(assignedWorker)) {
+              if (!subtask.assignedWorker) subtask.assignedWorker = [];
+              assignedWorker.forEach(newWorker => {
+                const alreadyAssigned = subtask.assignedWorker.some(w => (w.id || w._id) === (newWorker.id || newWorker._id));
+                if (!alreadyAssigned) {
+                  subtask.assignedWorker.push(newWorker);
+                }
+              });
+            }
             // Keep sessions and totalActiveSeconds for history
           }
         } else {
@@ -100,6 +110,16 @@ export async function PUT(request) {
             task.actualDuration = null;
             task.elapsedTime = null;
             task.reason = null;
+            // Add assigned worker if provided (append to existing)
+            if (assignedWorker && Array.isArray(assignedWorker)) {
+              if (!task.assignedWorker) task.assignedWorker = [];
+              assignedWorker.forEach(newWorker => {
+                const alreadyAssigned = task.assignedWorker.some(w => (w.id || w._id) === (newWorker.id || newWorker._id));
+                if (!alreadyAssigned) {
+                  task.assignedWorker.push(newWorker);
+                }
+              });
+            }
             // Keep sessions and totalActiveSeconds for history
           }
         }

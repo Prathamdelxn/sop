@@ -956,6 +956,28 @@ export default function AssignWorkerPage() {
     }
 
     const toggleSelection = (type, stageIndex, taskIndex = null) => {
+        if (type === 'stage') {
+            const stage = selectedAssignment.prototypeData.stages[stageIndex];
+            const allTasksSelected = stage.tasks?.every((_, i) => {
+                const key = `stage-${stageIndex}-task-${i}`;
+                return selectedItems[key] || (assignedWorkers[key]?.length > 0);
+            });
+
+            setSelectedItems(prev => {
+                const newState = { ...prev };
+                stage.tasks?.forEach((_, i) => {
+                    const key = `stage-${stageIndex}-task-${i}`;
+                    if (allTasksSelected) {
+                        newState[key] = false;
+                    } else if (!(assignedWorkers[key]?.length > 0)) {
+                        newState[key] = true;
+                    }
+                });
+                return newState;
+            });
+            return;
+        }
+
         const key = type === 'stage' ? `stage-${stageIndex}` : `stage-${stageIndex}-task-${taskIndex}`
         setSelectedItems(prev => ({
             ...prev,
@@ -1465,7 +1487,22 @@ export default function AssignWorkerPage() {
                                         <div key={stage._id || stageIndex} className="border border-gray-200 rounded-xl shadow-sm">
                                             <div className="p-4 bg-gradient-to-r from-gray-50 to-gray-100 flex items-center justify-between rounded-t-xl">
                                                 <div className="flex items-center gap-4">
-
+                                                    {!viewMode && (
+                                                        <div className="relative">
+                                                            <input
+                                                                type="checkbox"
+                                                                checked={stage.tasks?.every((_, i) => selectedItems[`stage-${stageIndex}-task-${i}`] || (assignedWorkers[`stage-${stageIndex}-task-${i}`]?.length > 0)) || false}
+                                                                onChange={() => toggleSelection('stage', stageIndex)}
+                                                                className="h-5 w-5 text-blue-600 rounded border-2 border-gray-300 focus:ring-blue-500"
+                                                            />
+                                                            {stage.tasks?.some((_, i) => selectedItems[`stage-${stageIndex}-task-${i}`] || (assignedWorkers[`stage-${stageIndex}-task-${i}`]?.length > 0)) &&
+                                                                !stage.tasks?.every((_, i) => selectedItems[`stage-${stageIndex}-task-${i}`] || (assignedWorkers[`stage-${stageIndex}-task-${i}`]?.length > 0)) && (
+                                                                    <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+                                                                        <div className="w-3 h-0.5 bg-blue-600"></div>
+                                                                    </div>
+                                                                )}
+                                                        </div>
+                                                    )}
                                                     <div>
                                                         <h5 className="font-semibold text-gray-900 text-lg">
                                                             Stage {stageIndex + 1}: {stage.name}

@@ -36,7 +36,12 @@ const TaskPage = () => {
     const [showSubtaskHistory, setShowSubtaskHistory] = useState(false);
     const [sendingForReview, setSendingForReview] = useState(false);
 
-    // Derived data
+    // Modal states for Pause
+    const [showPauseModal, setShowPauseModal] = useState(false);
+    const [pauseReason, setPauseReason] = useState("");
+    const [pausingItem, setPausingItem] = useState(null); // { type: 'main'|'sub', item: ... }
+
+    // --- CHECKPOINT LOGIC ---
     const { prototypeData, equipment } = assignmentData || {};
     const stages = prototypeData?.stages || [];
 
@@ -56,9 +61,9 @@ const TaskPage = () => {
     const isAssignmentCompleted = assignmentData?.status === 'Completed' || assignmentData?.reviewStatus === 'Approved';
 
     // Send for Review handler
-    const handleSendForReview = async () => {
+    const handleSendForReview = async (auto = false) => {
         if (!allTasksCompleted) {
-            alert('Please complete all tasks before sending for review.');
+            if (!auto) alert('Please complete all tasks before sending for review.');
             return;
         }
         try {
@@ -73,21 +78,35 @@ const TaskPage = () => {
             });
             const data = await res.json();
             if (!res.ok) throw new Error(data.message || 'Failed to send for review');
-            
+
             // Update local state
             setAssignmentData(prev => ({
                 ...prev,
                 status: 'Pending Review',
                 reviewStatus: 'Pending Review'
             }));
-            alert('Assignment sent for review successfully!');
+            
+            if (!auto) {
+                alert('Assignment sent for review successfully!');
+            } else {
+                console.log('Assignment automatically sent for review.');
+            }
         } catch (err) {
             console.error('Error sending for review:', err);
-            alert(err.message || 'Failed to send for review');
+            // Only alert if manual or it's a real failure they need to know about
+            if (!auto) alert(err.message || 'Failed to send for review');
         } finally {
             setSendingForReview(false);
         }
     };
+
+    // Auto-send for review when all tasks are completed
+    useEffect(() => {
+        if (allTasksCompleted && !isPendingReview && !isAssignmentCompleted && !sendingForReview && userdata && assignmentData) {
+            // Check if it's actually eligible to be sent (not already approved or pending in background)
+            handleSendForReview(true);
+        }
+    }, [allTasksCompleted, isPendingReview, isAssignmentCompleted, sendingForReview, userdata, assignmentData]);
 
     // --- CHECKPOINT LOGIC ---
     const getFirstUncompletedStop = () => {
@@ -113,7 +132,7 @@ const TaskPage = () => {
     };
     // ------------------------
 
-    // Auto-scroll to subtask when focused
+    // Auto-scroll logic for UI triggers
     useEffect(() => {
         if (focusedSubtaskId) {
             setTimeout(() => {
@@ -126,6 +145,28 @@ const TaskPage = () => {
             setShowSubtaskHistory(false);
         }
     }, [focusedSubtaskId]);
+
+    useEffect(() => {
+        if (showTaskHistory) {
+            setTimeout(() => {
+                const element = document.getElementById('main-task-activity-section');
+                if (element) {
+                    element.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                }
+            }, 100);
+        }
+    }, [showTaskHistory]);
+
+    useEffect(() => {
+        if (showSubtaskHistory) {
+            setTimeout(() => {
+                const element = document.getElementById('subtask-activity-section');
+                if (element) {
+                    element.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                }
+            }, 100);
+        }
+    }, [showSubtaskHistory]);
 
     // Sync selectedTask when assignmentData refreshes to ensure we have latest status/timers
     useEffect(() => {
@@ -424,8 +465,16 @@ const TaskPage = () => {
         }));
     };
 
-    const handlePauseTask = async () => {
+    const handlePauseTask = async (reason = null) => {
         if (!selectedTask || !userdata) return;
+
+        // If no reason provided, show modal and return
+        if (reason === null) {
+            setPausingItem({ type: 'main', item: selectedTask });
+            setShowPauseModal(true);
+            return;
+        }
+
         try {
             setIsSubmitting(true);
             setLoadingActionId(selectedTask._id || selectedTask.taskId);
@@ -436,7 +485,8 @@ const TaskPage = () => {
                     assignmentId: id,
                     stageId: stages[selectedTask.stageIndex]._id || stages[selectedTask.stageIndex].stageId,
                     taskId: selectedTask._id || selectedTask.taskId,
-                    pausedBy: { id: userdata.id || userdata._id, name: userdata.name }
+                    pausedBy: { id: userdata.id || userdata._id, name: userdata.name },
+                    pauseReason: reason
                 })
             });
             const result = await res.json();
@@ -735,7 +785,8 @@ const TaskPage = () => {
                 type: (isLast && item.status === 'completed') ? 'Completed' : 'Paused',
                 worker: session.workerName,
                 time: (isLast && item.status === 'completed') ? (item.completedAt || session.endedAt) : session.endedAt,
-                duration: (isLast && item.status === 'completed') ? (item.totalActiveSeconds || item.elapsedTime) : session.durationSeconds
+                duration: (isLast && item.status === 'completed') ? (item.totalActiveSeconds || item.elapsedTime) : session.durationSeconds,
+                pauseReason: session.pauseReason
             });
         });
 
@@ -763,8 +814,8 @@ const TaskPage = () => {
                 <div className="space-y-2.5">
                     {sortedEvents.map((event, idx) => (
                         <div key={idx} className="flex items-center gap-3 text-[11px]">
-                            <div className="min-w-[65px] text-gray-400 font-mono bg-gray-50 px-1.5 py-0.5 rounded border border-gray-100 text-center">
-                                {new Date(event.time).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                            <div className="min-w-[110px] text-gray-400 font-mono bg-gray-50 px-2 py-0.5 rounded border border-gray-100 text-center whitespace-nowrap">
+                                {new Date(event.time).toLocaleString([], { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })}
                             </div>
                             <div className="flex-1 flex flex-wrap items-center">
                                 <span className={`font-bold px-1.5 py-0.5 rounded ${event.type === 'Started' ? 'bg-blue-50 text-blue-600' :
@@ -778,6 +829,11 @@ const TaskPage = () => {
                                     <span className="text-[10px] text-gray-400 ml-auto font-medium">({formatSeconds(event.duration)})</span>
                                 )}
                             </div>
+                            {event.pauseReason && (
+                                <div className="ml-[123px] mt-1 text-[10px] text-orange-600 bg-orange-50 px-2 py-1 rounded border border-orange-100 italic">
+                                    "{event.pauseReason}"
+                                </div>
+                            )}
                         </div>
                     ))}
                 </div>
@@ -883,8 +939,16 @@ const TaskPage = () => {
         handlePauseSubtask(subtask);
     };
 
-    const handlePauseSubtask = async (subtask) => {
+    const handlePauseSubtask = async (subtask, reason = null) => {
         const subtaskId = subtask._id || subtask.taskId;
+
+        // If no reason provided, show modal and return
+        if (reason === null) {
+            setPausingItem({ type: 'sub', item: subtask });
+            setShowPauseModal(true);
+            return;
+        }
+
         try {
             setIsSubmitting(true);
             const res = await fetch('/api/assignment/task-execution/pause', {
@@ -895,7 +959,8 @@ const TaskPage = () => {
                     stageId: stages[selectedTask.stageIndex]._id || stages[selectedTask.stageIndex].stageId,
                     taskId: selectedTask._id || selectedTask.taskId,
                     subtaskId: subtaskId,
-                    pausedBy: { id: userdata.id || userdata._id, name: userdata.name }
+                    pausedBy: { id: userdata.id || userdata._id, name: userdata.name },
+                    pauseReason: reason
                 })
             });
             const result = await res.json();
@@ -1009,7 +1074,7 @@ const TaskPage = () => {
         if (needsModal) {
             // First pause the subtask to stop the timer while user writes the reason
             if (timer?.isRunning) {
-                await handlePauseSubtask(subtask);
+                await handlePauseSubtask(subtask, "System: Pause for submission reason");
             }
             if (minSeconds !== null && totalTime < minSeconds) {
                 setReasonType('min');
@@ -1053,7 +1118,7 @@ const TaskPage = () => {
         if (needsModal) {
             // First pause the main task to stop the timer while user writes the reason
             if (taskTimer.isRunning) {
-                await handlePauseTask();
+                await handlePauseTask("System: Pause for submission reason");
             }
             if (minSeconds !== null && totalTime < minSeconds) {
                 setReasonType('min');
@@ -1297,7 +1362,7 @@ const TaskPage = () => {
 
     return (
         <div className="w-full h-full p-2">
-            <div className="h-full w-full rounded-b-2xl border border-gray-300 overflow-hidden relative">
+            <div className="h-full w-full rounded-b-2xl border border-gray-300 overflow-hidden relative flex flex-col">
                 {/* Rework Required Banner */}
                 {isReworkRequired && assignmentData?.reviewNotes?.length > 0 && (
                     <div className="w-full bg-rose-50 border-b border-rose-200 px-4 py-3">
@@ -1332,7 +1397,7 @@ const TaskPage = () => {
                 )}
 
                 {/* Header */}
-                <div className="h-[7%] w-full flex items-center border-b border-gray-300 justify-between px-4">
+                <div className="h-16 w-full flex items-center border-b border-gray-300 justify-between px-4 bg-white shrink-0">
                     {/* Title + Status + Equipment */}
                     <div className="gap-4 flex items-center">
                         <h1 className="text-lg font-semibold">{prototypeData?.name || 'Untitled SOP'}</h1>
@@ -1346,20 +1411,25 @@ const TaskPage = () => {
 
                     {/* Right side: Send for Review + Language */}
                     <div className="flex items-center gap-3">
-                        {/* Send for Review Button */}
-                        {allTasksCompleted && !isPendingReview && !isAssignmentCompleted && (
-                            <button
-                                onClick={handleSendForReview}
-                                disabled={sendingForReview}
-                                className="inline-flex items-center gap-2 px-4 py-1.5 text-sm font-medium text-white bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-700 hover:to-indigo-700 rounded-lg transition-all duration-200 shadow-sm hover:shadow disabled:opacity-50 disabled:cursor-not-allowed"
-                            >
-                                {sendingForReview ? (
-                                    <><Loader2 className="h-4 w-4 animate-spin" /> Sending...</>
-                                ) : (
-                                    <><CheckCircle className="h-4 w-4" /> Send for Review</>
-                                )}
-                            </button>
-                        )}
+                        {/* Send for Review Button - ALWAYS PRESENT */}
+                        <button
+                            onClick={() => handleSendForReview(false)}
+                            disabled={sendingForReview || isPendingReview || isAssignmentCompleted || !allTasksCompleted}
+                            className={`inline-flex items-center gap-2 px-4 py-1.5 text-sm font-medium text-white transition-all duration-200 shadow-sm hover:shadow disabled:opacity-50 disabled:cursor-not-allowed rounded-lg ${isPendingReview ? 'bg-purple-600' : isAssignmentCompleted ? 'bg-emerald-600' : !allTasksCompleted ? 'bg-gray-400' : 'bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-700 hover:to-indigo-700'
+                                }`}
+                        >
+                            {isPendingReview ? (
+                                <><Loader2 className="h-4 w-4 animate-spin" /> Under Review</>
+                            ) : isAssignmentCompleted ? (
+                                <><CheckCircle className="h-4 w-4" /> Approved</>
+                            ) : sendingForReview ? (
+                                <><Loader2 className="h-4 w-4 animate-spin" /> Sending...</>
+                            ) : !allTasksCompleted ? (
+                                <><Clock className="h-4 w-4" /> Tasks Pending</>
+                            ) : (
+                                <><CheckCircle className="h-4 w-4" /> Send for Review</>
+                            )}
+                        </button>
 
                         <div className="flex items-center gap-2">
                             <label htmlFor="language" className="text-sm font-medium">
@@ -1380,7 +1450,7 @@ const TaskPage = () => {
                 </div>
 
                 {/* Body */}
-                <div className="h-[93%] w-full flex">
+                <div className="flex-1 w-full flex overflow-hidden">
                     {/* Left Sidebar - Stages and Tasks */}
                     <div className={`h-full ${sidebarExpanded ? 'w-1/4' : 'w-16'} border-r border-gray-300 transition-all duration-300 overflow-hidden relative`}>
                         <div className="p-4 h-full overflow-y-auto">
@@ -1427,10 +1497,10 @@ const TaskPage = () => {
                                                                             : isBlocked
                                                                                 ? 'bg-gray-200'
                                                                                 : isCompleted
-                                                                                ? (task.reason ? 'bg-red-500' : 'bg-green-500')
-                                                                                : task.status === 'Paused'
-                                                                                    ? 'bg-orange-400'
-                                                                                    : 'bg-gray-300'
+                                                                                    ? (task.reason ? 'bg-red-500' : 'bg-green-500')
+                                                                                    : task.status === 'Paused'
+                                                                                        ? 'bg-orange-400'
+                                                                                        : 'bg-gray-300'
                                                                             }`}></div>
                                                                         <span className="flex-1 truncate">{taskNumber}: {task.title}</span>
                                                                         {isBlocked && <AlertCircle size={14} className="text-gray-400 shrink-0" />}
@@ -1666,7 +1736,7 @@ const TaskPage = () => {
                                                             </span>
                                                         </div>
                                                         <button
-                                                            onClick={handlePauseTask}
+                                                            onClick={() => handlePauseTask()}
                                                             disabled={isSubmitting}
                                                             className={`bg-orange-500 hover:bg-orange-600 text-white px-4 py-2 rounded-md flex items-center gap-2 ${isSubmitting && loadingActionId !== (selectedTask?._id || selectedTask?.taskId) ? 'opacity-50 cursor-not-allowed' : ''}`}
                                                         >
@@ -1791,7 +1861,7 @@ const TaskPage = () => {
                                                 </button>
 
                                                 {showTaskHistory && (
-                                                    <div className="mt-4 animate-in fade-in slide-in-from-top-2 duration-300">
+                                                    <div id="main-task-activity-section" className="mt-4 animate-in fade-in slide-in-from-top-2 duration-300">
                                                         {renderActivityHistory(selectedTask)}
                                                     </div>
                                                 )}
@@ -1888,7 +1958,7 @@ const TaskPage = () => {
                                                                                 </button>
 
                                                                                 {showSubtaskHistory && (
-                                                                                    <div className="mt-3 animate-in fade-in slide-in-from-top-2 duration-300">
+                                                                                    <div id="subtask-activity-section" className="mt-3 animate-in fade-in slide-in-from-top-2 duration-300">
                                                                                         {renderActivityHistory(subtask)}
                                                                                     </div>
                                                                                 )}
@@ -2050,19 +2120,19 @@ const TaskPage = () => {
                                                                         {subtask.status === 'Under Execution' && subtask.startedAt && (
                                                                             <div className="text-[9px] text-blue-600 font-medium mt-0.5 flex items-center gap-1">
                                                                                 <Play size={10} fill="currentColor" />
-                                                                                <span>Started by {subtask.lockedBy?.name || subtask.startedBy?.name || 'Worker'} at {new Date(subtask.startedAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
+                                                                                <span>Started by {subtask.lockedBy?.name || subtask.startedBy?.name || 'Worker'} at {new Date(subtask.startedAt).toLocaleString([], { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })}</span>
                                                                             </div>
                                                                         )}
                                                                         {!isCompleted && subtask.status === 'Paused' && subtask.sessions && subtask.sessions.length > 0 && (
                                                                             <div className="text-[9px] text-orange-600 font-medium mt-0.5 flex items-center gap-1">
                                                                                 <Pause size={10} fill="currentColor" />
-                                                                                <span>Paused by {subtask.sessions[subtask.sessions.length - 1].workerName} at {new Date(subtask.sessions[subtask.sessions.length - 1].endedAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
+                                                                                <span>Paused by {subtask.sessions[subtask.sessions.length - 1].workerName} at {new Date(subtask.sessions[subtask.sessions.length - 1].endedAt).toLocaleString([], { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })}</span>
                                                                             </div>
                                                                         )}
                                                                         {isCompleted && subtask.sessions && subtask.sessions.length > 0 && (
                                                                             <div className="text-[9px] text-green-600 font-medium mt-0.5 flex items-center gap-1">
                                                                                 <CheckCircle size={10} />
-                                                                                <span>Finished at {new Date(subtask.sessions[subtask.sessions.length - 1].endedAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
+                                                                                <span>Finished at {new Date(subtask.sessions[subtask.sessions.length - 1].endedAt).toLocaleString([], { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })}</span>
                                                                             </div>
                                                                         )}
                                                                         {subtask.description && (
@@ -2285,6 +2355,67 @@ const TaskPage = () => {
                     </div>
                 </div>
             </div>
+
+            {/* Pause Reason Modal */}
+            {showPauseModal && (
+                <div className="fixed inset-0 bg-transparent backdrop-blur-sm shadow-xl pl-64 border-2 bg-opacity-50 flex items-center justify-center z-50">
+                    <div className="bg-white rounded-2xl p-6 max-w-md w-full mx-4 shadow-2xl border border-gray-100 animate-in fade-in zoom-in duration-200">
+                        <div className="flex items-center gap-3 mb-4">
+                            <div className="p-3 bg-orange-50 rounded-xl">
+                                <Pause className="w-6 h-6 text-orange-600" />
+                            </div>
+                            <h3 className="text-lg font-bold text-gray-800">Pause Task</h3>
+                        </div>
+
+                        <p className="text-sm text-gray-600 mb-4">
+                            Please provide a reason for pausing the {pausingItem?.type === 'sub' ? 'subtask' : 'task'}
+                            <span className="font-semibold text-gray-900 ml-1">"{pausingItem?.item?.title}"</span>.
+                        </p>
+
+                        <textarea
+                            className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-orange-500 mb-4 text-sm resize-none bg-gray-50 hover:bg-white transition-colors"
+                            rows="4"
+                            placeholder="Break, material shortage, machine issue, etc..."
+                            value={pauseReason}
+                            onChange={(e) => setPauseReason(e.target.value)}
+                            disabled={isSubmitting}
+                            autoFocus
+                        />
+
+                        <div className="flex justify-end gap-3">
+                            <button
+                                onClick={() => {
+                                    setShowPauseModal(false);
+                                    setPauseReason("");
+                                    setPausingItem(null);
+                                }}
+                                className="px-4 py-2 text-sm font-semibold text-gray-500 hover:text-gray-700 hover:bg-gray-100 rounded-xl transition-all"
+                                disabled={isSubmitting}
+                            >
+                                Cancel
+                            </button>
+                            <button
+                                onClick={() => {
+                                    if (!pauseReason.trim()) return;
+                                    const reason = pauseReason.trim();
+                                    setShowPauseModal(false);
+                                    setPauseReason("");
+                                    if (pausingItem?.type === 'sub') {
+                                        handlePauseSubtask(pausingItem.item, reason);
+                                    } else {
+                                        handlePauseTask(reason);
+                                    }
+                                    setPausingItem(null);
+                                }}
+                                className="px-6 py-2 bg-gradient-to-r from-orange-500 to-orange-600 text-white text-sm font-bold rounded-xl hover:from-orange-600 hover:to-orange-700 disabled:opacity-50 shadow-md shadow-orange-200 flex items-center gap-2 transform active:scale-95 transition-all"
+                                disabled={isSubmitting || !pauseReason.trim()}
+                            >
+                                {isSubmitting ? <Loader2 size={16} className="animate-spin" /> : "Confirm Pause"}
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
 
             {/* Reason Modal */}
             {showReasonModal && (

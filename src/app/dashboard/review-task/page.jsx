@@ -16,6 +16,7 @@ import {
   RotateCcw,
   CheckCheck,
   User,
+  Users,
 } from "lucide-react";
 
 const ReviewTaskPage = () => {
@@ -31,6 +32,8 @@ const ReviewTaskPage = () => {
   // Review state: which tasks/subtasks are checked for reopening
   const [checkedItems, setCheckedItems] = useState({}); // { "0-1": true, "0-1-0": true }
   const [reviewNotes, setReviewNotes] = useState({}); // { "0-1": "Please redo this", ... }
+  const [workers, setWorkers] = useState([]);
+  const [reassignedWorkers, setReassignedWorkers] = useState({}); // { "0-1": [{id, name}], ... }
 
   useEffect(() => {
     const userData = localStorage.getItem("user");
@@ -61,16 +64,31 @@ const ReviewTaskPage = () => {
   useEffect(() => {
     if (companyData) {
       fetchAssignments();
+      fetchWorkers();
       const interval = setInterval(() => fetchAssignments(false), 5000);
       return () => clearInterval(interval);
     }
   }, [companyData, fetchAssignments]);
+
+  const fetchWorkers = async () => {
+    if (!companyData?.companyId) return;
+    try {
+      const res = await fetch(`/api/task-execution/${companyData.companyId}`);
+      const data = await res.json();
+      if (data.users) {
+        setWorkers(data.users);
+      }
+    } catch (err) {
+      console.error("Failed to fetch workers:", err);
+    }
+  };
 
 
   const handleViewAssignment = (assignment) => {
     setSelectedAssignment(assignment);
     setCheckedItems({});
     setReviewNotes({});
+    setReassignedWorkers({});
     // Expand all stages by default
     const expanded = {};
     assignment.prototypeData?.stages?.forEach((_, idx) => {
@@ -84,6 +102,7 @@ const ReviewTaskPage = () => {
     setSelectedAssignment(null);
     setCheckedItems({});
     setReviewNotes({});
+    setReassignedWorkers({});
   };
 
   const toggleStage = (stageKey) => {
@@ -100,11 +119,16 @@ const ReviewTaskPage = () => {
       const next = { ...prev };
       if (next[key]) {
         delete next[key];
-        // Also remove the note
+        // Also remove the note and reassigned worker
         setReviewNotes((prevNotes) => {
           const nn = { ...prevNotes };
           delete nn[key];
           return nn;
+        });
+        setReassignedWorkers((prevWorkers) => {
+          const nw = { ...prevWorkers };
+          delete nw[key];
+          return nw;
         });
       } else {
         next[key] = true;
@@ -116,6 +140,24 @@ const ReviewTaskPage = () => {
   // Update note for a specific item
   const updateNote = (key, note) => {
     setReviewNotes((prev) => ({ ...prev, [key]: note }));
+  };
+
+  const updateReassignedWorker = (key, workerId) => {
+    if (!workerId) {
+      setReassignedWorkers(prev => {
+        const next = { ...prev };
+        delete next[key];
+        return next;
+      });
+      return;
+    }
+    const worker = workers.find(w => (w._id || w.id) === workerId);
+    if (worker) {
+      setReassignedWorkers(prev => ({
+        ...prev,
+        [key]: [{ id: worker._id || worker.id, name: worker.name }]
+      }));
+    }
   };
 
   const checkedCount = Object.keys(checkedItems).length;
@@ -182,6 +224,7 @@ const ReviewTaskPage = () => {
         taskTitle,
         taskPath,
         note: reviewNotes[key] || "",
+        assignedWorker: reassignedWorkers[key] || null,
       });
     });
 
@@ -471,8 +514,8 @@ const ReviewTaskPage = () => {
               {/* Info Banner */}
               <div className="mt-4 bg-purple-50 border border-purple-200 rounded-lg p-3">
                 <p className="text-sm text-purple-800">
-                  <strong>Instructions:</strong> Review each task below. If you are not satisfied with any task or subtask, 
-                  check its checkbox and add a note explaining what needs to be redone. Then click "Reopen Selected" to send 
+                  <strong>Instructions:</strong> Review each task below. If you are not satisfied with any task or subtask,
+                  check its checkbox and add a note explaining what needs to be redone. Then click "Reopen Selected" to send
                   those tasks back to the worker. Or click "Approve All" if everything looks good.
                 </p>
               </div>
@@ -532,11 +575,10 @@ const ReviewTaskPage = () => {
                             return (
                               <div
                                 key={taskKey}
-                                className={`border-2 rounded-xl overflow-hidden transition-all ${
-                                  isChecked
+                                className={`border-2 rounded-xl overflow-hidden transition-all ${isChecked
                                     ? "border-rose-300 bg-rose-50"
                                     : "border-gray-200 bg-white"
-                                }`}
+                                  }`}
                               >
                                 {/* Task Header */}
                                 <div className="p-4">
@@ -608,7 +650,7 @@ const ReviewTaskPage = () => {
 
                                   {/* Note field when checked */}
                                   {isChecked && (
-                                    <div className="mt-3 ml-7">
+                                    <div className="mt-3 ml-7 space-y-3">
                                       <div className="flex items-start gap-2">
                                         <MessageSquare className="w-4 h-4 text-rose-500 mt-2 shrink-0" />
                                         <textarea
@@ -620,6 +662,22 @@ const ReviewTaskPage = () => {
                                           rows={2}
                                           className="flex-1 text-sm border border-rose-200 rounded-lg px-3 py-2 focus:ring-2 focus:ring-rose-500 focus:border-rose-500 bg-white placeholder-rose-300"
                                         />
+                                      </div>
+
+                                      <div className="flex items-center gap-2">
+                                        <Users className="w-4 h-4 text-rose-500 shrink-0" />
+                                        <select
+                                          value={reassignedWorkers[taskKey]?.[0]?.id || ""}
+                                          onChange={(e) => updateReassignedWorker(taskKey, e.target.value)}
+                                          className="flex-1 text-sm border border-rose-200 rounded-lg px-3 py-2 focus:ring-2 focus:ring-rose-500 focus:border-rose-500 bg-white text-rose-900"
+                                        >
+                                          <option value="">Select a worker to reassign (Optional)</option>
+                                          {workers.map(worker => (
+                                            <option key={worker._id || worker.id} value={worker._id || worker.id}>
+                                              {worker.name} ({worker.role || 'Worker'})
+                                            </option>
+                                          ))}
+                                        </select>
                                       </div>
                                     </div>
                                   )}
@@ -640,11 +698,10 @@ const ReviewTaskPage = () => {
                                         return (
                                           <div
                                             key={subKey}
-                                            className={`p-3 rounded-lg border transition-all ${
-                                              isSubChecked
+                                            className={`p-3 rounded-lg border transition-all ${isSubChecked
                                                 ? "border-rose-300 bg-rose-50"
                                                 : "border-gray-200 bg-white"
-                                            }`}
+                                              }`}
                                           >
                                             <div className="flex items-start gap-3">
                                               <div className="pt-0.5">
@@ -682,7 +739,7 @@ const ReviewTaskPage = () => {
 
                                             {/* Subtask note */}
                                             {isSubChecked && (
-                                              <div className="mt-2 ml-7">
+                                              <div className="mt-2 ml-7 space-y-2">
                                                 <textarea
                                                   value={reviewNotes[subKey] || ""}
                                                   onChange={(e) =>
@@ -692,6 +749,21 @@ const ReviewTaskPage = () => {
                                                   rows={1}
                                                   className="w-full text-sm border border-rose-200 rounded-lg px-3 py-2 focus:ring-2 focus:ring-rose-500 focus:border-rose-500 bg-white placeholder-rose-300"
                                                 />
+                                                <div className="flex items-center gap-2">
+                                                  <Users className="w-3 h-3 text-rose-500 shrink-0" />
+                                                  <select
+                                                    value={reassignedWorkers[subKey]?.[0]?.id || ""}
+                                                    onChange={(e) => updateReassignedWorker(subKey, e.target.value)}
+                                                    className="w-full text-[11px] border border-rose-200 rounded-lg px-2 py-1.5 focus:ring-1 focus:ring-rose-500 focus:border-rose-500 bg-white text-rose-900"
+                                                  >
+                                                    <option value="">Reassign worker (Optional)</option>
+                                                    {workers.map(worker => (
+                                                      <option key={worker._id || worker.id} value={worker._id || worker.id}>
+                                                        {worker.name}
+                                                      </option>
+                                                    ))}
+                                                  </select>
+                                                </div>
                                               </div>
                                             )}
                                           </div>
@@ -741,7 +813,7 @@ const ReviewTaskPage = () => {
                     {submitting ? (
                       <><Loader2 className="w-4 h-4 animate-spin" /> Approving...</>
                     ) : (
-                      <><CheckCheck className="w-4 h-4" /> Approve All</>
+                      <><CheckCheck className="w-4 h-4" /> Reviewed All</>
                     )}
                   </button>
                 )}

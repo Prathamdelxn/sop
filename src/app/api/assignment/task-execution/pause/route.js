@@ -7,7 +7,7 @@ export async function PUT(request) {
     await connectDB();
 
     const body = await request.json();
-    const { assignmentId, stageId, taskId, subtaskId, pausedBy } = body;
+    const { assignmentId, stageId, taskId, subtaskId, pausedBy, pauseReason } = body;
 
     if (!assignmentId || !stageId || !taskId || !pausedBy) {
       return NextResponse.json(
@@ -84,7 +84,8 @@ export async function PUT(request) {
       workerName: pausedBy.name,
       startedAt: itemToUpdate.startedAt,
       endedAt: now,
-      durationSeconds: durationSeconds
+      durationSeconds: durationSeconds,
+      pauseReason: pauseReason || null
     });
 
     itemToUpdate.totalActiveSeconds += durationSeconds;

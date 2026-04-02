@@ -1,7 +1,9 @@
 "use client";
 import { useRouter } from 'next/navigation';
 import React, { useState, useEffect } from 'react';
-import { Play, Eye, Clock, User, Package, Hash, Zap, Sparkles, Loader2 } from 'lucide-react';
+import { Play, Eye, Clock, User, Package, Hash, Zap, Sparkles, Loader2, MoreVertical, Download } from 'lucide-react';
+import { jsPDF } from 'jspdf';
+import autoTable from 'jspdf-autotable';
 
 const TaskExecutionPage = () => {
   const router = useRouter();
@@ -59,6 +61,214 @@ const TaskExecutionPage = () => {
   };
   const [userData, setUser] = useState();
   const [loading, setLoading] = useState(true);
+  const [openMenuId, setOpenMenuId] = useState(null);
+
+  // Close menu on click outside
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (openMenuId && !event.target.closest('.action-menu-container')) {
+        setOpenMenuId(null);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, [openMenuId]);
+
+  const handleDownloadPDF = (task) => {
+    const doc = new jsPDF();
+    const pageWidth = doc.internal.pageSize.getWidth();
+    const pageHeight = doc.internal.pageSize.getHeight();
+    
+    // --- PAGE 1: SUMMARY ---
+    // Header
+    doc.setFontSize(24);
+    doc.setTextColor(33, 150, 243); // Blue theme
+    doc.text('Task Execution Report', pageWidth / 2, 20, { align: 'center' });
+    
+    doc.setDrawColor(33, 150, 243);
+    doc.setLineWidth(1);
+    doc.line(20, 25, pageWidth - 20, 25);
+    
+    // Summary Section
+    doc.setFontSize(10);
+    doc.setTextColor(120, 120, 120);
+    doc.text(`Assignment ID: ${task.generatedId}`, 20, 32);
+    doc.text(`Status: ${task.status}`, 20, 37);
+    doc.text(`Report Generated: ${new Date().toLocaleString()}`, pageWidth - 20, 32, { align: 'right' });
+    
+    autoTable(doc, {
+      startY: 45,
+      head: [['General Information', 'Details']],
+      body: [
+        ['Prototype/SOP Name', task.prototypeData.name],
+        ['Equipment Name', task.equipment.name],
+        ['Equipment Barcode', task.equipment.barcode || task.equipment.assetTag || task.equipment.equipmentId || 'N/A'],
+        ['Assigned Worker', task.assignedTo?.name || userData?.name || 'N/A'],
+        ['Total Stages', task.prototypeData.stages?.length || 0],
+        ['Completed By', task.completedBy?.name || (task.status === 'Completed' ? userData?.name : 'N/A')],
+        ['Overall Review Status', task.reviewStatus || 'Approved'],
+      ],
+      theme: 'striped',
+      headStyles: { fillColor: [33, 150, 243] },
+    });
+
+    // --- TASK PROGRESS TABLE ---
+    doc.setFontSize(14);
+    doc.setTextColor(40, 40, 40);
+    doc.text('Individual Task Status', 20, doc.lastAutoTable.finalY + 15);
+
+    const taskDataTable = [];
+    const stages = task.prototypeData.stages || [];
+    stages.forEach((stage, sIdx) => {
+      if (stage.tasks) {
+        stage.tasks.forEach((t, tIdx) => {
+          const taskNum = `${sIdx + 1}.${tIdx + 1}`;
+          taskDataTable.push([
+            taskNum,
+            t.title,
+            t.status.toUpperCase(),
+            t.totalActiveSeconds ? `${Math.floor(t.totalActiveSeconds / 60)}m ${t.totalActiveSeconds % 60}s` : '0s',
+            t.completedAt ? new Date(t.completedAt).toLocaleString() : '-'
+          ]);
+          
+          if (t.subtasks && t.subtasks.length > 0) {
+            t.subtasks.forEach((st, stIdx) => {
+              taskDataTable.push([
+                `   ${taskNum}.${stIdx + 1}`,
+                `   - ${st.title}`,
+                st.status.toLowerCase(),
+                st.totalActiveSeconds ? `${Math.floor(st.totalActiveSeconds / 60)}m ${st.totalActiveSeconds % 60}s` : '0s',
+                st.completedAt ? new Date(st.completedAt).toLocaleString() : '-'
+              ]);
+            });
+          }
+        });
+      }
+    });
+
+    autoTable(doc, {
+      startY: doc.lastAutoTable.finalY + 20,
+      head: [['Ref', 'Task / Subtask Title', 'Status', 'Duration', 'Finished At']],
+      body: taskDataTable,
+      theme: 'grid',
+      headStyles: { fillColor: [75, 85, 99] },
+      styles: { fontSize: 8 },
+      columnStyles: {
+        0: { cellWidth: 15 },
+        2: { cellWidth: 25 },
+        3: { cellWidth: 25 },
+      },
+    });
+
+    // --- PAGE 2: ACTIVITY TIMELINE ---
+    doc.addPage();
+    doc.setFontSize(18);
+    doc.setTextColor(33, 150, 243);
+    doc.text('Detailed Activity Timeline', 20, 20);
+    doc.line(20, 23, pageWidth - 20, 23);
+
+    const timelineData = [];
+    stages.forEach((stage, sIdx) => {
+      stage.tasks?.forEach((t, tIdx) => {
+        const taskRef = `${sIdx + 1}.${tIdx + 1} ${t.title}`;
+        // Main Task Sessions
+        t.sessions?.forEach((sess, sI) => {
+          timelineData.push([new Date(sess.startedAt), taskRef, sI === 0 ? 'STARTED' : 'RESUMED', sess.workerName, '-']);
+          timelineData.push([new Date(sess.endedAt || t.completedAt), taskRef, (sI === t.sessions.length - 1 && t.status === 'completed') ? 'COMPLETED' : 'PAUSED', sess.workerName, sess.pauseReason || (sI === t.sessions.length - 1 ? t.reason?.text : '') || '-']);
+        });
+        // Subtask Sessions
+        t.subtasks?.forEach((st, stI) => {
+          const subRef = `${sIdx + 1}.${tIdx + 1}.${stI + 1} ${st.title}`;
+          st.sessions?.forEach((sess, sI) => {
+            timelineData.push([new Date(sess.startedAt), subRef, sI === 0 ? 'STARTED' : 'RESUMED', sess.workerName, '-']);
+            timelineData.push([new Date(sess.endedAt || st.completedAt), subRef, (sI === st.sessions.length - 1 && st.status === 'completed') ? 'COMPLETED' : 'PAUSED', sess.workerName, sess.pauseReason || (sI === st.sessions.length - 1 ? st.reason?.text : '') || '-']);
+          });
+        });
+      });
+    });
+
+    // Filter out invalid dates and sort
+    const sortedTimeline = timelineData
+      .filter(item => !isNaN(item[0].getTime()))
+      .sort((a, b) => a[0] - b[0])
+      .map(item => [item[0].toLocaleString(), item[1], item[2], item[3], item[4]]);
+
+    autoTable(doc, {
+      startY: 30,
+      head: [['Timestamp', 'Item', 'Action', 'Worker', 'Reason / Note']],
+      body: sortedTimeline,
+      theme: 'striped',
+      headStyles: { fillColor: [46, 125, 50] }, // Green for history
+      styles: { fontSize: 7 },
+    });
+
+    // --- PAGE 3: REVIEW & EXCEPTIONS (If applicable) ---
+    const exceptions = [];
+    stages.forEach(s => s.tasks?.forEach(t => {
+      if (t.reason) exceptions.push([t.title, t.reason.type === 'min' ? 'Early Completion' : 'Late Completion', t.reason.text]);
+      t.subtasks?.forEach(st => {
+        if (st.reason) exceptions.push([st.title, st.reason.type === 'min' ? 'Early Completion' : 'Late Completion', st.reason.text]);
+      });
+    }));
+
+    if (exceptions.length > 0 || (task.reviewNotes && task.reviewNotes.length > 0)) {
+      doc.addPage();
+      let currentY = 20;
+
+      if (exceptions.length > 0) {
+        doc.setFontSize(16);
+        doc.setTextColor(211, 47, 47); // Red for exceptions
+        doc.text('Execution Exceptions', 20, currentY);
+        autoTable(doc, {
+          startY: currentY + 5,
+          head: [['Item Name', 'Constraint Violation', 'Worker Explanation']],
+          body: exceptions,
+          theme: 'grid',
+          headStyles: { fillColor: [211, 47, 47] },
+          styles: { fontSize: 8 },
+        });
+        currentY = doc.lastAutoTable.finalY + 15;
+      }
+
+      if (task.reviewNotes && task.reviewNotes.length > 0) {
+        doc.setFontSize(16);
+        doc.setTextColor(156, 39, 176); // Purple for review
+        doc.text('Review Feedback History', 20, currentY);
+        const reviewRows = task.reviewNotes.map(rn => [
+          new Date(rn.reviewedAt).toLocaleString(),
+          rn.taskTitle || 'Entire SOP',
+          rn.note || 'No notes',
+          rn.reopened ? 'REWORK REQ.' : 'APPROVED',
+          rn.reviewedBy?.name || 'Admin'
+        ]);
+        autoTable(doc, {
+          startY: currentY + 5,
+          head: [['Date', 'Target', 'Comment', 'Decision', 'Reviewer']],
+          body: reviewRows,
+          theme: 'striped',
+          headStyles: { fillColor: [156, 39, 176] },
+          styles: { fontSize: 8 },
+        });
+      }
+    }
+
+    // --- FOOTER ---
+    const totalPages = doc.internal.getNumberOfPages();
+    for (let i = 1; i <= totalPages; i++) {
+      doc.setPage(i);
+      doc.setFontSize(9);
+      doc.setTextColor(150, 150, 150);
+      doc.text(
+        `Digital Record: ${task.generatedId} | Page ${i} of ${totalPages} | Authenticated by SOP Management System`,
+        pageWidth / 2,
+        pageHeight - 10,
+        { align: 'center' }
+      );
+    }
+
+    doc.save(`Detailed_SOP_Report_${task.generatedId}.pdf`);
+    setOpenMenuId(null);
+  };
   useEffect(() => {
     const storedUser = localStorage.getItem("user");
     if (storedUser) {
@@ -371,6 +581,34 @@ const TaskExecutionPage = () => {
                                 </>
                               )}
                             </button>
+                            
+                            {/* Action Menu (Three Dots) */}
+                            <div className="relative action-menu-container">
+                              <button
+                                onClick={() => setOpenMenuId(openMenuId === task._id ? null : task._id)}
+                                className="p-2 text-gray-400 hover:text-gray-600 rounded-full hover:bg-gray-100 transition-colors"
+                              >
+                                <MoreVertical className="h-4 w-4" />
+                              </button>
+                              
+                              {openMenuId === task._id && (
+                                <div className="absolute right-0 mt-2 w-48 bg-white rounded-lg shadow-xl border border-gray-100 py-1 z-50 animate-in fade-in slide-in-from-top-1 duration-200">
+                                  {task.status === 'Completed' ? (
+                                    <button
+                                      onClick={() => handleDownloadPDF(task)}
+                                      className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-blue-50 hover:text-blue-600 flex items-center gap-2"
+                                    >
+                                      <Download className="h-4 w-4" />
+                                      Download PDF
+                                    </button>
+                                  ) : (
+                                    <div className="px-4 py-2 text-xs text-gray-400 italic">
+                                      Download available on completion
+                                    </div>
+                                  )}
+                                </div>
+                              )}
+                            </div>
                           </div>
                         </td>
                       </tr>
