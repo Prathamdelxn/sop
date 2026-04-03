@@ -115,9 +115,16 @@ const ReviewTaskPage = () => {
 
   // Toggle checkbox for a task or subtask
   const toggleCheck = (key) => {
+    const parts = key.split("-");
+    const isMainTask = parts.length === 2; // stageIndex-taskIndex
+    
     setCheckedItems((prev) => {
       const next = { ...prev };
-      if (next[key]) {
+      const newValue = !next[key];
+
+      if (newValue) {
+        next[key] = true;
+      } else {
         delete next[key];
         // Also remove the note and reassigned worker
         setReviewNotes((prevNotes) => {
@@ -130,9 +137,34 @@ const ReviewTaskPage = () => {
           delete nw[key];
           return nw;
         });
-      } else {
-        next[key] = true;
       }
+
+      // If it's a main task, also toggle all of its subtasks
+      if (isMainTask && selectedAssignment) {
+        const stageIndex = parseInt(parts[0]);
+        const taskIndex = parseInt(parts[1]);
+        const subtasks = selectedAssignment.prototypeData?.stages?.[stageIndex]?.tasks?.[taskIndex]?.subtasks || [];
+        
+        subtasks.forEach((_, subIndex) => {
+          const subKey = `${stageIndex}-${taskIndex}-${subIndex}`;
+          if (newValue) {
+            next[subKey] = true;
+          } else {
+            delete next[subKey];
+            setReviewNotes((prevNotes) => {
+              const nn = { ...prevNotes };
+              delete nn[subKey];
+              return nn;
+            });
+            setReassignedWorkers((prevWorkers) => {
+              const nw = { ...prevWorkers };
+              delete nw[subKey];
+              return nw;
+            });
+          }
+        });
+      }
+
       return next;
     });
   };

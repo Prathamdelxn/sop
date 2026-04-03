@@ -84,6 +84,7 @@ export async function PUT(request) {
             subtask.startedAt = null;
             subtask.actualDuration = null;
             subtask.elapsedTime = null;
+            subtask.totalActiveSeconds = null; // Reset timing for rework
             subtask.reason = null;
             // Add assigned worker if provided (append to existing)
             if (assignedWorker && Array.isArray(assignedWorker)) {
@@ -109,6 +110,7 @@ export async function PUT(request) {
             task.startedAt = null;
             task.actualDuration = null;
             task.elapsedTime = null;
+            task.totalActiveSeconds = null; // Reset timing for rework
             task.reason = null;
             // Add assigned worker if provided (append to existing)
             if (assignedWorker && Array.isArray(assignedWorker)) {
@@ -117,6 +119,33 @@ export async function PUT(request) {
                 const alreadyAssigned = task.assignedWorker.some(w => (w.id || w._id) === (newWorker.id || newWorker._id));
                 if (!alreadyAssigned) {
                   task.assignedWorker.push(newWorker);
+                }
+              });
+            }
+
+            // ALSO reopen all subtasks
+            if (task.subtasks && Array.isArray(task.subtasks)) {
+              task.subtasks.forEach(subtask => {
+                subtask.status = 'pending';
+                subtask.completedBy = null;
+                subtask.completedAt = null;
+                subtask.lockedBy = null;
+                subtask.startedBy = null;
+                subtask.startedAt = null;
+                subtask.actualDuration = null;
+                subtask.elapsedTime = null;
+                subtask.totalActiveSeconds = null; // Reset timing for rework
+                subtask.reason = null;
+                
+                // Add assigned worker if provided to all subtasks too
+                if (assignedWorker && Array.isArray(assignedWorker)) {
+                  if (!subtask.assignedWorker) subtask.assignedWorker = [];
+                  assignedWorker.forEach(newWorker => {
+                    const alreadyAssigned = subtask.assignedWorker.some(w => (w.id || w._id) === (newWorker.id || newWorker._id));
+                    if (!alreadyAssigned) {
+                      subtask.assignedWorker.push(newWorker);
+                    }
+                  });
                 }
               });
             }
