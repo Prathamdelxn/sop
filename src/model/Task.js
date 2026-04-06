@@ -544,6 +544,7 @@ const prototypeSchema = new mongoose.Schema({
   version: { type: String },
   userId: { type: String },
   stages: { type: [stageSchema], default: [] },
+  visualRepresentationEnabled: { type: Boolean, default: false },
   status: { type: String },
   rejectionReason: { type: String, default: null },
   reviews: [{

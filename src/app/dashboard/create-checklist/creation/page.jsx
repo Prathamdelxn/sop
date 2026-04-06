@@ -428,6 +428,7 @@ export default function NestedDragDrop() {
     documentNumber: "",
     qms_number: "",
     version: "",
+    visualRepresentationEnabled: false,
   });
   const isHydrated = useRef(false);
   const [errors, setErrors] = useState({
@@ -1357,24 +1358,26 @@ export default function NestedDragDrop() {
       return;
     }
     // Existing: Ensure at least one checkpoint row
-    if (tableData.length === 0) {
+    if (checklistData.visualRepresentationEnabled && tableData.length === 0) {
       toast.error("Please add at least one checkpoint to the visual representation table.");
       return;
     }
 
     // NEW: Validate all checkpoint titles are filled
-    const newTableErrors = {};
-    let hasTitleErrors = false;
-    tableData.forEach((row) => {
-      if (!row.checkpoint?.title?.trim()) {
-        newTableErrors[row.id] = "Check Point title is required";
-        hasTitleErrors = true;
+    if (checklistData.visualRepresentationEnabled) {
+      const newTableErrors = {};
+      let hasTitleErrors = false;
+      tableData.forEach((row) => {
+        if (!row.checkpoint?.title?.trim()) {
+          newTableErrors[row.id] = "Check Point title is required";
+          hasTitleErrors = true;
+        }
+      });
+      setTableErrors(newTableErrors);
+      if (hasTitleErrors) {
+        toast.error("Please fill all Check Point titles before saving.");
+        return;
       }
-    });
-    setTableErrors(newTableErrors);
-    if (hasTitleErrors) {
-      toast.error("Please fill all Check Point titles before saving.");
-      return;
     }
 
     // NO SYNC: Use stages as-is (independent from table)
@@ -3922,6 +3925,28 @@ export default function NestedDragDrop() {
                 required
                 error={errors.checklist.version}
               />
+            </div>
+            <div className="flex items-center space-x-1 mt-6">
+              <label className="flex items-center gap-3 p-3 bg-blue-50 border border-blue-200 rounded-lg cursor-pointer transition-all hover:bg-blue-100 hover:shadow-sm w-full">
+                <input
+                  type="checkbox"
+                  name="visualRepresentationEnabled"
+                  checked={checklistData.visualRepresentationEnabled}
+                  onChange={(e) => {
+                    handleInputChange({
+                      target: {
+                        name: 'visualRepresentationEnabled',
+                        value: e.target.checked
+                      }
+                    });
+                  }}
+                  className="w-5 h-5 text-blue-600 bg-white border-blue-300 rounded-md focus:ring-blue-500 focus:ring-2 transition-transform active:scale-90"
+                />
+                <div className="flex flex-col">
+                  <span className="text-sm font-bold text-blue-900 leading-none mb-1">Visual Representation</span>
+                  <span className="text-[10px] text-blue-600 font-medium">Enable extended visual review workflow</span>
+                </div>
+              </label>
             </div>
             <div className="flex items-end">
               <button

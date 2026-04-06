@@ -249,6 +249,28 @@ const TaskExecutionPage = () => {
           headStyles: { fillColor: [156, 39, 176] },
           styles: { fontSize: 8 },
         });
+        currentY = doc.lastAutoTable.finalY + 15;
+      }
+
+      if (task.visualReviewNotes && task.visualReviewNotes.length > 0) {
+        doc.setFontSize(16);
+        doc.setTextColor(255, 152, 0); // Amber for visual review
+        doc.text('Visual Review Feedback History', 20, currentY);
+        const visualReviewRows = task.visualReviewNotes.map(vrn => [
+          new Date(vrn.reviewedAt).toLocaleString(),
+          vrn.taskTitle || 'Visual Inspection',
+          vrn.note || 'No notes',
+          'NOT CLEAN',
+          vrn.reviewedBy?.name || 'Production Manager'
+        ]);
+        autoTable(doc, {
+          startY: currentY + 5,
+          head: [['Date', 'Target', 'Comment', 'Decision', 'Reviewer']],
+          body: visualReviewRows,
+          theme: 'striped',
+          headStyles: { fillColor: [255, 152, 0] },
+          styles: { fontSize: 8 },
+        });
       }
     }
 

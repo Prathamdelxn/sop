@@ -3,7 +3,7 @@
 'use client'
 import React, { useState, useEffect } from 'react';
 import { useParams } from 'next/navigation';
-import { ArrowLeft, ArrowRight, History, ChevronDown, ChevronRight, Clock, Image, CheckCircle, XCircle, Users, Loader2, AlertCircle, Play, Pause, PlayCircle } from "lucide-react";
+import { ArrowLeft, ArrowRight, History, ChevronDown, ChevronRight, Clock, Image, CheckCircle, XCircle, Users, Loader2, AlertCircle, Play, Pause, PlayCircle, ShieldCheck } from "lucide-react";
 
 const TaskPage = () => {
     const params = useParams();
@@ -26,6 +26,7 @@ const TaskPage = () => {
     const [activeValidationItem, setActiveValidationItem] = useState(null); // { type: 'main'|'sub', item: selectedTask|subtask }
 
     // Modal states
+    const [showVisualStandards, setShowVisualStandards] = useState(false);
     const [showReasonModal, setShowReasonModal] = useState(false);
     const [reasonType, setReasonType] = useState(null); // 'min' or 'max'
     const [reasonText, setReasonText] = useState('');
@@ -1448,6 +1449,49 @@ const TaskPage = () => {
                         </div>
                     </div>
                 </div>
+
+                {/* Visual Standards Tab (Global) */}
+                {prototypeData?.visualRepresentationEnabled && prototypeData?.visualRepresntation?.length > 0 && (
+                    <div className="w-full bg-white border-b border-gray-200 px-4 py-2">
+                        <button 
+                            onClick={() => setShowVisualStandards(!showVisualStandards)}
+                            className="flex items-center gap-2 text-xs font-bold text-blue-600 hover:text-blue-800 transition-colors uppercase tracking-widest"
+                        >
+                            <ShieldCheck className="w-4 h-4" />
+                            {showVisualStandards ? 'Hide Visual Standards' : 'View Visual Standards (Checkpoints)'}
+                            <ChevronDown className={`w-4 h-4 transition-transform duration-300 ${showVisualStandards ? 'rotate-180' : ''}`} />
+                        </button>
+                        
+                        {showVisualStandards && (
+                            <div className="mt-3 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mb-3 animate-in fade-in slide-in-from-top-2 duration-300">
+                                {prototypeData.visualRepresntation.map((cp, idx) => (
+                                    <div key={idx} className="bg-gray-50 border border-gray-200 rounded-xl p-3 flex flex-col">
+                                        <div className="flex items-center gap-2 mb-2">
+                                            <span className="w-5 h-5 bg-blue-100 text-blue-600 rounded-full flex items-center justify-center text-[10px] font-bold shrink-0">{idx + 1}</span>
+                                            <h4 className="text-sm font-semibold text-gray-800 truncate">{cp.checkPoint?.title || 'Checkpoint'}</h4>
+                                        </div>
+                                        <div className="flex gap-2 overflow-x-auto pb-1 hide-scrollbar">
+                                            {cp.checkPoint?.images?.map((img, imgIdx) => (
+                                                <img 
+                                                    key={imgIdx} 
+                                                    src={img.url} 
+                                                    alt={img.title || 'Reference'} 
+                                                    className="w-16 h-16 object-cover rounded-lg border border-gray-200 hover:shadow-md cursor-pointer transition-all"
+                                                    onClick={() => window.open(img.url, '_blank')}
+                                                />
+                                            ))}
+                                            {(!cp.checkPoint?.images || cp.checkPoint.images.length === 0) && (
+                                                <div className="w-16 h-16 bg-gray-200 rounded-lg flex items-center justify-center">
+                                                    <Image size={16} className="text-gray-400" />
+                                                </div>
+                                            )}
+                                        </div>
+                                    </div>
+                                ))}
+                            </div>
+                        )}
+                    </div>
+                )}
 
                 {/* Body */}
                 <div className="flex-1 w-full flex overflow-hidden">

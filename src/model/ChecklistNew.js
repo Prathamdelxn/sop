@@ -79,7 +79,9 @@ const checklistSchema = new mongoose.Schema({
       production: { type: String },
       qa: { type: String }
     }
-  ]
+  ],
+
+  visualRepresentationEnabled: { type: Boolean, default: false },
 });
 
 delete mongoose.models.Checklist;

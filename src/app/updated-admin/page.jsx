@@ -561,6 +561,7 @@ const predefinedTasks = [
   'Review Task',
   'Approve Checklist',
   'Review Access',
+  'Visual Review',
   'Approve Tagged Chechlist with Equipment'
 ];
 

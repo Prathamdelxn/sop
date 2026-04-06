@@ -2,14 +2,49 @@ import connectDB from '@/utils/db';
 import NewAssignment from '@/model/NewAssignment';
 import { NextResponse } from 'next/server';
 
+/**
+ * Visual Reviewer / Production Manager review endpoint.
+ * 
+ * Actions:
+ *   "approve"  — marks the assignment as Completed (all checkpoints are Clean)
+ *   "reopen"   — reopens selected tasks and sends them back to the Worker
+ *                (they must go through Reviewer again before returning here)
+ * 
+ * Body shape:
+ * {
+ *   assignmentId: string,
+ *   reviewerId: string,
+ *   reviewerName: string,
+ *   action: "approve" | "reopen",
+ *   note?: string,                  // single note for all reopened tasks
+ *   reopenItems?: [{                // only for "reopen"
+ *     stageIndex: number,
+ *     taskIndex: number,
+ *     subtaskIndex?: number,
+ *     taskTitle: string,
+ *     taskPath?: string,
+ *     assignedWorker?: [{ id, name }]
+ *   }],
+ *   checkpointResults?: [{          // visual inspection results
+ *     checkpointIndex: number,
+ *     status: "Clean" | "Not Clean"
+ *   }]
+ * }
+ */
 export async function PUT(request) {
   try {
     await connectDB();
 
     const body = await request.json();
-    const { assignmentId, reviewerId, reviewerName, action, reviewItems } = body;
-    // action: "approve" | "reopen"
-    // reviewItems: [{ taskPath, taskTitle, note, stageIndex, taskIndex, subtaskIndex? }]
+    const {
+      assignmentId,
+      reviewerId,
+      reviewerName,
+      action,
+      note,
+      reopenItems,
+      checkpointResults
+    } = body;
 
     if (!assignmentId || !reviewerId || !reviewerName || !action) {
       return NextResponse.json(
@@ -26,42 +61,31 @@ export async function PUT(request) {
       );
     }
 
+    // ── APPROVE ──────────────────────────────────────────────────────────
     if (action === 'approve') {
-      // Check if visual representation is enabled on this checklist
-      const isVisualEnabled = assignment.prototypeData?.visualRepresentationEnabled === true;
-
-      if (isVisualEnabled) {
-        // Route to Visual Reviewer instead of completing
-        assignment.status = 'Pending Visual Review';
-        assignment.reviewStatus = 'Approved';
-        assignment.visualReviewStatus = 'Pending Visual Review';
-        assignment.reviewedBy = { id: reviewerId, name: reviewerName };
-        assignment.reviewedAt = new Date();
-        assignment.reviewNotes = [];
-      } else {
-        // Normal flow — complete the assignment
-        assignment.status = 'Completed';
-        assignment.reviewStatus = 'Approved';
-        assignment.reviewedBy = { id: reviewerId, name: reviewerName };
-        assignment.reviewedAt = new Date();
-        assignment.reviewNotes = [];
-      }
+      assignment.status = 'Completed';
+      assignment.visualReviewStatus = 'Approved';
+      assignment.visualReviewNotes = [{
+        taskPath: 'visual-review',
+        taskTitle: 'Visual Inspection',
+        note: note || 'All checkpoints approved as Clean',
+        reviewedBy: { id: reviewerId, name: reviewerName },
+        reviewedAt: new Date()
+      }];
 
       assignment.markModified('prototypeData');
       await assignment.save();
 
       return NextResponse.json({
         success: true,
-        message: isVisualEnabled
-          ? 'Assignment approved — pending visual review'
-          : 'Assignment approved successfully',
+        message: 'Visual review approved — assignment completed',
         data: assignment
       });
     }
 
+    // ── REOPEN ───────────────────────────────────────────────────────────
     if (action === 'reopen') {
-      // Reopen selected tasks
-      if (!reviewItems || reviewItems.length === 0) {
+      if (!reopenItems || reopenItems.length === 0) {
         return NextResponse.json(
           { success: false, message: 'No tasks selected for reopening' },
           { status: 400 }
@@ -76,10 +100,12 @@ export async function PUT(request) {
         );
       }
 
-      const reviewNotes = [];
+      // Use a single note for all reopened tasks
+      const sharedNote = note || '';
+      const visualReviewNotes = [];
 
-      for (const item of reviewItems) {
-        const { stageIndex, taskIndex, subtaskIndex, note, taskTitle, taskPath, assignedWorker } = item;
+      for (const item of reopenItems) {
+        const { stageIndex, taskIndex, subtaskIndex, taskTitle, taskPath, assignedWorker } = item;
 
         if (stageIndex === undefined || taskIndex === undefined) continue;
 
@@ -99,22 +125,20 @@ export async function PUT(request) {
             subtask.startedAt = null;
             subtask.actualDuration = null;
             subtask.elapsedTime = null;
-            subtask.totalActiveSeconds = null; // Reset timing for rework
+            subtask.totalActiveSeconds = null;
             subtask.reason = null;
-            // Add assigned worker if provided (append to existing)
             if (assignedWorker && Array.isArray(assignedWorker)) {
               if (!subtask.assignedWorker) subtask.assignedWorker = [];
               assignedWorker.forEach(newWorker => {
-                const alreadyAssigned = subtask.assignedWorker.some(w => (w.id || w._id) === (newWorker.id || newWorker._id));
-                if (!alreadyAssigned) {
-                  subtask.assignedWorker.push(newWorker);
-                }
+                const alreadyAssigned = subtask.assignedWorker.some(
+                  w => (w.id || w._id) === (newWorker.id || newWorker._id)
+                );
+                if (!alreadyAssigned) subtask.assignedWorker.push(newWorker);
               });
             }
-            // Keep sessions and totalActiveSeconds for history
           }
         } else {
-          // Reopen a main task
+          // Reopen a main task and all its subtasks
           const task = stage.tasks[taskIndex];
           if (task) {
             task.status = 'pending';
@@ -125,20 +149,19 @@ export async function PUT(request) {
             task.startedAt = null;
             task.actualDuration = null;
             task.elapsedTime = null;
-            task.totalActiveSeconds = null; // Reset timing for rework
+            task.totalActiveSeconds = null;
             task.reason = null;
-            // Add assigned worker if provided (append to existing)
             if (assignedWorker && Array.isArray(assignedWorker)) {
               if (!task.assignedWorker) task.assignedWorker = [];
               assignedWorker.forEach(newWorker => {
-                const alreadyAssigned = task.assignedWorker.some(w => (w.id || w._id) === (newWorker.id || newWorker._id));
-                if (!alreadyAssigned) {
-                  task.assignedWorker.push(newWorker);
-                }
+                const alreadyAssigned = task.assignedWorker.some(
+                  w => (w.id || w._id) === (newWorker.id || newWorker._id)
+                );
+                if (!alreadyAssigned) task.assignedWorker.push(newWorker);
               });
             }
 
-            // ALSO reopen all subtasks
+            // Also reopen all subtasks
             if (task.subtasks && Array.isArray(task.subtasks)) {
               task.subtasks.forEach(subtask => {
                 subtask.status = 'pending';
@@ -149,50 +172,47 @@ export async function PUT(request) {
                 subtask.startedAt = null;
                 subtask.actualDuration = null;
                 subtask.elapsedTime = null;
-                subtask.totalActiveSeconds = null; // Reset timing for rework
+                subtask.totalActiveSeconds = null;
                 subtask.reason = null;
-                
-                // Add assigned worker if provided to all subtasks too
                 if (assignedWorker && Array.isArray(assignedWorker)) {
                   if (!subtask.assignedWorker) subtask.assignedWorker = [];
                   assignedWorker.forEach(newWorker => {
-                    const alreadyAssigned = subtask.assignedWorker.some(w => (w.id || w._id) === (newWorker.id || newWorker._id));
-                    if (!alreadyAssigned) {
-                      subtask.assignedWorker.push(newWorker);
-                    }
+                    const alreadyAssigned = subtask.assignedWorker.some(
+                      w => (w.id || w._id) === (newWorker.id || newWorker._id)
+                    );
+                    if (!alreadyAssigned) subtask.assignedWorker.push(newWorker);
                   });
                 }
               });
             }
-            // Keep sessions and totalActiveSeconds for history
           }
         }
 
-        // Record review note
-        reviewNotes.push({
+        // Record visual review note with the shared note for each reopened item
+        visualReviewNotes.push({
           taskPath: taskPath || `stages.${stageIndex}.tasks.${taskIndex}${subtaskIndex !== undefined && subtaskIndex !== null ? `.subtasks.${subtaskIndex}` : ''}`,
           taskTitle: taskTitle || 'Unknown Task',
-          note: note || '',
-          reopened: true,
+          note: sharedNote,
           reviewedBy: { id: reviewerId, name: reviewerName },
           reviewedAt: new Date()
         });
       }
 
-      // Update assignment status
+      // Set status back to InProgress so worker can redo, then go through reviewer again
       assignment.status = 'Rework Required';
       assignment.reviewStatus = 'Rework Required';
-      assignment.reviewedBy = { id: reviewerId, name: reviewerName };
-      assignment.reviewedAt = new Date();
-      assignment.reviewNotes = reviewNotes;
+      assignment.visualReviewStatus = 'Not Clean';
+      assignment.reviewedBy = null;
+      assignment.reviewedAt = null;
+      assignment.visualReviewNotes = visualReviewNotes;
 
       assignment.markModified('prototypeData.stages');
-      assignment.markModified('reviewNotes');
+      assignment.markModified('visualReviewNotes');
       await assignment.save();
 
       return NextResponse.json({
         success: true,
-        message: `${reviewItems.length} task(s) reopened for rework`,
+        message: `${reopenItems.length} task(s) reopened by visual reviewer`,
         data: assignment
       });
     }
@@ -203,7 +223,7 @@ export async function PUT(request) {
     );
 
   } catch (error) {
-    console.error('Error submitting review:', error);
+    console.error('Error in production/visual review:', error);
     return NextResponse.json(
       { success: false, message: 'Internal server error', error: error.message },
       { status: 500 }

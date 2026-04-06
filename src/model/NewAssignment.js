@@ -38,6 +38,17 @@ const assignmentSchema = new mongoose.Schema({
     name: { type: String }
   },
   reviewedAt: { type: Date },
+  visualReviewStatus: { type: String, default: null }, // "Pending Visual Review", "Clean", "Not Clean"
+  visualReviewNotes: [{
+    taskPath: { type: String },
+    taskTitle: { type: String },
+    note: { type: String },
+    reviewedBy: {
+      id: { type: String },
+      name: { type: String }
+    },
+    reviewedAt: { type: Date, default: Date.now }
+  }],
   assignedAt: {
     type: Date,
     default: Date.now,
