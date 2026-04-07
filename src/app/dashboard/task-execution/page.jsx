@@ -78,24 +78,24 @@ const TaskExecutionPage = () => {
     const doc = new jsPDF();
     const pageWidth = doc.internal.pageSize.getWidth();
     const pageHeight = doc.internal.pageSize.getHeight();
-    
+
     // --- PAGE 1: SUMMARY ---
     // Header
     doc.setFontSize(24);
     doc.setTextColor(33, 150, 243); // Blue theme
     doc.text('Task Execution Report', pageWidth / 2, 20, { align: 'center' });
-    
+
     doc.setDrawColor(33, 150, 243);
     doc.setLineWidth(1);
     doc.line(20, 25, pageWidth - 20, 25);
-    
+
     // Summary Section
     doc.setFontSize(10);
     doc.setTextColor(120, 120, 120);
     doc.text(`Assignment ID: ${task.generatedId}`, 20, 32);
     doc.text(`Status: ${task.status}`, 20, 37);
     doc.text(`Report Generated: ${new Date().toLocaleString()}`, pageWidth - 20, 32, { align: 'right' });
-    
+
     autoTable(doc, {
       startY: 45,
       head: [['General Information', 'Details']],
@@ -113,32 +113,46 @@ const TaskExecutionPage = () => {
     });
 
     // --- TASK PROGRESS TABLE ---
+    // --- TASK PROGRESS TABLE ---
     doc.setFontSize(14);
     doc.setTextColor(40, 40, 40);
     doc.text('Individual Task Status', 20, doc.lastAutoTable.finalY + 15);
 
     const taskDataTable = [];
     const stages = task.prototypeData.stages || [];
+
     stages.forEach((stage, sIdx) => {
       if (stage.tasks) {
         stage.tasks.forEach((t, tIdx) => {
           const taskNum = `${sIdx + 1}.${tIdx + 1}`;
+
           taskDataTable.push([
             taskNum,
             t.title,
             t.status.toUpperCase(),
-            t.totalActiveSeconds ? `${Math.floor(t.totalActiveSeconds / 60)}m ${t.totalActiveSeconds % 60}s` : '0s',
-            t.completedAt ? new Date(t.completedAt).toLocaleString() : '-'
+            t.totalActiveSeconds
+              ? `${Math.floor(t.totalActiveSeconds / 60)}m ${t.totalActiveSeconds % 60}s`
+              : '0s',
+            t.completedAt
+              ? new Date(t.completedAt).toLocaleString()
+              : '-',
+            t.completedBy?.name || '-'
           ]);
-          
+
+          // Subtasks
           if (t.subtasks && t.subtasks.length > 0) {
             t.subtasks.forEach((st, stIdx) => {
               taskDataTable.push([
                 `   ${taskNum}.${stIdx + 1}`,
                 `   - ${st.title}`,
-                st.status.toLowerCase(),
-                st.totalActiveSeconds ? `${Math.floor(st.totalActiveSeconds / 60)}m ${st.totalActiveSeconds % 60}s` : '0s',
-                st.completedAt ? new Date(st.completedAt).toLocaleString() : '-'
+                st.status.toUpperCase(),
+                st.totalActiveSeconds
+                  ? `${Math.floor(st.totalActiveSeconds / 60)}m ${st.totalActiveSeconds % 60}s`
+                  : '0s',
+                st.completedAt
+                  ? new Date(st.completedAt).toLocaleString()
+                  : '-',
+                st.completedBy?.name || '-'
               ]);
             });
           }
@@ -148,16 +162,45 @@ const TaskExecutionPage = () => {
 
     autoTable(doc, {
       startY: doc.lastAutoTable.finalY + 20,
-      head: [['Ref', 'Task / Subtask Title', 'Status', 'Duration', 'Finished At']],
+      head: [[
+        'Ref',
+        'Task / Subtask Title',
+        'Status',
+        'Duration',
+        'Finished At',
+        'Completed By'
+      ]],
       body: taskDataTable,
+
       theme: 'grid',
-      headStyles: { fillColor: [75, 85, 99] },
-      styles: { fontSize: 8 },
-      columnStyles: {
-        0: { cellWidth: 15 },
-        2: { cellWidth: 25 },
-        3: { cellWidth: 25 },
+
+      headStyles: {
+        fillColor: [75, 85, 99],
+        halign: 'center',
       },
+
+      styles: {
+        fontSize: 8,
+        cellPadding: 2,
+        valign: 'middle',
+      },
+
+      columnStyles: {
+        0: { cellWidth: 12 },   // Ref
+        1: { cellWidth: 55 },   // Title (MOST IMPORTANT → more space)
+        2: { cellWidth: 20 },   // Status
+        3: { cellWidth: 18 },   // Duration
+        4: { cellWidth: 30 },   // Finished At
+        5: { cellWidth: 25 },   // Completed By
+      },
+
+      didParseCell: function (data) {
+        // Make subtasks slightly smaller & indented
+        if (typeof data.row.raw[0] === 'string' && data.row.raw[0].startsWith('   ')) {
+          data.cell.styles.fontSize = 7;
+          data.cell.styles.textColor = [100, 100, 100];
+        }
+      }
     });
 
     // --- PAGE 2: ACTIVITY TIMELINE ---
@@ -603,7 +646,7 @@ const TaskExecutionPage = () => {
                                 </>
                               )}
                             </button>
-                            
+
                             {/* Action Menu (Three Dots) */}
                             <div className="relative action-menu-container">
                               <button
@@ -612,7 +655,7 @@ const TaskExecutionPage = () => {
                               >
                                 <MoreVertical className="h-4 w-4" />
                               </button>
-                              
+
                               {openMenuId === task._id && (
                                 <div className="absolute right-0 mt-2 w-48 bg-white rounded-lg shadow-xl border border-gray-100 py-1 z-50 animate-in fade-in slide-in-from-top-1 duration-200">
                                   {task.status === 'Completed' ? (
