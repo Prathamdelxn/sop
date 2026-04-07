@@ -17,6 +17,7 @@ import {
   Eye,
   X,
 } from "lucide-react";
+import BarcodeGenerator from '@/app/components/BarcodeGenerator';
 
 export default function FacilityAdminDashboard() {
   const [equipmentList, setEquipmentList] = useState([]);
@@ -65,7 +66,7 @@ export default function FacilityAdminDashboard() {
         if (isInitial) setIsLoading(false);
       }
     };
-    
+
     if (companyData) {
       fetchEquipment();
       const interval = setInterval(() => fetchEquipment(false), 5000);
@@ -903,31 +904,45 @@ export default function FacilityAdminDashboard() {
                     </div>
                   </div>
                 </div>
-                {/* ── BARCODE SECTION (Approved Only) ── */}
-                {viewingEquipment.status === "Approved" && viewingEquipment.barcode && (
-                  <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
-                    <div className="bg-gray-50 px-6 py-4 border-b border-blue-200">
-                      <h3 className="text-lg font-semibold text-blue-900 flex items-center gap-2">
-                        <Barcode className="w-4 h-4" />
-                        Barcode
-                      </h3>
-                    </div>
-                    <div className="p-6 bg-gray-50">
-                      <div className="flex flex-col lg:flex-row items-center gap-6">
-                        {/* Barcode Image */}
-                        <div className="flex-1 max-w-md mx-auto">
-                          <img
-                            src={viewingEquipment.barcode}
-                            alt="Equipment Barcode"
-                            className="w-full h-auto max-h-48 object-contain rounded-lg shadow-md border border-gray-200 bg-white p-4"
-                          />
-                        </div>
-
-
+                {/* ── BARCODE SECTION ── */}
+                <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
+                  <div className="bg-gray-50 px-6 py-4 border-b border-blue-200">
+                    <h3 className="text-lg font-semibold text-blue-900 flex items-center gap-2">
+                      <Barcode className="w-4 h-4" />
+                      Barcode
+                    </h3>
+                  </div>
+                  <div className="p-6 bg-gray-50">
+                    <div className="flex flex-col lg:flex-row items-center gap-6">
+                      {/* Barcode Display */}
+                      <div className="flex-1 max-w-md mx-auto">
+                        {viewingEquipment.barcode ? (
+                          <div className="flex flex-col items-center">
+                            <img
+                              src={viewingEquipment.barcode}
+                              alt="Equipment Barcode"
+                              className="w-full h-auto max-h-48 object-contain rounded-lg shadow-md border border-gray-200 bg-white p-4"
+                            />
+                            <p className="mt-2 text-xs text-gray-500 font-mono">
+                              {viewingEquipment._id}
+                            </p>
+                          </div>
+                        ) : (
+                          <div className="flex flex-col items-center py-4 bg-white rounded-lg shadow-md border border-gray-200 p-4">
+                            <BarcodeGenerator
+                              text={viewingEquipment._id}
+                              width={2}
+                              height={80}
+                            />
+                            <p className="mt-2 text-xs text-gray-500 font-mono">
+                              {viewingEquipment._id}
+                            </p>
+                          </div>
+                        )}
                       </div>
                     </div>
                   </div>
-                )}
+                </div>
 
                 {/* ── 2. Qualification & Maintenance ── */}
                 <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">

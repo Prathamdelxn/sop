@@ -1,9 +1,11 @@
 "use client";
 import { useRouter } from 'next/navigation';
 import React, { useState, useEffect } from 'react';
-import { Play, Eye, Clock, User, Package, Hash, Zap, Sparkles, Loader2, MoreVertical, Download } from 'lucide-react';
+import { Play, Eye, Clock, User, Package, Hash, Zap, Sparkles, Loader2, MoreVertical, Download, Scan } from 'lucide-react';
 import { jsPDF } from 'jspdf';
 import autoTable from 'jspdf-autotable';
+import BarcodeScanner from '@/app/components/BarcodeScanner';
+import { toast, Toaster } from 'react-hot-toast';
 
 const TaskExecutionPage = () => {
   const router = useRouter();
@@ -62,6 +64,8 @@ const TaskExecutionPage = () => {
   const [userData, setUser] = useState();
   const [loading, setLoading] = useState(true);
   const [openMenuId, setOpenMenuId] = useState(null);
+  const [isScannerOpen, setIsScannerOpen] = useState(false);
+  const [isScanning, setIsScanning] = useState(false);
 
   // Close menu on click outside
   useEffect(() => {
@@ -379,6 +383,43 @@ const TaskExecutionPage = () => {
 
 
 
+  const handleScanSuccess = async (barcode) => {
+    if (!userData) return;
+    
+    setIsScanning(true);
+    const loadingToast = toast.loading(`Searching for task associated with barcode: ${barcode}...`);
+    
+    try {
+      const response = await fetch('/api/assignment/scan-barcode', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          barcode,
+          userId: userData.id || userData._id,
+          companyId: userData.companyId
+        })
+      });
+
+      const result = await response.json();
+
+      if (response.ok) {
+        toast.success(result.message || 'Task Found!', { id: loadingToast });
+        setIsScannerOpen(false);
+        // Small delay for better UX
+        setTimeout(() => {
+          router.push(`/dashboard/task-execution/execution/${result.assignmentId}`);
+        }, 800);
+      } else {
+        toast.error(result.error || 'No matching task found', { id: loadingToast });
+      }
+    } catch (error) {
+      console.error('Scan Error:', error);
+      toast.error('An error occurred during scanning. Please try again.', { id: loadingToast });
+    } finally {
+      setIsScanning(false);
+    }
+  };
+
   const handleViewTask = (taskId) => {
     console.log('Viewing task:', taskId);
     // Router navigation would go here
@@ -462,6 +503,21 @@ const TaskExecutionPage = () => {
                 <h1 className="text-2xl font-bold text-gray-900">Task Execution Workspace</h1>
                 <p className="text-gray-600 mt-2 text-md">Manage and Execute your assigned task </p>
               </div>
+            </div>
+            
+            <div className="flex flex-col sm:flex-row gap-3">
+              <button 
+                onClick={() => setIsScannerOpen(true)}
+                className="inline-flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-blue-600 to-indigo-700 hover:from-blue-700 hover:to-indigo-800 text-white rounded-xl shadow-lg shadow-blue-500/20 transform hover:-translate-y-0.5 transition-all duration-200"
+              >
+                <div className="p-1 px-2.5 bg-white/20 rounded-lg group-hover:bg-white/30 transition-colors">
+                  <Scan className="w-5 h-5 text-white" />
+                </div>
+                <div className="flex flex-col items-start leading-tight">
+                  <span className="text-sm font-bold tracking-tight">Scan Equipment</span>
+                  <span className="text-[10px] text-blue-100 uppercase tracking-widest font-medium opacity-80 underline underline-offset-2">Barcode Redirection</span>
+                </div>
+              </button>
             </div>
           </div>
         </div>
@@ -692,6 +748,16 @@ const TaskExecutionPage = () => {
           </div>
         </div>
       </div>
+
+      {/* Barcode Scanner Modal */}
+      {isScannerOpen && (
+        <BarcodeScanner 
+          onScanSuccess={handleScanSuccess} 
+          onClose={() => setIsScannerOpen(false)} 
+        />
+      )}
+      
+      <Toaster position="top-right" />
     </div>
   );
 };
