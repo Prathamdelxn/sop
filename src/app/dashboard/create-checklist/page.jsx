@@ -1670,6 +1670,13 @@ const SOPDashboard = () => {
                                 <Eye className="w-4 h-4" />
                               </button>
                               <button
+                                onClick={() => router.push(`/dashboard/task-execution/demo/${sop.id}`)}
+                                className="p-2 bg-emerald-100 text-emerald-600 rounded-lg hover:bg-emerald-200"
+                                title="Dry Run"
+                              >
+                                <Zap className="w-4 h-4" />
+                              </button>
+                              <button
                                 onClick={() => handleDelete(sop.id)}
                                 className="p-2 bg-red-100 text-red-600 rounded-lg hover:bg-red-200"
                                 title="Delete"
