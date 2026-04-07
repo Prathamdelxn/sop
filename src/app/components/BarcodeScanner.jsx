@@ -1,41 +1,65 @@
 "use client";
 import React, { useEffect, useRef, useState } from 'react';
-import { Html5QrcodeScanner } from 'html5-qrcode';
-import { X, Scan, RefreshCw } from 'lucide-react';
+import { Html5Qrcode } from 'html5-qrcode';
+import { X, Scan, RefreshCw, AlertCircle } from 'lucide-react';
 
 const BarcodeScanner = ({ onScanSuccess, onClose }) => {
-    const scannerRef = useRef(null);
     const [error, setError] = useState(null);
+    const html5QrCodeRef = useRef(null);
+    const scannerId = "reader";
 
     useEffect(() => {
-        const scanner = new Html5QrcodeScanner("reader", {
-            fps: 10,
-            qrbox: { width: 250, height: 250 },
-            // Add barcode formats you want to support
-            formatsToSupport: [ 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14 ] // All formats
-        }, false);
+        const config = { 
+            fps: 10, 
+            qrbox: (viewfinderWidth, viewfinderHeight) => {
+                // Adjusting qrbox for 1D barcodes (wider, shorter)
+                return { 
+                    width: viewfinderWidth * 0.8, 
+                    height: viewfinderHeight * 0.4 
+                };
+            },
+            aspectRatio: 1.0,
+            formatsToSupport: [ 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14 ] // All 1D/2D formats
+        };
 
-        function onScanSuccessInternal(decodedText, decodedResult) {
-            console.log(`Scan Result: ${decodedText}`, decodedResult);
-            scanner.clear().then(() => {
-                onScanSuccess(decodedText);
-            }).catch(error => {
-                console.error("Failed to clear scanner", error);
-                onScanSuccess(decodedText);
-            });
-        }
+        const html5QrCode = new Html5Qrcode(scannerId);
+        html5QrCodeRef.current = html5QrCode;
 
-        function onScanFailure(error) {
-            // This is called for every frame where no code is detected.
-            // We usually don't want to log this but can if needed for debugging.
-        }
+        const startScanner = async () => {
+            try {
+                await html5QrCode.start(
+                    { facingMode: "environment" }, 
+                    config, 
+                    (decodedText, decodedResult) => {
+                        console.log("Scanned text:", decodedText);
+                        stopScanner().then(() => {
+                            onScanSuccess(decodedText);
+                        });
+                    },
+                    (errorMessage) => {
+                        // ignore failures
+                    }
+                );
+            } catch (err) {
+                console.error("Starting scanner failed:", err);
+                setError("Unable to access back camera. Please ensure permissions are granted.");
+            }
+        };
 
-        scanner.render(onScanSuccessInternal, onScanFailure);
+        const stopScanner = async () => {
+            if (html5QrCodeRef.current && html5QrCodeRef.current.isScanning) {
+                try {
+                    await html5QrCodeRef.current.stop();
+                } catch (err) {
+                    console.error("Stopping scanner failed:", err);
+                }
+            }
+        };
+
+        startScanner();
 
         return () => {
-            scanner.clear().catch(error => {
-                console.error("Failed to clear scanner on unmount", error);
-            });
+            stopScanner();
         }
     }, [onScanSuccess]);
 

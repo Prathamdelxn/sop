@@ -13,11 +13,15 @@ export async function POST(req) {
             return NextResponse.json({ error: 'Barcode, User ID, and Company ID are required' }, { status: 400 });
         }
 
-        // 1. Find equipment by barcode and company
-        const equipment = await Equipment.findOne({ barcode, companyId });
+        // 1. Find equipment by barcode OR by _id if barcode matches an ID format
+        let equipment = await Equipment.findOne({ barcode, companyId });
+
+        if (!equipment && mongoose.isValidObjectId(barcode)) {
+            equipment = await Equipment.findOne({ _id: barcode, companyId });
+        }
 
         if (!equipment) {
-            return NextResponse.json({ error: 'Equipment not found with this barcode' }, { status: 404 });
+            return NextResponse.json({ error: `Equipment not found with barcode/ID: ${barcode}` }, { status: 404 });
         }
 
         // 2. Find matching task/assignment for this equipment and worker
