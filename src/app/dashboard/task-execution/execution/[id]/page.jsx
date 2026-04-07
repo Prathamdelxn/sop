@@ -2,12 +2,16 @@
 
 'use client'
 import React, { useState, useEffect } from 'react';
+import { useTranslation } from '@/app/hooks/useTranslation';
 import { useParams } from 'next/navigation';
 import { ArrowLeft, ArrowRight, History, ChevronDown, ChevronRight, Clock, Image, CheckCircle, XCircle, Users, Loader2, AlertCircle, Play, Pause, PlayCircle, ShieldCheck } from "lucide-react";
 
 const TaskPage = () => {
     const params = useParams();
     const { id } = params;
+    const { t, language, changeLanguage } = useTranslation();
+
+
 
     const [expandedStages, setExpandedStages] = useState({});
     const [sidebarExpanded, setSidebarExpanded] = useState(true);
@@ -21,6 +25,7 @@ const TaskPage = () => {
         elapsedTime: 0,
         totalTrackedSeconds: 0 // New field for cumulative time
     });
+
     const [userdata, setUserData] = useState();
     const [subtaskTimers, setSubtaskTimers] = useState({}); // { subtaskId: { isRunning, startTime, elapsedTime } }
     const [activeValidationItem, setActiveValidationItem] = useState(null); // { type: 'main'|'sub', item: selectedTask|subtask }
@@ -86,7 +91,7 @@ const TaskPage = () => {
                 status: 'Pending Review',
                 reviewStatus: 'Pending Review'
             }));
-            
+
             if (!auto) {
                 alert('Assignment sent for review successfully!');
             } else {
@@ -1420,31 +1425,30 @@ const TaskPage = () => {
                                 }`}
                         >
                             {isPendingReview ? (
-                                <><Loader2 className="h-4 w-4 animate-spin" /> Under Review</>
+                                <><Loader2 className="h-4 w-4 animate-spin" /> {t('underReview')}</>
                             ) : isAssignmentCompleted ? (
-                                <><CheckCircle className="h-4 w-4" /> Approved</>
-                            ) : sendingForReview ? (
-                                <><Loader2 className="h-4 w-4 animate-spin" /> Sending...</>
+                                <><CheckCircle className="h-4 w-4" /> {t('approved')}</>
                             ) : !allTasksCompleted ? (
-                                <><Clock className="h-4 w-4" /> Tasks Pending</>
+                                <><Clock className="h-4 w-4" /> {t('tasksPending')}</>
                             ) : (
-                                <><CheckCircle className="h-4 w-4" /> Send for Review</>
+                                <><CheckCircle className="h-4 w-4" /> {t('sendForReview')}</>
                             )}
                         </button>
 
+                        {/* // NEW */}
                         <div className="flex items-center gap-2">
                             <label htmlFor="language" className="text-sm font-medium">
-                                Language:
+                                {t('language')}:
                             </label>
                             <select
                                 id="language"
+                                value={language}
+                                onChange={(e) => changeLanguage(e.target.value)}
                                 className="px-2 py-1 text-sm rounded-md border border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500"
                             >
                                 <option value="en">English</option>
-                                <option value="hi">Hindi</option>
-                                <option value="mr">Marathi</option>
-                                <option value="fr">French</option>
-                                <option value="es">Spanish</option>
+                                <option value="hi">हिंदी</option>
+                                <option value="gu">ગુજરાતી</option>
                             </select>
                         </div>
                     </div>
@@ -1453,15 +1457,15 @@ const TaskPage = () => {
                 {/* Visual Standards Tab (Global) */}
                 {prototypeData?.visualRepresentationEnabled && prototypeData?.visualRepresntation?.length > 0 && (
                     <div className="w-full bg-white border-b border-gray-200 px-4 py-2">
-                        <button 
+                        <button
                             onClick={() => setShowVisualStandards(!showVisualStandards)}
                             className="flex items-center gap-2 text-xs font-bold text-blue-600 hover:text-blue-800 transition-colors uppercase tracking-widest"
                         >
                             <ShieldCheck className="w-4 h-4" />
-                            {showVisualStandards ? 'Hide Visual Standards' : 'View Visual Standards (Checkpoints)'}
+                            {showVisualStandards ? t('hideVisualStandards') : t('visualStandards')}
                             <ChevronDown className={`w-4 h-4 transition-transform duration-300 ${showVisualStandards ? 'rotate-180' : ''}`} />
                         </button>
-                        
+
                         {showVisualStandards && (
                             <div className="mt-3 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mb-3 animate-in fade-in slide-in-from-top-2 duration-300">
                                 {prototypeData.visualRepresntation.map((cp, idx) => (
@@ -1472,10 +1476,10 @@ const TaskPage = () => {
                                         </div>
                                         <div className="flex gap-2 overflow-x-auto pb-1 hide-scrollbar">
                                             {cp.checkPoint?.images?.map((img, imgIdx) => (
-                                                <img 
-                                                    key={imgIdx} 
-                                                    src={img.url} 
-                                                    alt={img.title || 'Reference'} 
+                                                <img
+                                                    key={imgIdx}
+                                                    src={img.url}
+                                                    alt={img.title || 'Reference'}
                                                     className="w-16 h-16 object-cover rounded-lg border border-gray-200 hover:shadow-md cursor-pointer transition-all"
                                                     onClick={() => window.open(img.url, '_blank')}
                                                 />
@@ -1500,7 +1504,7 @@ const TaskPage = () => {
                         <div className="p-4 h-full overflow-y-auto">
                             {sidebarExpanded ? (
                                 <>
-                                    <h2 className="font-bold text-lg mb-4">Stages</h2>
+                                    <h2 className="font-bold text-lg mb-4">{t('stages')}</h2>
                                     <div className="space-y-2">
                                         {stages.map((stage, stageIndex) => {
                                             const stageKey = stage._id || stage.stageId || `stage-${stageIndex}`;
@@ -1632,10 +1636,8 @@ const TaskPage = () => {
                                     <div className="bg-gray-100 p-6 rounded-full mb-6 relative">
                                         <AlertCircle size={64} className="text-gray-400" />
                                     </div>
-                                    <h2 className="text-2xl font-bold text-gray-800 mb-2">Task Locked</h2>
-                                    <p className="text-gray-500 max-w-md">
-                                        This task is locked behind an active Stop Point. You must complete the designated stop point task (and all its subtasks) before accessing this section.
-                                    </p>
+                                    <h2 className="text-2xl font-bold text-gray-800 mb-2">{t('taskLocked')}</h2>
+                                    <p className="text-gray-500 max-w-md">{t('taskLockedMessage')}</p>
                                 </div>
                             ) : selectedTask ? (
                                 <div className="bg-white rounded-lg shadow p-6">
@@ -1721,7 +1723,7 @@ const TaskPage = () => {
                                                             className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-md flex items-center gap-2"
                                                         >
                                                             <PlayCircle size={16} />
-                                                            Resume
+                                                            {t('Resume')}
                                                         </button>
                                                         {(selectedTask.lastWorker?.id === (userdata.id || userdata._id)) && (
                                                             <button
@@ -1831,7 +1833,7 @@ const TaskPage = () => {
                                         <>
                                             {/* Description */}
                                             <div className="mb-6">
-                                                <h3 className="text-lg font-medium text-gray-800 mb-2">Description</h3>
+                                                <h3 className="text-lg font-medium text-gray-800 mb-2">{t('description')}</h3>
                                                 <p className="text-gray-700">{selectedTask.description || 'No description provided.'}</p>
                                             </div>
 
@@ -1840,7 +1842,7 @@ const TaskPage = () => {
                                                 <div className="mb-4 text-sm bg-green-50 px-4 py-3 rounded-lg border border-green-200 flex flex-col md:flex-row justify-between items-start md:items-center gap-2">
                                                     <div className="flex items-center gap-2">
                                                         <Play size={16} className="text-blue-600" />
-                                                        <span className="font-bold text-gray-800">Started:</span>
+                                                        <span className="font-bold text-gray-800">{t('Started:')}</span>
                                                         <span className="font-medium text-gray-700">
                                                             {((selectedTask.sessions && selectedTask.sessions.length > 0) ? selectedTask.sessions[0].startedAt : selectedTask.startedAt) ? new Date((selectedTask.sessions && selectedTask.sessions.length > 0) ? selectedTask.sessions[0].startedAt : selectedTask.startedAt).toLocaleString() : 'N/A'}
                                                         </span>
@@ -1859,13 +1861,13 @@ const TaskPage = () => {
                                             <div className="grid grid-cols-2 gap-4 mb-6">
                                                 <div className="bg-gray-50 p-4 rounded-lg">
                                                     <h4 className="text-sm font-medium text-gray-600 mb-1 flex items-center gap-1">
-                                                        <Clock size={16} /> Minimum Duration
+                                                        <Clock size={16} /> {t('minimumDuration')}
                                                     </h4>
                                                     <p className="text-lg font-semibold">{formatDuration(selectedTask.minTime)}</p>
                                                 </div>
                                                 <div className="bg-gray-50 p-4 rounded-lg">
                                                     <h4 className="text-sm font-medium text-gray-600 mb-1 flex items-center gap-1">
-                                                        <Clock size={16} /> Maximum Duration
+                                                        <Clock size={16} /> {t('maximumDuration')}
                                                     </h4>
                                                     <p className="text-lg font-semibold">{formatDuration(selectedTask.maxTime)}</p>
                                                 </div>
@@ -1900,7 +1902,7 @@ const TaskPage = () => {
                                                     className="flex items-center gap-2 text-xs font-bold text-gray-500 hover:text-blue-600 transition-colors uppercase tracking-widest"
                                                 >
                                                     <History size={16} />
-                                                    {showTaskHistory ? 'Hide Task Activity' : 'View Task Activity'}
+                                                    {showTaskHistory ? 'Hide' : 'View'} {t('activityHistory')}
                                                     <ChevronDown size={14} className={`transition-transform duration-300 ${showTaskHistory ? 'rotate-180' : ''}`} />
                                                 </button>
 
@@ -2088,7 +2090,7 @@ const TaskPage = () => {
                                                                                                     className={`bg-green-600 hover:bg-green-700 text-white font-bold px-4 py-2 rounded-md shadow-sm transition-colors flex items-center justify-center gap-2 ${isSubmitting && loadingActionId !== subtaskId ? 'hidden opacity-50 cursor-not-allowed' : isSubmitting ? 'opacity-50 cursor-not-allowed' : ''}`}
                                                                                                 >
                                                                                                     {isSubmitting && loadingActionId === subtaskId ? <Loader2 size={16} className="animate-spin" /> : <Play size={16} />}
-                                                                                                    Start Execution
+                                                                                                    {t('Start Execution')}
                                                                                                 </button>
                                                                                             ) : (
                                                                                                 <div className="flex gap-2">
@@ -2098,7 +2100,7 @@ const TaskPage = () => {
                                                                                                         className={`flex-1 bg-blue-600 hover:bg-blue-700 text-white font-bold px-4 py-2 rounded-md shadow-sm flex items-center justify-center gap-2 ${isSubmitting && loadingActionId !== subtaskId ? 'hidden opacity-50' : ''}`}
                                                                                                     >
                                                                                                         {isSubmitting && loadingActionId === subtaskId ? <Loader2 size={16} className="animate-spin" /> : <PlayCircle size={16} />}
-                                                                                                        Resume
+                                                                                                        {t('Resume')}
                                                                                                     </button>
                                                                                                     <button
                                                                                                         onClick={(e) => { e.stopPropagation(); handleSubmitSubtask(subtask); }}
@@ -2128,7 +2130,9 @@ const TaskPage = () => {
                                             )}
 
 
-                                            <h3 className="text-lg font-medium text-gray-800 mb-3">{focusedSubtaskId ? 'Remaining Subtasks' : 'Subtasks'}</h3>
+                                            <h3 className="text-lg font-medium text-gray-800 mb-3">
+                                                {focusedSubtaskId ? t('remainingSubtasks') : t('subtasks')}
+                                            </h3>
                                             <div className="space-y-3">
                                                 {selectedTask.subtasks
                                                     .filter(st => !focusedSubtaskId || String(st._id || st.taskId) !== String(focusedSubtaskId))
@@ -2317,7 +2321,7 @@ const TaskPage = () => {
                                                                                                 className={`bg-green-600 hover:bg-green-700 text-white font-medium px-4 py-2 rounded-md shadow-sm transition-colors flex items-center gap-2 text-[11px] ${isSubmitting && loadingActionId !== subtaskId ? 'hidden opacity-50 cursor-not-allowed' : isSubmitting ? 'opacity-50 cursor-not-allowed' : ''}`}
                                                                                             >
                                                                                                 {isSubmitting && loadingActionId === subtaskId ? <Loader2 size={14} className="animate-spin" /> : <Play size={14} />}
-                                                                                                Start Execution
+                                                                                                {t('Start Execution')}
                                                                                             </button>
                                                                                         ) : (
                                                                                             <div className="flex gap-2">
@@ -2327,7 +2331,7 @@ const TaskPage = () => {
                                                                                                     className={`bg-blue-600 hover:bg-blue-700 text-white px-3 py-1.5 rounded-md shadow-sm transition-colors flex items-center gap-1 text-[11px] font-medium ${isSubmitting && loadingActionId !== subtaskId ? 'hidden opacity-50' : ''}`}
                                                                                                 >
                                                                                                     {isSubmitting && loadingActionId === subtaskId ? <Loader2 size={12} className="animate-spin" /> : <PlayCircle size={12} />}
-                                                                                                    Resume
+                                                                                                    {t('Resume')}
                                                                                                 </button>
                                                                                                 <button
                                                                                                     onClick={(e) => { e.stopPropagation(); handleSubmitSubtask(subtask); }}
@@ -2335,7 +2339,7 @@ const TaskPage = () => {
                                                                                                     className={`bg-green-600 hover:bg-green-700 text-white px-3 py-1.5 rounded-md shadow-sm transition-colors flex items-center gap-1 text-[11px] font-medium ${isSubmitting && loadingActionId !== subtaskId ? 'hidden opacity-50' : ''}`}
                                                                                                 >
                                                                                                     {isSubmitting && loadingActionId === subtaskId ? <Loader2 size={12} className="animate-spin" /> : <CheckCircle size={12} />}
-                                                                                                    Submit
+                                                                                                    {t('Submit')}
                                                                                                 </button>
                                                                                             </div>
                                                                                         )}
@@ -2381,8 +2385,8 @@ const TaskPage = () => {
                                 <div className="h-full flex flex-col items-center justify-center text-gray-400">
                                     <div className="text-center">
                                         <Image size={48} className="mx-auto mb-4" />
-                                        <h3 className="text-lg font-medium mb-2">No Task Selected</h3>
-                                        <p>Select a task from the sidebar to view its details</p>
+                                        <h3 className="text-lg font-medium mb-2">{t('noTaskSelected')}</h3>
+                                        <p>{t('selectTask')}</p>
                                     </div>
                                 </div>
                             )}
@@ -2408,7 +2412,7 @@ const TaskPage = () => {
                             <div className="p-3 bg-orange-50 rounded-xl">
                                 <Pause className="w-6 h-6 text-orange-600" />
                             </div>
-                            <h3 className="text-lg font-bold text-gray-800">Pause Task</h3>
+                            <h3 className="text-lg font-bold text-gray-800">{t('pauseReasonTitle')}</h3>
                         </div>
 
                         <p className="text-sm text-gray-600 mb-4">
@@ -2468,7 +2472,7 @@ const TaskPage = () => {
                         <div className="flex items-center gap-3 mb-4">
                             <AlertCircle className={`w-6 h-6 ${reasonType === 'min' ? 'text-yellow-500' : 'text-red-500'}`} />
                             <h3 className="text-lg font-semibold">
-                                {reasonType === 'min' ? 'Task Completed Too Quickly' : 'Task Exceeded Time Limit'}
+                                {reasonType === 'min' ? t('tooQuick') : t('tooLong')}
                             </h3>
                         </div>
 
@@ -2521,7 +2525,7 @@ const TaskPage = () => {
                     <div className="bg-white rounded-lg p-6 max-w-md w-full mx-4">
                         <div className="flex items-center gap-3 mb-4">
                             <AlertCircle className="w-6 h-6 text-amber-500" />
-                            <h3 className="text-lg font-semibold">Cannot Start Task</h3>
+                            <h3 className="text-lg font-semibold">{t('Cannot Start Task')}</h3>
                         </div>
 
                         <p className="text-gray-600 mb-4">
