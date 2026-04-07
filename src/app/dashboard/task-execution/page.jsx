@@ -403,12 +403,23 @@ const TaskExecutionPage = () => {
       const result = await response.json();
 
       if (response.ok) {
-        toast.success(result.message || 'Task Found!', { id: loadingToast });
+        toast.dismiss(loadingToast); // Dismiss loading toast
+        
+        // Show success with the specific ID and Task name
+        toast.success(
+          <div>
+            <p className="font-bold text-sm">Task Identified!</p>
+            <p className="text-xs mt-1">ID: <span className="font-mono text-blue-600">{result.generatedId}</span></p>
+            <p className="text-xs font-semibold text-gray-600 truncate">{result.prototypeName}</p>
+          </div>, 
+          { duration: 2500 }
+        );
+        
         setIsScannerOpen(false);
-        // Small delay for better UX
+        // Small delay so they can actually see the information before the page switches
         setTimeout(() => {
           router.push(`/dashboard/task-execution/execution/${result.assignmentId}`);
-        }, 800);
+        }, 1200);
       } else {
         toast.error(result.error || 'No matching task found', { id: loadingToast });
       }

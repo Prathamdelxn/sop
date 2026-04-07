@@ -68,6 +68,8 @@ export async function POST(req) {
         return NextResponse.json({
             message: 'Assignment found',
             assignmentId: activeAssignment._id,
+            generatedId: activeAssignment.generatedId,
+            prototypeName: activeAssignment.prototypeData?.name,
             status: activeAssignment.status
         });
 
