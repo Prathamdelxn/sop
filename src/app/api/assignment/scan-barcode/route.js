@@ -2,7 +2,7 @@ import { NextResponse } from 'next/server';
 import mongoose from 'mongoose';
 import Equipment from '@/model/Equipment';
 import NewAssignment from '@/model/NewAssignment';
-import dbConnect from '@/utils/dbConnect';
+import dbConnect from '@/utils/db';
 
 export async function POST(req) {
     try {
@@ -55,9 +55,9 @@ export async function POST(req) {
                 });
             }
 
-            return NextResponse.json({ 
+            return NextResponse.json({
                 error: 'No active task found for this equipment assigned to you',
-                equipmentName: equipment.name 
+                equipmentName: equipment.name
             }, { status: 404 });
         }
 
