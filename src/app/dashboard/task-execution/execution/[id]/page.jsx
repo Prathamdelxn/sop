@@ -1508,7 +1508,7 @@ const TaskPage = () => {
                                     <div className="space-y-2">
                                         {stages.map((stage, stageIndex) => {
                                             const stageKey = stage._id || stage.stageId || `stage-${stageIndex}`;
-                                            const stageName = stage.name || `Stage ${stageIndex + 1}`;
+                                            const stageName = stage.title || stage.name || `Stage ${stageIndex + 1}`;
                                             return (
                                                 <div key={stageKey} className="rounded-md overflow-hidden">
                                                     <div
@@ -1585,7 +1585,7 @@ const TaskPage = () => {
                                                 <div
                                                     className="w-10 h-10 rounded-full bg-gray-200 flex items-center justify-center mb-1 cursor-pointer"
                                                     onClick={() => toggleStage(stageKey)}
-                                                    title={stage.name || `Stage ${stageIndex + 1}`}
+                                                    title={stage.title || stage.name || `Stage ${stageIndex + 1}`}
                                                 >
                                                     {stageIndex + 1}
                                                 </div>
@@ -1646,7 +1646,7 @@ const TaskPage = () => {
                                         <div className="flex-1">
                                             <h2 className={`${focusedSubtaskId ? 'text-lg' : 'text-2xl'} font-bold text-gray-800 transition-all flex items-center gap-2`}>
                                                 {focusedSubtaskId && <button onClick={() => setFocusedSubtaskId(null)} className="p-1 hover:bg-gray-100 rounded-full transition-colors"><ArrowLeft size={18} className="text-blue-600" /></button>}
-                                                {selectedTask.stageIndex + 1}.{(stages[selectedTask.stageIndex]?.tasks?.findIndex(t => (t._id || t.taskId) === (selectedTask._id || selectedTask.taskId)) || 0) + 1} {selectedTask.title}
+                                                {/* <span className="text-gray-400 font-medium">[{stages[selectedTask.stageIndex]?.title || stages[selectedTask.stageIndex]?.name || `Stage ${selectedTask.stageIndex + 1}`}]</span> {selectedTask.title} */}
                                             </h2>
                                             {selectedTask && selectedTask.status === 'Under Execution' && selectedTask.startedAt && (
                                                 <div className="flex items-center gap-1.5 mt-1 text-[10px] font-bold text-blue-600 bg-blue-50 px-2 py-0.5 rounded-full w-fit border border-blue-100 animate-pulse">
