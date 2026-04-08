@@ -26,3 +26,20 @@
     -moz-appearance: textfield;
   }
 }
+
+
+
+/* Add to your global.css or use Tailwind */
+@keyframes scanLine {
+  0% {
+    top: 0;
+  }
+
+  100% {
+    top: 100%;
+  }
+}
+
+.animate-scan-line {
+  animation: scanLine 2s linear infinite;
+}

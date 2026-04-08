@@ -384,17 +384,20 @@ const TaskExecutionPage = () => {
 
 
   const handleScanSuccess = async (barcode) => {
-    if (!userData) return;
-    
+    if (!userData) {
+      toast.error('User data not found. Please refresh the page.');
+      return;
+    }
+
     setIsScanning(true);
     const loadingToast = toast.loading(`Searching for task associated with barcode: ${barcode}...`);
-    
+
     try {
       const response = await fetch('/api/assignment/scan-barcode', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          barcode,
+          barcode: barcode.trim(), // Trim any whitespace
           userId: userData.id || userData._id,
           companyId: userData.companyId
         })
@@ -402,30 +405,65 @@ const TaskExecutionPage = () => {
 
       const result = await response.json();
 
-      if (response.ok) {
-        toast.dismiss(loadingToast); // Dismiss loading toast
-        
-        // Show success with the specific ID and Task name
+      if (response.ok && result.assignmentId) {
+        toast.dismiss(loadingToast);
+
+        // Show success message with task details
         toast.success(
           <div>
-            <p className="font-bold text-sm">Task Identified!</p>
+            <p className="font-bold text-sm">✓ Task Found!</p>
             <p className="text-xs mt-1">ID: <span className="font-mono text-blue-600">{result.generatedId}</span></p>
             <p className="text-xs font-semibold text-gray-600 truncate">{result.prototypeName}</p>
-          </div>, 
-          { duration: 2500 }
+            <p className="text-xs text-green-600 mt-1">Redirecting to task execution...</p>
+          </div>,
+          { duration: 2000 }
         );
-        
+
+        // Close scanner modal
         setIsScannerOpen(false);
-        // Small delay so they can actually see the information before the page switches
+
+        // Short delay to show success message before redirect
         setTimeout(() => {
           router.push(`/dashboard/task-execution/execution/${result.assignmentId}`);
-        }, 1200);
+        }, 1000);
+
+      } else if (result.status === 'Completed') {
+        // Handle completed assignments
+        toast.dismiss(loadingToast);
+        toast.error(
+          <div>
+            <p className="font-bold text-sm">Assignment Already Completed</p>
+            <p className="text-xs mt-1">This equipment's task has already been finished.</p>
+            <p className="text-xs text-gray-500 mt-1">Assignment ID: {result.assignmentId}</p>
+          </div>,
+          { duration: 4000 }
+        );
+        setIsScannerOpen(false);
+
       } else {
-        toast.error(result.error || 'No matching task found', { id: loadingToast });
+        // Handle not found or other errors
+        toast.dismiss(loadingToast);
+        toast.error(
+          <div>
+            <p className="font-bold text-sm">No Active Task Found</p>
+            <p className="text-xs mt-1">Equipment barcode: <span className="font-mono">{barcode}</span></p>
+            <p className="text-xs text-gray-500 mt-1">{result.error || 'No active task assigned to you for this equipment.'}</p>
+          </div>,
+          { duration: 5000 }
+        );
       }
+
     } catch (error) {
       console.error('Scan Error:', error);
-      toast.error('An error occurred during scanning. Please try again.', { id: loadingToast });
+      toast.dismiss(loadingToast);
+      toast.error(
+        <div>
+          <p className="font-bold text-sm">Scanning Failed</p>
+          <p className="text-xs mt-1">Unable to process the barcode. Please try again.</p>
+          <p className="text-xs text-gray-500 mt-1">{error.message}</p>
+        </div>,
+        { duration: 4000 }
+      );
     } finally {
       setIsScanning(false);
     }
@@ -515,9 +553,9 @@ const TaskExecutionPage = () => {
                 <p className="text-gray-600 mt-2 text-md">Manage and Execute your assigned task </p>
               </div>
             </div>
-            
+
             <div className="flex flex-col sm:flex-row gap-3">
-              <button 
+              <button
                 onClick={() => setIsScannerOpen(true)}
                 className="inline-flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-blue-600 to-indigo-700 hover:from-blue-700 hover:to-indigo-800 text-white rounded-xl shadow-lg shadow-blue-500/20 transform hover:-translate-y-0.5 transition-all duration-200"
               >
@@ -762,12 +800,12 @@ const TaskExecutionPage = () => {
 
       {/* Barcode Scanner Modal */}
       {isScannerOpen && (
-        <BarcodeScanner 
-          onScanSuccess={handleScanSuccess} 
-          onClose={() => setIsScannerOpen(false)} 
+        <BarcodeScanner
+          onScanSuccess={handleScanSuccess}
+          onClose={() => setIsScannerOpen(false)}
         />
       )}
-      
+
       <Toaster position="top-right" />
     </div>
   );
