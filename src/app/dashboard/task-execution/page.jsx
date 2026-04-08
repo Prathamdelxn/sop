@@ -66,6 +66,7 @@ const TaskExecutionPage = () => {
   const [openMenuId, setOpenMenuId] = useState(null);
   const [isScannerOpen, setIsScannerOpen] = useState(false);
   const [isScanning, setIsScanning] = useState(false);
+  const [matchedTask, setMatchedTask] = useState(null);
 
   // Close menu on click outside
   useEffect(() => {
@@ -407,6 +408,9 @@ const TaskExecutionPage = () => {
 
       if (response.ok && result.assignmentId) {
         toast.dismiss(loadingToast);
+        
+        // Set matched task to show in UI
+        setMatchedTask(result);
 
         // Show success message with task details
         toast.success(
@@ -414,18 +418,17 @@ const TaskExecutionPage = () => {
             <p className="font-bold text-sm">✓ Task Found!</p>
             <p className="text-xs mt-1">ID: <span className="font-mono text-blue-600">{result.generatedId}</span></p>
             <p className="text-xs font-semibold text-gray-600 truncate">{result.prototypeName}</p>
-            <p className="text-xs text-green-600 mt-1">Redirecting to task execution...</p>
           </div>,
-          { duration: 2000 }
+          { duration: 3000 }
         );
 
         // Close scanner modal
         setIsScannerOpen(false);
 
-        // Short delay to show success message before redirect
+        // delay to show success details on screen before redirect
         setTimeout(() => {
           router.push(`/dashboard/task-execution/execution/${result.assignmentId}`);
-        }, 1000);
+        }, 1500);
 
       } else if (result.status === 'Completed') {
         // Handle completed assignments
@@ -570,6 +573,38 @@ const TaskExecutionPage = () => {
             </div>
           </div>
         </div>
+
+        {/* --- MATCHED TASK FEEDBACK AREA --- */}
+        {matchedTask && (
+          <div className="mt-6 animate-in slide-in-from-top-4 duration-500">
+            <div className="bg-gradient-to-r from-emerald-500 to-teal-600 rounded-2xl p-0.5 shadow-xl shadow-emerald-200">
+              <div className="bg-white rounded-[14px] p-6">
+                <div className="flex flex-col md:flex-row items-center justify-between gap-6">
+                  <div className="flex items-center gap-5">
+                    <div className="w-16 h-16 bg-emerald-100 rounded-2xl flex items-center justify-center shrink-0">
+                      <Zap className="w-8 h-8 text-emerald-600" />
+                    </div>
+                    <div>
+                      <h3 className="text-lg font-bold text-gray-900 leading-tight">Task Identified Successfully</h3>
+                      <div className="flex flex-wrap items-center gap-3 mt-2">
+                        <span className="px-3 py-1 bg-blue-50 text-blue-700 text-xs font-bold rounded-lg border border-blue-100">
+                          ID: {matchedTask.generatedId}
+                        </span>
+                        <span className="px-3 py-1 bg-gray-50 text-gray-600 text-xs font-bold rounded-lg border border-gray-100">
+                          SOP: {matchedTask.prototypeName}
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-3 bg-emerald-50 px-5 py-3 rounded-2xl border border-emerald-100">
+                    <Loader2 className="w-4 h-4 text-emerald-600 animate-spin" />
+                    <span className="text-sm font-bold text-emerald-700">Redirecting to execution page...</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
 
         {/* Modern Card Container */}
         <div className="bg-white mt-4 rounded-2xl shadow-sm border border-gray-100 overflow-hidden">

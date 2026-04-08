@@ -90,7 +90,7 @@ const BarcodeScanner = ({ onScanSuccess, onClose }) => {
             scannerRef.current = scanner;
 
             const config = {
-                fps: 10,
+                fps: 40,
                 qrbox: { width: 280, height: 100 },
                 aspectRatio: 1.0,
                 disableFlip: false,

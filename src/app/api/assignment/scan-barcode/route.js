@@ -8,6 +8,7 @@ export async function POST(req) {
     try {
         await dbConnect();
         const { barcode, userId, companyId } = await req.json();
+        console.log("THE BARCODEEEEEEI  IS:", barcode);
 
         if (!barcode || !userId || !companyId) {
             return NextResponse.json({ error: 'Barcode, User ID, and Company ID are required' }, { status: 400 });
@@ -25,30 +26,46 @@ export async function POST(req) {
         }
 
         // 2. Find matching task/assignment for this equipment and worker
-        // We match assignments where the equipment reference contains this equipment's ID
-        // And the worker is assigned at any level (stage, task, or subtask).
         const activeAssignment = await NewAssignment.findOne({
-            'equipment._id': equipment._id,
             companyId,
             status: { $ne: 'Completed' },
-            $or: [
-                { "prototypeData.stages.assignedWorker.id": userId },
-                { "prototypeData.stages.tasks.assignedWorker.id": userId },
-                { "prototypeData.stages.tasks.subtasks.assignedWorker.id": userId },
-            ],
+            $and: [
+                {
+                    $or: [
+                        { 'equipment._id': equipment._id },
+                        { 'equipment._id': equipment._id.toString() }
+                    ]
+                },
+                {
+                    $or: [
+                        { "prototypeData.stages.assignedWorker.id": userId },
+                        { "prototypeData.stages.tasks.assignedWorker.id": userId },
+                        { "prototypeData.stages.tasks.subtasks.assignedWorker.id": userId },
+                    ]
+                }
+            ]
         });
 
         if (!activeAssignment) {
             // Check if there is an assignment with status 'Completed'
             const completedAssignment = await NewAssignment.findOne({
-                'equipment._id': equipment._id,
                 companyId,
                 status: 'Completed',
-                $or: [
-                    { "prototypeData.stages.assignedWorker.id": userId },
-                    { "prototypeData.stages.tasks.assignedWorker.id": userId },
-                    { "prototypeData.stages.tasks.subtasks.assignedWorker.id": userId },
-                ],
+                $and: [
+                    {
+                        $or: [
+                            { 'equipment._id': equipment._id },
+                            { 'equipment._id': equipment._id.toString() }
+                        ]
+                    },
+                    {
+                        $or: [
+                            { "prototypeData.stages.assignedWorker.id": userId },
+                            { "prototypeData.stages.tasks.assignedWorker.id": userId },
+                            { "prototypeData.stages.tasks.subtasks.assignedWorker.id": userId },
+                        ]
+                    }
+                ]
             });
 
             if (completedAssignment) {
