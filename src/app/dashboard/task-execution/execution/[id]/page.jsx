@@ -31,7 +31,7 @@ const TaskPage = () => {
     const [activeValidationItem, setActiveValidationItem] = useState(null); // { type: 'main'|'sub', item: selectedTask|subtask }
 
     // Modal states
-    const [showVisualStandards, setShowVisualStandards] = useState(false);
+    // const [showVisualStandards, setShowVisualStandards] = useState(false);
     const [showReasonModal, setShowReasonModal] = useState(false);
     const [reasonType, setReasonType] = useState(null); // 'min' or 'max'
     const [reasonText, setReasonText] = useState('');
@@ -1455,7 +1455,7 @@ const TaskPage = () => {
                 </div>
 
                 {/* Visual Standards Tab (Global) */}
-                {prototypeData?.visualRepresentationEnabled && prototypeData?.visualRepresntation?.length > 0 && (
+                {/* {prototypeData?.visualRepresentationEnabled && prototypeData?.visualRepresntation?.length > 0 && (
                     <div className="w-full bg-white border-b border-gray-200 px-4 py-2">
                         <button
                             onClick={() => setShowVisualStandards(!showVisualStandards)}
@@ -1495,7 +1495,7 @@ const TaskPage = () => {
                             </div>
                         )}
                     </div>
-                )}
+                )} */}
 
                 {/* Body */}
                 <div className="flex-1 w-full flex overflow-hidden">
