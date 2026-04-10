@@ -12,7 +12,8 @@ const TaskPage = () => {
     const { t, language, changeLanguage } = useTranslation();
 
 
-
+    const [pauseType, setPauseType] = useState("");
+    const [customReason, setCustomReason] = useState("");
     const [expandedStages, setExpandedStages] = useState({});
     const [sidebarExpanded, setSidebarExpanded] = useState(true);
     const [selectedTask, setSelectedTask] = useState(null);
@@ -821,7 +822,7 @@ const TaskPage = () => {
                     {sortedEvents.map((event, idx) => (
                         <div key={idx} className="flex items-center gap-3 text-[11px]">
                             <div className="min-w-[110px] text-gray-400 font-mono bg-gray-50 px-2 py-0.5 rounded border border-gray-100 text-center whitespace-nowrap">
-                                {new Date(event.time).toLocaleString([], { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })}
+                                {new Date(event.time).toLocaleString([], { month: 'short', day: 'numeric', year: 'numeric', hour: '2-digit', minute: '2-digit' })}
                             </div>
                             <div className="flex-1 flex flex-wrap items-center">
                                 <span className={`font-bold px-1.5 py-0.5 rounded ${event.type === 'Started' ? 'bg-blue-50 text-blue-600' :
@@ -1096,13 +1097,13 @@ const TaskPage = () => {
 
     const handleSubmitTask = async () => {
         // Enforce all subtasks must be completed before the main task can be submitted
-        if (selectedTask?.subtasks && selectedTask.subtasks.length > 0) {
-            const hasIncompleteSubtasks = selectedTask.subtasks.some(st => st.status !== 'completed');
-            if (hasIncompleteSubtasks) {
-                alert("You cannot submit this task until all of its subtasks are fully completed.");
-                return;
-            }
-        }
+        // if (selectedTask?.subtasks && selectedTask.subtasks.length > 0) {
+        //     const hasIncompleteSubtasks = selectedTask.subtasks.some(st => st.status !== 'completed');
+        //     if (hasIncompleteSubtasks) {
+        //         alert("You cannot submit this task until all of its subtasks are fully completed.");
+        //         return;
+        //     }
+        // }
 
         // Check if task has min/max time constraints
         const minSeconds = convertToSeconds(selectedTask?.minTime);
@@ -1725,16 +1726,17 @@ const TaskPage = () => {
                                                             <PlayCircle size={16} />
                                                             {t('Resume')}
                                                         </button>
-                                                        {(selectedTask.lastWorker?.id === (userdata.id || userdata._id)) && (
-                                                            <button
-                                                                onClick={handleSubmitTask}
-                                                                disabled={isSubmitting}
-                                                                className="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-md flex items-center gap-2"
-                                                            >
-                                                                <CheckCircle size={16} />
-                                                                Submit
-                                                            </button>
-                                                        )}
+                                                        {(selectedTask.lastWorker?.id === (userdata.id || userdata._id)) &&
+                                                            selectedTask.status === 'Under Execution' && (
+                                                                <button
+                                                                    onClick={handleSubmitTask}
+                                                                    disabled={isSubmitting}
+                                                                    className="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-md flex items-center gap-2"
+                                                                >
+                                                                    <CheckCircle size={16} />
+                                                                    Submit
+                                                                </button>
+                                                            )}
                                                     </div>
                                                 ) : !taskTimer.isRunning ? (
                                                     ((taskTimer.totalTrackedSeconds || 0) === 0 && taskTimer.elapsedTime === 0) || selectedTask.status === 'pending' ? (
@@ -2054,9 +2056,10 @@ const TaskPage = () => {
                                                                                     </div>
                                                                                     <div className="flex gap-2">
                                                                                         <button onClick={(e) => { e.stopPropagation(); handleResumeSubtask(subtask); }} disabled={isSubmitting} className={`flex-1 bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 rounded-md shadow-sm ${isSubmitting && loadingActionId !== subtaskId ? 'opacity-50' : ''}`}>{isSubmitting && loadingActionId === subtaskId ? 'Resuming...' : 'Resume'}</button>
-                                                                                        {(subtask.lastWorker?.id === (userdata.id || userdata._id)) && (
-                                                                                            <button onClick={(e) => { e.stopPropagation(); handleSubmitSubtask(subtask); }} disabled={isSubmitting} className={`flex-1 bg-green-600 hover:bg-green-700 text-white font-bold py-2 rounded-md shadow-sm ${isSubmitting && loadingActionId !== subtaskId ? 'opacity-50' : ''}`}>{isSubmitting && loadingActionId === subtaskId ? 'Submitting...' : 'Submit'}</button>
-                                                                                        )}
+                                                                                        {(subtask.lastWorker?.id === (userdata.id || userdata._id)) &&
+                                                                                            subtask.status === 'Under Execution' && (
+                                                                                                <button onClick={(e) => { e.stopPropagation(); handleSubmitSubtask(subtask); }} disabled={isSubmitting} className={`flex-1 bg-green-600 hover:bg-green-700 text-white font-bold py-2 rounded-md shadow-sm ${isSubmitting && loadingActionId !== subtaskId ? 'opacity-50' : ''}`}>{isSubmitting && loadingActionId === subtaskId ? 'Submitting...' : 'Submit'}</button>
+                                                                                            )}
                                                                                     </div>
                                                                                 </div>
                                                                             ) : isAssigned ? (
@@ -2268,15 +2271,16 @@ const TaskPage = () => {
                                                                                     >
                                                                                         {isSubmitting && loadingActionId === subtaskId ? 'Resuming...' : 'Resume'}
                                                                                     </button>
-                                                                                    {(subtask.lastWorker?.id === (userdata.id || userdata._id)) && (
-                                                                                        <button
-                                                                                            onClick={() => handleSubmitSubtask(subtask)}
-                                                                                            disabled={isSubmitting}
-                                                                                            className={`text-[10px] bg-green-600 hover:bg-green-700 text-white px-2 py-1 rounded shadow-sm ${isSubmitting && loadingActionId !== subtaskId ? 'opacity-50' : ''}`}
-                                                                                        >
-                                                                                            {isSubmitting && loadingActionId === subtaskId ? 'Submitting...' : 'Submit'}
-                                                                                        </button>
-                                                                                    )}
+                                                                                    {(subtask.lastWorker?.id === (userdata.id || userdata._id)) &&
+                                                                                        subtask.status === 'Under Execution' && (
+                                                                                            <button
+                                                                                                onClick={() => handleSubmitSubtask(subtask)}
+                                                                                                disabled={isSubmitting}
+                                                                                                className={`text-[10px] bg-green-600 hover:bg-green-700 text-white px-2 py-1 rounded shadow-sm ${isSubmitting && loadingActionId !== subtaskId ? 'opacity-50' : ''}`}
+                                                                                            >
+                                                                                                {isSubmitting && loadingActionId === subtaskId ? 'Submitting...' : 'Submit'}
+                                                                                            </button>
+                                                                                        )}
                                                                                 </div>
                                                                             </div>
                                                                         ) : isAssigned ? (
@@ -2420,15 +2424,31 @@ const TaskPage = () => {
                             <span className="font-semibold text-gray-900 ml-1">"{pausingItem?.item?.title}"</span>.
                         </p>
 
-                        <textarea
-                            className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-orange-500 mb-4 text-sm resize-none bg-gray-50 hover:bg-white transition-colors"
-                            rows="4"
-                            placeholder="Break, material shortage, machine issue, etc..."
-                            value={pauseReason}
-                            onChange={(e) => setPauseReason(e.target.value)}
+                        {/* Dropdown */}
+                        <select
+                            className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-orange-500 mb-3 text-sm bg-gray-50 hover:bg-white transition-colors"
+                            value={pauseType}
+                            onChange={(e) => setPauseType(e.target.value)}
                             disabled={isSubmitting}
-                            autoFocus
-                        />
+                        >
+                            <option value="">Select reason</option>
+                            <option value="Break">Break</option>
+                            <option value="Tea Break">Tea Break</option>
+                            <option value="Shift Change">Shift Change</option>
+                            <option value="Other">Other</option>
+                        </select>
+
+                        {/* Input only if Other */}
+                        {pauseType === "Other" && (
+                            <input
+                                type="text"
+                                placeholder="Enter custom reason..."
+                                className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-orange-500 mb-4 text-sm bg-gray-50 hover:bg-white transition-colors"
+                                onChange={(e) => setCustomReason(e.target.value)}
+                                disabled={isSubmitting}
+                                autoFocus
+                            />
+                        )}
 
                         <div className="flex justify-end gap-3">
                             <button
@@ -2438,14 +2458,19 @@ const TaskPage = () => {
                                     setPausingItem(null);
                                 }}
                                 className="px-4 py-2 text-sm font-semibold text-gray-500 hover:text-gray-700 hover:bg-gray-100 rounded-xl transition-all"
-                                disabled={isSubmitting}
+                                disabled={
+                                    isSubmitting ||
+                                    (!pauseType || (pauseType === "Other" && !customReason.trim()))
+                                }
                             >
                                 Cancel
                             </button>
                             <button
                                 onClick={() => {
-                                    if (!pauseReason.trim()) return;
-                                    const reason = pauseReason.trim();
+                                    const reason = pauseType === "Other"
+                                        ? customReason.trim()
+                                        : pauseType;
+                                    if (!reason) return;
                                     setShowPauseModal(false);
                                     setPauseReason("");
                                     if (pausingItem?.type === 'sub') {
@@ -2456,7 +2481,11 @@ const TaskPage = () => {
                                     setPausingItem(null);
                                 }}
                                 className="px-6 py-2 bg-gradient-to-r from-orange-500 to-orange-600 text-white text-sm font-bold rounded-xl hover:from-orange-600 hover:to-orange-700 disabled:opacity-50 shadow-md shadow-orange-200 flex items-center gap-2 transform active:scale-95 transition-all"
-                                disabled={isSubmitting || !pauseReason.trim()}
+                                disabled={
+                                    isSubmitting ||
+                                    !pauseType ||
+                                    (pauseType === "Other" && !customReason.trim())
+                                }
                             >
                                 {isSubmitting ? <Loader2 size={16} className="animate-spin" /> : "Confirm Pause"}
                             </button>

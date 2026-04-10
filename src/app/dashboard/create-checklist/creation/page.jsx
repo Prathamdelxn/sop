@@ -117,7 +117,7 @@ const InputField = ({
       <input
         type={props.type || "text"}
         name={name}
-        value={value}
+        value={value || ""}
         onChange={onChange}
         placeholder={placeholder}
         className={`${baseClasses} ${errorClasses} ${className}`}
@@ -1497,8 +1497,8 @@ export default function NestedDragDrop() {
   };
 
   const handleRecordCountConfirm = () => {
-    if (recordCount < 1 || recordCount > 10) {
-      toast.error("Please enter a number between 1 and 10.");
+    if (recordCount < 1) {
+      toast.error("Please enter at least 1 record.");
       return;
     }
     addNewRows(recordCount); // Add the batch of rows
@@ -1508,8 +1508,8 @@ export default function NestedDragDrop() {
   };
 
   const handleStageCountConfirm = () => {
-    if (stageCount < 1 || stageCount > 10) {
-      toast.error("Please enter a number between 1 and 10.");
+    if (stageCount < 1) {
+      toast.error("Please enter at least 1 stage.");
       return;
     }
     // Validate all stage names are filled
@@ -1624,8 +1624,8 @@ export default function NestedDragDrop() {
   };
 
   const handleTaskCountConfirm = () => {
-    if (taskCount < 1 || taskCount > 10) {
-      toast.error("Please enter a number between 1 and 10.");
+    if (taskCount < 1) {
+      toast.error("Please enter at least 1 task.");
       return;
     }
     setShowTaskForms((prev) => ({ ...prev, [selectedStageId]: true }));
@@ -2088,8 +2088,8 @@ export default function NestedDragDrop() {
   };
 
   const handleSubtaskCountConfirm = () => {
-    if (subtaskCount < 1 || subtaskCount > 10) {
-      toast.error("Please enter a number between 1 and 10.");
+    if (subtaskCount < 1) {
+      toast.error("Please enter at least 1 subtask.");
       return;
     }
     setShowSubtaskForms((prev) => ({ ...prev, [selectedParentId]: true }));
@@ -4271,7 +4271,7 @@ export default function NestedDragDrop() {
                         setBulkStageNames([]);
                         return;
                       }
-                      const count = Math.max(1, Math.min(10, parseInt(raw) || 1));
+                      const count = Math.max(1, parseInt(raw) || 1);
                       setStageCount(count);
                       setBulkStageNames((prev) => {
                         const newNames = Array.from({ length: count }, (_, i) => prev[i] || "");
@@ -4280,11 +4280,10 @@ export default function NestedDragDrop() {
                     }}
                     placeholder="Enter number of stages"
                     min="1"
-                    max="10"
                     required
                   />
                   <p className="text-xs text-gray-500 mt-2">
-                    Enter the number of stages you want to create (1-10).
+                    Enter the number of stages you want to create.
                   </p>
                 </div>
                 {bulkStageNames.length > 0 && (
@@ -4349,14 +4348,13 @@ export default function NestedDragDrop() {
                     type="number"
                     name="taskCount"
                     value={taskCount}
-                    onChange={(e) => { const v = e.target.value; setTaskCount(v === "" ? "" : Math.max(1, Math.min(10, parseInt(v) || 1))); }}
+                    onChange={(e) => { const v = e.target.value; setTaskCount(v === "" ? "" : Math.max(1, parseInt(v) || 1)); }}
                     placeholder="Enter number of tasks"
                     min="1"
-                    max="10"
                     required
                   />
                   <p className="text-xs text-gray-500 mt-2">
-                    Enter the number of tasks you want to create (1-10).
+                    Enter the number of tasks you want to create.
                   </p>
                 </div>
                 <div className="flex justify-end gap-3">
@@ -4401,10 +4399,9 @@ export default function NestedDragDrop() {
                     type="number"
                     name="subtaskCount"
                     value={subtaskCount}
-                    onChange={(e) => { const v = e.target.value; setSubtaskCount(v === "" ? "" : Math.max(1, Math.min(10, parseInt(v) || 1))); }}
+                    onChange={(e) => { const v = e.target.value; setSubtaskCount(v === "" ? "" : Math.max(1, parseInt(v) || 1)); }}
                     placeholder="Enter number of subtasks"
                     min="1"
-                    max="10"
                     required
                   />
                   <p className="text-xs text-gray-500 mt-2">
@@ -4453,10 +4450,9 @@ export default function NestedDragDrop() {
                     type="number"
                     name="recordCount"
                     value={recordCount}
-                    onChange={(e) => { const v = e.target.value; setRecordCount(v === "" ? "" : Math.max(1, Math.min(10, parseInt(v) || 1))); }}
+                    onChange={(e) => { const v = e.target.value; setRecordCount(v === "" ? "" : Math.max(1, parseInt(v) || 1)); }}
                     placeholder="Enter number of records"
                     min="1"
-                    max="10"
                     required
                   />
                   <p className="text-xs text-gray-500 mt-2">
