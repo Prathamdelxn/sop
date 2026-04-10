@@ -37,6 +37,7 @@ const VisualReviewPage = () => {
 
   // Visual representation checkpoint statuses
   const [checkpointStatuses, setCheckpointStatuses] = useState({});
+  const [qaStatuses, setQaStatuses] = useState({});
 
   useEffect(() => {
     const userData = localStorage.getItem("user");
@@ -45,6 +46,26 @@ const VisualReviewPage = () => {
       setCompanyData(data);
     }
   }, []);
+
+  const isVR = 
+    companyData?.role === "SuperAdmin" || 
+    companyData?.role?.toLowerCase()?.includes("production") || 
+    companyData?.role?.toLowerCase()?.includes("visual") ||
+    companyData?.task?.includes("Visual Review") ||
+    companyData?.task?.includes("Visual Reviewer");
+
+  const isQA = 
+    companyData?.role === "SuperAdmin" || 
+    companyData?.role?.toLowerCase()?.includes("qa") ||
+    companyData?.task?.includes("QA");
+
+  useEffect(() => {
+    if (companyData) {
+        console.log("VisualReview Debug - Role:", companyData.role);
+        console.log("VisualReview Debug - Tasks:", companyData.task);
+        console.log("VisualReview Debug - isVR:", isVR, "isQA:", isQA);
+    }
+  }, [companyData, isVR, isQA]);
 
   const fetchAssignments = useCallback(async (isInitial = true) => {
     if (!companyData?.companyId) return;
@@ -56,13 +77,30 @@ const VisualReviewPage = () => {
       const data = await res.json();
       if (data.success) {
         setAssignments(data.data);
+        
+        // If an assignment is selected, update its local data
+        if (selectedAssignment) {
+          const updated = data.data.find(a => a._id === selectedAssignment._id);
+          if (updated) {
+               // Update checkpoint statuses from the assignment's prototypeData
+               const visualData = updated.prototypeData?.visualRepresntation || [];
+               const vStatuses = {};
+               const qStatuses = {};
+               visualData.forEach((row, idx) => {
+                 vStatuses[idx] = row.production || "";
+                 qStatuses[idx] = row.qa || "";
+               });
+               setCheckpointStatuses(vStatuses);
+               setQaStatuses(qStatuses);
+          }
+        }
       }
     } catch (err) {
       console.error("Failed to fetch assignments for visual review:", err);
     } finally {
       if (isInitial) setLoading(false);
     }
-  }, [companyData]);
+  }, [companyData, selectedAssignment]);
 
   useEffect(() => {
     if (companyData) {
@@ -90,15 +128,17 @@ const VisualReviewPage = () => {
     setSelectedAssignment(assignment);
     setCheckedItems({});
     setSharedNote("");
-    setCheckpointStatuses({});
-
+    
     // Initialize checkpoint statuses from visual representation data
     const visualData = assignment.prototypeData?.visualRepresntation || [];
-    const initStatuses = {};
-    visualData.forEach((_, idx) => {
-      initStatuses[idx] = ""; // Start as empty/pending
+    const vStatuses = {};
+    const qStatuses = {};
+    visualData.forEach((row, idx) => {
+      vStatuses[idx] = row.production || "";
+      qStatuses[idx] = row.qa || "";
     });
-    setCheckpointStatuses(initStatuses);
+    setCheckpointStatuses(vStatuses);
+    setQaStatuses(qStatuses);
 
     // Expand all stages by default
     const expanded = {};
@@ -114,6 +154,7 @@ const VisualReviewPage = () => {
     setCheckedItems({});
     setSharedNote("");
     setCheckpointStatuses({});
+    setQaStatuses({});
   };
 
   const toggleStage = (stageKey) => {
@@ -161,15 +202,24 @@ const VisualReviewPage = () => {
 
   const checkedCount = Object.keys(checkedItems).length;
 
-  const hasNotClean = Object.values(checkpointStatuses).some(s => s === "Not Clean");
+  const hasNotClean = Object.values(checkpointStatuses).some(s => s === "Not Clean") || Object.values(qaStatuses).some(s => s === "Not Clean");
+
+  // Check if all checkpoints are filled and Clean/NA
+  const isEverythingClean = useMemo(() => {
+    if (!selectedAssignment) return false;
+    const visualData = selectedAssignment.prototypeData?.visualRepresntation || [];
+    return visualData.length > 0 && visualData.every((_, idx) => 
+      (checkpointStatuses[idx] === "Clean" || checkpointStatuses[idx] === "NA") &&
+      (qaStatuses[idx] === "Clean" || qaStatuses[idx] === "NA")
+    );
+  }, [selectedAssignment, checkpointStatuses, qaStatuses]);
 
   // Handle Approve All
   const handleApproveAll = async () => {
     if (!selectedAssignment) return;
 
-    // Check if any checkpoint is "Not Clean"
-    if (hasNotClean) {
-      alert("Cannot approve — some checkpoints are marked as 'Not Clean'. Please reopen the related tasks first.");
+    if (!isEverythingClean) {
+      alert("Cannot approve — some checkpoints are not marked as 'Clean' or 'NA' by both Production and QA.");
       return;
     }
 
@@ -183,14 +233,14 @@ const VisualReviewPage = () => {
           reviewerId: companyData?.id || companyData?._id,
           reviewerName: companyData?.name,
           action: "approve",
-          note: "All visual checkpoints approved as Clean",
+          note: "All visual checkpoints approved by Production and QA.",
         }),
       });
       const data = await res.json();
       if (!res.ok)
         throw new Error(data.message || "Failed to approve assignment");
 
-      alert("Visual review approved — assignment completed!");
+      alert("Visual & QA review approved — assignment completed!");
       closeModal();
       fetchAssignments();
     } catch (err) {
@@ -198,6 +248,36 @@ const VisualReviewPage = () => {
       alert(err.message || "Failed to approve assignment");
     } finally {
       setSubmitting(false);
+    }
+  };
+
+  // Handle individual status update
+  const updateCheckpointStatus = async (idx, field, value) => {
+    try {
+      const res = await fetch("/api/assignment/update-visual-checkpoint", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          assignmentId: selectedAssignment._id,
+          recordId: idx,
+          field: field,
+          value: value,
+          reviewerId: companyData?.id || companyData?._id,
+          reviewerName: companyData?.name,
+        })
+      });
+      const data = await res.json();
+      if (data.success) {
+        if (field === "production") {
+            setCheckpointStatuses(prev => ({ ...prev, [idx]: value }));
+        } else {
+            setQaStatuses(prev => ({ ...prev, [idx]: value }));
+        }
+      } else {
+        alert("Failed to update status: " + data.message);
+      }
+    } catch (err) {
+      console.error("Update failed:", err);
     }
   };
 
@@ -352,9 +432,9 @@ const VisualReviewPage = () => {
               <ShieldCheck className="w-6 h-6 text-white" />
             </div>
             <div>
-              <h1 className="text-2xl font-bold text-gray-900">Visual Review</h1>
+              <h1 className="text-2xl font-bold text-gray-900">Visual & QA Review</h1>
               <p className="text-gray-600 mt-1 text-md">
-                Inspect visual checkpoints and approve or reopen tasks
+                Inspect visual checkpoints and provide production & QA remarks
               </p>
             </div>
           </div>
@@ -481,7 +561,7 @@ const VisualReviewPage = () => {
           className="fixed pl-64 inset-0 bg-gray-900/20 backdrop-blur-sm flex items-start justify-center p-4 z-50 pt-10"
         >
           <div
-            className="relative bg-white rounded-2xl shadow-2xl w-full max-w-5xl max-h-[85vh] overflow-hidden flex flex-col"
+            className="relative bg-white rounded-2xl shadow-2xl w-full max-w-6xl max-h-[85vh] overflow-hidden flex flex-col"
             onClick={(e) => e.stopPropagation()}
           >
             {/* Modal Header */}
@@ -503,6 +583,9 @@ const VisualReviewPage = () => {
                       Assigned: {formatDate(selectedAssignment.assignedAt)}
                     </span>
                     {getStatusBadge(selectedAssignment.visualReviewStatus || selectedAssignment.status)}
+                    <span className="px-2 py-0.5 rounded-full bg-blue-50 text-blue-700 text-xs font-bold border border-blue-200">
+                      User Role: {companyData?.role || "Unknown"}
+                    </span>
                   </div>
                 </div>
                 <button
@@ -516,9 +599,9 @@ const VisualReviewPage = () => {
               {/* Info Banner */}
               <div className="mt-4 bg-amber-50 border border-amber-200 rounded-lg p-3">
                 <p className="text-sm text-amber-800">
-                  <strong>Visual Inspection:</strong> Review the visual checkpoints below and mark each as Clean or Not Clean.
-                  If any checkpoint is Not Clean, select the related tasks to reopen and add a single note for all.
-                  Then click "Reopen Selected" to send them back for rework.
+                  <strong>Workflow:</strong> {isVR ? "You are a Visual Reviewer. " : isQA ? "You are a QA Reviewer. " : ""}
+                  QA can only remark after Visual Reviewer marks a record as Clean or NA. 
+                  Records must be completed sequentially.
                 </p>
               </div>
 
@@ -537,61 +620,95 @@ const VisualReviewPage = () => {
                 <div className="mb-8">
                   <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center gap-2">
                     <ShieldCheck className="w-5 h-5 text-amber-600" />
-                    Visual Representation Checkpoints
+                    Visual & QA Checkpoints
                   </h3>
                   <div className="overflow-x-auto">
-                    <table className="min-w-full bg-white border border-gray-200 rounded-xl overflow-hidden">
+                    <table className="min-w-full bg-white border border-gray-200 rounded-xl overflow-hidden shadow-sm">
                       <thead>
-                        <tr className="bg-gray-100">
-                          <th className="py-3 px-4 text-left text-sm font-semibold text-gray-900">#</th>
-                          <th className="py-3 px-4 text-left text-sm font-semibold text-gray-900">Check Point</th>
-                          <th className="py-3 px-4 text-left text-sm font-semibold text-gray-900">Images</th>
-                          <th className="py-3 px-4 text-left text-sm font-semibold text-gray-900">Status</th>
+                        <tr className="bg-gray-100 boreder-b border-gray-200">
+                          <th className="py-3 px-4 text-left text-xs font-bold text-gray-700 uppercase tracking-wider w-12">#</th>
+                          <th className="py-3 px-4 text-left text-xs font-bold text-gray-700 uppercase tracking-wider min-w-[200px]">Check Point</th>
+                          <th className="py-3 px-4 text-left text-xs font-bold text-gray-700 uppercase tracking-wider w-40">Images</th>
+                          <th className="py-3 px-4 text-left text-xs font-bold text-orange-700 uppercase tracking-wider bg-orange-50/50">Visual Reviewer</th>
+                          <th className="py-3 px-4 text-left text-xs font-bold text-blue-700 uppercase tracking-wider bg-blue-50/50">QA Remark</th>
                         </tr>
                       </thead>
-                      <tbody>
-                        {selectedAssignment.prototypeData.visualRepresntation.map((checkpoint, idx) => (
-                          <tr key={idx} className={`border-b border-gray-200 ${checkpointStatuses[idx] === "Not Clean" ? "bg-rose-50" : "hover:bg-gray-50"}`}>
-                            <td className="py-3 px-4 text-sm text-gray-500 font-medium">{idx + 1}</td>
-                            <td className="py-3 px-4 text-sm text-gray-900 font-medium">
-                              {checkpoint.checkPoint?.title || "Untitled"}
-                            </td>
-                            <td className="py-3 px-4">
-                              <div className="flex flex-wrap gap-2">
-                                {checkpoint.checkPoint?.images?.map((img, imgIdx) => (
-                                  <img
-                                    key={imgIdx}
-                                    src={img.url}
-                                    alt={img.title || `Image ${imgIdx + 1}`}
-                                    className="w-10 h-10 object-cover rounded-lg border border-gray-200 cursor-pointer hover:opacity-75 transition-opacity"
-                                    onClick={() => window.open(img.url, '_blank')}
-                                  />
-                                ))}
-                                {(!checkpoint.checkPoint?.images || checkpoint.checkPoint.images.length === 0) && (
-                                  <span className="text-xs text-gray-400">No images</span>
+                      <tbody className="divide-y divide-gray-200">
+                        {selectedAssignment.prototypeData.visualRepresntation.map((checkpoint, idx) => {
+                          const isVREnabled = isVR && (idx === 0 || (checkpointStatuses[idx-1] === "Clean" || checkpointStatuses[idx-1] === "NA"));
+                          const isQAEnabled = isQA && (checkpointStatuses[idx] === "Clean" || checkpointStatuses[idx] === "NA") && (idx === 0 || (qaStatuses[idx-1] === "Clean" || qaStatuses[idx-1] === "NA"));
+                          
+                          return (
+                            <tr key={idx} className={`group transition-colors ${
+                                (checkpointStatuses[idx] === "Not Clean" || qaStatuses[idx] === "Not Clean") ? "bg-rose-50" : "hover:bg-gray-50/80"
+                            }`}>
+                              <td className="py-4 px-4 text-sm text-gray-500 font-bold">{idx + 1}</td>
+                              <td className="py-4 px-4">
+                                <span className="text-sm font-semibold text-gray-900">{checkpoint.checkPoint?.title || "Untitled"}</span>
+                                {checkpoint.completedBy?.production && (
+                                    <div className="text-[10px] text-orange-600 mt-1">VR: {checkpoint.completedBy.production.name} @ {formatDate(checkpoint.completedBy.production.at)}</div>
                                 )}
-                              </div>
-                            </td>
-                            <td className="py-3 px-4">
-                              <select
-                                disabled={idx > 0 && checkpointStatuses[idx - 1] !== "Clean"}
-                                value={checkpointStatuses[idx] || ""}
-                                onChange={(e) => setCheckpointStatuses(prev => ({ ...prev, [idx]: e.target.value }))}
-                                className={`text-sm border rounded-lg px-3 py-1.5 focus:ring-2 transition-colors ${idx > 0 && checkpointStatuses[idx - 1] !== "Clean" ? "opacity-40 cursor-not-allowed bg-gray-100" : ""} ${
-                                  checkpointStatuses[idx] === "Not Clean"
-                                    ? "border-rose-300 bg-rose-50 text-rose-800 focus:ring-rose-500"
-                                    : checkpointStatuses[idx] === "Clean"
-                                    ? "border-green-300 bg-green-50 text-green-800 focus:ring-green-500"
-                                    : "border-gray-300 bg-white text-gray-500 focus:ring-amber-500"
-                                }`}
-                              >
-                                <option value="" disabled>Select Status</option>
-                                <option value="Clean">✓ Clean</option>
-                                <option value="Not Clean">✗ Not Clean</option>
-                              </select>
-                            </td>
-                          </tr>
-                        ))}
+                                {checkpoint.completedBy?.qa && (
+                                    <div className="text-[10px] text-blue-600">QA: {checkpoint.completedBy.qa.name} @ {formatDate(checkpoint.completedBy.qa.at)}</div>
+                                )}
+                              </td>
+                              <td className="py-4 px-4">
+                                <div className="flex flex-wrap gap-1.5">
+                                  {checkpoint.checkPoint?.images?.map((img, imgIdx) => (
+                                    <img
+                                      key={imgIdx}
+                                      src={img.url}
+                                      alt={img.title}
+                                      className="w-8 h-8 object-cover rounded border border-gray-200 cursor-pointer ring-1 ring-transparent hover:ring-amber-500 transition-all"
+                                      onClick={() => window.open(img.url, '_blank')}
+                                    />
+                                  ))}
+                                  {(!checkpoint.checkPoint?.images || checkpoint.checkPoint.images.length === 0) && (
+                                    <span className="text-[10px] text-gray-400 italic">No images</span>
+                                  )}
+                                </div>
+                              </td>
+                              
+                              {/* Production / Visual Reviewer Column */}
+                              <td className={`py-4 px-4 bg-orange-50/30`}>
+                                <select
+                                  disabled={!isVREnabled}
+                                  value={checkpointStatuses[idx] || ""}
+                                  onChange={(e) => updateCheckpointStatus(idx, "production", e.target.value)}
+                                  className={`text-xs font-semibold border rounded-lg px-2 py-1.5 w-full focus:ring-2 transition-all ${!isVREnabled ? "opacity-30 cursor-not-allowed bg-gray-50" : "bg-white cursor-pointer"} ${
+                                    checkpointStatuses[idx] === "Not Clean" ? "border-rose-400 bg-rose-50 text-rose-800" :
+                                    checkpointStatuses[idx] === "Clean" ? "border-green-400 bg-green-50 text-green-800" :
+                                    checkpointStatuses[idx] === "NA" ? "border-blue-400 bg-blue-50 text-blue-800" : "border-gray-200"
+                                  }`}
+                                >
+                                  <option value="">Select</option>
+                                  <option value="Clean">✓ Clean</option>
+                                  <option value="Not Clean">✗ Not Clean</option>
+                                  <option value="NA">○ NA</option>
+                                </select>
+                              </td>
+
+                              {/* QA Column */}
+                              <td className={`py-4 px-4 bg-blue-50/30`}>
+                                <select
+                                  disabled={!isQAEnabled}
+                                  value={qaStatuses[idx] || ""}
+                                  onChange={(e) => updateCheckpointStatus(idx, "qa", e.target.value)}
+                                  className={`text-xs font-semibold border rounded-lg px-2 py-1.5 w-full focus:ring-2 transition-all ${!isQAEnabled ? "opacity-30 cursor-not-allowed bg-gray-50" : "bg-white cursor-pointer"} ${
+                                    qaStatuses[idx] === "Not Clean" ? "border-rose-400 bg-rose-50 text-rose-800" :
+                                    qaStatuses[idx] === "Clean" ? "border-green-400 bg-green-50 text-green-800" :
+                                    qaStatuses[idx] === "NA" ? "border-blue-400 bg-blue-50 text-blue-800" : "border-gray-200"
+                                  }`}
+                                >
+                                  <option value="">Select</option>
+                                  <option value="Clean">✓ Clean</option>
+                                  <option value="Not Clean">✗ Not Clean</option>
+                                  <option value="NA">○ NA</option>
+                                </select>
+                              </td>
+                            </tr>
+                          );
+                        })}
                       </tbody>
                     </table>
                   </div>
@@ -600,24 +717,24 @@ const VisualReviewPage = () => {
 
               {/* Tasks Section — for reopening */}
               {hasNotClean && (
-                <div className="mb-6">
+                <div className="mb-6 pt-6 border-t border-gray-100">
                   <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center gap-2">
                     <RotateCcw className="w-5 h-5 text-rose-600" />
-                    Select Tasks to Reopen
+                    Select Tasks to Reopen (Rework Required)
                   </h3>
 
                   {/* Shared note for all reopened tasks */}
                   <div className="mb-4 p-4 bg-rose-50 border border-rose-200 rounded-xl">
                     <label className="block text-sm font-semibold text-rose-800 mb-2">
                       <MessageSquare className="w-4 h-4 inline mr-1" />
-                      Shared Note for All Reopened Tasks *
+                      Rework Note (Applied to all selected tasks) *
                     </label>
                     <textarea
                       value={sharedNote}
                       onChange={(e) => setSharedNote(e.target.value)}
-                      placeholder="Describe what needs to be redone — this note applies to all selected tasks..."
-                      rows={3}
-                      className="w-full text-sm border border-rose-200 rounded-lg px-3 py-2 focus:ring-2 focus:ring-rose-500 focus:border-rose-500 bg-white placeholder-rose-300"
+                      placeholder="Explain what needs to be fixed..."
+                      rows={2}
+                      className="w-full text-sm border border-rose-200 rounded-lg px-3 py-2 focus:ring-2 focus:ring-rose-500 focus:border-rose-500 bg-white placeholder-rose-300 shadow-inner"
                     />
                   </div>
 
@@ -652,7 +769,7 @@ const VisualReviewPage = () => {
                                 <div
                                   key={taskKey}
                                   className={`border-2 rounded-xl overflow-hidden transition-all ${
-                                    isChecked ? "border-rose-300 bg-rose-50" : "border-gray-200 bg-white"
+                                    isChecked ? "border-rose-300 bg-rose-50" : "border-gray-200 bg-white shadow-sm"
                                   }`}
                                 >
                                   <div className="p-4">
@@ -667,24 +784,24 @@ const VisualReviewPage = () => {
                                       </div>
                                       <div className="flex-1">
                                         <div className="flex items-center gap-2 mb-1">
-                                          <span className="text-xs font-medium text-gray-500 bg-gray-100 px-2 py-0.5 rounded-full">{taskNumber}</span>
-                                          <span className={`font-medium ${isChecked ? 'text-rose-800' : 'text-gray-900'}`}>
+                                          <span className="text-xs font-bold text-gray-500 bg-gray-100 px-2 py-0.5 rounded-full ring-1 ring-gray-200">{taskNumber}</span>
+                                          <span className={`font-semibold ${isChecked ? 'text-rose-800' : 'text-gray-900'}`}>
                                             {task.title || "Untitled Task"}
                                           </span>
                                           {task.status === "completed" && <CheckCircle className="w-4 h-4 text-green-500" />}
                                         </div>
                                         {task.description && (
-                                          <p className="text-sm text-gray-600 mt-1">{task.description}</p>
+                                          <p className="text-sm text-gray-600 mt-1 italic line-clamp-2">{task.description}</p>
                                         )}
                                         {task.completedBy && (
                                           <div className="flex items-center gap-2 mt-2 text-xs text-gray-500">
                                             <User className="w-3 h-3" />
-                                            <span>Completed by <strong>{task.completedBy.name}</strong> at {formatDate(task.completedAt)}</span>
+                                            <span>Done by <strong>{task.completedBy.name}</strong> @ {formatDate(task.completedAt)}</span>
                                           </div>
                                         )}
                                       </div>
                                       {hasSubtasks && (
-                                        <button onClick={() => toggleTask(taskKey)} className="p-1 text-gray-500 hover:text-gray-700">
+                                        <button onClick={() => toggleTask(taskKey)} className="p-1 text-gray-400 hover:text-gray-700 hover:bg-gray-100 rounded">
                                           {isTaskExpanded ? <ChevronDown className="w-5 h-5" /> : <ChevronRight className="w-5 h-5" />}
                                         </button>
                                       )}
@@ -693,8 +810,8 @@ const VisualReviewPage = () => {
 
                                   {hasSubtasks && isTaskExpanded && (
                                     <div className="border-t border-gray-100 bg-gray-50 p-4 ml-7 space-y-3">
-                                      <div className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">
-                                        Subtasks ({task.subtasks.length})
+                                      <div className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-2 flex items-center gap-2">
+                                          <Layers className="w-3 h-3" /> Subtasks ({task.subtasks.length})
                                       </div>
                                       {task.subtasks.map((subtask, subtaskIndex) => {
                                         const subKey = `${stageIndex}-${taskIndex}-${subtaskIndex}`;
@@ -704,7 +821,7 @@ const VisualReviewPage = () => {
                                           <div
                                             key={subKey}
                                             className={`p-3 rounded-lg border transition-all ${
-                                              isSubChecked ? "border-rose-300 bg-rose-50" : "border-gray-200 bg-white"
+                                              isSubChecked ? "border-rose-300 bg-rose-50 shadow-inner" : "border-gray-200 bg-white"
                                             }`}
                                           >
                                             <div className="flex items-start gap-3">
@@ -718,14 +835,14 @@ const VisualReviewPage = () => {
                                               </div>
                                               <div className="flex-1">
                                                 <div className="flex items-center gap-2">
-                                                  <span className="text-xs text-gray-500">{taskNumber}.{subtaskIndex + 1}</span>
+                                                  <span className="text-[10px] font-bold text-gray-400">{taskNumber}.{subtaskIndex + 1}</span>
                                                   <span className={`text-sm font-medium ${isSubChecked ? 'text-rose-800' : 'text-gray-800'}`}>
                                                     {subtask.title || "Untitled Subtask"}
                                                   </span>
                                                   {subtask.status === "completed" && <CheckCircle className="w-3 h-3 text-green-500" />}
                                                 </div>
                                                 {subtask.completedBy && (
-                                                  <div className="text-xs text-gray-500 mt-1">By: {subtask.completedBy.name}</div>
+                                                  <div className="text-[10px] text-gray-500 mt-1">By: {subtask.completedBy.name}</div>
                                                 )}
                                               </div>
                                             </div>
@@ -747,33 +864,33 @@ const VisualReviewPage = () => {
             </div>
 
             {/* Modal Footer */}
-            <div className="sticky bottom-0 bg-white border-t border-gray-200 p-6 pt-4">
+            <div className="sticky bottom-0 bg-white border-t border-gray-200 p-6 pt-4 z-10">
               <div className="flex items-center justify-between">
                 <button
                   onClick={closeModal}
-                  className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
+                  className="px-6 py-2.5 text-sm font-bold text-gray-500 bg-white border border-gray-200 rounded-xl hover:bg-gray-50 hover:text-gray-700 transition-all"
                 >
-                  Cancel
+                  Close
                 </button>
-                <div className="flex items-center gap-3">
+                <div className="flex items-center gap-4">
                   {checkedCount > 0 && (
                     <button
                       onClick={handleReopenSelected}
                       disabled={submitting}
-                      className="px-5 py-2 text-sm font-semibold text-white bg-gradient-to-r from-rose-500 to-red-500 rounded-lg hover:from-rose-600 hover:to-red-600 shadow-sm disabled:opacity-50 flex items-center gap-2 transition-all"
+                      className="px-6 py-2.5 text-sm font-bold text-white bg-gradient-to-r from-rose-500 to-red-600 rounded-xl hover:from-rose-600 hover:to-red-700 shadow-lg shadow-rose-200 disabled:opacity-50 flex items-center gap-2 transition-all active:scale-95"
                     >
                       {submitting ? <Loader2 className="w-4 h-4 animate-spin" /> : <RotateCcw className="w-4 h-4" />}
-                      Reopen {checkedCount} Task(s)
+                      Reopen {checkedCount} Items
                     </button>
                   )}
                   <button
                     onClick={handleApproveAll}
-                    disabled={submitting || hasNotClean}
-                    className="px-5 py-2 text-sm font-semibold text-white bg-gradient-to-r from-green-500 to-emerald-500 rounded-lg hover:from-green-600 hover:to-emerald-600 shadow-sm disabled:opacity-50 flex items-center gap-2 transition-all"
-                    title={hasNotClean ? "Cannot approve while checkpoints are marked Not Clean" : "Approve all checkpoints"}
+                    disabled={submitting || !isEverythingClean}
+                    className="px-8 py-2.5 text-sm font-bold text-white bg-gradient-to-r from-green-500 to-emerald-600 rounded-xl hover:from-green-600 hover:to-emerald-700 shadow-lg shadow-green-200 disabled:opacity-50 disabled:grayscale flex items-center gap-2 transition-all active:scale-95"
+                    title={!isEverythingClean ? "All Production & QA remarks must be Clean or NA to Approve All" : "Approve and Complete Assignment"}
                   >
                     {submitting ? <Loader2 className="w-4 h-4 animate-spin" /> : <CheckCheck className="w-4 h-4" />}
-                    Approve All
+                    Final Approve All
                   </button>
                 </div>
               </div>

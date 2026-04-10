@@ -37,7 +37,7 @@ const allNavigationItems = [
   { name: 'Task Execution', href: '/dashboard/task-execution', icon: PlayCircle, current: false, category: 'Operations' },
   { name: 'Approve Equipment', href: '/dashboard/approve-equipment', icon: CheckCircle2, current: false, category: 'Approvals' },
   { name: 'Review Task', href: '/dashboard/review-task', icon: UserCheck, current: false, category: 'Approvals' },
-  { name: 'Visual Review', href: '/dashboard/visual-review', icon: ShieldCheck, current: false, category: 'Approvals' },
+  { name: 'Visual & QA Review', href: '/dashboard/visual-review', icon: ShieldCheck, current: false, category: 'Approvals' },
   { name: 'Approve Checklist', href: '/dashboard/approve-checklist', icon: ListChecks, current: false, category: 'Approvals' },
   { name: 'Approve Tagged Chechlist with Equipment', href: '/dashboard/approve-assign-checklist-to-equipment', icon: Layers, current: false, category: 'Approvals' },
 ];
@@ -136,7 +136,16 @@ export default function DashboardLayout({ children }) {
       if (details.user?.task?.length) {
         const userTasks = details.user.task;
         allNavigationItems.forEach(item => {
-          if (item.name !== 'Dashboard' && userTasks.includes(item.name)) {
+          if (item.name === 'Dashboard') return;
+
+          let hasAccess = userTasks.includes(item.name);
+          
+          // Special cases for combined name
+          if (item.name === 'Visual & QA Review') {
+            hasAccess = userTasks.includes('Visual Review') || userTasks.includes('QA');
+          }
+
+          if (hasAccess) {
             filteredNavigation.push({
               ...item,
               current: isActiveRoute(item.href, pathname)
