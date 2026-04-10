@@ -135,6 +135,10 @@ const PasswordModal = ({ onClose, onConfirm, loading, actionType = 'approve' }) 
                 setPassword(e.target.value);
                 setError('');
               }}
+              onPaste={(e) => e.preventDefault()}
+              onCopy={(e) => e.preventDefault()}
+              onDrop={(e) => e.preventDefault()}
+              autoComplete="off"
               placeholder="Enter your password"
               className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
               onKeyPress={handleKeyPress}

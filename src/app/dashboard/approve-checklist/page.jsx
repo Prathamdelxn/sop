@@ -93,6 +93,10 @@ const [error, setError] = useState("")
               onChange={(e) => {setPassword(e.target.value)
                 setError("")}
               }
+              onPaste={(e) => e.preventDefault()}
+              onCopy={(e) => e.preventDefault()}
+              onDrop={(e) => e.preventDefault()}
+              autoComplete="off"
               className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
               placeholder="Enter your password"
               required
