@@ -16,8 +16,10 @@ import {
   XCircle,
   Eye,
   X,
+  RotateCcw
 } from "lucide-react";
 import BarcodeGenerator from '@/app/components/BarcodeGenerator';
+import PasswordModal from '@/app/components/PasswordModal';
 
 export default function FacilityAdminDashboard() {
   const [equipmentList, setEquipmentList] = useState([]);
@@ -38,6 +40,9 @@ export default function FacilityAdminDashboard() {
   const [createLoading, setCreateLoading] = useState(false);
   const [updateLoading, setUpdateLoading] = useState(false);
   const [approvalLoading, setApprovalLoading] = useState(false);
+  const [isResetPasswordModalOpen, setIsResetPasswordModalOpen] = useState(false);
+  const [equipmentToReset, setEquipmentToReset] = useState(null);
+  const [resetLoading, setResetLoading] = useState(false);
 
   const handleDeleteClick = (equipment) => {
     setEquipmentToDelete(equipment);
@@ -387,6 +392,42 @@ export default function FacilityAdminDashboard() {
     }
   };
 
+  const handleResetClick = (equipment) => {
+    setEquipmentToReset(equipment);
+    setIsResetPasswordModalOpen(true);
+  };
+
+  const handleResetPasswordConfirm = async (password) => {
+    if (!equipmentToReset) return;
+
+    try {
+      setResetLoading(true);
+      const res = await fetch('/api/equipment/resetTasks', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          equipmentId: equipmentToReset._id
+        })
+      });
+
+      const result = await res.json();
+      if (res.ok && result.success) {
+        alert('Equipment tasks reset successfully.');
+        setIsResetPasswordModalOpen(false);
+        setEquipmentToReset(null);
+      } else {
+        alert(result.message || 'Failed to reset equipment tasks.');
+      }
+    } catch (err) {
+      console.error('Error resetting equipment tasks:', err);
+      alert('Internal Server Error while resetting tasks.');
+    } finally {
+      setResetLoading(false);
+    }
+  };
+
   const DetailItem = ({ label, value }) => (
     <div className='bg-red-500 p-2 rounded-xl bg-slate-200'>
       <p className={`text-sm font-medium ${label == "Rejection Reason" ? "text-red-500" : "text-gray-500"} `}>{label}</p>
@@ -733,6 +774,13 @@ export default function FacilityAdminDashboard() {
                             title="View"
                           >
                             <Eye className="w-4 h-4" />
+                          </button>
+                          <button
+                            onClick={() => handleResetClick(equipment)}
+                            className="p-2 bg-purple-100 text-purple-600 rounded-lg hover:bg-purple-200"
+                            title="Reset Tasks"
+                          >
+                            <RotateCcw className="w-4 h-4" />
                           </button>
                           <button
                             onClick={() => handleDeleteClick(equipment)}
@@ -1427,6 +1475,18 @@ export default function FacilityAdminDashboard() {
               </div>
             </div>
           </div>
+        )}
+
+        {isResetPasswordModalOpen && (
+          <PasswordModal
+            onClose={() => {
+              setIsResetPasswordModalOpen(false);
+              setEquipmentToReset(null);
+            }}
+            onConfirm={handleResetPasswordConfirm}
+            loading={resetLoading}
+            actionType="reset"
+          />
         )}
       </div>
     </div>

@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useEffect, useState } from 'react';
-import { X, Lock, XCircle } from 'lucide-react';
+import { X, Lock, XCircle, RotateCcw } from 'lucide-react';
 
 const PasswordModal = ({ onClose, onConfirm, loading, actionType = 'approve' }) => {
   const [password, setPassword] = useState('');
@@ -28,6 +28,15 @@ const PasswordModal = ({ onClose, onConfirm, loading, actionType = 'approve' }) 
         icon: <XCircle className="w-12 h-12 text-red-600 mx-auto mb-4" />,
         buttonColor: 'bg-red-600 hover:bg-red-700 focus:ring-red-600',
         buttonText: 'Confirm Rejection'
+      };
+    }
+    if (actionType === 'reset') {
+      return {
+        title: 'Confirm Equipment Reset',
+        description: 'Please enter your password to confirm resetting all tasks for this equipment. This action cannot be undone.',
+        icon: <RotateCcw className="w-12 h-12 text-blue-600 mx-auto mb-4" />,
+        buttonColor: 'bg-blue-600 hover:bg-blue-700 focus:ring-blue-600',
+        buttonText: 'Confirm Reset'
       };
     }
     return {
