@@ -32,6 +32,7 @@ import {
   ImageIcon, ListChecks,
   Check,
   Circle,
+  Copy,
   ChevronLeft,
   ChevronsLeft,
   ChevronsRight,
@@ -1040,6 +1041,10 @@ const SOPDashboard = () => {
     router.push(`/dashboard/create-checklist/edit-checklist/${sop._id}`)
   }
 
+  const handleCopy = (sop) => {
+    router.push(`/dashboard/create-checklist/creation?copyId=${sop._id}`)
+  }
+
   const handleDelete = (id) => {
     setSopToDelete(id);
     setShowDeleteConfirm(true);
@@ -1668,6 +1673,13 @@ const SOPDashboard = () => {
                                 title="View"
                               >
                                 <Eye className="w-4 h-4" />
+                              </button>
+                              <button
+                                onClick={() => handleCopy(sop)}
+                                className="p-2 bg-purple-100 text-purple-600 rounded-lg hover:bg-purple-200"
+                                title="Copy"
+                              >
+                                <Copy className="w-4 h-4" />
                               </button>
                               <button
                                 onClick={() => router.push(`/dashboard/task-execution/demo/${sop.id}`)}

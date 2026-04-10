@@ -1,5 +1,5 @@
 "use client";
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, Suspense } from "react";
 import {
   DndContext,
   closestCenter,
@@ -10,7 +10,7 @@ import {
   DragOverlay,
 } from "@dnd-kit/core";
 import { ArrowLeft, X } from "react-feather";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import {
   SortableContext,
   useSortable,
@@ -405,8 +405,10 @@ const SortableItem = ({
   );
 };
 
-export default function NestedDragDrop() {
+function NestedDragDropContent() {
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const copyId = searchParams.get('copyId');
   const [stages, setStages] = useState([]);
   const [tableErrors, setTableErrors] = useState({});
   const [selectedStageId, setSelectedStageId] = useState(null);
@@ -523,26 +525,108 @@ export default function NestedDragDrop() {
     setTableErrors((prev) => ({ ...prev, [id]: "" }));
   };
 
-  // On mount (client-only): load draft and populate state, then show a toast
-  useEffect(() => {
-    const draft = loadDraft();
-    if (draft) {
-      if (draft.checklistData) setChecklistData(draft.checklistData);
-      if (draft.stages?.length) setStages(draft.stages);
-      if (draft.tableData?.length) setTableData(draft.tableData);
-      if (draft.taskStopStates) setTaskStopStates(draft.taskStopStates);
-      toast.success("Draft restored — your previous work has been recovered.", { duration: 4000 });
-    } else {
-      // Add default stage only when there is no existing draft
-      const defaultStage = {
-        id: `stage-${Date.now()}`,
-        title: "Default Stage",
-        tasks: []
-      };
-      setStages([defaultStage]);
+  const generateId = (prefix) =>
+    `${prefix}-${Date.now()}-${Math.floor(Math.random() * 1000)}`;
+
+  const transformSchemaToLocalTasks = (tasks) => {
+    return (tasks || []).map((task) => ({
+      id: generateId("task"),
+      title: task.title,
+      description: task.description,
+      galleryDescription: task.galleryDescription,
+      minTime: task.minTime,
+      maxTime: task.maxTime,
+      galleryTitle: task.galleryTitle,
+      images: task.images || [],
+      parameter: task.parameter,
+      addStop: task.addStop || false,
+      subtasks: task.subtasks ? transformSchemaToLocalTasks(task.subtasks) : [],
+    }));
+  };
+
+  const transformSchemaToLocalStages = (schemaStages, defaultStage) => {
+    const localStages = [];
+    if (defaultStage) {
+      localStages.push({
+        id: generateId("stage"),
+        title: defaultStage.title || "Default Stage",
+        tasks: transformSchemaToLocalTasks(defaultStage.tasks),
+      });
     }
-    isHydrated.current = true;
-  }, []);
+    (schemaStages || []).forEach((stage) => {
+      localStages.push({
+        id: generateId("stage"),
+        title: stage.title,
+        tasks: transformSchemaToLocalTasks(stage.tasks),
+      });
+    });
+    return localStages;
+  };
+
+  const transformSchemaToLocalVisual = (visualRep) => {
+    return (visualRep || []).map((row) => ({
+      id: `visual-${Date.now()}-${Math.floor(Math.random() * 1000)}`,
+      checkpoint: {
+        title: row.checkPoint?.title || "",
+        images: row.checkPoint?.images || [],
+      },
+      cleaningStatus: row.cleaningStatus || "Visually Clean",
+      production: row.production || "",
+      qa: row.qa || "",
+    }));
+  };
+
+  // On mount (client-only): load draft or copy or populate default state
+  useEffect(() => {
+    const initData = async () => {
+      if (copyId) {
+        try {
+          const res = await fetch(`/api/checklistapi/fetch-by-id/${copyId}`);
+          if (res.ok) {
+            const data = await res.json();
+            setChecklistData({
+              name: `Copy of ${data.name}`,
+              department: data.department || "",
+              documentNumber: data.documentNumber || "",
+              qms_number: data.qms_number || "",
+              version: data.version || "",
+              visualRepresentationEnabled: data.visualRepresentationEnabled || false,
+            });
+            const localStages = transformSchemaToLocalStages(data.stages, data.defaultStage);
+            setStages(localStages);
+            const localVisual = transformSchemaToLocalVisual(data.visualRepresntation);
+            setTableData(localVisual);
+            toast.success("Checklist copied. You can now modify and save it as new.");
+          } else {
+            toast.error("Failed to fetch checklist to copy.");
+          }
+        } catch (err) {
+          console.error("Error fetching copy data:", err);
+          toast.error("An error occurred while copying the checklist.");
+        }
+      } else {
+        const draft = loadDraft();
+        if (draft) {
+          if (draft.checklistData) setChecklistData(draft.checklistData);
+          if (draft.stages?.length) setStages(draft.stages);
+          if (draft.tableData?.length) setTableData(draft.tableData);
+          if (draft.taskStopStates) setTaskStopStates(draft.taskStopStates);
+          toast.success("Draft restored — your previous work has been recovered.", { duration: 4000 });
+        } else {
+          // Add default stage only when there is no existing draft
+          const defaultStage = {
+            id: `stage-${Date.now()}`,
+            title: "Default Stage",
+            tasks: []
+          };
+          setStages([defaultStage]);
+        }
+      }
+      isHydrated.current = true;
+    };
+
+    initData();
+  }, [copyId]);
 
   // Auto-save all key state to localStorage whenever any of them change
   useEffect(() => {
@@ -1084,8 +1168,7 @@ export default function NestedDragDrop() {
     }));
   };
 
-  const generateId = (prefix) =>
-    `${prefix}-${Date.now()}-${Math.floor(Math.random() * 1000)}`;
+
 
   const findItemById = (items, id) => {
     for (const item of items) {
@@ -5277,5 +5360,18 @@ export default function NestedDragDrop() {
         </div>
       </div>
     </div>
+  );
+}
+
+export default function NestedDragDrop() {
+  return (
+    <Suspense fallback={<div className="min-h-screen flex items-center justify-center bg-slate-50">
+      <div className="flex flex-col items-center gap-4">
+        <div className="w-12 h-12 border-4 border-blue-600 border-t-transparent rounded-full animate-spin"></div>
+        <p className="text-slate-600 font-medium">Loading Workspace...</p>
+      </div>
+    </div>}>
+      <NestedDragDropContent />
+    </Suspense>
   );
 }
