@@ -18,6 +18,7 @@ import {
   User,
   Users,
 } from "lucide-react";
+import PasswordModal from "@/app/components/PasswordModal";
 
 const ReviewTaskPage = () => {
   const [loading, setLoading] = useState(true);
@@ -28,6 +29,8 @@ const ReviewTaskPage = () => {
   const [searchTerm, setSearchTerm] = useState("");
   const [companyData, setCompanyData] = useState(null);
   const [submitting, setSubmitting] = useState(false);
+  const [showPasswordModal, setShowPasswordModal] = useState(false);
+  const [passwordActionType, setPasswordActionType] = useState("approve");
 
   // Review state: which tasks/subtasks are checked for reopening
   const [checkedItems, setCheckedItems] = useState({}); // { "0-1": true, "0-1-0": true }
@@ -194,8 +197,7 @@ const ReviewTaskPage = () => {
 
   const checkedCount = Object.keys(checkedItems).length;
 
-  // Handle Approve All
-  const handleApproveAll = async () => {
+  const executeApproveAll = async () => {
     if (!selectedAssignment) return;
     try {
       setSubmitting(true);
@@ -224,8 +226,12 @@ const ReviewTaskPage = () => {
     }
   };
 
-  // Handle Reopen Selected
-  const handleReopenSelected = async () => {
+  const handleApproveAll = () => {
+    setPasswordActionType("approve");
+    setShowPasswordModal(true);
+  };
+
+  const executeReopenSelected = async () => {
     if (!selectedAssignment || checkedCount === 0) return;
 
     // Build reviewItems from checked items
@@ -285,6 +291,20 @@ const ReviewTaskPage = () => {
       alert(err.message || "Failed to reopen tasks");
     } finally {
       setSubmitting(false);
+    }
+  };
+
+  const handleReopenSelected = () => {
+    setPasswordActionType("reject");
+    setShowPasswordModal(true);
+  };
+
+  const onPasswordConfirm = async () => {
+    setShowPasswordModal(false);
+    if (passwordActionType === "approve") {
+      await executeApproveAll();
+    } else {
+      await executeReopenSelected();
     }
   };
 
@@ -853,6 +873,15 @@ const ReviewTaskPage = () => {
             </div>
           </div>
         </div>
+      )}
+
+      {showPasswordModal && (
+        <PasswordModal
+          onClose={() => setShowPasswordModal(false)}
+          onConfirm={onPasswordConfirm}
+          loading={submitting}
+          actionType={passwordActionType}
+        />
       )}
     </div>
   );
