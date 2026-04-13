@@ -40,6 +40,8 @@ export async function POST(req) {
             startedAt: null,
             pausedAt: null,
             reason: null,
+            actualDuration: null,
+            elapsedTime: 0,
           };
 
           // Reset subtasks if any
@@ -55,6 +57,8 @@ export async function POST(req) {
               startedAt: null,
               pausedAt: null,
               startedBy: null,
+              actualDuration: null,
+              elapsedTime: 0,
             }));
           }
 
@@ -81,7 +85,8 @@ export async function POST(req) {
           visualReviewStatus: null,
           visualReviewNotes: [],
           rejectionReason: "",
-          prototypeData: updatedPrototypeData
+          prototypeData: updatedPrototypeData,
+          assignedAt: new Date()
         }
       });
     });

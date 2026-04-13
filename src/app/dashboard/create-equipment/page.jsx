@@ -16,7 +16,9 @@ import {
   XCircle,
   Eye,
   X,
-  RotateCcw
+  RotateCcw,
+  Info,
+  Activity
 } from "lucide-react";
 import BarcodeGenerator from '@/app/components/BarcodeGenerator';
 import PasswordModal from '@/app/components/PasswordModal';
@@ -43,6 +45,9 @@ export default function FacilityAdminDashboard() {
   const [isResetPasswordModalOpen, setIsResetPasswordModalOpen] = useState(false);
   const [equipmentToReset, setEquipmentToReset] = useState(null);
   const [resetLoading, setResetLoading] = useState(false);
+  const [assignments, setAssignments] = useState([]);
+  const [isExecutionDetailOpen, setIsExecutionDetailOpen] = useState(false);
+  const [selectedExecution, setSelectedExecution] = useState(null);
 
   const handleDeleteClick = (equipment) => {
     setEquipmentToDelete(equipment);
@@ -54,30 +59,80 @@ export default function FacilityAdminDashboard() {
   };
 
   useEffect(() => {
-    const fetchEquipment = async (isInitial = true) => {
+    const fetchData = async (isInitial = true) => {
       try {
         if (isInitial) setIsLoading(true);
-        const res = await fetch('/api/equipment/fetchAll');
-        const result = await res.json();
-        if (res.ok && result.success) {
-          const filtered = result.data.filter(item => item.companyId === companyData?.companyId && item.userId === companyData?.id);
+        
+        // Fetch Equipment
+        const eqRes = await fetch('/api/equipment/fetchAll');
+        const eqResult = await eqRes.json();
+        
+        // Fetch Assignments for progress tracking
+        const assignRes = await fetch('/api/assignment/fetchAll');
+        const assignResult = await assignRes.json();
+
+        if (eqRes.ok && eqResult.success) {
+          const filtered = eqResult.data.filter(item => item.companyId === companyData?.companyId && item.userId === companyData?.id);
           setEquipmentList(filtered);
         } else {
-          console.error('Failed to fetch equipment:', result.message);
+          console.error('Failed to fetch equipment:', eqResult.message);
+        }
+
+        if (assignRes.ok && assignResult.success) {
+          const filteredAssign = assignResult.data.filter(item => item.companyId === companyData?.companyId);
+          setAssignments(filteredAssign);
         }
       } catch (err) {
-        console.error('Error fetching equipment:', err);
+        console.error('Error fetching data:', err);
       } finally {
         if (isInitial) setIsLoading(false);
       }
     };
 
     if (companyData) {
-      fetchEquipment();
-      const interval = setInterval(() => fetchEquipment(false), 5000);
+      fetchData();
+      const interval = setInterval(() => fetchData(false), 5000);
       return () => clearInterval(interval);
     }
   }, [companyData]);
+
+  const getExecutionInfo = (equipment) => {
+    const activeAssignment = assignments.find(a =>
+      (a.equipment?.equipmentId === equipment.equipmentId || a.equipment?.name === equipment.name) &&
+      (a.status === 'InProgress' || a.status === 'Under Execution' || a.status === 'Paused' || a.status === 'Rework Required' || a.status === 'Pending Review')
+    );
+
+    if (!activeAssignment) return null;
+
+    let totalItems = 0;
+    let completedItems = 0;
+
+    activeAssignment.prototypeData?.stages?.forEach(stage => {
+      stage.tasks?.forEach(task => {
+        if (!task.subtasks || task.subtasks.length === 0) {
+          totalItems++;
+          if (task.status?.toLowerCase() === 'completed') completedItems++;
+        } else {
+          task.subtasks.forEach(subtask => {
+            totalItems++;
+            if (subtask.status?.toLowerCase() === 'completed') completedItems++;
+          });
+        }
+      });
+    });
+
+    return {
+      percentage: totalItems === 0 ? 0 : Math.round((completedItems / totalItems) * 100),
+      assignment: activeAssignment,
+      totalItems,
+      completedItems
+    };
+  };
+
+  const openExecutionDetail = (info) => {
+    setSelectedExecution(info);
+    setIsExecutionDetailOpen(true);
+  };
 
 
   const viewEquipmentDetails = (equipment) => {
@@ -700,6 +755,9 @@ export default function FacilityAdminDashboard() {
                     <th scope="col" className="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">
                       Approval / Rejection
                     </th>
+                    <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Execution
+                    </th>
                     <th scope="col" className="px-4 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">
                       Actions
                     </th>
@@ -753,6 +811,30 @@ export default function FacilityAdminDashboard() {
                             Rejected
                           </span>
                         ) : null}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        {(() => {
+                          const execInfo = getExecutionInfo(equipment);
+                          if (!execInfo) return <span className="text-gray-400 text-xs italic">No active task</span>;
+                          return (
+                            <div className="flex items-center space-x-3">
+                              <div className="flex-1 w-24 bg-gray-200 rounded-full h-2 overflow-hidden shadow-inner">
+                                <div
+                                  className="bg-gradient-to-r from-blue-500 to-indigo-600 h-full transition-all duration-500 ease-out"
+                                  style={{ width: `${execInfo.percentage}%` }}
+                                ></div>
+                              </div>
+                              <span className="text-xs font-bold text-gray-700 min-w-[32px]">{execInfo.percentage}%</span>
+                              <button
+                                onClick={() => openExecutionDetail(execInfo)}
+                                className="p-1.5 text-blue-600 hover:bg-blue-50 rounded-full transition-colors"
+                                title="Execution Details"
+                              >
+                                <Info size={16} />
+                              </button>
+                            </div>
+                          );
+                        })()}
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
                         <div className="flex justify-end space-x-2">
@@ -1487,6 +1569,132 @@ export default function FacilityAdminDashboard() {
             loading={resetLoading}
             actionType="reset"
           />
+        )}
+
+        {isExecutionDetailOpen && selectedExecution && (
+          <div className="fixed pl-64 inset-0 backdrop-blur-sm bg-black/40 flex items-center justify-center z-[60] p-4 transition-all duration-300">
+            <div className="bg-white rounded-3xl shadow-2xl max-w-2xl w-full max-h-[90vh] overflow-hidden flex flex-col animate-in fade-in zoom-in duration-200">
+              {/* Header */}
+              <div className="bg-gradient-to-r from-blue-600 to-indigo-700 p-6 flex items-center justify-between text-white">
+                <div className="flex items-center gap-3">
+                  <div className="p-2 bg-white/20 rounded-xl backdrop-blur-md">
+                    <Activity size={24} />
+                  </div>
+                  <div>
+                    <h2 className="text-xl font-bold">Execution Progress</h2>
+                    <p className="text-blue-100 text-sm opacity-90">{selectedExecution.assignment.prototypeData?.name || 'SOP execution'}</p>
+                  </div>
+                </div>
+                <button
+                  onClick={() => setIsExecutionDetailOpen(false)}
+                  className="p-2 hover:bg-white/20 rounded-full transition-colors"
+                >
+                  <X size={24} />
+                </button>
+              </div>
+
+              {/* Content */}
+              <div className="flex-1 overflow-y-auto p-8 space-y-8 hide-scrollbar">
+                {/* Status Overview */}
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="bg-blue-50 border border-blue-100 rounded-2xl p-4 flex flex-col items-center">
+                    <span className="text-blue-600 text-3xl font-black mb-1">{selectedExecution.percentage}%</span>
+                    <span className="text-blue-700 text-xs font-bold uppercase tracking-wider">Overall Completion</span>
+                  </div>
+                  <div className="bg-teal-50 border border-teal-100 rounded-2xl p-4 flex flex-col items-center">
+                    <div className="flex items-baseline gap-1">
+                      <span className="text-teal-600 text-3xl font-black">{selectedExecution.completedItems}</span>
+                      <span className="text-teal-500 text-lg font-bold">/ {selectedExecution.totalItems}</span>
+                    </div>
+                    <span className="text-teal-700 text-xs font-bold uppercase tracking-wider">Tasks Finished</span>
+                  </div>
+                </div>
+
+                {/* Assignment Details */}
+                <div className="space-y-4">
+                  <h3 className="text-sm font-bold text-gray-400 uppercase tracking-widest px-1">Assignment Info</h3>
+                  <div className="bg-gray-50 border border-gray-100 rounded-2xl p-5 space-y-4">
+                    <div className="flex justify-between items-center group">
+                      <span className="text-gray-500 font-medium">Assignment ID</span>
+                      <span className="font-mono bg-white px-3 py-1 rounded-lg border border-gray-200 text-gray-700 group-hover:border-blue-300 transition-colors">
+                        {selectedExecution.assignment.generatedId}
+                      </span>
+                    </div>
+                    <div className="flex justify-between items-center">
+                      <span className="text-gray-500 font-medium">Current Status</span>
+                      <span className={`px-3 py-1 rounded-full text-xs font-bold ${selectedExecution.assignment.status === 'Under Execution' ? 'bg-amber-100 text-amber-700 border border-amber-200' :
+                          selectedExecution.assignment.status === 'Paused' ? 'bg-orange-100 text-orange-700 border border-orange-200' :
+                            'bg-blue-100 text-blue-700 border border-blue-200'
+                        }`}>
+                        {selectedExecution.assignment.status}
+                      </span>
+                    </div>
+                    <div className="flex justify-between items-center">
+                      <span className="text-gray-500 font-medium">Assigned At</span>
+                      <span className="text-gray-700 text-sm font-semibold">
+                        {new Date(selectedExecution.assignment.assignedAt).toLocaleString('en-IN', {
+                          day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit'
+                        })}
+                      </span>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Progress Visualizer */}
+                <div className="space-y-4">
+                  <h3 className="text-sm font-bold text-gray-400 uppercase tracking-widest px-1">Stage Breakdown</h3>
+                  <div className="space-y-3">
+                    {selectedExecution.assignment.prototypeData?.stages?.map((stage, idx) => {
+                      let stageTotal = 0;
+                      let stageDone = 0;
+                      stage.tasks?.forEach(t => {
+                        if (!t.subtasks || t.subtasks.length === 0) {
+                          stageTotal++;
+                          if (t.status?.toLowerCase() === 'completed') stageDone++;
+                        } else {
+                          t.subtasks.forEach(st => {
+                            stageTotal++;
+                            if (st.status?.toLowerCase() === 'completed') stageDone++;
+                          });
+                        }
+                      });
+                      const stagePercent = stageTotal === 0 ? 0 : Math.round((stageDone / stageTotal) * 100);
+
+                      return (
+                        <div key={idx} className="bg-white border border-gray-100 rounded-xl p-4 shadow-sm hover:shadow-md transition-shadow">
+                          <div className="flex justify-between items-center mb-2">
+                            <div className="flex items-center gap-2">
+                              <div className="w-6 h-6 rounded-full bg-gray-100 flex items-center justify-center text-[10px] font-bold text-gray-500 border border-gray-200">
+                                {idx + 1}
+                              </div>
+                              <span className="font-bold text-gray-700 text-sm truncate max-w-[200px]">{stage.name || `Stage ${idx + 1}`}</span>
+                            </div>
+                            <span className="text-xs font-black text-blue-600">{stagePercent}%</span>
+                          </div>
+                          <div className="w-full bg-gray-100 h-1.5 rounded-full overflow-hidden shadow-inner">
+                            <div
+                              className="bg-gradient-to-r from-blue-400 to-blue-600 h-full rounded-full transition-all duration-1000 ease-out"
+                              style={{ width: `${stagePercent}%` }}
+                            ></div>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+              </div>
+
+              {/* Footer */}
+              <div className="bg-gray-50 p-6 border-t border-gray-200 flex justify-end">
+                <button
+                  onClick={() => setIsExecutionDetailOpen(false)}
+                  className="px-8 py-3 bg-white border border-gray-300 rounded-2xl font-bold text-gray-700 hover:bg-gray-100 transition-all active:scale-95 shadow-sm"
+                >
+                  Close
+                </button>
+              </div>
+            </div>
+          </div>
         )}
       </div>
     </div>
