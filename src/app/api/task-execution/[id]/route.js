@@ -42,6 +42,7 @@
 
 // app/api/super-admin/[id]/users/route.js
 import { NextResponse } from 'next/server';
+import mongoose from 'mongoose';
 import dbConnect from '@/utils/db';
 import SuperAdmin from '@/model/SuperAdmin';
 import User from '@/model/User';
@@ -58,15 +59,22 @@ function slugifyRole(title) {
 export async function GET(req, { params }) {
   await dbConnect();
 
-  const { id } = params;
+  const { id } = await params;
 
   try {
-    // 1. Find SuperAdmin
-    const superadmin = await SuperAdmin.findById(id);
+    // 1. Find SuperAdmin by ID or slug
+    const superadmin = await SuperAdmin.findOne({
+      $or: [
+        { _id: mongoose.Types.ObjectId.isValid(id) ? id : null },
+        { companyId: id }
+      ]
+    });
 
     if (!superadmin) {
-      return NextResponse.json({ message: 'SuperAdmin not found' }, { status: 404 });
+      return NextResponse.json({ success: false, message: 'SuperAdmin not found' }, { status: 404 });
     }
+
+    const targetCompanyId = superadmin.companyId || id;
 
     // 2. Get role titles with "Task Execution" and slugify them
     const matchingRoles = superadmin.workerRole
@@ -74,7 +82,7 @@ export async function GET(req, { params }) {
       .map(role => slugifyRole(role.title));  // convert to slug
 
     if (!matchingRoles || matchingRoles.length === 0) {
-      return NextResponse.json({ users: [], matchingRoles: [] }, { status: 200 });
+      return NextResponse.json({ success: true, users: [], matchingRoles: [], companyId: targetCompanyId }, { status: 200 });
     }
 
     console.log("Normalized Roles:", matchingRoles);
@@ -82,14 +90,15 @@ export async function GET(req, { params }) {
     // 3. Find Users whose role matches and companyId matches superadmin id
     const users = await User.find({
       role: { $in: matchingRoles },
-      companyId: id,
+      companyId: targetCompanyId,
     });
 
     console.log("Matched Users:", users);
 
-    return NextResponse.json({ users, matchingRoles }, { status: 200 });
+    return NextResponse.json({ success: true, users, matchingRoles, companyId: targetCompanyId }, { status: 200 });
 
   } catch (error) {
+    console.error("Task Execution Fetch Error:", error);
     return NextResponse.json({ error: error.message }, { status: 500 });
   }
 }

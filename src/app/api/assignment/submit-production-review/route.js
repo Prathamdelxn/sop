@@ -1,5 +1,5 @@
 import connectDB from '@/utils/db';
-import NewAssignment from '@/model/NewAssignment';
+import { getTenantModel } from '@/utils/tenantDb';
 import { NextResponse } from 'next/server';
 
 /**
@@ -28,7 +28,8 @@ import { NextResponse } from 'next/server';
  *   checkpointResults?: [{          // visual inspection results
  *     checkpointIndex: number,
  *     status: "Clean" | "Not Clean"
- *   }]
+ *   }],
+ *   companyId: string
  * }
  */
 export async function PUT(request) {
@@ -43,17 +44,20 @@ export async function PUT(request) {
       action,
       note,
       reopenItems,
-      checkpointResults
+      checkpointResults,
+      companyId
     } = body;
 
-    if (!assignmentId || !reviewerId || !reviewerName || !action) {
+    if (!assignmentId || !reviewerId || !reviewerName || !action || !companyId) {
       return NextResponse.json(
-        { success: false, message: 'Missing required fields' },
+        { success: false, message: 'Missing required fields (including companyId)' },
         { status: 400 }
       );
     }
 
-    const assignment = await NewAssignment.findById(assignmentId);
+    const AssignmentModel = getTenantModel("NewAssignment", companyId);
+
+    const assignment = await AssignmentModel.findById(assignmentId);
     if (!assignment) {
       return NextResponse.json(
         { success: false, message: 'Assignment not found' },

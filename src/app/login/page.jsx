@@ -3,7 +3,7 @@
 
 "use client";
 import React, { useState } from "react";
-import { ArrowRight, User, Lock, Eye, EyeOff, Beaker, X } from "lucide-react";
+import { ArrowRight, User, Lock, Eye, EyeOff, Beaker, X, Building } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { toast } from "react-toastify";
 import { useAuth } from "@/context/AuthContext";
@@ -12,6 +12,7 @@ import Link from "next/link";
 const LoginPage = () => {
   const [username, setusername] = useState("");
   const [password, setPassword] = useState("");
+  const [companyId, setCompanyId] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [showErrorModal, setShowErrorModal] = useState(false);
@@ -32,7 +33,7 @@ const LoginPage = () => {
         headers: {
           "Content-Type": "application/json",
         },
-        body: JSON.stringify({ username, password }),
+        body: JSON.stringify({ username, password, companyId }),
       });
 
       const data = await res.json();
@@ -126,6 +127,29 @@ const LoginPage = () => {
           </div>
 
           <form onSubmit={handleSubmit} className="space-y-6">
+            <div>
+              <label
+                htmlFor="companyId"
+                className="block text-sm font-semibold text-gray-700 mb-2"
+              >
+                Company ID <span className="text-gray-400 font-normal text-xs">(Leave blank for System Admin)</span>
+              </label>
+              <div className="relative group">
+                <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
+                  <Building className="h-5 w-5 text-gray-400 group-focus-within:text-blue-500 transition-colors" />
+                </div>
+                <input
+                  id="companyId"
+                  type="text"
+                  value={companyId}
+                  onChange={(e) => setCompanyId(e.target.value)}
+                  placeholder="e.g. comp_123"
+                  className="block w-full pl-12 pr-4 py-3 border border-gray-300 rounded-xl text-gray-900 placeholder-gray-500 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200 bg-gray-50 focus:bg-white"
+                  autoComplete="off"
+                />
+              </div>
+            </div>
+
             <div>
               <label
                 htmlFor="username"

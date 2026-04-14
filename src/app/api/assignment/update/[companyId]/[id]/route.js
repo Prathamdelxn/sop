@@ -1,23 +1,21 @@
-// /app/api/assignment/updateStatus/route.js or route.ts
-
 import { NextResponse } from 'next/server';
 import connectToDB from '@/utils/db';
-import NewAssignment from '@/model/NewAssignment';
+import { getTenantModel } from '@/utils/tenantDb';
 
-export async function PUT(request,{ params }) {
-  await connectToDB();
-
+export async function PUT(request, { params }) {
   try {
-    const {  status, rejectionReason } = await request.json();
-const assignmentId = params.id;
+    await connectToDB();
+    const { companyId, id: assignmentId } = await params;
+    const { status, rejectionReason } = await request.json();
 
-    if (!assignmentId || !status) {
+    if (!assignmentId || !status || !companyId) {
       return NextResponse.json(
-        { success: false, message: 'assignmentId and status are required' },
+        { success: false, message: 'companyId, assignmentId, and status are required' },
         { status: 400 }
       );
     }
-    console.log(status)
+
+    const AssignmentModel = getTenantModel("NewAssignment", companyId);
 
     const updateFields = { status };
 
@@ -25,11 +23,11 @@ const assignmentId = params.id;
     if (rejectionReason) {
       updateFields.rejectionReason = rejectionReason;
     }
-console.log(updateFields)
-    const updatedAssignment = await NewAssignment.findByIdAndUpdate(
-      assignmentId,
-      updateFields,
-      { new: true }
+
+    const updatedAssignment = await AssignmentModel.findByIdAndUpdate(
+        assignmentId,
+        updateFields,
+        { new: true }
     );
 
     if (!updatedAssignment) {

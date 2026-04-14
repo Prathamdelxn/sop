@@ -1,5 +1,5 @@
 import connectDB from '@/utils/db';
-import NewAssignment from '@/model/NewAssignment';
+import { getTenantModel } from '@/utils/tenantDb';
 import { NextResponse } from 'next/server';
 
 export async function PUT(request) {
@@ -7,18 +7,20 @@ export async function PUT(request) {
     await connectDB();
 
     const body = await request.json();
-    const { assignmentId, reviewerId, reviewerName, action, reviewItems } = body;
+    const { assignmentId, reviewerId, reviewerName, action, reviewItems, companyId } = body;
     // action: "approve" | "reopen"
     // reviewItems: [{ taskPath, taskTitle, note, stageIndex, taskIndex, subtaskIndex? }]
 
-    if (!assignmentId || !reviewerId || !reviewerName || !action) {
+    if (!assignmentId || !reviewerId || !reviewerName || !action || !companyId) {
       return NextResponse.json(
-        { success: false, message: 'Missing required fields' },
+        { success: false, message: 'Missing required fields (including companyId)' },
         { status: 400 }
       );
     }
 
-    const assignment = await NewAssignment.findById(assignmentId);
+    const AssignmentModel = getTenantModel("NewAssignment", companyId);
+
+    const assignment = await AssignmentModel.findById(assignmentId);
     if (!assignment) {
       return NextResponse.json(
         { success: false, message: 'Assignment not found' },

@@ -1,22 +1,39 @@
 import { NextResponse } from 'next/server';
 import connectDB from '@/utils/db';
-import NewAssignment from '@/model/NewAssignment';
+import { getTenantModel } from '@/utils/tenantDb';
 
+// ✅ Reset Equipment Tasks with Multi-Tenant Isolation
 export async function POST(req) {
   try {
     await connectDB();
-    const { equipmentId } = await req.json();
+    const body = await req.json();
+    const { equipmentId, companyId } = body;
 
-    if (!equipmentId) {
-      return NextResponse.json({ success: false, message: 'Equipment ID is required' }, { status: 400 });
+    if (!companyId) {
+      return NextResponse.json(
+        { success: false, message: 'companyId is required for multi-tenant isolation' },
+        { status: 400 }
+      );
     }
 
-    // Find all assignments associated with this equipment
-    // Since equipment is stored as an object, we check equipment._id
-    const assignments = await NewAssignment.find({ 'equipment._id': equipmentId });
+    if (!equipmentId) {
+      return NextResponse.json(
+        { success: false, message: 'Equipment ID is required' },
+        { status: 400 }
+      );
+    }
+
+    // Get the dynamic NewAssignment model for this company
+    const AssignmentModel = getTenantModel("NewAssignment", companyId);
+
+    // Find all assignments associated with this equipment in the tenant-specific collection
+    const assignments = await AssignmentModel.find({ 'equipment._id': equipmentId });
 
     if (!assignments || assignments.length === 0) {
-      return NextResponse.json({ success: false, message: 'No assignments found for this equipment' }, { status: 404 });
+      return NextResponse.json({ 
+        success: false, 
+        message: 'No assignments found for this equipment in this company\'s collection' 
+      }, { status: 404 });
     }
 
     // Helper function to reset duties in prototypeData
@@ -71,11 +88,11 @@ export async function POST(req) {
       return { ...data, stages: updatedStages };
     };
 
-    // Update each assignment
+    // Update each assignment within the tenant-specific collection
     const updatePromises = assignments.map(assignment => {
       const updatedPrototypeData = resetPrototypeData(assignment.prototypeData);
       
-      return NewAssignment.findByIdAndUpdate(assignment._id, {
+      return AssignmentModel.findByIdAndUpdate(assignment._id, {
         $set: {
           status: 'InProgress',
           reviewStatus: null,
@@ -99,10 +116,11 @@ export async function POST(req) {
     });
 
   } catch (error) {
-    console.error('Error resetting equipment tasks:', error);
+    console.error('❌ Error resetting equipment tasks:', error);
     return NextResponse.json({
       success: false,
-      message: 'Internal Server Error'
+      message: 'Internal Server Error',
+      details: error.message
     }, { status: 500 });
   }
 }

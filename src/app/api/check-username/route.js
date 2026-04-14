@@ -54,7 +54,7 @@ import SuperManager from "@/model/SuperManager";
 
 export async function POST(req) {
   await connectDB();
-  const { email, username, phone, idToExclude } = await req.json();
+  const { email, username, phone, idToExclude, companyId } = await req.json();
 
   const emailQuery = { email };
   const usernameQuery = { username };
@@ -66,27 +66,48 @@ export async function POST(req) {
     phoneQuery._id = { $ne: idToExclude };
   }
 
+  // Define Company-Aware queries for Workers and Company Admins
+  const userEmailQuery = { ...emailQuery };
+  const userUsernameQuery = { ...usernameQuery };
+  const userPhoneQuery = { ...phoneQuery };
+
+  const superAdminEmailQuery = { ...emailQuery };
+  const superAdminUsernameQuery = { ...usernameQuery };
+  const superAdminPhoneQuery = { ...phoneQuery };
+
+  if (companyId) {
+    userEmailQuery.companyId = companyId;
+    userUsernameQuery.companyId = companyId;
+    userPhoneQuery.companyId = companyId;
+
+    superAdminEmailQuery.companyId = companyId;
+    superAdminUsernameQuery.companyId = companyId;
+    superAdminPhoneQuery.companyId = companyId;
+  }
+
   const [
     superAdminEmail, userEmail, superManagerEmail,
     superAdminUsername, userUsername, superManagerUsername,
     superAdminPhone, userPhone
   ] = await Promise.all([
-    email ? SuperAdmin.findOne(emailQuery) : null,
-    email ? User.findOne(emailQuery) : null,
+    // Check Email (SuperManagers are global, Admins and Workers are scoped to companyId if provided)
+    email ? SuperAdmin.findOne(superAdminEmailQuery) : null,
+    email ? User.findOne(userEmailQuery) : null,
     email ? SuperManager.findOne(emailQuery) : null,
 
-    username ? SuperAdmin.findOne(usernameQuery) : null,
-    username ? User.findOne(usernameQuery) : null,
+    // Check Username
+    username ? SuperAdmin.findOne(superAdminUsernameQuery) : null,
+    username ? User.findOne(userUsernameQuery) : null,
     username ? SuperManager.findOne(usernameQuery) : null,
 
-    phone ? SuperAdmin.findOne(phoneQuery) : null,
-    phone ? User.findOne(phoneQuery) : null,
-    // No phone field in SuperManager schema
+    // Check Phone
+    phone ? SuperAdmin.findOne(superAdminPhoneQuery) : null,
+    phone ? User.findOne(userPhoneQuery) : null,
   ]);
 
   return NextResponse.json({
     emailExists: !!(superAdminEmail || userEmail || superManagerEmail),
     usernameExists: !!(superAdminUsername || userUsername || superManagerUsername),
-    phoneExists: !!(superAdminPhone || userPhone), // SuperManager has no phone
+    phoneExists: !!(superAdminPhone || userPhone),
   });
 }

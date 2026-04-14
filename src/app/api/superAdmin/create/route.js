@@ -64,16 +64,17 @@
 import mongoose from "mongoose";
 import { NextResponse } from "next/server";
 import SuperAdmin from "@/model/SuperAdmin";
+import Company from "@/model/Company";
 import connectDB from "@/utils/db";
 import bcrypt from "bcryptjs";
 import nodemailer from "nodemailer";
 
+
 export const dynamic = "force-dynamic";
 
 export async function POST(req) {
-  await connectDB();
-
   try {
+    await connectDB();
     const body = await req.json();
 
     const {
@@ -84,13 +85,15 @@ export async function POST(req) {
       status,
       logo,
       username,
-      address
+      address,
+      enabledFeatures = []
     } = body;
 
     if (!name || !email || !password || !phone || !status || !logo || !username || !address) {
       return NextResponse.json({ error: "All fields are required" }, { status: 400 });
     }
 
+    // Check if email or username already exists
     const existing = await SuperAdmin.findOne({
       $or: [{ email }, { username }]
     });
@@ -99,8 +102,24 @@ export async function POST(req) {
       return NextResponse.json({ error: "Email or username already exists" }, { status: 409 });
     }
 
+    // Generate a unique Company ID
+    const companyId = `comp_${Math.random().toString(36).substring(2, 9)}`;
+
+    // Create Company Document
+    const newCompany = new Company({
+      companyId,
+      name,
+      email,
+      phone,
+      logo,
+      enabledFeatures: enabledFeatures.length > 0 ? enabledFeatures : ['CHECKLIST'],
+      status: 'Active'
+    });
+    await newCompany.save();
+
     const hashedPassword = await bcrypt.hash(password, 10);
 
+    // Create SuperAdmin (Company Admin)
     const newAdmin = new SuperAdmin({
       name,
       email,
@@ -109,46 +128,57 @@ export async function POST(req) {
       status,
       logo,
       username,
-      address
+      address,
+      companyId, // Link to company
+      features: enabledFeatures // Cache features for quick access
     });
-
     await newAdmin.save();
 
-    // ✅ Nodemailer logic to send email
+    // Nodemailer logic to send email
     const transporter = nodemailer.createTransport({
       service: 'gmail',
       auth: {
-        user: process.env.EMAIL_USER,       // your email address
-        pass: process.env.EMAIL_PASSWORD    // your app-specific password
+        user: process.env.EMAIL_USER,
+        pass: process.env.EMAIL_PASSWORD
       }
     });
 
     const mailOptions = {
-      from: `"Admin Panel" <${process.env.EMAIL_USER}>`,
+      from: `"Platform Admin" <${process.env.EMAIL_USER}>`,
       to: email,
-      subject: "Your SuperAdmin Account Details",
-    html: `
-        <h2>Welcome, ${name}!</h2>
-        <p>Your Admin account has been created successfully.</p>
-        <p><strong>Username:</strong> ${username}</p>
-        <p><strong>Password:</strong> ${password}</p>
-        <p>Please log in and manage your business.</p>
-        <p><a href="https://sop-seven.vercel.app/login">Click here to log in</a></p>
-        <br/>
-        <p>Regards,<br/>Support Team</p>
+      subject: "Company Admin Account Created",
+      html: `
+        <div style="font-family: sans-serif; padding: 20px; border: 1px solid #eee; border-radius: 10px;">
+          <h2 style="color: #4f46e5;">Welcome, ${name}!</h2>
+          <p>Your company admin account has been created for <strong>${name}</strong>.</p>
+          <hr style="border: 0; border-top: 1px solid #eee; margin: 20px 0;" />
+          <p><strong>Company ID:</strong> ${companyId}</p>
+          <p><strong>Username:</strong> ${username}</p>
+          <p><strong>Password:</strong> ${password}</p>
+          <p><strong>Features enabled:</strong> ${enabledFeatures.join(", ") || "None"}</p>
+          <br/>
+          <a href="${process.env.APP_URL || 'http://localhost:3000'}/login" style="background: #4f46e5; color: white; padding: 10px 20px; text-decoration: none; border-radius: 5px;">Log in to your Dashboard</a>
+          <br/><br/>
+          <p>Regards,<br/>System Support Team</p>
+        </div>
       `,
     };
 
-    // Send the email
-    await transporter.sendMail(mailOptions);
+    try {
+      await transporter.sendMail(mailOptions);
+    } catch (mailError) {
+      console.error("Email sending failed:", mailError);
+      // We still return 201 as the account was created
+    }
 
     return NextResponse.json(
-      { message: "SuperAdmin created and email sent", admin: newAdmin },
+      { success: true, message: "Company and Admin created successfully", admin: newAdmin },
       { status: 201 }
     );
 
   } catch (error) {
-    console.error("Error creating SuperAdmin:", error);
+    console.error("Error creating Company Admin:", error);
     return NextResponse.json({ error: "Internal server error" }, { status: 500 });
   }
 }
+

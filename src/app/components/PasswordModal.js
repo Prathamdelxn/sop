@@ -96,10 +96,14 @@ const PasswordModal = ({ onClose, onConfirm, loading, actionType = 'approve' }) 
       if (isPasswordValid) {
         onConfirm(password);
       } else {
-        setError('Invalid password. Please try again.');
+        setError('Password incorrect. Please try again.');
       }
     } catch (error) {
-      setError(error.message || 'Failed to verify password. Please try again.');
+      if (error.message === 'Invalid password') {
+        setError('Password incorrect. Please try again.');
+      } else {
+        setError(error.message || 'Failed to verify password. Please try again.');
+      }
     }
   };
 

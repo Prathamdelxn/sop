@@ -1991,7 +1991,7 @@ export default function AssignEquipmentPage() {
 
     try {
       setIsLoading(true);
-      const res = await fetch(`/api/assignment/delete/${deleteModal.assignmentId}`, {
+      const res = await fetch(`/api/assignment/delete/${companyData.companyId}/${deleteModal.assignmentId}`, {
         method: 'DELETE',
       });
 
@@ -2083,7 +2083,7 @@ export default function AssignEquipmentPage() {
 
     try {
       setApprovalLoading(true);
-      const res = await fetch(`/api/assignment/update/${approvalModal.assignment._id}`, {
+      const res = await fetch(`/api/assignment/update/${companyData.companyId}/${approvalModal.assignment._id}`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
@@ -2109,11 +2109,11 @@ export default function AssignEquipmentPage() {
   };
 
   const fetchAssignment = React.useCallback(async (isInitial = true) => {
+    if (!companyData?.companyId) return;
     try {
-      const res = await fetch('/api/assignment/fetchAll');
+      const res = await fetch(`/api/assignment/fetchAll?companyId=${companyData.companyId}`);
       const data = await res.json();
-      const filteredData = data.data.filter((t) => t.companyId === companyData?.companyId);
-      setAssignData(filteredData);
+      setAssignData(data.data || []);
     } catch (error) {
       console.error('Error fetching assignments:', error);
       if (isInitial) toast.error('Error fetching assignments');
@@ -2131,8 +2131,8 @@ export default function AssignEquipmentPage() {
       try {
         if (isInitial) setIsLoading(true);
         const [equipmentRes, prototypesRes] = await Promise.all([
-          fetch('/api/equipment/fetchAll'),
-          fetch('/api/checklistapi/fetchAll')
+          fetch(`/api/equipment/fetchAll?companyId=${companyData?.companyId}`),
+          fetch(`/api/checklistapi/fetchAll?companyId=${companyData?.companyId}`)
         ]);
 
         const [equipmentData, prototypesData] = await Promise.all([
@@ -2140,7 +2140,7 @@ export default function AssignEquipmentPage() {
           prototypesRes.json()
         ]);
         const currentDate = new Date();
-        const approvedEquipments = equipmentData.data.filter(e => {
+        const approvedEquipments = (equipmentData.data || []).filter(e => {
           const dueDate = new Date(e.qualificationDueDate);
           return (
             e.status === 'Approved' &&
@@ -2150,7 +2150,7 @@ export default function AssignEquipmentPage() {
         });
         setEquipmentList(approvedEquipments);
 
-        const filteredPrototypes = prototypesData.data.filter((t) => t.status === 'Approved' && t.companyId === companyData?.companyId);
+        const filteredPrototypes = (prototypesData.data || []).filter((t) => t.status === 'Approved' && t.companyId === companyData?.companyId);
         setPrototypeList(filteredPrototypes);
 
         await fetchAssignment(isInitial);

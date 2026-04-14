@@ -1,12 +1,12 @@
 import connectDB from '@/utils/db';
-import NewAssignment from '@/model/NewAssignment';
+import { getTenantModel } from '@/utils/tenantDb';
 import { NextResponse } from 'next/server';
 
 export async function GET(req, { params }) {
   try {
     await connectDB();
 
-    const { companyId } = params;
+    const { companyId } = await params;
 
     if (!companyId) {
       return NextResponse.json(
@@ -15,9 +15,11 @@ export async function GET(req, { params }) {
       );
     }
 
+    const AssignmentModel = getTenantModel("NewAssignment", companyId);
+
     // Fetch assignments that are pending review or have rework required
-    const assignments = await NewAssignment.find({
-      companyId,
+    // companyId filter is implicit in the collection name
+    const assignments = await AssignmentModel.find({
       $or: [
         { status: 'Pending Review' },
         { reviewStatus: 'Pending Review' },

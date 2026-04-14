@@ -1,42 +1,40 @@
 import dbConnect from "@/utils/db";
-import Checklist from "@/model/ChecklistNew";
+import { getTenantModel } from "@/utils/tenantDb";
 import { NextResponse } from "next/server";
 
-// Handle CORS preflight
-export async function OPTIONS() {
-  const response = NextResponse.json({}, { status: 200 });
-  response.headers.set("Access-Control-Allow-Origin", "*");
-  response.headers.set("Access-Control-Allow-Methods", "DELETE, OPTIONS");
-  response.headers.set("Access-Control-Allow-Headers", "Content-Type");
-  return response;
-}
-
-// DELETE a title by ID from URL
-export async function DELETE(_, { params }) {
-  await dbConnect();
-
-  const { id } = params;
-
+export async function DELETE(req, { params }) {
   try {
+    await dbConnect();
+    const { id } = params;
+    const { searchParams } = new URL(req.url);
+    const companyId = searchParams.get("companyId");
+
     if (!id) {
       return NextResponse.json({ error: "ID is required in URL" }, { status: 400 });
     }
 
-    const deleted = await Checklist.findByIdAndDelete(id);
+    if (!companyId) {
+      return NextResponse.json({ error: "Company ID is required for data isolation" }, { status: 400 });
+    }
+
+    // Get the dynamic model for this company
+    const ChecklistModel = getTenantModel("Checklist", companyId);
+
+    const deleted = await ChecklistModel.findByIdAndDelete(id);
 
     if (!deleted) {
-      return NextResponse.json({ error: "Task not found" }, { status: 404 });
+      return NextResponse.json({ error: "Checklist not found" }, { status: 404 });
     }
 
     const response = NextResponse.json(
-      { message: "Title deleted successfully", data: deleted },
+      { message: "Checklist deleted successfully", data: deleted },
       { status: 200 }
     );
     response.headers.set("Access-Control-Allow-Origin", "*");
     return response;
 
   } catch (error) {
-    console.error("❌ Error deleting task:", error);
+    console.error("❌ Error deleting checklist:", error);
     const response = NextResponse.json({ error: "Internal Server Error" }, { status: 500 });
     response.headers.set("Access-Control-Allow-Origin", "*");
     return response;

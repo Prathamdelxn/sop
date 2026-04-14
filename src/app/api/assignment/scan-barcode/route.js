@@ -1,24 +1,25 @@
 import { NextResponse } from 'next/server';
 import mongoose from 'mongoose';
-import Equipment from '@/model/Equipment';
-import NewAssignment from '@/model/NewAssignment';
+import { getTenantModel } from '@/utils/tenantDb';
 import dbConnect from '@/utils/db';
 
 export async function POST(req) {
     try {
         await dbConnect();
         const { barcode, userId, companyId } = await req.json();
-        console.log("THE BARCODEEEEEEI  IS:", barcode);
 
         if (!barcode || !userId || !companyId) {
             return NextResponse.json({ error: 'Barcode, User ID, and Company ID are required' }, { status: 400 });
         }
 
+        const EquipmentModel = getTenantModel("Equipment", companyId);
+        const AssignmentModel = getTenantModel("NewAssignment", companyId);
+
         // 1. Find equipment by barcode OR by _id if barcode matches an ID format
-        let equipment = await Equipment.findOne({ barcode, companyId });
+        let equipment = await EquipmentModel.findOne({ barcode, companyId });
 
         if (!equipment && mongoose.isValidObjectId(barcode)) {
-            equipment = await Equipment.findOne({ _id: barcode, companyId });
+            equipment = await EquipmentModel.findOne({ _id: barcode, companyId });
         }
 
         if (!equipment) {
@@ -26,7 +27,7 @@ export async function POST(req) {
         }
 
         // 2. Find matching task/assignment for this equipment and worker
-        const activeAssignment = await NewAssignment.findOne({
+        const activeAssignment = await AssignmentModel.findOne({
             companyId,
             status: { $ne: 'Completed' },
             $and: [
@@ -48,7 +49,7 @@ export async function POST(req) {
 
         if (!activeAssignment) {
             // Check if there is an assignment with status 'Completed'
-            const completedAssignment = await NewAssignment.findOne({
+            const completedAssignment = await AssignmentModel.findOne({
                 companyId,
                 status: 'Completed',
                 $and: [

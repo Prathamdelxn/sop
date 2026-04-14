@@ -157,6 +157,7 @@ const ReviewPage = () => {
         body: JSON.stringify({ 
           prototypeId: sopToApprove._id,
           reviewerId: companyData?.id,
+          companyId: companyData?.companyId,
           reviewDate: Date.now(),
           status: "Approved" 
         }),
@@ -208,6 +209,7 @@ const ReviewPage = () => {
         body: JSON.stringify({ 
           prototypeId: selectedSop?._id,
           reviewerId: companyData?.id,
+          companyId: companyData?.companyId,
           status: "Rejected",
           comments: rejectReason 
         }),

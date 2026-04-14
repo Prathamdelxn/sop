@@ -475,6 +475,7 @@ const ApprovePage = () => {
         body: JSON.stringify({ 
           prototypeId: sopId,
           approverId: companyData?.id,
+          companyId: companyData?.companyId,
           status: "Approved" 
         }),
       });
@@ -523,6 +524,7 @@ const ApprovePage = () => {
         body: JSON.stringify({ 
           prototypeId: selectedSop?._id,
           approverId: companyData?.id,
+          companyId: companyData?.companyId,
           status: "Rejected",
           comments: reason 
         }),

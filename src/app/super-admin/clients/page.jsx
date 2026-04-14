@@ -976,7 +976,8 @@ export default function ClientManagement() {
     password: '',
     status: 'Active',
     logo: null,
-    logoPreview: ''
+    logoPreview: '',
+    enabledFeatures: ['CHECKLIST'] // Default feature
   });
 
   // VALIDATION HELPERS
@@ -1042,6 +1043,19 @@ export default function ClientManagement() {
     const { name, value } = e.target;
 
     if (name === 'phone' && !/^\d{0,10}$/.test(value)) return;
+
+    if (name.startsWith('feature_')) {
+      const featureName = name.replace('feature_', '');
+      setNewClient(prev => {
+        const currentFeatures = prev.enabledFeatures || [];
+        const newFeatures = e.target.checked 
+          ? [...currentFeatures, featureName]
+          : currentFeatures.filter(f => f !== featureName);
+        return { ...prev, enabledFeatures: newFeatures };
+      });
+      return;
+    }
+
     if (name === 'email') {
       const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
       const endsWithCom = value.endsWith('.com');
@@ -1185,6 +1199,7 @@ export default function ClientManagement() {
       const payload = {
         ...newClient,
         logo: logoUrl,
+        enabledFeatures: newClient.enabledFeatures, // Include features in payload
         joined: isEditing
           ? clients.find(client => client._id === editingClientId)?.joined
           : new Date().toISOString().split('T')[0]
@@ -1215,7 +1230,7 @@ export default function ClientManagement() {
         const result = await response.json();
         const newClientWithId = {
           ...payload,
-          _id: result.id || (clients.length + 1).toString(), // fallback for id
+          _id: result.admin?._id || result.id || (clients.length + 1).toString(), // fallback for id
           createdAt: new Date().toISOString()
         };
         setClients([...clients, newClientWithId]);
@@ -1278,7 +1293,8 @@ export default function ClientManagement() {
       status: client.status,
       password: '',
       logo: null,
-      logoPreview: client.logo || ''
+      logoPreview: client.logo || '',
+      enabledFeatures: client.features || [] // Populate features from client object
     });
     setErrors({});
     setTimeout(() => {
@@ -1296,7 +1312,8 @@ export default function ClientManagement() {
       password: '',
       status: 'Active',
       logo: null,
-      logoPreview: ''
+      logoPreview: '',
+      enabledFeatures: ['CHECKLIST']
     });
     setErrors({});
     setIsModalOpen(false);
@@ -1442,7 +1459,9 @@ export default function ClientManagement() {
                 <thead className="bg-gray-50/80">
                   <tr>
                     <th className="px-8 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Company</th>
+                    <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Company ID</th>
                     <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Contact</th>
+                    <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Modules</th>
                     <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Status</th>
                     <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Joined Date</th>
                     <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Actions</th>
@@ -1468,8 +1487,29 @@ export default function ClientManagement() {
                           </div>
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap">
+                          <code className="text-sm font-bold text-indigo-600 bg-indigo-50 px-2 py-1 rounded border border-indigo-100">
+                            {client.companyId || client.username}
+                          </code>
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap">
                           <div className="text-sm text-gray-900 truncate max-w-[180px]">{client.email}</div>
                           <div className="text-xs text-gray-500 mt-1 truncate max-w-[180px]">{client.phone}</div>
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap">
+                          <div className="flex flex-wrap gap-1 max-w-[200px]">
+                            {(client.features || []).map(feat => (
+                              <span key={feat} className={`text-[10px] px-2 py-0.5 rounded-md font-bold uppercase tracking-tight ${
+                                feat.includes('ELOGBOOK') ? 'bg-blue-100 text-blue-700' :
+                                feat === 'CHECKLIST' ? 'bg-purple-100 text-purple-700' :
+                                'bg-teal-100 text-teal-700'
+                              }`}>
+                                {feat.replace('-ELOGBOOK', '').replace('ELOGBOOK-', '')}
+                              </span>
+                            ))}
+                            {(!client.features || client.features.length === 0) && (
+                              <span className="text-gray-400 text-xs italic">No modules</span>
+                            )}
+                          </div>
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap">
                           <span className={`px-3 py-1.5 capitalize inline-flex text-xs leading-5 font-semibold rounded-full ${
@@ -1711,6 +1751,34 @@ export default function ClientManagement() {
                         )}
                       </div>
                       {errors.address && <p className="text-red-500 text-sm mt-1">{errors.address}</p>}
+                    </div>
+
+                    {/* Features Access Section */}
+                    <div className="col-span-2 mt-4">
+                      <label className="block text-sm font-bold text-gray-700 mb-4 pb-2 border-b border-gray-100">
+                        Module Access Control
+                      </label>
+                      <div className="grid grid-cols-2 gap-4">
+                        {[
+                          { id: 'CHECKLIST', label: 'Checklist Management' },
+                          { id: 'PHARMA-ELOGBOOK', label: 'E-Logbook (Pharma)' },
+                          { id: 'NON-PHARMA-ELOGBOOK', label: 'E-Logbook (Non-Pharma)' },
+                          { id: 'OPERATION', label: 'Operations Module' }
+                        ].map((feature) => (
+                          <label key={feature.id} className="flex items-center space-x-3 p-3 rounded-xl border border-gray-100 hover:bg-slate-50 transition-colors cursor-pointer group">
+                            <input
+                              type="checkbox"
+                              name={`feature_${feature.id}`}
+                              checked={newClient.enabledFeatures?.includes(feature.id)}
+                              onChange={handleInputChange}
+                              className="w-5 h-5 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500"
+                            />
+                            <span className="text-sm font-medium text-gray-700 group-hover:text-indigo-600 transition-colors">
+                              {feature.label}
+                            </span>
+                          </label>
+                        ))}
+                      </div>
                     </div>
                   </div>
                 </form>

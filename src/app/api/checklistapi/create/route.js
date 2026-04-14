@@ -1,38 +1,45 @@
 import { NextResponse } from "next/server";
 import connectDB from "@/utils/db";
-import Checklist from "@/model/ChecklistNew"; // import your model
- 
-// CREATE a checklist (no duplicate names allowed)
+import { getTenantModel } from "@/utils/tenantDb";
+
+// CREATE a checklist (no duplicate names allowed within the same company)
 export async function POST(req) {
   try {
     await connectDB();
     const data = await req.json();
-   console.log("asdfasdf",data);
-    // 🔍 check if checklist with same name already exists
-    const existing = await Checklist.findOne({ name: data.name , companyId: data.companyId });
+    
+    const { companyId, name } = data;
+
+    if (!companyId) {
+      return NextResponse.json({ error: "Company ID is required for data isolation" }, { status: 400 });
+    }
+
+    // Get the dynamic Checklist model for this company
+    const ChecklistModel = getTenantModel("Checklist", companyId);
+
+    // 🔍 check if checklist with same name already exists in this company's collection
+    const existing = await ChecklistModel.findOne({ name });
     if (existing) {
       return NextResponse.json(
-        { error: "Checklist with this name already exists" },
+        { error: "Checklist with this name already exists for your company" },
         { status: 400 }
       );
     }
-    console.log("asdfasdf",data);
- 
-    // ✅ create new checklist
-    const newChecklist = await Checklist.create(data);
- 
+
+    // ✅ create new checklist in the company collection
+    const newChecklist = await ChecklistModel.create(data);
+
     return NextResponse.json(newChecklist, { status: 201 });
   } catch (error) {
     console.error("❌ Error creating checklist:", error);
- 
-    // handle duplicate key error (index on DB)
+
     if (error.code === 11000) {
       return NextResponse.json(
         { error: "Checklist with this name already exists" },
         { status: 400 }
       );
     }
- 
+
     return NextResponse.json({ error: error.message }, { status: 500 });
   }
 }

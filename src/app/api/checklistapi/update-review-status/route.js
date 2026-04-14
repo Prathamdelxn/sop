@@ -1,13 +1,21 @@
 import dbConnect from "@/utils/db";
-import Checklist from "@/model/ChecklistNew";
+import { getTenantModel } from "@/utils/tenantDb";
 import { NextResponse } from "next/server";
 
+// ✅ Update Checklist Review Status with Multi-Tenant Isolation
 export async function PUT(req) {
   try {
     await dbConnect();
 
     const body = await req.json();
-    const { prototypeId, reviewerId, status, comments } = body;
+    const { prototypeId, reviewerId, status, comments, companyId } = body;
+
+    if (!companyId) {
+      return NextResponse.json(
+        { error: "companyId is required for multi-tenant isolation" },
+        { status: 400 }
+      );
+    }
 
     if (!prototypeId || !reviewerId || !status) {
       return NextResponse.json(
@@ -16,8 +24,11 @@ export async function PUT(req) {
       );
     }
 
-    // ✅ Update specific review
-    let updated = await Checklist.findOneAndUpdate(
+    // Get the dynamic Checklist model for this company
+    const ChecklistModel = getTenantModel("Checklist", companyId);
+
+    // ✅ Update specific review within the tenant-specific collection
+    let updated = await ChecklistModel.findOneAndUpdate(
       { _id: prototypeId, "reviews.reviewerId": reviewerId },
       {
         $set: {
@@ -32,7 +43,7 @@ export async function PUT(req) {
 
     if (!updated) {
       return NextResponse.json(
-        { error: "Prototype or Review not found" },
+        { error: "Prototype or Review record not found in this company's collection" },
         { status: 404 }
       );
     }
@@ -59,9 +70,9 @@ export async function PUT(req) {
       { status: 200 }
     );
   } catch (error) {
-    console.error("❌ Error updating review:", error);
+    console.error("❌ Error updating review status:", error);
     return NextResponse.json(
-      { error: "Internal server error" },
+      { error: "Internal server error", details: error.message },
       { status: 500 }
     );
   }

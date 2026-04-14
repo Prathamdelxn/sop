@@ -64,11 +64,11 @@ export default function FacilityAdminDashboard() {
         if (isInitial) setIsLoading(true);
         
         // Fetch Equipment
-        const eqRes = await fetch('/api/equipment/fetchAll');
+        const eqRes = await fetch(`/api/equipment/fetchAll?companyId=${companyData?.companyId}`);
         const eqResult = await eqRes.json();
         
         // Fetch Assignments for progress tracking
-        const assignRes = await fetch('/api/assignment/fetchAll');
+        const assignRes = await fetch(`/api/assignment/fetchAll?companyId=${companyData?.companyId}`);
         const assignResult = await assignRes.json();
 
         if (eqRes.ok && eqResult.success) {
@@ -161,6 +161,7 @@ export default function FacilityAdminDashboard() {
         },
         body: JSON.stringify({
           equipmentId: equipmentToApprove._id,
+          companyId: companyData?.companyId,
           status: 'Pending Approval'
         })
       });
@@ -339,6 +340,7 @@ export default function FacilityAdminDashboard() {
             serial: formData.serial,
             assetTag: formData.assetTag,
             status: "InProgress",
+            companyId: companyData?.companyId,
             qmsNumber: formData.qmsNumber,
             poNumber: formData.poNumber,
             qualificationDoneDate: formData.qualificationDoneDate,
@@ -429,7 +431,7 @@ export default function FacilityAdminDashboard() {
     if (!equipmentToDelete) return;
     setDeleteLoading(true);
     try {
-      const res = await fetch(`/api/equipment/delete/${equipmentToDelete._id}`, {
+      const res = await fetch(`/api/equipment/delete/${equipmentToDelete._id}?companyId=${companyData?.companyId}`, {
         method: 'DELETE',
       });
       const data = await res.json();
@@ -463,7 +465,8 @@ export default function FacilityAdminDashboard() {
           'Content-Type': 'application/json'
         },
         body: JSON.stringify({
-          equipmentId: equipmentToReset._id
+          equipmentId: equipmentToReset._id,
+          companyId: companyData?.companyId
         })
       });
 

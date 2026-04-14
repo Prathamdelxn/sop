@@ -24,24 +24,32 @@ export async function POST(req) {
       location 
     } = body;
 
-    // Check if user with same email already exists
-    const existingUser = await User.findOne({ name });
-    if (existingUser) {
-      return NextResponse.json({ error: "User already exists" }, { status: 400 });
+    // 1. Check for existing username (within the same company)
+    const usernameExists = await User.findOne({ username, companyId });
+    if (usernameExists) {
+      return NextResponse.json({ error: "Username already taken within this company" }, { status: 400 });
+    }
+
+    // 2. Check for existing email (if provided, within the same company)
+    if (email && email.trim() !== "") {
+      const emailExists = await User.findOne({ email, companyId });
+      if (emailExists) {
+        return NextResponse.json({ error: "Email already in use within this company" }, { status: 400 });
+      }
     }
 
     // Hash password
-    const hashedPassword = await bcrypt.hash(password, 10);
+    const hashedPassword = await bcrypt.hash(password || "", 10);
 
-    // Create new user
+    // Create new user (Ensure optional unique fields are handled for partial index)
     const newUser = new User({
       name,
-      email,
+      email: (email && email.trim() !== "") ? email : null, // Set to null as requested
       password: hashedPassword,
-      username,
+      username: (username && username.trim() !== "") ? username : undefined,
       companyId,
       status,
-      phone,
+      phone: (phone && phone.trim() !== "") ? phone : undefined,
       task,
       role,
       location 
@@ -52,6 +60,15 @@ export async function POST(req) {
     return NextResponse.json({ message: "User created successfully", user: newUser }, { status: 201 });
   } catch (error) {
     console.error("Error creating user:", error);
-    return NextResponse.json({ error: "Internal Server Error" }, { status: 500 });
+    
+    let message = "Internal Server Error";
+    if (error.code === 11000) {
+      const field = Object.keys(error.keyPattern || {}).join(", ") || "field";
+      message = `Duplicate field error: ${field} already exists.`;
+    } else {
+      message = error.message;
+    }
+    
+    return NextResponse.json({ error: message }, { status: 500 });
   }
 }

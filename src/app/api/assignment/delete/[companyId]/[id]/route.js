@@ -1,14 +1,21 @@
 import { NextResponse } from 'next/server';
 import connectToDB from '@/utils/db';
-import NewAssignment from '@/model/NewAssignment';
+import { getTenantModel } from '@/utils/tenantDb';
  
 export async function DELETE(request, { params }) {
-  await connectToDB();
- 
-  const assignmentId = params.id;
- 
   try {
-    const deletedAssignment = await NewAssignment.findByIdAndDelete(assignmentId);
+    await connectToDB();
+    const { companyId, id: assignmentId } = await params;
+
+    if (!companyId || !assignmentId) {
+      return NextResponse.json(
+        { success: false, message: 'companyId and assignmentId are required' },
+        { status: 400 }
+      );
+    }
+
+    const AssignmentModel = getTenantModel("NewAssignment", companyId);
+    const deletedAssignment = await AssignmentModel.findByIdAndDelete(assignmentId);
  
     if (!deletedAssignment) {
       return NextResponse.json(
@@ -30,4 +37,3 @@ export async function DELETE(request, { params }) {
     );
   }
 }
- 

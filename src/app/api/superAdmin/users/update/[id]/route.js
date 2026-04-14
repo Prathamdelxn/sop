@@ -33,11 +33,14 @@ console.log(body);
       return NextResponse.json({ error: "User not found" }, { status: 404 });
     }
 
-    // Check if email is being changed to one that already exists
+    // Check if email is being changed to one that already exists (within the same company)
+    const targetEmail = email || updateData.email;
+    const targetCompanyId = companyId || existingUser.companyId;
+
     if (email && email !== existingUser.email) {
-      const emailExists = await User.findOne({ email });
+      const emailExists = await User.findOne({ email, companyId: targetCompanyId });
       if (emailExists) {
-        return NextResponse.json({ error: "Email already in use" }, { status: 400 });
+        return NextResponse.json({ error: "Email already in use within this company" }, { status: 400 });
       }
     }
 
@@ -62,7 +65,10 @@ console.log(body);
     // Update the user
     const updatedUser = await User.findByIdAndUpdate(
       id,
-      updateData,
+      {
+        ...updateData,
+        email: (updateData.email && updateData.email.trim() !== "") ? updateData.email : undefined
+      },
       { new: true } // Return the updated document
     );
 
@@ -75,8 +81,9 @@ console.log(body);
     );
   } catch (error) {
     console.error("Error updating user:", error);
+    const message = error.code === 11000 ? "Duplicate field error" : error.message;
     return NextResponse.json(
-      { error: "Internal Server Error" }, 
+      { error: message || "Internal Server Error" }, 
       { status: 500 }
     );
   }

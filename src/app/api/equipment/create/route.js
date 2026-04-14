@@ -53,7 +53,7 @@
 //src/app/api/equipment/create/route.js
 import { NextResponse } from 'next/server';
 import dbConnect from '@/utils/db';
-import Equipment from '@/model/Equipment';
+import { getTenantModel } from '@/utils/tenantDb';
 
 export async function POST(req) {
   try {
@@ -81,6 +81,10 @@ export async function POST(req) {
       assignedPrototype
     } = body;
 
+    if (!companyId) {
+      return NextResponse.json({ success: false, message: "Company ID is required for data isolation" }, { status: 400 });
+    }
+
     // Validate required fields
     if (!name || !type) {
       return NextResponse.json(
@@ -89,11 +93,11 @@ export async function POST(req) {
       );
     }
 
-    // Validate unique assetTag if provided
-    
+    // Get the dynamic Equipment model for this company
+    const EquipmentModel = getTenantModel("Equipment", companyId);
 
-    // Create equipment
-    const newEquipment = await Equipment.create({
+    // Create equipment in company collection
+    const newEquipment = await EquipmentModel.create({
       name,
       type,
       manufacturer,

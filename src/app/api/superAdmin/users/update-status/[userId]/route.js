@@ -33,6 +33,6 @@ export async function PUT(req,{params}) {
     });
   } catch (error) {
     console.error('Error toggling user status:', error);
-    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
+    return NextResponse.json({ error: error.message || 'Internal server error' }, { status: 500 });
   }
 }

@@ -1,14 +1,18 @@
 import { NextResponse } from "next/server";
-import mongoose from "mongoose";
-import Assignment from "@/model/NewAssignment"; // your Mongoose schema
-
+import { getTenantModel } from "@/utils/tenantDb";
 
 export async function GET(req, { params }) {
   try {
     const { companyId, workerId } = await params;
 
+    if (!companyId) {
+      return NextResponse.json({ error: "Company ID is required" }, { status: 400 });
+    }
+
+    const AssignmentModel = getTenantModel("NewAssignment", companyId);
+
     // Query: check worker inside stage, task, or subtask
-    const assignments = await Assignment.find({
+    const assignments = await AssignmentModel.find({
       companyId,
       $or: [
         { "prototypeData.stages.assignedWorker.id": workerId },

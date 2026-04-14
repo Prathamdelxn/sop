@@ -894,7 +894,8 @@ const SOPDashboard = () => {
           },
           body: JSON.stringify({
             status: "Under Review",
-            reviews
+            reviews,
+            companyId: companyData?.companyId // Pass companyId for isolation
           }),
         });
 
@@ -937,7 +938,8 @@ const SOPDashboard = () => {
           },
           body: JSON.stringify({
             status: "Pending Approval",
-            approvers
+            approvers,
+            companyId: companyData?.companyId // Pass companyId for isolation
           }),
         });
 
@@ -1054,7 +1056,7 @@ const SOPDashboard = () => {
     if (sopToDelete) {
       setDeleteLoading(true);
       try {
-        await fetch(`/api/checklistapi/delete/${sopToDelete}`, {
+        await fetch(`/api/checklistapi/delete/${sopToDelete}?companyId=${companyData?.companyId}`, {
           method: "DELETE",
         });
         setSopData(sopData.filter((item) => item._id !== sopToDelete));
@@ -1301,7 +1303,7 @@ const SOPDashboard = () => {
           setLoading(true)
           setFiltering(true)
         }
-        const res = await fetch("/api/checklistapi/fetchAll")
+        const res = await fetch(`/api/checklistapi/fetchAll?companyId=${companyData?.companyId}`)
         const data = await res.json()
         const currentUserId = companyData?.id || companyData?._id;
         const filtered = data.data.filter(item => 

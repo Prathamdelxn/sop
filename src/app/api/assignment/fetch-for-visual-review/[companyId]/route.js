@@ -1,12 +1,12 @@
 import connectDB from '@/utils/db';
-import NewAssignment from '@/model/NewAssignment';
+import { getTenantModel } from '@/utils/tenantDb';
 import { NextResponse } from 'next/server';
 
 export async function GET(req, { params }) {
   try {
     await connectDB();
 
-    const { companyId } = params;
+    const { companyId } = await params;
 
     if (!companyId) {
       return NextResponse.json(
@@ -15,9 +15,10 @@ export async function GET(req, { params }) {
       );
     }
 
+    const AssignmentModel = getTenantModel("NewAssignment", companyId);
+
     // Fetch assignments that are pending visual review
-    const assignments = await NewAssignment.find({
-      companyId,
+    const assignments = await AssignmentModel.find({
       $or: [
         { status: 'Pending Visual Review' },
         { visualReviewStatus: 'Pending Visual Review' }

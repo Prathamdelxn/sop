@@ -1,17 +1,19 @@
 import connectDB from '@/utils/db';
-import NewAssignment from '@/model/NewAssignment';
+import { getTenantModel } from '@/utils/tenantDb';
 import { NextResponse } from 'next/server';
 
 export async function PUT(request) {
   try {
     await connectDB();
-    const { assignmentId, recordId, field, value, reviewerId, reviewerName } = await request.json();
+    const { assignmentId, recordId, field, value, reviewerId, reviewerName, companyId } = await request.json();
 
-    if (!assignmentId || recordId === undefined || !field || value === undefined) {
-      return NextResponse.json({ success: false, message: 'Missing fields' }, { status: 400 });
+    if (!assignmentId || recordId === undefined || !field || value === undefined || !companyId) {
+      return NextResponse.json({ success: false, message: 'Missing fields (including companyId)' }, { status: 400 });
     }
 
-    const assignment = await NewAssignment.findById(assignmentId);
+    const AssignmentModel = getTenantModel("NewAssignment", companyId);
+
+    const assignment = await AssignmentModel.findById(assignmentId);
     if (!assignment) {
       return NextResponse.json({ success: false, message: 'Assignment not found' }, { status: 404 });
     }

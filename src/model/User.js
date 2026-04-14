@@ -2,7 +2,7 @@ import mongoose from "mongoose";
 
 const userSchema = new mongoose.Schema({
   name: String,
-  email: { type: String, unique: true },
+  email: { type: String },
   password: { type: String, required: true },
   username:{type:String},
   companyId:{type:String},
@@ -14,6 +14,18 @@ location: {
 
 },
   role:{ type: String, required: true },
-}, { timestamps: true });0
+}, { timestamps: true });
+
+// Compound Unique Indices for Company Scoping
+userSchema.index(
+  { companyId: 1, email: 1 }, 
+  { unique: true, sparse: true, partialFilterExpression: { email: { $type: "string" } } }
+);
+userSchema.index({ companyId: 1, username: 1 }, { unique: true });
+userSchema.index(
+  { companyId: 1, phone: 1 }, 
+  { unique: true, partialFilterExpression: { phone: { $type: "string" } } }
+);
+
 delete mongoose.models.User;
 export default mongoose.models.User || mongoose.model("User", userSchema);

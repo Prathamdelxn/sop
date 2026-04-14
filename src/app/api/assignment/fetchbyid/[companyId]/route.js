@@ -1,19 +1,20 @@
-// app/api/assignment/fetchbyid/[companyId]/route.js
 import { NextResponse } from 'next/server';
 import dbConnect from '@/utils/db';
-import Assignment from '@/model/NewAssignment'; // Or use NewAssignment
+import { getTenantModel } from '@/utils/tenantDb';
 
 export async function GET(req, { params }) {
-  await dbConnect();
-
-  const { companyId } = params;
-
-  if (!companyId) {
-    return NextResponse.json({ message: 'companyId is required' }, { status: 400 });
-  }
-
   try {
-    const assignments = await Assignment.find({ companyId });
+    await dbConnect();
+
+    const { companyId } = await params;
+
+    if (!companyId) {
+      return NextResponse.json({ message: 'companyId is required' }, { status: 400 });
+    }
+
+    const AssignmentModel = getTenantModel("NewAssignment", companyId);
+    const assignments = await AssignmentModel.find({});
+    
     return NextResponse.json(assignments, { status: 200 });
   } catch (error) {
     console.error('Error fetching assignments:', error);

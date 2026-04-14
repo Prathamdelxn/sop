@@ -1,43 +1,46 @@
-// /app/api/assignment/create/route.js
-
 import { NextResponse } from 'next/server';
-import connectDB from '@/utils/db'; // your DB connection util
-import NewAssignment from '@/model/NewAssignment';
+import connectDB from '@/utils/db';
+import { getTenantModel } from '@/utils/tenantDb';
 
 export async function POST(req) {
-  await connectDB();
-
   try {
+    await connectDB();
     const body = await req.json();
-    console.log(body);
-    const { generatedId, equipment, prototype ,companyId,userId} = body;
+    
+    const { generatedId, equipment, prototype, companyId, userId } = body;
 
     // Validation
+    if (!companyId) {
+      return NextResponse.json({ success: false, message: "Company ID is required for data isolation" }, { status: 400 });
+    }
+
     if (!generatedId || !equipment || !prototype) {
       return NextResponse.json(
-        { success: false, message: 'Missing fields' },
+        { success: false, message: 'Missing required fields (generatedId, equipment, or prototype)' },
         { status: 400 }
       );
     }
-    console.log(prototype)
-    
 
-    const newAssignment = await NewAssignment.create({
+    // Get the dynamic NewAssignment model for this company
+    const AssignmentModel = getTenantModel("NewAssignment", companyId);
+
+    const newAssignment = await AssignmentModel.create({
       generatedId,
       equipment,
-      prototypeData:prototype,
+      prototypeData: prototype,
       companyId,
       userId
     });
-    console.log(newAssignment)
+
     return NextResponse.json({
       success: true,
+      message: 'Assignment created successfully in tenant storage',
       data: newAssignment,
     });
   } catch (error) {
     console.error('Error creating assignment:', error);
     return NextResponse.json(
-      { success: false, message: 'Server error' },
+      { success: false, message: 'Server error: ' + error.message },
       { status: 500 }
     );
   }

@@ -2430,12 +2430,21 @@ const PrototypeManagementPage = () => {
   const [documentNo, setDocumentNo] = useState('');
   const [effectiveDate, setEffectiveDate] = useState('');
   const [version, setVersion] = useState('1.0');
-const [errors, setErrors] = useState({
+  const [companyData, setCompanyData] = useState(null);
+  const [errors, setErrors] = useState({
     prototypeName: '',
     departmentName: '',
     effectiveDate: '',
     version:''
   });
+
+  useEffect(() => {
+    const userData = localStorage.getItem('user');
+    if (userData) {
+      setCompanyData(JSON.parse(userData));
+    }
+  }, []);
+
   const [stages, setStages] = useState([]);
   const [expandedItems, setExpandedItems] = useState({});
   const [selectedStage, setSelectedStage] = useState(null);
@@ -2443,18 +2452,20 @@ const [errors, setErrors] = useState({
   const [dragIndex, setDragIndex] = useState(null);
   const [isDragging, setIsDragging] = useState(false);
   const router = useRouter();
-const validateAllTasks = (tasks) => {
-  for (const task of tasks) {
-    if (!task.title.trim() || !task.description.trim()) {
-      return false;
+
+  const validateAllTasks = (tasks) => {
+    for (const task of tasks) {
+      if (!task.title.trim() || !task.description.trim()) {
+        return false;
+      }
+      if (task.subtasks && task.subtasks.length > 0) {
+        const valid = validateAllTasks(task.subtasks);
+        if (!valid) return false;
+      }
     }
-    if (task.subtasks && task.subtasks.length > 0) {
-      const valid = validateAllTasks(task.subtasks);
-      if (!valid) return false;
-    }
-  }
-  return true;
-};
+    return true;
+  };
+
   const addStage = useCallback(() => {
     const newStage = {
       id: Date.now(),
@@ -2539,8 +2550,9 @@ const validateAllTasks = (tasks) => {
   }, []);
   
   const checkIfChecklistExists = async (name) => {
+    if (!companyData?.companyId) return false;
     try {
-      const res = await fetch(`/api/checklist/exist/${name}`);
+      const res = await fetch(`/api/checklist/exist/${companyData.companyId}/${encodeURIComponent(name)}`);
       const data = await res.json();
       return data.exists; // true or false
     } catch (err) {

@@ -1,14 +1,23 @@
 import connectDB from '@/utils/db';
-import Assignment from '@/model/NewAssignment';
+import { getTenantModel } from '@/utils/tenantDb';
 
 export async function PUT(request) {
   try {
     await connectDB();
 
-    const { assignmentId, status, stages } = await request.json();
+    const { assignmentId, status, stages, companyId } = await request.json();
+
+    if (!assignmentId || !companyId) {
+       return Response.json(
+        { message: 'assignmentId and companyId are required' },
+        { status: 400 }
+      );
+    }
+
+    const AssignmentModel = getTenantModel("NewAssignment", companyId);
 
     // Fetch the assignment
-    const assignment = await Assignment.findById(assignmentId);
+    const assignment = await AssignmentModel.findById(assignmentId);
     if (!assignment) {
       return Response.json(
         { message: 'Assignment not found' },

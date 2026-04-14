@@ -1,12 +1,23 @@
 import { NextResponse } from 'next/server';
 import dbConnect from '@/utils/db';
-import Equipment from '@/model/Equipment';
+import { getTenantModel } from '@/utils/tenantDb';
 
-export async function GET() {
+export const dynamic = "force-dynamic";
+
+export async function GET(req) {
   try {
     await dbConnect();
+    const { searchParams } = new URL(req.url);
+    const companyId = searchParams.get("companyId");
 
-    const equipmentList = await Equipment.find().sort({ createdAt: -1 });
+    if (!companyId) {
+      return NextResponse.json({ success: false, message: "Company ID is required" }, { status: 400 });
+    }
+
+    // Get the dynamic Equipment model for this company
+    const EquipmentModel = getTenantModel("Equipment", companyId);
+
+    const equipmentList = await EquipmentModel.find().sort({ createdAt: -1 });
 
     return NextResponse.json({ success: true, data: equipmentList }, { status: 200 });
   } catch (err) {

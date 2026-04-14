@@ -81,7 +81,8 @@
 import { NextResponse } from "next/server";
 import connectDB from "@/utils/db";
 import SuperAdmin from "@/model/SuperAdmin";
-import User from "@/model/User"; // Import your User model
+import User from "@/model/User";
+import { migrateLegacyPermissions } from "@/utils/featurePermissions";
 
 export const dynamic = "force-dynamic";
 
@@ -120,31 +121,29 @@ export async function PUT(req) {
       );
     }
 
+    // Auto-migrate legacy permissions (e.g. "ElogBook" → 4 granular perms)
+    const migratedTasks = migrateLegacyPermissions(workerRole.task || []);
+
     // Update role in SuperAdmin
     superAdmin.workerRole[roleIndex] = {
       title: workerRole.title,
-      task: workerRole.task || []
+      task: migratedTasks
     };
 
     await superAdmin.save();
-console.log(superAdmin._id.toString()); // "68832664ae88c7c51c8595e5"
 
-console.log("dasf",oldRoleTitle.toLowerCase().replace(/\s+/g, '-'))
     // Update all users with this companyId and role
     const updateResult = await User.updateMany(
       {
         companyId: superAdmin._id.toString(),
-    role: oldRoleTitle.toLowerCase().replace(/\s+/g, '-')
-
+        role: oldRoleTitle.toLowerCase().replace(/\s+/g, '-')
       },
       {
         $set: {
-          task: workerRole.task || [],
-           
+          task: migratedTasks,
         }
       }
     );
-console.log(updateResult);
     return NextResponse.json({
       success: true,
       message: "Role and user tasks updated successfully",

@@ -546,32 +546,29 @@
 
 import { useEffect, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { FiCheck, FiPlus, FiTrash2, FiEdit2, FiX, FiAlertCircle, FiCheckCircle, FiAlertTriangle } from 'react-icons/fi';
+import { FiCheck, FiPlus, FiTrash2, FiEdit2, FiX, FiAlertCircle, FiCheckCircle, FiAlertTriangle, FiLock } from 'react-icons/fi';
 import { toast, ToastContainer } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 import { useSidebar } from '@/context/SidebarContext';
+import {
+  FEATURE_PERMISSIONS,
+  FEATURE_LABELS,
+  FEATURE_ORDER,
+  FEATURE_ICONS,
+  migrateLegacyPermissions,
+} from '@/utils/featurePermissions';
 
-const predefinedTasks = [
-  'Create Checklist',
-  'Create Equipment',
-  'Assign Checklist to Equipment',
-  'Assign Task',
-  'Task Execution',
-  'Approve Equipment',
-  'Review Task',
-  'Approve Checklist',
-  'Review Access',
-  'Visual Review',
-  'QA',
-  'Approve Tagged Chechlist with Equipment',
-  'ElogBook'
-];
+// Permissions are now fetched dynamically from featurePermissions.js
+// based on the company's enabled features.
 
 export default function UpdateWorkerRoles() {
   const [superadminId, setSuperadminId] = useState(null);
+  const [companyId, setCompanyId] = useState('');
   const [roleTitle, setRoleTitle] = useState('');
+  const [enabledFeatures, setEnabledFeatures] = useState([]);
   const [selectedTasks, setSelectedTasks] = useState([]);
   const [roles, setRoles] = useState([]);
+  const [allUsers, setAllUsers] = useState([]);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [activeTab, setActiveTab] = useState('manage');
   const [isDeleting, setIsDeleting] = useState(false);
@@ -590,7 +587,11 @@ export default function UpdateWorkerRoles() {
         if (data) {
           const userData = JSON.parse(data);
           setSuperadminId(userData.id);
+          setCompanyId(userData.companyId || userData.id);
+          // Load enabled features from the login-cached user data
+          setEnabledFeatures(userData.features || []);
           await fetchRoles(userData.id);
+          await fetchPeople(userData.id, userData.companyId || userData.id);
         }
       } catch (error) {
         console.error('Error fetching user data:', error);
@@ -633,6 +634,29 @@ export default function UpdateWorkerRoles() {
       console.error('Error fetching roles:', error);
       showAlert('Error fetching roles');
     }
+  };
+
+  const fetchPeople = async (adminId, slug) => {
+    try {
+      const targetContext = slug || adminId;
+      const res = await fetch(`/api/superAdmin/users/fetchAll?companyId=${targetContext}`);
+      if (!res.ok) throw new Error('Failed to fetch users');
+      const data = await res.json();
+      setAllUsers(data.users || []);
+    } catch (err) {
+      console.error("Error fetching users for count:", err);
+    }
+  };
+
+  const getUserCountForRole = (roleTitle) => {
+    if (!allUsers) return 0;
+    const slugify = (str) => str.toLowerCase().replace(/\s+/g, '-').replace(/[^\w-]/g, '');
+    const targetSlug = slugify(roleTitle);
+    
+    return allUsers.filter(user => 
+      slugify(user.role || '') === targetSlug && 
+      (user.companyId === superadminId || user.companyId === companyId)
+    ).length;
   };
 
   const handleTaskToggle = (task) => {
@@ -698,7 +722,8 @@ export default function UpdateWorkerRoles() {
   const handleEditRole = (role) => {
     setEditingRole(role);
     setRoleTitle(role.title);
-    setSelectedTasks(role.task || []);
+    // Migrate any legacy permissions (e.g. old "ElogBook" → granular)
+    setSelectedTasks(migrateLegacyPermissions(role.task || []));
     setActiveTab('create');
   };
 
@@ -815,16 +840,45 @@ export default function UpdateWorkerRoles() {
   return (
     <div className="min-h-screen bg-gray-50 p-4 sm:p-6">
       <div className="max-w-6xl mx-auto">
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          className="mb-8"
-        >
-          <h1 className="text-2xl sm:text-3xl font-bold text-gray-900">Worker Role Management</h1>
-          <p className="text-gray-600 mt-2 text-sm sm:text-base">
-            Define and manage permissions for different worker roles
-          </p>
-        </motion.div>
+        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-8">
+          <motion.div
+            initial={{ opacity: 0, x: -20 }}
+            animate={{ opacity: 1, x: 0 }}
+          >
+            <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 leading-tight">Worker Role Management</h1>
+            <p className="text-gray-600 mt-2 text-sm sm:text-base">
+              Define permissions and manage staff per role
+            </p>
+          </motion.div>
+
+          {/* New Company ID Badge for convenience */}
+          <motion.div 
+            initial={{ opacity: 0, x: 20 }}
+            animate={{ opacity: 1, x: 0 }}
+            className="bg-white px-5 py-4 rounded-2xl shadow-sm border border-indigo-100 flex items-center space-x-4"
+          >
+            <div className="w-12 h-12 bg-indigo-50 rounded-xl flex items-center justify-center text-indigo-600">
+              <FiCheckCircle size={24} />
+            </div>
+            <div>
+              <p className="text-xs font-semibold text-gray-400 uppercase tracking-widest">Your Company ID</p>
+              <div className="flex items-center space-x-2">
+                <code className="text-lg font-bold text-indigo-700 bg-indigo-50/50 px-2 rounded">{companyId || superadminId}</code>
+                <button 
+                   onClick={() => {
+                     navigator.clipboard.writeText(companyId || superadminId);
+                     toast.info("Company ID copied to clipboard!");
+                   }}
+                   className="p-1 hover:bg-gray-100 rounded transition-colors text-gray-400 hover:text-indigo-600"
+                   title="Copy ID"
+                >
+                  <FiPlus className="rotate-45" size={16} /> {/* Simple icon as placeholder for copy if FiCopy isn't available, but let's just use what's imported */}
+                </button>
+              </div>
+              <p className="text-[10px] text-gray-400 mt-1 italic italic">Staff need this ID to login</p>
+            </div>
+          </motion.div>
+        </div>
 
         <div className="bg-white rounded-xl shadow-sm overflow-hidden mb-8">
           <div className="flex border-b border-gray-200">
@@ -899,34 +953,80 @@ export default function UpdateWorkerRoles() {
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                  <label className="block text-sm font-medium text-gray-700 mb-3">
                     Assign Permissions
                   </label>
-                  <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-2 sm:gap-3">
-                    {predefinedTasks.map((task, index) => (
-                      <motion.div
-                        key={index}
-                        whileHover={{ scale: 1.02 }}
-                        whileTap={{ scale: 0.98 }}
-                      >
-                        <button
-                          type="button"
-                          onClick={() => handleTaskToggle(task)}
-                          className={`w-full text-left p-2 sm:p-3 rounded-lg border transition-all flex items-center ${selectedTasks.includes(task)
-                              ? 'bg-indigo-50 border-indigo-200 text-indigo-700'
-                              : 'bg-gray-50 hover:bg-gray-100 border-gray-200'
-                            }`}
-                        >
-                          <span className={`w-5 h-5 flex items-center justify-center mr-2 sm:mr-3 rounded border ${selectedTasks.includes(task)
-                              ? 'bg-indigo-600 border-indigo-600 text-white'
-                              : 'bg-white border-gray-300'
-                            }`}>
-                            {selectedTasks.includes(task) && <FiCheck size={14} />}
-                          </span>
-                          <span className="text-sm sm:text-base">{task}</span>
-                        </button>
-                      </motion.div>
-                    ))}
+                  <div className="space-y-6">
+                    {FEATURE_ORDER.map((featureKey) => {
+                      const isEnabled = enabledFeatures.includes(featureKey);
+                      const permissions = FEATURE_PERMISSIONS[featureKey] || [];
+                      const label = FEATURE_LABELS[featureKey] || featureKey;
+                      const icon = FEATURE_ICONS[featureKey] || '📦';
+                      const isComingSoon = isEnabled && permissions.length === 0;
+
+                      // Skip features the company doesn't have access to
+                      if (!isEnabled) return null;
+
+                      return (
+                        <div key={featureKey} className="rounded-xl border border-gray-200 overflow-hidden">
+                          {/* Feature Section Header */}
+                          <div className="flex items-center justify-between px-4 py-3 bg-gradient-to-r from-gray-50 to-slate-50 border-b border-gray-200">
+                            <div className="flex items-center space-x-2">
+                              <span className="text-lg">{icon}</span>
+                              <h4 className="text-sm font-semibold text-gray-700">{label}</h4>
+                            </div>
+                            {isComingSoon && (
+                              <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-amber-100 text-amber-800 border border-amber-200">
+                                <FiLock className="mr-1" size={10} />
+                                Coming Soon
+                              </span>
+                            )}
+                            {!isComingSoon && permissions.length > 0 && (
+                              <span className="text-xs text-gray-400">
+                                {permissions.filter(p => selectedTasks.includes(p)).length}/{permissions.length} selected
+                              </span>
+                            )}
+                          </div>
+
+                          {/* Permissions Grid */}
+                          {isComingSoon ? (
+                            <div className="px-4 py-6 text-center text-gray-400">
+                              <FiLock className="mx-auto mb-2" size={24} />
+                              <p className="text-sm">This phase is under development</p>
+                            </div>
+                          ) : (
+                            <div className="p-3">
+                              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-2">
+                                {permissions.map((task, index) => (
+                                  <motion.div
+                                    key={index}
+                                    whileHover={{ scale: 1.02 }}
+                                    whileTap={{ scale: 0.98 }}
+                                  >
+                                    <button
+                                      type="button"
+                                      onClick={() => handleTaskToggle(task)}
+                                      className={`w-full text-left p-2 sm:p-3 rounded-lg border transition-all flex items-center ${selectedTasks.includes(task)
+                                          ? 'bg-indigo-50 border-indigo-200 text-indigo-700'
+                                          : 'bg-gray-50 hover:bg-gray-100 border-gray-200'
+                                        }`}
+                                    >
+                                      <span className={`w-5 h-5 flex items-center justify-center mr-2 sm:mr-3 rounded border ${selectedTasks.includes(task)
+                                          ? 'bg-indigo-600 border-indigo-600 text-white'
+                                          : 'bg-white border-gray-300'
+                                        }`}>
+                                        {selectedTasks.includes(task) && <FiCheck size={14} />}
+                                      </span>
+                                      <span className="text-sm">{task}</span>
+                                    </button>
+                                  </motion.div>
+                                ))}
+                              </div>
+                            </div>
+                          )}
+                        </div>
+                      );
+                    })}
                   </div>
                 </div>
 
@@ -993,6 +1093,9 @@ export default function UpdateWorkerRoles() {
                                   Role
                                 </th>
                                 <th scope="col" className="px-4 sm:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                  Staff
+                                </th>
+                                <th scope="col" className="px-4 sm:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                                   Permissions
                                 </th>
                                 <th scope="col" className="px-4 sm:px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
@@ -1013,6 +1116,14 @@ export default function UpdateWorkerRoles() {
                                   >
                                     <td className="px-4 sm:px-6 py-4 whitespace-nowrap font-medium text-gray-900">
                                       {role.title}
+                                    </td>
+                                    <td className="px-4 sm:px-6 py-4 whitespace-nowrap">
+                                      <div className="flex items-center space-x-2">
+                                        <div className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold ${getUserCountForRole(role.title) > 0 ? 'bg-indigo-100 text-indigo-700' : 'bg-gray-100 text-gray-400'}`}>
+                                          {getUserCountForRole(role.title)}
+                                        </div>
+                                        <span className="text-sm text-gray-500">People</span>
+                                      </div>
                                     </td>
                                     <td className="px-4 sm:px-6 py-4">
                                       <div className="flex flex-wrap gap-1 sm:gap-2">
