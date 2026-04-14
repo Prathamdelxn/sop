@@ -1,0 +1,41 @@
+import mongoose from "mongoose";
+
+const stoppageSchema = new mongoose.Schema({
+  stopTime: { type: Date, required: true },
+  restartTime: { type: Date, default: null },
+  reason: { type: String, default: "" },
+  lostMinutes: { type: Number, default: 0 }, // auto-calculated
+}, { _id: true });
+
+const elogbookBasketSchema = new mongoose.Schema({
+  companyId: { type: String, required: true },
+  masterDataId: { type: mongoose.Schema.Types.ObjectId, ref: "ElogbookMasterData", required: true },
+  basketNumber: { type: Number, required: true },
+  barcode: { type: String, default: "" }, // scanned barcode value
+  date: { type: Date, default: Date.now },
+
+  // Lifecycle timestamps
+  startTime: { type: Date, default: null },
+  startUser: { type: String, default: "" },
+  endTime: { type: Date, default: null },
+  endUser: { type: String, default: "" },
+
+  // Stoppages (multiple stop/restart pairs)
+  stoppages: [stoppageSchema],
+
+  // Calculated fields
+  actualCycleTime: { type: Number, default: 0 }, // minutes
+  totalLostTime: { type: Number, default: 0 }, // minutes
+
+  // Additional operators
+  additionalUsers: [{ type: String }], // manually entered names
+
+  status: {
+    type: String,
+    enum: ["pending", "in-progress", "stopped", "completed", "pending-qc", "qc-done"],
+    default: "pending",
+  },
+}, { timestamps: true });
+
+delete mongoose.models.ElogbookBasket;
+export default mongoose.models.ElogbookBasket || mongoose.model("ElogbookBasket", elogbookBasketSchema);

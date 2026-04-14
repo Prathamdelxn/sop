@@ -1,27 +1,52 @@
 import mongoose from "mongoose";
- 
-let isConnected = false; // Track connection status (for dev hot-reload)
- 
-export default async function dbConnect() {
-  if (isConnected) return;
- 
-  try {
-    const mongoUri = process.env.MONGODB_URI;
-    if (!mongoUri) throw new Error("Please define MONGODB_URI in your .env.local");
- 
-    const db = await mongoose.connect(mongoUri, {
-      useNewUrlParser: true,
-      useUnifiedTopology: true,
-      autoIndex: false,
-      dbName: "sop", // Optional: Specify your DB name here
-    });
- 
-    isConnected = db.connections[0].readyState;
-    console.log("✅ MongoDB connected:", db.connection.host);
-  } catch (err) {
-    console.error("❌ MongoDB connection error:", err);
-    throw err;
-  }
+import dns from "dns";
+
+// dns.setDefaultResultOrder("ipv4first"); 
+
+const MONGODB_URI = process.env.MONGODB_URI;
+
+if (!MONGODB_URI) {
+  throw new Error("❌ MONGODB_URI missing");
 }
- 
- 
+
+// ✅ FIX: safer global cache
+let cached = global.mongoose;
+
+if (!cached) {
+  cached = global.mongoose = { conn: null, promise: null };
+}
+
+async function dbConnect() {
+  console.log("👉 dbConnect called");
+
+  // ❌ IMPORTANT FIX: verify connection is actually alive
+  if (cached.conn && mongoose.connection.readyState === 1) {
+    console.log("⚡ Using ACTIVE cached connection");
+    return cached.conn;
+  }
+
+  console.log("⏳ Creating new connection...");
+
+  if (!cached.promise) {
+    cached.promise = mongoose.connect(MONGODB_URI, {
+      bufferCommands: false,
+      dbName: "sop",
+    }).then((mongoose) => {
+      console.log("✅ MongoDB connected:", mongoose.connection.host);
+      return mongoose;
+    });
+  }
+
+  try {
+    cached.conn = await cached.promise;
+  } catch (error) {
+    console.error("❌ Connection failed:", error);
+    cached.promise = null;
+    cached.conn = null;
+    throw error;
+  }
+
+  return cached.conn;
+}
+
+export default dbConnect;

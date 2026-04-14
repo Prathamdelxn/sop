@@ -24,7 +24,8 @@ import {
   Settings2,
   Activity,
   ShieldCheck,
-  UserCog
+  UserCog,
+  Book
 } from 'lucide-react';
 
 const allNavigationItems = [
@@ -35,6 +36,7 @@ const allNavigationItems = [
   { name: 'Assign Checklist to Equipment', href: '/dashboard/assign-checklist-to-equipment', icon: Link, current: false, category: 'Management' },
   { name: 'Assign Task', href: '/dashboard/assign-task', icon: ClipboardList, current: false, category: 'Operations' },
   { name: 'Task Execution', href: '/dashboard/task-execution', icon: PlayCircle, current: false, category: 'Operations' },
+  { name: 'ElogBook', href: '/dashboard/elogbook', icon: Book, current: false, category: 'Operations' },
   { name: 'Approve Equipment', href: '/dashboard/approve-equipment', icon: CheckCircle2, current: false, category: 'Approvals' },
   { name: 'Review Task', href: '/dashboard/review-task', icon: UserCheck, current: false, category: 'Approvals' },
   { name: 'Visual & QA Review', href: '/dashboard/visual-review', icon: ShieldCheck, current: false, category: 'Approvals' },

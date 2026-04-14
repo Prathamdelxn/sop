@@ -563,7 +563,8 @@ const predefinedTasks = [
   'Review Access',
   'Visual Review',
   'QA',
-  'Approve Tagged Chechlist with Equipment'
+  'Approve Tagged Chechlist with Equipment',
+  'ElogBook'
 ];
 
 export default function UpdateWorkerRoles() {
