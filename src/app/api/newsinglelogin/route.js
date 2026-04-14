@@ -10,9 +10,8 @@ import User from "@/model/User"; // ✅ import User model
 export const dynamic = "force-dynamic";
 
 export async function POST(req) {
-  await connectDB();
-
   try {
+    await connectDB();
     const body = await req.json();
     const { username, password } = body;
 
