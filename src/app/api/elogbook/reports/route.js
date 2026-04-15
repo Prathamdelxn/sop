@@ -2,27 +2,34 @@ import { NextResponse } from "next/server";
 import connectDB from "@/utils/db";
 import ElogbookBasket from "@/model/ElogbookBasket";
 import ElogbookQC from "@/model/ElogbookQC";
-import ElogbookMasterData from "@/model/ElogbookMasterData";
 
 export const dynamic = "force-dynamic";
 
 // GET — aggregated report data for charts
-export async function GET(req) {
-  await connectDB();
+export async function GET(request) {
   try {
-    const { searchParams } = new URL(req.url);
+    await connectDB();
+
+    const { searchParams } = new URL(request.url);
     const companyId = searchParams.get("companyId");
     const startDate = searchParams.get("startDate");
     const endDate = searchParams.get("endDate");
     const masterDataId = searchParams.get("masterDataId");
 
+    console.log("Reports API called with params:", { companyId, startDate, endDate, masterDataId });
+
     if (!companyId) {
-      return NextResponse.json({ success: false, message: "companyId required" }, { status: 400 });
+      return NextResponse.json({
+        success: false,
+        message: "companyId required"
+      }, { status: 400 });
     }
 
     // Build basket filter
     const basketFilter = { companyId };
-    if (masterDataId) basketFilter.masterDataId = masterDataId;
+    if (masterDataId && masterDataId !== "") {
+      basketFilter.masterDataId = masterDataId;
+    }
 
     if (startDate || endDate) {
       basketFilter.date = {};
@@ -38,14 +45,22 @@ export async function GET(req) {
       }
     }
 
+    console.log("Basket filter:", JSON.stringify(basketFilter, null, 2));
+
     // Fetch baskets
     const baskets = await ElogbookBasket.find(basketFilter)
       .populate("masterDataId")
       .sort({ basketNumber: 1 });
 
+    console.log(`Found ${baskets.length} baskets`);
+
     // Fetch QC records for these baskets
     const basketIds = baskets.map(b => b._id);
-    const qcRecords = await ElogbookQC.find({ basketId: { $in: basketIds } });
+    let qcRecords = [];
+    if (basketIds.length > 0) {
+      qcRecords = await ElogbookQC.find({ basketId: { $in: basketIds } });
+      console.log(`Found ${qcRecords.length} QC records`);
+    }
 
     // Map QC by basketId
     const qcMap = {};
@@ -56,7 +71,13 @@ export async function GET(req) {
     // Build chart data
     const cycleTimeData = [];
     const quantityData = [];
-    let totalDefects = { watermark1: 0, watermark2: 0, maskingProblem: 0, scratchMark: 0, pvcPeelOff: 0 };
+    let totalDefects = {
+      watermark1: 0,
+      watermark2: 0,
+      maskingProblem: 0,
+      scratchMark: 0,
+      pvcPeelOff: 0
+    };
 
     let totalBaskets = 0;
     let totalCycleTime = 0;
@@ -71,18 +92,22 @@ export async function GET(req) {
       cycleTimeData.push({
         name: label,
         actual: basket.actualCycleTime || 0,
-        standard,
+        standard: standard,
         lost: basket.totalLostTime || 0,
         exceeds: (basket.actualCycleTime || 0) > standard,
       });
 
       const qc = qcMap[basket._id.toString()];
       if (qc) {
+        const goodQty = qc.finalGoodQuantity || qc.goodQuantity || 0;
+        const reworkQty = qc.reworkQuantity || 0;
+        const rejectedQty = qc.permanentRejections || 0;
+
         quantityData.push({
           name: label,
-          good: qc.finalGoodQuantity || qc.goodQuantity || 0,
-          defective: qc.reworkQuantity || 0,
-          rejected: qc.permanentRejections || 0,
+          good: goodQty,
+          defective: reworkQty,
+          rejected: rejectedQty,
           inspected: qc.inspectedQuantity || 0,
         });
 
@@ -93,8 +118,17 @@ export async function GET(req) {
           });
         }
 
-        totalGood += qc.finalGoodQuantity || qc.goodQuantity || 0;
+        totalGood += goodQty;
         totalInspected += qc.inspectedQuantity || 0;
+      } else {
+        // Push empty data for baskets without QC
+        quantityData.push({
+          name: label,
+          good: 0,
+          defective: 0,
+          rejected: 0,
+          inspected: 0,
+        });
       }
 
       totalBaskets++;
@@ -102,16 +136,18 @@ export async function GET(req) {
       totalLostTime += basket.totalLostTime || 0;
     });
 
-    const defectTrendData = Object.entries(totalDefects).map(([key, value]) => ({
-      name: key === "watermark1" ? "Watermark 1"
-        : key === "watermark2" ? "Watermark 2"
-        : key === "maskingProblem" ? "Masking Problem"
-        : key === "scratchMark" ? "Scratch Mark"
-        : "PVC Peel Off",
-      count: value,
-    }));
+    const defectTrendData = Object.entries(totalDefects)
+      .filter(([_, value]) => value > 0)
+      .map(([key, value]) => ({
+        name: key === "watermark1" ? "Watermark 1"
+          : key === "watermark2" ? "Watermark 2"
+            : key === "maskingProblem" ? "Masking Problem"
+              : key === "scratchMark" ? "Scratch Mark"
+                : "PVC Peel Off",
+        count: value,
+      }));
 
-    return NextResponse.json({
+    const responseData = {
       success: true,
       data: {
         cycleTimeData,
@@ -126,9 +162,30 @@ export async function GET(req) {
           defectRate: totalInspected ? Math.round(((totalInspected - totalGood) / totalInspected) * 10000) / 100 : 0,
         },
       },
+    };
+
+    console.log("Sending response with data lengths:", {
+      cycleTimeData: cycleTimeData.length,
+      quantityData: quantityData.length,
+      defectTrendData: defectTrendData.length
     });
+
+    return NextResponse.json(responseData);
+
   } catch (error) {
     console.error("ElogbookReports GET error:", error);
-    return NextResponse.json({ success: false, message: error.message }, { status: 500 });
+    return NextResponse.json({
+      success: false,
+      message: error.message || "Internal server error",
+    }, { status: 500 });
   }
+}
+
+// OPTIONS handler for CORS if needed
+export async function OPTIONS() {
+  return NextResponse.json({}, {
+    headers: {
+      'Allow': 'GET, OPTIONS',
+    },
+  });
 }

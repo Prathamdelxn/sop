@@ -88,9 +88,12 @@ export default function QCPage() {
     }));
   };
 
-  const handleSubmitQC = async (basketId) => {
+  const handleSubmitQC = async (basket) => {
+    const basketId = basket._id;
     const form = getFormForBasket(basketId);
-    if (!form.inspectedQuantity) return alert('Please enter inspected quantity');
+    const inspectedQty = basket.masterDataId?.partsPerBasket;
+
+    if (!inspectedQty) return alert('Inspected quantity is missing from master data');
 
     setSaving(basketId);
     try {
@@ -101,7 +104,7 @@ export default function QCPage() {
           basketId,
           companyId: userData.companyId,
           inspectorName: userData.name || userData.username,
-          inspectedQuantity: Number(form.inspectedQuantity),
+          inspectedQuantity: Number(inspectedQty),
           goodQuantity: Number(form.goodQuantity) || 0,
           defects: form.defects,
         }),
@@ -186,7 +189,8 @@ export default function QCPage() {
             {pendingBaskets.map(basket => {
               const form = getFormForBasket(basket._id);
               const totalDefects = Object.values(form.defects).reduce((sum, v) => sum + v, 0);
-              const reworkQty = (Number(form.inspectedQuantity) || 0) - (Number(form.goodQuantity) || 0);
+              const inspectedQty = basket.masterDataId?.partsPerBasket || 0;
+              const reworkQty = inspectedQty - (Number(form.goodQuantity) || 0);
 
               return (
                 <div key={basket._id} className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
@@ -217,10 +221,9 @@ export default function QCPage() {
                     <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
                       <div>
                         <label className="block text-xs font-semibold text-gray-600 mb-1.5">Inspected Qty *</label>
-                        <input type="number" value={form.inspectedQuantity}
-                          onChange={e => updateForm(basket._id, 'inspectedQuantity', e.target.value)}
-                          placeholder={String(basket.masterDataId?.partsPerBasket || '400')}
-                          className="w-full px-3 py-2.5 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-400" />
+                        <input type="number" value={inspectedQty}
+                          readOnly
+                          className="w-full px-3 py-2.5 border border-gray-100 bg-gray-50 rounded-xl text-sm font-semibold text-gray-700 cursor-not-allowed focus:outline-none" />
                       </div>
                       <div>
                         <label className="block text-xs font-semibold text-gray-600 mb-1.5">Good Qty</label>
@@ -255,7 +258,7 @@ export default function QCPage() {
 
                     {/* Submit */}
                     <div className="flex justify-end pt-2">
-                      <button onClick={() => handleSubmitQC(basket._id)}
+                      <button onClick={() => handleSubmitQC(basket)}
                         disabled={saving === basket._id}
                         className="flex items-center gap-2 px-6 py-2.5 bg-gradient-to-r from-indigo-600 to-purple-600 text-white rounded-xl font-semibold text-sm shadow-lg shadow-indigo-200 hover:shadow-xl transition-all active:scale-95 disabled:opacity-50">
                         {saving === basket._id ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
@@ -358,20 +361,44 @@ export default function QCPage() {
                           </h4>
                           <div className="grid grid-cols-2 gap-3 mb-3">
                             <div>
-                              <label className="block text-xs font-semibold text-amber-700 mb-1">Passed after rework</label>
-                              <input type="number" id={`rework-passed-${qc._id}`} defaultValue={0}
+                              <label className="block text-xs font-semibold text-amber-700 mb-1">Passed after rework (Max {qc.reworkQuantity})</label>
+                              <input type="number" id={`rework-passed-${qc._id}`} defaultValue={0} min="0" max={qc.reworkQuantity}
+                                onChange={(e) => {
+                                  let passed = parseInt(e.target.value) || 0;
+                                  if (passed > qc.reworkQuantity) {
+                                    passed = qc.reworkQuantity;
+                                    e.target.value = passed;
+                                  } else if (passed < 0) {
+                                    passed = 0;
+                                    e.target.value = passed;
+                                  }
+                                  const rejectedEl = document.getElementById(`rework-rejected-${qc._id}`);
+                                  if (rejectedEl) {
+                                    rejectedEl.value = qc.reworkQuantity - passed;
+                                  }
+                                }}
                                 className="w-full px-3 py-2 border border-amber-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-amber-500/20" />
                             </div>
                             <div>
                               <label className="block text-xs font-semibold text-amber-700 mb-1">Permanent Rejections</label>
-                              <input type="number" id={`rework-rejected-${qc._id}`} defaultValue={0}
-                                className="w-full px-3 py-2 border border-amber-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-amber-500/20" />
+                              <input type="number" id={`rework-rejected-${qc._id}`} defaultValue={qc.reworkQuantity} readOnly
+                                className="w-full px-3 py-2 border border-amber-200 bg-amber-100/50 rounded-lg text-sm font-bold text-amber-900 cursor-not-allowed focus:outline-none" />
                             </div>
                           </div>
                           <button
                             onClick={() => {
-                              const passed = document.getElementById(`rework-passed-${qc._id}`)?.value;
-                              const rejected = document.getElementById(`rework-rejected-${qc._id}`)?.value;
+                              const passed = parseInt(document.getElementById(`rework-passed-${qc._id}`)?.value) || 0;
+                              const rejected = parseInt(document.getElementById(`rework-rejected-${qc._id}`)?.value) || 0;
+                              
+                              if (passed < 0 || rejected < 0) {
+                                alert("Quantities cannot be negative.");
+                                return;
+                              }
+                              if (passed + rejected !== qc.reworkQuantity) {
+                                alert(`Invalid Rework Quantities!\n\nPassed (${passed}) + Rejected (${rejected}) = ${passed + rejected}\nMust equal total rework quantity: ${qc.reworkQuantity}`);
+                                return;
+                              }
+                              
                               handleReworkUpdate(qc._id, passed, rejected);
                             }}
                             disabled={saving === qc._id}

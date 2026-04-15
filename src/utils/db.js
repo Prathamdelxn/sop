@@ -1,16 +1,32 @@
 import mongoose from "mongoose";
-import dns from "dns";
 
-const dnsPromises = dns.promises;
+// Only import dns in server environment
+let dns;
+let dnsPromises;
+
+if (typeof process !== 'undefined' && process.versions && process.versions.node) {
+  // This is a Node.js environment
+  try {
+    dns = await import('dns');
+    dnsPromises = dns.promises;
+  } catch (e) {
+    console.warn("DNS module not available, using standard connection only");
+  }
+}
 
 /**
  * Manually resolves MongoDB SRV and TXT records to construct a standard connection string.
  * This is a fallback for environments where Node's internal SRV resolution fails (ECONNREFUSED).
  */
 async function resolveManualUri(srvUri) {
+  if (!dnsPromises) {
+    console.log("DNS module not available, skipping manual resolution");
+    return null;
+  }
+
   try {
     console.log("🔍 Attempting manual SRV resolution...");
-    const url = new URL(srvUri.replace("mongodb+srv://", "http://")); // URL parser trick
+    const url = new URL(srvUri.replace("mongodb+srv://", "http://"));
     const username = url.username;
     const password = url.password;
     const hostname = url.hostname;
@@ -30,7 +46,6 @@ async function resolveManualUri(srvUri) {
     try {
       const txtRecords = await dnsPromises.resolveTxt(hostname);
       if (txtRecords && txtRecords.length > 0) {
-        // Flatten and join TXT records
         extraOptions = txtRecords.flat().join("&");
       }
     } catch (e) {
@@ -38,13 +53,12 @@ async function resolveManualUri(srvUri) {
     }
 
     // 3. Construct Standard URI
-    // Combine original search params with TXT options
     const finalOptions = new URLSearchParams(searchParams);
     if (extraOptions) {
       const txtParams = new URLSearchParams(extraOptions);
       txtParams.forEach((value, key) => finalOptions.set(key, value));
     }
-    
+
     // Ensure ssl is true for Atlas
     if (!finalOptions.has("ssl") && !finalOptions.has("tls")) {
       finalOptions.set("ssl", "true");
@@ -74,12 +88,14 @@ if (!cached) {
 async function dbConnect() {
   console.log("👉 dbConnect called");
 
-  // Configure DNS
-  try {
-    dns.setDefaultResultOrder("ipv4first");
-    dns.setServers(["8.8.8.8", "1.1.1.1"]);
-  } catch (e) {
-    console.warn("⚠️ Failed to set DNS servers:", e.message);
+  // Configure DNS only in Node.js environment
+  if (dns && typeof dns.setDefaultResultOrder === 'function') {
+    try {
+      dns.setDefaultResultOrder("ipv4first");
+      dns.setServers(["8.8.8.8", "1.1.1.1"]);
+    } catch (e) {
+      console.warn("⚠️ Failed to set DNS servers:", e.message);
+    }
   }
 
   if (cached.conn && mongoose.connection.readyState === 1) {
@@ -99,7 +115,7 @@ async function dbConnect() {
     cached.promise = mongoose.connect(MONGODB_URI, opts)
       .catch(async (err) => {
         // If it's a DNS SRV error, try the manual fallback
-        if (err.message.includes("querySrv") || err.code === "ECONNREFUSED" || err.message.includes("SRV")) {
+        if ((err.message && (err.message.includes("querySrv") || err.message.includes("SRV"))) || err.code === "ECONNREFUSED") {
           console.warn("⚠️ SRV Connection failed, trying Smart Fallback...");
           const manualUri = await resolveManualUri(MONGODB_URI);
           if (manualUri) {

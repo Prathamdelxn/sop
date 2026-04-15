@@ -8,45 +8,73 @@ import {
   Plus, ChevronDown, Users, X, Zap, Thermometer
 } from 'lucide-react';
 
+// Helper function to format seconds to MM:SS
+const formatTimeToMMSS = (minutes) => {
+  const totalSeconds = minutes * 60;
+  const mins = Math.floor(totalSeconds / 60);
+  const secs = Math.floor(totalSeconds % 60);
+  return `${mins}m ${secs}s`;
+};
+
+// Helper function to format seconds to HH:MM:SS
+const formatSecondsToHMS = (seconds) => {
+  const hrs = String(Math.floor(seconds / 3600)).padStart(2, '0');
+  const mins = String(Math.floor((seconds % 3600) / 60)).padStart(2, '0');
+  const secs = String(seconds % 60).padStart(2, '0');
+  return `${hrs}:${mins}:${secs}`;
+};
+
 // Live timer component
 function LiveTimer({ startTime, stoppages, isPaused }) {
   const [elapsed, setElapsed] = useState('00:00:00');
-  const [lostTime, setLostTime] = useState(0);
+  const [elapsedSeconds, setElapsedSeconds] = useState(0);
+  const [lostSeconds, setLostSeconds] = useState(0);
 
   useEffect(() => {
     if (!startTime) return;
+
     const interval = setInterval(() => {
       const now = new Date();
       const start = new Date(startTime);
-      let totalLost = 0;
+      let totalLostMs = 0;
+
       (stoppages || []).forEach(s => {
         if (s.restartTime) {
-          totalLost += (new Date(s.restartTime) - new Date(s.stopTime));
+          totalLostMs += (new Date(s.restartTime) - new Date(s.stopTime));
         } else {
           // Currently stopped
-          totalLost += (now - new Date(s.stopTime));
+          totalLostMs += (now - new Date(s.stopTime));
         }
       });
-      setLostTime(Math.floor(totalLost / 1000));
-      const effective = Math.max(0, Math.floor((now - start) / 1000) - Math.floor(totalLost / 1000));
-      const hrs = String(Math.floor(effective / 3600)).padStart(2, '0');
-      const mins = String(Math.floor((effective % 3600) / 60)).padStart(2, '0');
-      const secs = String(effective % 60).padStart(2, '0');
-      setElapsed(`${hrs}:${mins}:${secs}`);
+
+      const lostSecs = Math.floor(totalLostMs / 1000);
+      const totalElapsedSecs = Math.floor((now - start) / 1000);
+      const effectiveSecs = Math.max(0, totalElapsedSecs - lostSecs);
+
+      setLostSeconds(lostSecs);
+      setElapsedSeconds(effectiveSecs);
+      setElapsed(formatSecondsToHMS(effectiveSecs));
     }, 1000);
+
     return () => clearInterval(interval);
   }, [startTime, stoppages]);
 
   return (
-    <div className="flex items-center gap-3">
-      <div className={`font-mono text-2xl font-black ${isPaused ? 'text-amber-600' : 'text-emerald-600'}`}>
-        {elapsed}
-      </div>
-      {lostTime > 0 && (
-        <div className="text-xs text-red-500 font-medium bg-red-50 px-2 py-0.5 rounded-md">
-          -{Math.floor(lostTime / 60)}m {lostTime % 60}s lost
+    <div className="flex flex-col gap-1">
+      <div className="flex items-center gap-3">
+        <div className={`font-mono text-2xl font-black ${isPaused ? 'text-amber-600' : 'text-emerald-600'}`}>
+          {elapsed}
         </div>
-      )}
+        {lostSeconds > 0 && (
+          <div className="text-xs text-red-500 font-medium bg-red-50 px-2 py-0.5 rounded-md">
+            -{Math.floor(lostSeconds / 60)}m {lostSeconds % 60}s lost
+          </div>
+        )}
+      </div>
+      <div className="text-xs text-gray-400">
+        Running: {Math.floor(elapsedSeconds / 60)}m {elapsedSeconds % 60}s
+        {lostSeconds > 0 && ` • Stopped: ${Math.floor(lostSeconds / 60)}m ${lostSeconds % 60}s`}
+      </div>
     </div>
   );
 }
@@ -193,11 +221,18 @@ export default function ProductionPage() {
     if (!confirm('Are you sure you want to end this cycle?')) return;
     setActionLoading(basketId);
     try {
-      await fetch(`/api/elogbook/baskets/${basketId}`, {
+      const response = await fetch(`/api/elogbook/baskets/${basketId}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ action: 'end', endUser: userData.name || userData.username }),
       });
+      const result = await response.json();
+
+      // Show calculation details if available
+      if (result.calculation) {
+        console.log('Calculation details:', result.calculation);
+      }
+
       fetchBaskets();
     } catch (err) {
       console.error('End error:', err);
@@ -339,20 +374,18 @@ export default function ProductionPage() {
 
             return (
               <div key={basket._id}
-                className={`bg-white rounded-2xl border p-5 transition-all duration-300 hover:shadow-lg ${
-                  basket.status === 'in-progress' ? 'border-emerald-200 shadow-md shadow-emerald-50' :
-                  basket.status === 'stopped' ? 'border-amber-200 shadow-md shadow-amber-50' :
-                  isOver ? 'border-red-200' : 'border-gray-100'
-                }`}
+                className={`bg-white rounded-2xl border p-5 transition-all duration-300 hover:shadow-lg ${basket.status === 'in-progress' ? 'border-emerald-200 shadow-md shadow-emerald-50' :
+                    basket.status === 'stopped' ? 'border-amber-200 shadow-md shadow-amber-50' :
+                      isOver ? 'border-red-200' : 'border-gray-100'
+                  }`}
               >
                 {/* Header */}
                 <div className="flex items-center justify-between mb-4">
                   <div className="flex items-center gap-2">
-                    <div className={`w-10 h-10 rounded-xl flex items-center justify-center font-bold text-white ${
-                      basket.status === 'in-progress' ? 'bg-gradient-to-br from-emerald-500 to-teal-500' :
-                      basket.status === 'stopped' ? 'bg-gradient-to-br from-amber-500 to-orange-500' :
-                      'bg-gradient-to-br from-gray-400 to-gray-500'
-                    }`}>
+                    <div className={`w-10 h-10 rounded-xl flex items-center justify-center font-bold text-white ${basket.status === 'in-progress' ? 'bg-gradient-to-br from-emerald-500 to-teal-500' :
+                        basket.status === 'stopped' ? 'bg-gradient-to-br from-amber-500 to-orange-500' :
+                          'bg-gradient-to-br from-gray-400 to-gray-500'
+                      }`}>
                       {basket.basketNumber}
                     </div>
                     <div>
@@ -377,24 +410,52 @@ export default function ProductionPage() {
                   </div>
                 )}
 
-                {/* Completed stats */}
+                {/* Completed stats with minutes and seconds */}
                 {!isActive && basket.actualCycleTime > 0 && (
                   <div className="mb-4 p-3 bg-gray-50 rounded-xl">
                     <div className="grid grid-cols-2 gap-3">
                       <div>
                         <div className="text-xs text-gray-500">Actual Time</div>
                         <div className={`text-lg font-bold ${isOver ? 'text-red-600' : 'text-emerald-600'}`}>
-                          {basket.actualCycleTime.toFixed(2)} min
+                          {formatTimeToMMSS(basket.actualCycleTime)}
+                        </div>
+                        <div className="text-xs text-gray-400 mt-0.5">
+                          ({basket.actualCycleTime.toFixed(2)} min)
                         </div>
                       </div>
                       <div>
                         <div className="text-xs text-gray-500">Standard</div>
-                        <div className="text-lg font-bold text-blue-600">{standard} min</div>
+                        <div className="text-lg font-bold text-blue-600">
+                          {formatTimeToMMSS(standard)}
+                        </div>
+                        <div className="text-xs text-gray-400 mt-0.5">
+                          ({standard.toFixed(2)} min)
+                        </div>
                       </div>
                       {basket.totalLostTime > 0 && (
-                        <div className="col-span-2">
-                          <div className="text-xs text-gray-500">Total Lost Time</div>
-                          <div className="text-sm font-bold text-red-500">{basket.totalLostTime.toFixed(2)} min ({basket.stoppages?.length || 0} stoppages)</div>
+                        <div className="col-span-2 pt-2 border-t border-gray-200">
+                          <div className="flex justify-between items-center">
+                            <div className="text-xs text-gray-500">Total Lost Time</div>
+                            <div className="text-sm font-bold text-red-500">
+                              {formatTimeToMMSS(basket.totalLostTime)}
+                            </div>
+                          </div>
+                          <div className="text-xs text-gray-400 mt-1">
+                            {basket.stoppages?.length || 0} stoppage{basket.stoppages?.length !== 1 ? 's' : ''}
+                          </div>
+                          {/* Detailed stoppages list */}
+                          {basket.stoppages?.length > 0 && (
+                            <div className="mt-2 space-y-1">
+                              {basket.stoppages.map((s, idx) => (
+                                <div key={idx} className="text-xs text-gray-500 flex justify-between items-center">
+                                  <span>• {s.reason || 'No reason'}</span>
+                                  <span className="font-medium text-red-500">
+                                    {s.lostMinutes ? formatTimeToMMSS(s.lostMinutes) : 'Active'}
+                                  </span>
+                                </div>
+                              ))}
+                            </div>
+                          )}
                         </div>
                       )}
                     </div>
@@ -417,20 +478,6 @@ export default function ProductionPage() {
                     <div className="flex justify-between">
                       <span className="text-gray-400">Ended</span>
                       <span className="font-medium text-gray-600">{new Date(basket.endTime).toLocaleTimeString()}</span>
-                    </div>
-                  )}
-
-                  {/* Stoppages list */}
-                  {basket.stoppages?.length > 0 && (
-                    <div className="pt-2 mt-2 border-t border-gray-100">
-                      <div className="text-gray-500 font-semibold mb-1">Stoppages:</div>
-                      {basket.stoppages.map((s, i) => (
-                        <div key={i} className="flex items-center gap-2 text-xs py-0.5">
-                          <span className="w-4 h-4 rounded-full bg-red-100 text-red-600 flex items-center justify-center font-bold" style={{fontSize: '8px'}}>{i + 1}</span>
-                          <span className="text-gray-500">{s.reason || 'No reason'}</span>
-                          <span className="ml-auto font-medium text-red-500">{s.lostMinutes ? `${s.lostMinutes.toFixed(1)}min` : 'Active'}</span>
-                        </div>
-                      ))}
                     </div>
                   )}
                 </div>

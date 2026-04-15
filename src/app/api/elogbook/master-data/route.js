@@ -6,6 +6,7 @@ import EquipmentStatic from "@/model/Equipment";
 import PrototypeStatic from "@/model/Task";
 import AssignmentStatic from "@/model/NewAssignment";
 import CompanyStatic from "@/model/Company";
+import ElogbookMasterData from "@/model/ElogbookMasterData";
 
 export const dynamic = "force-dynamic";
 
@@ -21,7 +22,7 @@ export async function GET(req) {
     }
 
     // Get the tenant-specific model
-    const TenantMasterModel = ElogbookMasterDataStatic; 
+    const TenantMasterModel = ElogbookMasterData; 
     const __tenantCompanyId = companyId;
     
     const records = await TenantMasterModel.find({ companyId: __tenantCompanyId }).sort({ createdAt: -1 });
@@ -47,7 +48,7 @@ export async function POST(req) {
       return NextResponse.json({ success: false, message: "Missing required fields" }, { status: 400 });
     }
 
-    const TenantMasterModel = ElogbookMasterDataStatic; 
+    const TenantMasterModel = ElogbookMasterData; 
     const __tenantCompanyId = companyId;
 
     const record = await TenantMasterModel.create({
