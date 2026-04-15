@@ -18,16 +18,15 @@ export async function POST(req) {
             return NextResponse.json({ error: 'Barcode, User ID, and Company ID are required' }, { status: 400 });
         }
 
-        const EquipmentModel = EquipmentStatic; 
-    const __tenantCompanyId = companyId;
-        const AssignmentModel = AssignmentStatic; 
-    const __tenantCompanyId = companyId;
+        const EquipmentModel = EquipmentStatic;
+        const __tenantCompanyId = companyId; // Declared only once
+        const AssignmentModel = AssignmentStatic;
 
         // 1. Find equipment by barcode OR by _id if barcode matches an ID format
-        let equipment = await EquipmentModel.findOne({ barcode, companyId });
+        let equipment = await EquipmentModel.findOne({ barcode, companyId: __tenantCompanyId });
 
         if (!equipment && mongoose.isValidObjectId(barcode)) {
-            equipment = await EquipmentModel.findOne({ _id: barcode, companyId });
+            equipment = await EquipmentModel.findOne({ _id: barcode, companyId: __tenantCompanyId });
         }
 
         if (!equipment) {
@@ -36,7 +35,7 @@ export async function POST(req) {
 
         // 2. Find matching task/assignment for this equipment and worker
         const activeAssignment = await AssignmentModel.findOne({
-            companyId,
+            companyId: __tenantCompanyId,
             status: { $ne: 'Completed' },
             $and: [
                 {
@@ -58,7 +57,7 @@ export async function POST(req) {
         if (!activeAssignment) {
             // Check if there is an assignment with status 'Completed'
             const completedAssignment = await AssignmentModel.findOne({
-                companyId,
+                companyId: __tenantCompanyId,
                 status: 'Completed',
                 $and: [
                     {
@@ -104,4 +103,3 @@ export async function POST(req) {
         return NextResponse.json({ error: 'Internal Server Error' }, { status: 500 });
     }
 }
-
