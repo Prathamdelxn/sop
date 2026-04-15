@@ -1,6 +1,12 @@
 import { NextResponse } from 'next/server';
 import connectToDB from '@/utils/db';
-import { getTenantModel } from '@/utils/tenantDb';
+
+import ChecklistStatic from "@/model/ChecklistNew";
+import EquipmentStatic from "@/model/Equipment";
+import PrototypeStatic from "@/model/Task";
+import AssignmentStatic from "@/model/NewAssignment";
+import CompanyStatic from "@/model/Company";
+
 
 // ✅ Delete Equipment with Multi-Tenant Isolation
 export async function DELETE(request, { params }) {
@@ -26,7 +32,8 @@ export async function DELETE(request, { params }) {
     }
 
     // Get the dynamic Equipment model for this company
-    const EquipmentModel = getTenantModel("Equipment", companyId);
+    const EquipmentModel = EquipmentStatic; 
+    const __tenantCompanyId = companyId;
 
     // Find and delete the equipment within the tenant-specific collection
     const deletedEquipment = await EquipmentModel.findByIdAndDelete(equipmentId);

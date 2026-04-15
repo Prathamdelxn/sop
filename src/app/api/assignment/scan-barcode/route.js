@@ -1,7 +1,13 @@
 import { NextResponse } from 'next/server';
 import mongoose from 'mongoose';
-import { getTenantModel } from '@/utils/tenantDb';
+
 import dbConnect from '@/utils/db';
+
+import ChecklistStatic from "@/model/ChecklistNew";
+import EquipmentStatic from "@/model/Equipment";
+import PrototypeStatic from "@/model/Task";
+import AssignmentStatic from "@/model/NewAssignment";
+import CompanyStatic from "@/model/Company";
 
 export async function POST(req) {
     try {
@@ -12,8 +18,10 @@ export async function POST(req) {
             return NextResponse.json({ error: 'Barcode, User ID, and Company ID are required' }, { status: 400 });
         }
 
-        const EquipmentModel = getTenantModel("Equipment", companyId);
-        const AssignmentModel = getTenantModel("NewAssignment", companyId);
+        const EquipmentModel = EquipmentStatic; 
+    const __tenantCompanyId = companyId;
+        const AssignmentModel = AssignmentStatic; 
+    const __tenantCompanyId = companyId;
 
         // 1. Find equipment by barcode OR by _id if barcode matches an ID format
         let equipment = await EquipmentModel.findOne({ barcode, companyId });
@@ -96,3 +104,4 @@ export async function POST(req) {
         return NextResponse.json({ error: 'Internal Server Error' }, { status: 500 });
     }
 }
+

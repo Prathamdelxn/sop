@@ -1,6 +1,12 @@
 import dbConnect from "@/utils/db";
-import { getTenantModel } from "@/utils/tenantDb";
+
 import { NextResponse } from "next/server";
+
+import ChecklistStatic from "@/model/ChecklistNew";
+import EquipmentStatic from "@/model/Equipment";
+import PrototypeStatic from "@/model/Task";
+import AssignmentStatic from "@/model/NewAssignment";
+import CompanyStatic from "@/model/Company";
 
 export const dynamic = "force-dynamic";
 
@@ -15,10 +21,11 @@ export async function GET(req) {
     }
 
     // Get the dynamic Checklist model for this company
-    const ChecklistModel = getTenantModel("Checklist", companyId);
+    const ChecklistModel = ChecklistStatic; 
+    const __tenantCompanyId = companyId;
 
     // Fetch all checklists from the company-specific collection
-    const checklists = await ChecklistModel.find({}).sort({ createdAt: -1 });
+    const checklists = await ChecklistModel.find({ companyId: __tenantCompanyId }).sort({ createdAt: -1 });
 
     return NextResponse.json({
       success: true,

@@ -1,6 +1,12 @@
 import dbConnect from "@/utils/db";
-import { getTenantModel } from "@/utils/tenantDb";
+
 import { NextResponse } from "next/server";
+
+import ChecklistStatic from "@/model/ChecklistNew";
+import EquipmentStatic from "@/model/Equipment";
+import PrototypeStatic from "@/model/Task";
+import AssignmentStatic from "@/model/NewAssignment";
+import CompanyStatic from "@/model/Company";
 
 export async function PUT(req, { params }) {
   try {
@@ -17,7 +23,8 @@ export async function PUT(req, { params }) {
       );
     }
 
-    const AssignmentModel = getTenantModel("NewAssignment", companyId);
+    const AssignmentModel = AssignmentStatic; 
+    const __tenantCompanyId = companyId;
 
     // ✅ Update only stages and status inside prototypeData
     const updatedAssignment = await AssignmentModel.findByIdAndUpdate(

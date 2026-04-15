@@ -1,6 +1,12 @@
 import dbConnect from "@/utils/db";
-import { getTenantModel } from "@/utils/tenantDb";
+
 import { NextResponse } from "next/server";
+
+import ChecklistStatic from "@/model/ChecklistNew";
+import EquipmentStatic from "@/model/Equipment";
+import PrototypeStatic from "@/model/Task";
+import AssignmentStatic from "@/model/NewAssignment";
+import CompanyStatic from "@/model/Company";
 
 export const dynamic = "force-dynamic";
 
@@ -25,7 +31,8 @@ export async function GET(req) {
     }
 
     // Get dynamic model for this company
-    const PrototypeModel = getTenantModel("Task", companyId);
+    const PrototypeModel = TaskStatic; 
+    const __tenantCompanyId = companyId;
 
     const titles = await PrototypeModel.find().sort({ createdAt: -1 });
 

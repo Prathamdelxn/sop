@@ -1,6 +1,12 @@
 import { NextResponse } from 'next/server';
 import dbConnect from '@/utils/db';
-import { getTenantModel } from '@/utils/tenantDb';
+
+import ChecklistStatic from "@/model/ChecklistNew";
+import EquipmentStatic from "@/model/Equipment";
+import PrototypeStatic from "@/model/Task";
+import AssignmentStatic from "@/model/NewAssignment";
+import CompanyStatic from "@/model/Company";
+
 
 export const dynamic = "force-dynamic";
 
@@ -15,7 +21,8 @@ export async function GET(req) {
     }
 
     // Get the dynamic Equipment model for this company
-    const EquipmentModel = getTenantModel("Equipment", companyId);
+    const EquipmentModel = EquipmentStatic; 
+    const __tenantCompanyId = companyId;
 
     const equipmentList = await EquipmentModel.find().sort({ createdAt: -1 });
 

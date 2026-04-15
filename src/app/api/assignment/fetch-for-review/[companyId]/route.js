@@ -1,6 +1,12 @@
 import connectDB from '@/utils/db';
-import { getTenantModel } from '@/utils/tenantDb';
+
 import { NextResponse } from 'next/server';
+
+import ChecklistStatic from "@/model/ChecklistNew";
+import EquipmentStatic from "@/model/Equipment";
+import PrototypeStatic from "@/model/Task";
+import AssignmentStatic from "@/model/NewAssignment";
+import CompanyStatic from "@/model/Company";
 
 export async function GET(req, { params }) {
   try {
@@ -15,7 +21,8 @@ export async function GET(req, { params }) {
       );
     }
 
-    const AssignmentModel = getTenantModel("NewAssignment", companyId);
+    const AssignmentModel = AssignmentStatic; 
+    const __tenantCompanyId = companyId;
 
     // Fetch assignments that are pending review or have rework required
     // companyId filter is implicit in the collection name

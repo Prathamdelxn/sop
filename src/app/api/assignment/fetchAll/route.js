@@ -1,6 +1,12 @@
 import { NextResponse } from 'next/server';
 import connectDB from '@/utils/db';
-import { getTenantModel } from '@/utils/tenantDb';
+
+import ChecklistStatic from "@/model/ChecklistNew";
+import EquipmentStatic from "@/model/Equipment";
+import PrototypeStatic from "@/model/Task";
+import AssignmentStatic from "@/model/NewAssignment";
+import CompanyStatic from "@/model/Company";
+
 
 export const dynamic = "force-dynamic";
 
@@ -15,7 +21,8 @@ export async function GET(req) {
     }
 
     // Get the dynamic NewAssignment model for this company
-    const AssignmentModel = getTenantModel("NewAssignment", companyId);
+    const AssignmentModel = AssignmentStatic; 
+    const __tenantCompanyId = companyId;
 
     const assignments = await AssignmentModel.find().sort({ assignedAt: -1 });
 
@@ -31,3 +38,4 @@ export async function GET(req) {
     }, { status: 500 });
   }
 }
+

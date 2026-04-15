@@ -1,5 +1,11 @@
 import { NextResponse } from "next/server";
-import { getTenantModel } from "@/utils/tenantDb";
+
+import ChecklistStatic from "@/model/ChecklistNew";
+import EquipmentStatic from "@/model/Equipment";
+import PrototypeStatic from "@/model/Task";
+import AssignmentStatic from "@/model/NewAssignment";
+import CompanyStatic from "@/model/Company";
+
 
 export async function GET(req, { params }) {
   try {
@@ -9,7 +15,8 @@ export async function GET(req, { params }) {
       return NextResponse.json({ error: "Company ID is required" }, { status: 400 });
     }
 
-    const AssignmentModel = getTenantModel("NewAssignment", companyId);
+    const AssignmentModel = AssignmentStatic; 
+    const __tenantCompanyId = companyId;
 
     // Query: check worker inside stage, task, or subtask
     const assignments = await AssignmentModel.find({

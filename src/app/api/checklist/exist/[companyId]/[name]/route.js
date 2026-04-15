@@ -1,6 +1,11 @@
 import { NextResponse } from "next/server";
 import dbConnect from "@/utils/db";
-import { getTenantModel } from "@/utils/tenantDb";
+
+import ChecklistStatic from "@/model/ChecklistNew";
+import EquipmentStatic from "@/model/Equipment";
+import PrototypeStatic from "@/model/Task";
+import AssignmentStatic from "@/model/NewAssignment";
+import CompanyStatic from "@/model/Company";
 
 export async function GET(request, { params }) {
   try {
@@ -13,10 +18,11 @@ export async function GET(request, { params }) {
     await dbConnect();
 
     // Get the dynamic Prototype model for this company
-    const PrototypeModel = getTenantModel("Prototype", companyId);
+    const PrototypeModel = PrototypeStatic; 
+    const __tenantCompanyId = companyId;
 
     const decodedName = decodeURIComponent(name);
-    const existing = await PrototypeModel.findOne({ name: decodedName });
+    const existing = await PrototypeModel.findOne({ name: decodedName, companyId: __tenantCompanyId });
 
     return NextResponse.json({ 
       success: true,

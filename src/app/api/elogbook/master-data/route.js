@@ -1,6 +1,11 @@
 import { NextResponse } from "next/server";
 import connectDB from "@/utils/db";
-import { getTenantModel } from "@/utils/tenantDb";
+
+import ChecklistStatic from "@/model/ChecklistNew";
+import EquipmentStatic from "@/model/Equipment";
+import PrototypeStatic from "@/model/Task";
+import AssignmentStatic from "@/model/NewAssignment";
+import CompanyStatic from "@/model/Company";
 
 export const dynamic = "force-dynamic";
 
@@ -16,9 +21,10 @@ export async function GET(req) {
     }
 
     // Get the tenant-specific model
-    const TenantMasterModel = getTenantModel("ElogbookMasterData", companyId);
+    const TenantMasterModel = ElogbookMasterDataStatic; 
+    const __tenantCompanyId = companyId;
     
-    const records = await TenantMasterModel.find({}).sort({ createdAt: -1 });
+    const records = await TenantMasterModel.find({ companyId: __tenantCompanyId }).sort({ createdAt: -1 });
     return NextResponse.json({ success: true, data: records });
   } catch (error) {
     console.error("ElogbookMasterData GET error:", error);
@@ -41,7 +47,8 @@ export async function POST(req) {
       return NextResponse.json({ success: false, message: "Missing required fields" }, { status: 400 });
     }
 
-    const TenantMasterModel = getTenantModel("ElogbookMasterData", companyId);
+    const TenantMasterModel = ElogbookMasterDataStatic; 
+    const __tenantCompanyId = companyId;
 
     const record = await TenantMasterModel.create({
       companyId,

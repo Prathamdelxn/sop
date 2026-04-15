@@ -1,7 +1,13 @@
 // app/api/checklistapi/update/[id]/route.js
 import { NextResponse } from "next/server";
 import connectDB from "@/utils/db";
-import { getTenantModel } from "@/utils/tenantDb";
+
+import ChecklistStatic from "@/model/ChecklistNew";
+import EquipmentStatic from "@/model/Equipment";
+import PrototypeStatic from "@/model/Task";
+import AssignmentStatic from "@/model/NewAssignment";
+import CompanyStatic from "@/model/Company";
+
 
 // ✅ Update Checklist by ID with Multi-Tenant Isolation
 export async function PUT(req, { params }) {
@@ -19,7 +25,8 @@ export async function PUT(req, { params }) {
     }
 
     // Get the dynamic Checklist model for this company
-    const ChecklistModel = getTenantModel("Checklist", companyId);
+    const ChecklistModel = ChecklistStatic; 
+    const __tenantCompanyId = companyId;
 
     // ✅ Update and return the new document within the tenant-specific collection
     const updatedChecklist = await ChecklistModel.findByIdAndUpdate(

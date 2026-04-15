@@ -1,6 +1,12 @@
 import { NextResponse } from 'next/server';
 import connectDB from '@/utils/db';
-import { getTenantModel } from '@/utils/tenantDb';
+
+import ChecklistStatic from "@/model/ChecklistNew";
+import EquipmentStatic from "@/model/Equipment";
+import PrototypeStatic from "@/model/Task";
+import AssignmentStatic from "@/model/NewAssignment";
+import CompanyStatic from "@/model/Company";
+
 
 // ✅ Reset Equipment Tasks with Multi-Tenant Isolation
 export async function POST(req) {
@@ -24,10 +30,11 @@ export async function POST(req) {
     }
 
     // Get the dynamic NewAssignment model for this company
-    const AssignmentModel = getTenantModel("NewAssignment", companyId);
+    const AssignmentModel = AssignmentStatic; 
+    const __tenantCompanyId = companyId;
 
     // Find all assignments associated with this equipment in the tenant-specific collection
-    const assignments = await AssignmentModel.find({ 'equipment._id': equipmentId });
+    const assignments = await AssignmentModel.find({ 'equipment._id': equipmentId, companyId: __tenantCompanyId });
 
     if (!assignments || assignments.length === 0) {
       return NextResponse.json({ 
@@ -124,3 +131,4 @@ export async function POST(req) {
     }, { status: 500 });
   }
 }
+

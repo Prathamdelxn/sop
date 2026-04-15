@@ -1,6 +1,12 @@
 import { NextResponse } from 'next/server';
 import connectDB from '@/utils/db';
-import { getTenantModel } from '@/utils/tenantDb';
+
+import ChecklistStatic from "@/model/ChecklistNew";
+import EquipmentStatic from "@/model/Equipment";
+import PrototypeStatic from "@/model/Task";
+import AssignmentStatic from "@/model/NewAssignment";
+import CompanyStatic from "@/model/Company";
+
 
 export async function POST(req) {
   try {
@@ -21,8 +27,8 @@ export async function POST(req) {
       );
     }
 
-    // Get the dynamic NewAssignment model for this company
-    const AssignmentModel = getTenantModel("NewAssignment", companyId);
+    const AssignmentModel = AssignmentStatic; 
+    const __tenantCompanyId = companyId;
 
     const newAssignment = await AssignmentModel.create({
       generatedId,
@@ -31,6 +37,13 @@ export async function POST(req) {
       companyId,
       userId
     });
+
+    if (newAssignment && newAssignment._id) {
+       await CompanyStatic.findOneAndUpdate(
+           { companyId },
+           { $push: { assignments: newAssignment._id } }
+       );
+    }
 
     return NextResponse.json({
       success: true,

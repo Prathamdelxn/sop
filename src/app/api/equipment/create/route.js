@@ -1,59 +1,12 @@
-// import { NextResponse } from 'next/server';
-// import dbConnect from '@/utils/db';
-// import Equipment from '@/model/Equipment';
-
-// export async function POST(req) {
-//   try {
-//     await dbConnect();
-//     const body = await req.json();
-
-//     const {
-//       name,
-//       type,
-//       manufacturer,
-//       supplier,
-//       model,
-//       serial,
-//       assetTag,
-//       companyId,
-//       userId,
-//     } = body;
-
-//     // Optional: Validate required fields
-//     if (!name || !type) {
-//       return NextResponse.json(
-//         { success: false, message: 'Name, ID, and Type are required' },
-//         { status: 400 }
-//       );
-//     }
-
-//     // Create equipment
-//     const newEquipment = await Equipment.create({
-//       name,
-//       type,
-//       manufacturer,
-//       supplier,
-//       model,
-//       serial,
-//       assetTag,
-//        companyId,
-//       userId,
-//     });
-
-//     return NextResponse.json({ success: true, data: newEquipment }, { status: 201 });
-
-//   } catch (error) {
-//     console.error('Create Equipment Error:', error);
-//     return NextResponse.json(
-//       { success: false, message: error.message },
-//       { status: 500 }
-//     );
-//   }
-// }
-//src/app/api/equipment/create/route.js
 import { NextResponse } from 'next/server';
 import dbConnect from '@/utils/db';
-import { getTenantModel } from '@/utils/tenantDb';
+
+import ChecklistStatic from "@/model/ChecklistNew";
+import EquipmentStatic from "@/model/Equipment";
+import PrototypeStatic from "@/model/Task";
+import AssignmentStatic from "@/model/NewAssignment";
+import CompanyStatic from "@/model/Company";
+
 
 export async function POST(req) {
   try {
@@ -93,8 +46,8 @@ export async function POST(req) {
       );
     }
 
-    // Get the dynamic Equipment model for this company
-    const EquipmentModel = getTenantModel("Equipment", companyId);
+    const EquipmentModel = EquipmentStatic; 
+    const __tenantCompanyId = companyId;
 
     // Create equipment in company collection
     const newEquipment = await EquipmentModel.create({
@@ -117,6 +70,13 @@ export async function POST(req) {
       rejectionReason,
       assignedPrototype,
     });
+
+    if (newEquipment && newEquipment._id) {
+       await CompanyStatic.findOneAndUpdate(
+           { companyId },
+           { $push: { equipments: newEquipment._id } }
+       );
+    }
 
     return NextResponse.json({ success: true, data: newEquipment }, { status: 201 });
 

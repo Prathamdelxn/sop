@@ -1,6 +1,12 @@
 import connectDB from '@/utils/db';
-import { getTenantModel } from '@/utils/tenantDb';
+
 import { NextResponse } from 'next/server';
+
+import ChecklistStatic from "@/model/ChecklistNew";
+import EquipmentStatic from "@/model/Equipment";
+import PrototypeStatic from "@/model/Task";
+import AssignmentStatic from "@/model/NewAssignment";
+import CompanyStatic from "@/model/Company";
 
 export async function PUT(request) {
   try {
@@ -11,7 +17,8 @@ export async function PUT(request) {
       return NextResponse.json({ success: false, message: 'Missing fields (including companyId)' }, { status: 400 });
     }
 
-    const AssignmentModel = getTenantModel("NewAssignment", companyId);
+    const AssignmentModel = AssignmentStatic; 
+    const __tenantCompanyId = companyId;
 
     const assignment = await AssignmentModel.findById(assignmentId);
     if (!assignment) {
@@ -43,3 +50,4 @@ export async function PUT(request) {
     return NextResponse.json({ success: false, message: 'Internal server error' }, { status: 500 });
   }
 }
+

@@ -1,6 +1,12 @@
 import { NextResponse } from 'next/server';
-import { getTenantModel } from '@/utils/tenantDb';
+
 import connectToDB from '@/utils/db';
+
+import ChecklistStatic from "@/model/ChecklistNew";
+import EquipmentStatic from "@/model/Equipment";
+import PrototypeStatic from "@/model/Task";
+import AssignmentStatic from "@/model/NewAssignment";
+import CompanyStatic from "@/model/Company";
 
 // ✅ Update Equipment Status with Multi-Tenant Isolation
 export async function PUT(request) {
@@ -25,7 +31,8 @@ export async function PUT(request) {
     }
 
     // Get the dynamic Equipment model for this company
-    const EquipmentModel = getTenantModel("Equipment", companyId);
+    const EquipmentModel = EquipmentStatic; 
+    const __tenantCompanyId = companyId;
 
     const updateFields = { status };
     if (approver && approver.approverId && approver.approverName) {

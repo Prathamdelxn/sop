@@ -1,6 +1,11 @@
 import dbConnect from "@/utils/db";
-import { getTenantModel } from "@/utils/tenantDb";
 import { NextResponse } from "next/server";
+
+import ChecklistStatic from "@/model/ChecklistNew";
+import EquipmentStatic from "@/model/Equipment";
+import PrototypeStatic from "@/model/Task";
+import AssignmentStatic from "@/model/NewAssignment";
+import CompanyStatic from "@/model/Company";
 
 // Handle preflight CORS
 export async function OPTIONS() {
@@ -75,9 +80,10 @@ export async function POST(req) {
     }
 
     // Get dynamic model for this company
-    const PrototypeModel = getTenantModel("Prototype", companyId);
+    const PrototypeModel = PrototypeStatic; 
+    const __tenantCompanyId = companyId;
 
-    const existingPrototype = await PrototypeModel.findOne({ name });
+    const existingPrototype = await PrototypeModel.findOne({ name, companyId: __tenantCompanyId });
     if (existingPrototype) {
       return NextResponse.json({ error: "Checklist with this name already exists for your company" }, { status: 400 });
     }
@@ -118,7 +124,14 @@ export async function POST(req) {
     });
 
     // Create the prototype document in company-specific collection
-    const createdPrototype = await PrototypeModel.create(body);
+    const createdPrototype = await PrototypeModel.create({ ...body, companyId: __tenantCompanyId });
+
+    if (createdPrototype && createdPrototype._id) {
+       await CompanyStatic.findOneAndUpdate(
+           { companyId },
+           { $push: { prototypes: createdPrototype._id } }
+       );
+    }
 
     const response = NextResponse.json(
       { message: "Prototype created successfully", data: createdPrototype },

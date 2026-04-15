@@ -1,6 +1,12 @@
 import dbConnect from "@/utils/db";
-import { getTenantModel } from "@/utils/tenantDb";
+
 import { NextResponse } from "next/server";
+
+import ChecklistStatic from "@/model/ChecklistNew";
+import EquipmentStatic from "@/model/Equipment";
+import PrototypeStatic from "@/model/Task";
+import AssignmentStatic from "@/model/NewAssignment";
+import CompanyStatic from "@/model/Company";
 
 // ✅ Fetch Checklists for Review with Multi-Tenant Isolation
 export async function POST(req) {
@@ -21,7 +27,8 @@ export async function POST(req) {
     }
 
     // Get the dynamic Checklist model for this company
-    const ChecklistModel = getTenantModel("Checklist", companyId);
+    const ChecklistModel = ChecklistStatic; 
+    const __tenantCompanyId = companyId;
 
     // Query prototypes within the tenant-specific collection
     const prototypes = await ChecklistModel.find({

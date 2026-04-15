@@ -13,6 +13,10 @@ const companySchema = new mongoose.Schema({
     default: ["CHECKLIST"]
   },
   status: { type: String, enum: ["Active", "InActive"], default: "Active" },
+  checklists: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Checklist' }],
+  equipments: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Equipment' }],
+  prototypes: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Prototype' }],
+  assignments: [{ type: mongoose.Schema.Types.ObjectId, ref: 'NewAssignment' }],
 }, { timestamps: true });
 
 delete mongoose.models.Company;

@@ -1,6 +1,12 @@
 import connectDB from '@/utils/db';
-import { getTenantModel } from '@/utils/tenantDb';
+
 import { NextResponse } from 'next/server';
+
+import ChecklistStatic from "@/model/ChecklistNew";
+import EquipmentStatic from "@/model/Equipment";
+import PrototypeStatic from "@/model/Task";
+import AssignmentStatic from "@/model/NewAssignment";
+import CompanyStatic from "@/model/Company";
 
 /**
  * Visual Reviewer / Production Manager review endpoint.
@@ -55,7 +61,8 @@ export async function PUT(request) {
       );
     }
 
-    const AssignmentModel = getTenantModel("NewAssignment", companyId);
+    const AssignmentModel = AssignmentStatic; 
+    const __tenantCompanyId = companyId;
 
     const assignment = await AssignmentModel.findById(assignmentId);
     if (!assignment) {
@@ -234,3 +241,4 @@ export async function PUT(request) {
     );
   }
 }
+

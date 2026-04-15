@@ -1,6 +1,12 @@
 import { NextResponse } from "next/server";
 import connectDB from "@/utils/db";
-import { getTenantModel } from "@/utils/tenantDb";
+
+import ChecklistStatic from "@/model/ChecklistNew";
+import EquipmentStatic from "@/model/Equipment";
+import PrototypeStatic from "@/model/Task";
+import AssignmentStatic from "@/model/NewAssignment";
+import CompanyStatic from "@/model/Company";
+
 
 // PATCH /api/checklistapi/update-status/[id]
 export async function PATCH(request, { params }) {
@@ -15,7 +21,8 @@ export async function PATCH(request, { params }) {
     }
 
     // Get the dynamic model for this company
-    const ChecklistModel = getTenantModel("Checklist", companyId);
+    const ChecklistModel = ChecklistStatic; 
+    const __tenantCompanyId = companyId;
 
     const updateData = {
       status,
