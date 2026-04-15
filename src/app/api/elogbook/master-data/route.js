@@ -1,11 +1,7 @@
+// C:\Users\Admin\Desktop\SOP-Final\sop\src\app\api\elogbook\master-data\route.js
+
 import { NextResponse } from "next/server";
 import connectDB from "@/utils/db";
-
-import ChecklistStatic from "@/model/ChecklistNew";
-import EquipmentStatic from "@/model/Equipment";
-import PrototypeStatic from "@/model/Task";
-import AssignmentStatic from "@/model/NewAssignment";
-import CompanyStatic from "@/model/Company";
 import ElogbookMasterData from "@/model/ElogbookMasterData";
 
 export const dynamic = "force-dynamic";
@@ -16,16 +12,18 @@ export async function GET(req) {
     await connectDB();
     const { searchParams } = new URL(req.url);
     const companyId = searchParams.get("companyId");
+    const customerName = searchParams.get("customerName"); // Optional filter
 
     if (!companyId) {
       return NextResponse.json({ success: false, message: "companyId required" }, { status: 400 });
     }
 
-    // Get the tenant-specific model
-    const TenantMasterModel = ElogbookMasterData; 
-    const __tenantCompanyId = companyId;
-    
-    const records = await TenantMasterModel.find({ companyId: __tenantCompanyId }).sort({ createdAt: -1 });
+    let query = { companyId };
+    if (customerName) {
+      query.customerName = customerName;
+    }
+
+    const records = await ElogbookMasterData.find(query).sort({ customerName: 1, partName: 1 });
     return NextResponse.json({ success: true, data: records });
   } catch (error) {
     console.error("ElogbookMasterData GET error:", error);
@@ -33,7 +31,7 @@ export async function GET(req) {
   }
 }
 
-// POST — create new master data record (isolated by tenant)
+// POST — create new master data record
 export async function POST(req) {
   try {
     await connectDB();
@@ -48,10 +46,21 @@ export async function POST(req) {
       return NextResponse.json({ success: false, message: "Missing required fields" }, { status: 400 });
     }
 
-    const TenantMasterModel = ElogbookMasterData; 
-    const __tenantCompanyId = companyId;
+    // Check if part already exists for this customer
+    const existingPart = await ElogbookMasterData.findOne({
+      companyId,
+      customerName,
+      partName
+    });
 
-    const record = await TenantMasterModel.create({
+    if (existingPart) {
+      return NextResponse.json({
+        success: false,
+        message: `Part "${partName}" already exists for customer "${customerName}"`
+      }, { status: 409 });
+    }
+
+    const record = await ElogbookMasterData.create({
       companyId,
       customerName,
       subCompany,
@@ -70,4 +79,3 @@ export async function POST(req) {
     return NextResponse.json({ success: false, message: error.message }, { status: 500 });
   }
 }
-

@@ -1,3 +1,5 @@
+// C:\Users\Admin\Desktop\SOP-Final\sop\src\model\ElogbookMasterData.js
+
 import mongoose from "mongoose";
 
 const elogbookMasterDataSchema = new mongoose.Schema({
@@ -13,6 +15,9 @@ const elogbookMasterDataSchema = new mongoose.Schema({
   basketCount: { type: Number, default: 3 }, // total baskets available
   isActive: { type: Boolean, default: true },
 }, { timestamps: true });
+
+// Optional: Create compound index to prevent duplicate part names for same customer
+elogbookMasterDataSchema.index({ companyId: 1, customerName: 1, partName: 1 }, { unique: true });
 
 delete mongoose.models.ElogbookMasterData;
 export default mongoose.models.ElogbookMasterData || mongoose.model("ElogbookMasterData", elogbookMasterDataSchema);

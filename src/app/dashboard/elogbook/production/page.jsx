@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation';
 import {
   ArrowLeft, Play, Square, RotateCcw, CheckCircle2, Timer,
   Loader2, Package, AlertTriangle, Clock, Pause, ScanBarcode,
-  Plus, ChevronDown, Users, X, Zap, Thermometer
+  Plus, ChevronDown, Users, X, Zap, Thermometer, Building2
 } from 'lucide-react';
 
 // Helper function to format seconds to MM:SS
@@ -84,6 +84,8 @@ export default function ProductionPage() {
   const barcodeRef = useRef(null);
   const [userData, setUserData] = useState(null);
   const [masterDataList, setMasterDataList] = useState([]);
+  const [selectedCustomer, setSelectedCustomer] = useState('');
+  const [selectedPart, setSelectedPart] = useState('');
   const [selectedMasterData, setSelectedMasterData] = useState(null);
   const [baskets, setBaskets] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -96,6 +98,7 @@ export default function ProductionPage() {
   const [startBasketNumber, setStartBasketNumber] = useState('');
   const [additionalUsers, setAdditionalUsers] = useState('');
   const [todayFilter, setTodayFilter] = useState(true);
+  const [customers, setCustomers] = useState([]);
 
   useEffect(() => {
     const userdata = localStorage.getItem('user');
@@ -112,15 +115,27 @@ export default function ProductionPage() {
     if (userData?.companyId) fetchBaskets();
   }, [userData, selectedMasterData, todayFilter]);
 
+  useEffect(() => {
+    // Extract unique customers from master data
+    const uniqueCustomers = [...new Map(masterDataList.map(md => [md.customerName, {
+      customerName: md.customerName,
+      subCompany: md.subCompany
+    }])).values()];
+    setCustomers(uniqueCustomers);
+
+    // Reset selections when master data changes
+    if (masterDataList.length > 0 && !selectedCustomer && !selectedPart) {
+      // Don't auto-select, let user choose
+      setSelectedMasterData(null);
+    }
+  }, [masterDataList]);
+
   const fetchMasterData = async () => {
     try {
       const res = await fetch(`/api/elogbook/master-data?companyId=${userData.companyId}`);
       const data = await res.json();
       if (data.success) {
         setMasterDataList(data.data);
-        if (data.data.length > 0 && !selectedMasterData) {
-          setSelectedMasterData(data.data[0]);
-        }
       }
     } catch (err) {
       console.error('Fetch master data error:', err);
@@ -142,6 +157,26 @@ export default function ProductionPage() {
       console.error('Fetch baskets error:', err);
     }
     setLoading(false);
+  };
+
+  // Get parts for selected customer
+  const getPartsForCustomer = () => {
+    if (!selectedCustomer) return [];
+    return masterDataList.filter(md => md.customerName === selectedCustomer);
+  };
+
+  // Handle customer selection
+  const handleCustomerChange = (customerName) => {
+    setSelectedCustomer(customerName);
+    setSelectedPart('');
+    setSelectedMasterData(null);
+  };
+
+  // Handle part selection
+  const handlePartChange = (partId) => {
+    const part = masterDataList.find(md => md._id === partId);
+    setSelectedPart(partId);
+    setSelectedMasterData(part);
   };
 
   // Barcode scan handler
@@ -260,6 +295,8 @@ export default function ProductionPage() {
     }
   };
 
+  const partsForSelectedCustomer = getPartsForCustomer();
+
   return (
     <div className="min-h-screen p-4 sm:p-6 lg:p-8">
       {/* Header */}
@@ -278,62 +315,98 @@ export default function ProductionPage() {
 
       {/* Controls Bar */}
       <div className="bg-white rounded-2xl border border-gray-100 p-4 mb-6 shadow-sm">
-        <div className="flex flex-col lg:flex-row lg:items-center gap-4">
-          {/* Master Data Selector */}
-          <div className="flex-1">
-            <label className="block text-xs font-semibold text-gray-500 mb-1.5 uppercase tracking-wider">Active Configuration</label>
-            <select
-              value={selectedMasterData?._id || ''}
-              onChange={(e) => {
-                const md = masterDataList.find(m => m._id === e.target.value);
-                setSelectedMasterData(md);
-              }}
-              className="w-full px-3 py-2.5 border border-gray-200 rounded-xl text-sm bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-400"
-            >
-              {masterDataList.map(md => (
-                <option key={md._id} value={md._id}>
-                  {md.customerName} — {md.partName} ({md.standardCycleTime}min, {md.partsPerBasket} parts)
-                </option>
-              ))}
-            </select>
-          </div>
+        <div className="flex flex-col gap-4">
+          {/* Company and Part Dropdowns */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            {/* Customer Dropdown */}
+            <div>
+              <label className="block text-xs font-semibold text-gray-500 mb-1.5 uppercase tracking-wider flex items-center gap-2">
+                <Building2 className="w-3.5 h-3.5" /> Select Customer
+              </label>
+              <select
+                value={selectedCustomer}
+                onChange={(e) => handleCustomerChange(e.target.value)}
+                className="w-full px-3 py-2.5 border border-gray-200 rounded-xl text-sm bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-400"
+              >
+                <option value="">-- Select Customer --</option>
+                {customers.map(customer => (
+                  <option key={customer.customerName} value={customer.customerName}>
+                    {customer.customerName} {customer.subCompany ? `(${customer.subCompany})` : ''}
+                  </option>
+                ))}
+              </select>
+            </div>
 
-          {/* Barcode Scan Input */}
-          <div className="flex-1">
-            <label className="block text-xs font-semibold text-gray-500 mb-1.5 uppercase tracking-wider">Barcode Scan</label>
-            <div className="relative">
-              <ScanBarcode className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
-              <input
-                ref={barcodeRef}
-                type="text"
-                value={barcodeInput}
-                onChange={(e) => setBarcodeInput(e.target.value)}
-                onKeyDown={handleBarcodeScan}
-                placeholder="Scan barcode or type basket number + Enter"
-                className="w-full pl-10 pr-4 py-2.5 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-400"
-              />
+            {/* Part Dropdown */}
+            <div>
+              <label className="block text-xs font-semibold text-gray-500 mb-1.5 uppercase tracking-wider flex items-center gap-2">
+                <Package className="w-3.5 h-3.5" /> Select Part
+              </label>
+              <select
+                value={selectedPart}
+                onChange={(e) => handlePartChange(e.target.value)}
+                disabled={!selectedCustomer}
+                className="w-full px-3 py-2.5 border border-gray-200 rounded-xl text-sm bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-400 disabled:bg-gray-50 disabled:cursor-not-allowed"
+              >
+                <option value="">-- Select Part --</option>
+                {partsForSelectedCustomer.map(part => (
+                  <option key={part._id} value={part._id}>
+                    {part.partName} ({part.standardCycleTime}min, {part.partsPerBasket} parts)
+                  </option>
+                ))}
+              </select>
             </div>
           </div>
 
-          {/* Manual Start */}
-          <div className="flex items-end gap-2">
-            <button
-              onClick={() => {
-                setStartBasketNumber(String(baskets.length + 1));
-                setShowStartModal(true);
-              }}
-              disabled={!selectedMasterData}
-              className="flex items-center gap-2 px-5 py-2.5 bg-gradient-to-r from-emerald-500 to-teal-500 text-white rounded-xl font-semibold text-sm shadow-lg shadow-emerald-200 hover:shadow-xl transition-all hover:-translate-y-0.5 active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed whitespace-nowrap"
-            >
-              <Plus className="w-4 h-4" />
-              Start Basket
-            </button>
+          {/* Barcode and Start Button Row */}
+          <div className="flex flex-col lg:flex-row lg:items-end gap-4">
+            {/* Barcode Scan Input */}
+            <div className="flex-1">
+              <label className="block text-xs font-semibold text-gray-500 mb-1.5 uppercase tracking-wider">Barcode Scan</label>
+              <div className="relative">
+                <ScanBarcode className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+                <input
+                  ref={barcodeRef}
+                  type="text"
+                  value={barcodeInput}
+                  onChange={(e) => setBarcodeInput(e.target.value)}
+                  onKeyDown={handleBarcodeScan}
+                  placeholder="Scan barcode or type basket number + Enter"
+                  className="w-full pl-10 pr-4 py-2.5 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-400"
+                />
+              </div>
+            </div>
+
+            {/* Manual Start */}
+            <div>
+              <button
+                onClick={() => {
+                  if (!selectedMasterData) {
+                    alert('Please select a customer and part first');
+                    return;
+                  }
+                  setStartBasketNumber(String(baskets.length + 1));
+                  setShowStartModal(true);
+                }}
+                disabled={!selectedMasterData}
+                className="flex items-center gap-2 px-5 py-2.5 bg-gradient-to-r from-emerald-500 to-teal-500 text-white rounded-xl font-semibold text-sm shadow-lg shadow-emerald-200 hover:shadow-xl transition-all hover:-translate-y-0.5 active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed whitespace-nowrap"
+              >
+                <Plus className="w-4 h-4" />
+                Start Basket
+              </button>
+            </div>
           </div>
         </div>
 
         {/* Active Config Stats */}
         {selectedMasterData && (
           <div className="flex flex-wrap gap-3 mt-4 pt-4 border-t border-gray-100">
+            <div className="flex items-center gap-1.5 px-3 py-1.5 bg-indigo-50 rounded-lg text-xs font-medium text-indigo-700">
+              <Building2 className="w-3.5 h-3.5" /> {selectedMasterData.customerName}
+            </div>
+            <div className="flex items-center gap-1.5 px-3 py-1.5 bg-indigo-50 rounded-lg text-xs font-medium text-indigo-700">
+              <Package className="w-3.5 h-3.5" /> {selectedMasterData.partName}
+            </div>
             <div className="flex items-center gap-1.5 px-3 py-1.5 bg-blue-50 rounded-lg text-xs font-medium text-blue-700">
               <Timer className="w-3.5 h-3.5" /> Standard: {selectedMasterData.standardCycleTime} min
             </div>
@@ -352,6 +425,13 @@ export default function ProductionPage() {
             </label>
           </div>
         )}
+
+        {/* No selection message */}
+        {!selectedMasterData && masterDataList.length > 0 && (
+          <div className="mt-4 pt-4 border-t border-gray-100 text-center text-sm text-amber-600 bg-amber-50 p-3 rounded-xl">
+            ⚠️ Please select a customer and part to start production
+          </div>
+        )}
       </div>
 
       {/* Basket Cards */}
@@ -363,7 +443,7 @@ export default function ProductionPage() {
         <div className="bg-white rounded-2xl border border-gray-100 p-12 text-center">
           <Package className="w-12 h-12 text-gray-300 mx-auto mb-4" />
           <h3 className="text-lg font-bold text-gray-700 mb-1">No Baskets Yet</h3>
-          <p className="text-sm text-gray-400">Scan a barcode or click "Start Basket" to begin a new cycle.</p>
+          <p className="text-sm text-gray-400">Select a customer and part, then scan a barcode or click "Start Basket" to begin a new cycle.</p>
         </div>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
@@ -375,22 +455,22 @@ export default function ProductionPage() {
             return (
               <div key={basket._id}
                 className={`bg-white rounded-2xl border p-5 transition-all duration-300 hover:shadow-lg ${basket.status === 'in-progress' ? 'border-emerald-200 shadow-md shadow-emerald-50' :
-                    basket.status === 'stopped' ? 'border-amber-200 shadow-md shadow-amber-50' :
-                      isOver ? 'border-red-200' : 'border-gray-100'
+                  basket.status === 'stopped' ? 'border-amber-200 shadow-md shadow-amber-50' :
+                    isOver ? 'border-red-200' : 'border-gray-100'
                   }`}
               >
                 {/* Header */}
                 <div className="flex items-center justify-between mb-4">
                   <div className="flex items-center gap-2">
                     <div className={`w-10 h-10 rounded-xl flex items-center justify-center font-bold text-white ${basket.status === 'in-progress' ? 'bg-gradient-to-br from-emerald-500 to-teal-500' :
-                        basket.status === 'stopped' ? 'bg-gradient-to-br from-amber-500 to-orange-500' :
-                          'bg-gradient-to-br from-gray-400 to-gray-500'
+                      basket.status === 'stopped' ? 'bg-gradient-to-br from-amber-500 to-orange-500' :
+                        'bg-gradient-to-br from-gray-400 to-gray-500'
                       }`}>
                       {basket.basketNumber}
                     </div>
                     <div>
                       <h3 className="font-bold text-gray-900">Basket {basket.basketNumber}</h3>
-                      <p className="text-xs text-gray-400">{basket.barcode}</p>
+                      <p className="text-xs text-gray-400">{basket.masterDataId?.customerName} - {basket.masterDataId?.partName}</p>
                     </div>
                   </div>
                   <span className={`px-2.5 py-1 rounded-lg text-xs font-semibold border ${getStatusColor(basket.status)}`}>
@@ -549,9 +629,10 @@ export default function ProductionPage() {
                   placeholder="e.g., Ravi, Amit, Priya"
                   className="w-full px-3 py-2.5 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-400" />
               </div>
-              <div className="pt-2">
-                <div className="text-xs text-gray-400 mb-1">Configuration: <span className="font-semibold text-gray-600">{selectedMasterData?.customerName} — {selectedMasterData?.partName}</span></div>
-                <div className="text-xs text-gray-400">Start Time: <span className="font-semibold text-gray-600">{new Date().toLocaleString()}</span></div>
+              <div className="pt-2 p-3 bg-gray-50 rounded-xl">
+                <div className="text-xs text-gray-500 mb-1">Selected Configuration:</div>
+                <div className="text-sm font-semibold text-gray-800">{selectedMasterData?.customerName} — {selectedMasterData?.partName}</div>
+                <div className="text-xs text-gray-400 mt-2">Start Time: <span className="font-semibold text-gray-600">{new Date().toLocaleString()}</span></div>
               </div>
             </div>
 

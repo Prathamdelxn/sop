@@ -1,3 +1,6 @@
+
+// C:\Users\Admin\Desktop\SOP-Final\sop\src\app\api\elogbook\master-data\[id]\route.js
+
 import { NextResponse } from "next/server";
 import connectDB from "@/utils/db";
 import ElogbookMasterData from "@/model/ElogbookMasterData";
