@@ -1,3 +1,5 @@
+// C:\Users\Admin\Desktop\SOP-Final\sop\src\app\api\checklistapi\fetch-by-id\[id]\route.js
+
 import { NextResponse } from "next/server";
 import connectDB from "@/utils/db";
 
@@ -29,7 +31,7 @@ export async function GET(req, { params }) {
     }
 
     // Get the dynamic model for this company
-    const ChecklistModel = ChecklistStatic; 
+    const ChecklistModel = ChecklistStatic;
     const __tenantCompanyId = companyId;
 
     const checklist = await ChecklistModel.findById(id);

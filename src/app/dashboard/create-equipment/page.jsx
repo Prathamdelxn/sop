@@ -62,11 +62,11 @@ export default function FacilityAdminDashboard() {
     const fetchData = async (isInitial = true) => {
       try {
         if (isInitial) setIsLoading(true);
-        
+
         // Fetch Equipment
         const eqRes = await fetch(`/api/equipment/fetchAll?companyId=${companyData?.companyId}`);
         const eqResult = await eqRes.json();
-        
+
         // Fetch Assignments for progress tracking
         const assignRes = await fetch(`/api/assignment/fetchAll?companyId=${companyData?.companyId}`);
         const assignResult = await assignRes.json();
@@ -97,17 +97,35 @@ export default function FacilityAdminDashboard() {
   }, [companyData]);
 
   const getExecutionInfo = (equipment) => {
-    const activeAssignment = assignments.find(a =>
+    // First, try to find an active/in-progress assignment
+    let assignment = assignments.find(a =>
       (a.equipment?.equipmentId === equipment.equipmentId || a.equipment?.name === equipment.name) &&
       (a.status === 'InProgress' || a.status === 'Under Execution' || a.status === 'Paused' || a.status === 'Rework Required' || a.status === 'Pending Review')
     );
 
-    if (!activeAssignment) return null;
+    // If no active assignment, find the most recent completed assignment
+    if (!assignment) {
+      const completedAssignments = assignments.filter(a =>
+        (a.equipment?.equipmentId === equipment.equipmentId || a.equipment?.name === equipment.name) &&
+        (a.status === 'Completed' || a.status === 'Reviewed' || a.status === 'Approved')
+      );
+
+      if (completedAssignments.length > 0) {
+        // Sort by completedAt or assignedAt date to get the most recent
+        assignment = completedAssignments.sort((a, b) => {
+          const dateA = a.completedAt || a.assignedAt;
+          const dateB = b.completedAt || b.assignedAt;
+          return new Date(dateB) - new Date(dateA);
+        })[0];
+      }
+    }
+
+    if (!assignment) return null;
 
     let totalItems = 0;
     let completedItems = 0;
 
-    activeAssignment.prototypeData?.stages?.forEach(stage => {
+    assignment.prototypeData?.stages?.forEach(stage => {
       stage.tasks?.forEach(task => {
         if (!task.subtasks || task.subtasks.length === 0) {
           totalItems++;
@@ -123,9 +141,10 @@ export default function FacilityAdminDashboard() {
 
     return {
       percentage: totalItems === 0 ? 0 : Math.round((completedItems / totalItems) * 100),
-      assignment: activeAssignment,
+      assignment: assignment,
       totalItems,
-      completedItems
+      completedItems,
+      isCompleted: assignment.status === 'Completed' || assignment.status === 'Reviewed' || assignment.status === 'Approved'
     };
   };
 
@@ -818,20 +837,28 @@ export default function FacilityAdminDashboard() {
                       <td className="px-6 py-4 whitespace-nowrap">
                         {(() => {
                           const execInfo = getExecutionInfo(equipment);
-                          if (!execInfo) return <span className="text-gray-400 text-xs italic">No active task</span>;
+                          if (!execInfo) return <span className="text-gray-400 text-xs italic">No tasks found</span>;
+
+                          // Show different styling for completed vs active
+                          const isCompleted = execInfo.isCompleted;
+                          const progressColor = isCompleted ? 'from-green-500 to-emerald-600' : 'from-blue-500 to-indigo-600';
+                          const percentage = execInfo.percentage;
+
                           return (
                             <div className="flex items-center space-x-3">
                               <div className="flex-1 w-24 bg-gray-200 rounded-full h-2 overflow-hidden shadow-inner">
                                 <div
-                                  className="bg-gradient-to-r from-blue-500 to-indigo-600 h-full transition-all duration-500 ease-out"
-                                  style={{ width: `${execInfo.percentage}%` }}
+                                  className={`bg-gradient-to-r ${progressColor} h-full transition-all duration-500 ease-out`}
+                                  style={{ width: `${percentage}%` }}
                                 ></div>
                               </div>
-                              <span className="text-xs font-bold text-gray-700 min-w-[32px]">{execInfo.percentage}%</span>
+                              <span className={`text-xs font-bold min-w-[32px] ${isCompleted ? 'text-green-600' : 'text-gray-700'}`}>
+                                {percentage}%
+                              </span>
                               <button
                                 onClick={() => openExecutionDetail(execInfo)}
                                 className="p-1.5 text-blue-600 hover:bg-blue-50 rounded-full transition-colors"
-                                title="Execution Details"
+                                title={isCompleted ? "View Execution History" : "Execution Details"}
                               >
                                 <Info size={16} />
                               </button>
@@ -1626,8 +1653,8 @@ export default function FacilityAdminDashboard() {
                     <div className="flex justify-between items-center">
                       <span className="text-gray-500 font-medium">Current Status</span>
                       <span className={`px-3 py-1 rounded-full text-xs font-bold ${selectedExecution.assignment.status === 'Under Execution' ? 'bg-amber-100 text-amber-700 border border-amber-200' :
-                          selectedExecution.assignment.status === 'Paused' ? 'bg-orange-100 text-orange-700 border border-orange-200' :
-                            'bg-blue-100 text-blue-700 border border-blue-200'
+                        selectedExecution.assignment.status === 'Paused' ? 'bg-orange-100 text-orange-700 border border-orange-200' :
+                          'bg-blue-100 text-blue-700 border border-blue-200'
                         }`}>
                         {selectedExecution.assignment.status}
                       </span>
