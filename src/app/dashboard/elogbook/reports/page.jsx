@@ -142,14 +142,14 @@ const CustomCapacityLabel = (props) => {
   if (!value && value !== 0) return null;
   return (
     <g>
-      <rect 
-        x={x - 10} 
-        y={y - 35} 
-        width={width + 20} 
-        height={18} 
-        rx={4} 
-        fill="#f8fafc" 
-        stroke="#e2e8f0" 
+      <rect
+        x={x - 10}
+        y={y - 35}
+        width={width + 20}
+        height={18}
+        rx={4}
+        fill="#f8fafc"
+        stroke="#e2e8f0"
         strokeWidth={1}
       />
       <text
@@ -301,7 +301,7 @@ export default function ReportsPage() {
         pdf.addImage(imgData, 'PNG', 0, 40, pdfWidth, pdfHeight);
       }
 
-      const filename = selectedMD 
+      const filename = selectedMD
         ? `elogbook-${selectedMD.customerName.replace(/\s+/g, '-').toLowerCase()}-${startDate || 'all'}.pdf`
         : `elogbook-report-${startDate || 'all'}.pdf`;
       pdf.save(filename);
@@ -472,7 +472,11 @@ export default function ReportsPage() {
           {reportData.quantityData && reportData.quantityData.length > 0 && (
             <div className="bg-white rounded-2xl border border-gray-100 p-6 shadow-sm mb-6">
               <h3 className="text-sm font-bold text-gray-800 mb-1">Parts Distribution per Basket</h3>
-              <p className="text-xs text-gray-400 mb-4">Good vs Defective vs Rejected parts for each basket</p>
+              <p className="text-xs text-gray-400 mb-2">Good vs Defective vs Rejected parts for each basket</p>
+              <div className="flex items-center gap-1.5 mb-4">
+                {/* <span className="px-1.5 py-0.5 bg-gray-100 text-[10px] font-bold text-gray-500 rounded uppercase tracking-wider">Legend</span> */}
+                <span className="text-[10px] font-bold text-gray-600 uppercase tracking-wider">CAP = Total Parts per Bucket</span>
+              </div>
               <ResponsiveContainer width="100%" height={450}>
                 <BarChart data={reportData.quantityData} barGap={8} margin={{ top: 50, right: 30, left: 60, bottom: 80 }}>
                   <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" />

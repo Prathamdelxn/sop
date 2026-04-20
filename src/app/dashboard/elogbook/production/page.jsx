@@ -6,8 +6,16 @@ import {
   ArrowLeft, Play, Square, RotateCcw, CheckCircle2, Timer,
   Loader2, Package, AlertTriangle, Clock, Pause, ScanBarcode,
   Plus, ChevronDown, Users, X, Zap, Thermometer, Building2, Calendar,
-  BarChart3, TrendingUp, CheckCircle, AlertCircle
+  BarChart3, TrendingUp, CheckCircle, AlertCircle, ClipboardCheck, Save, XCircle
 } from 'lucide-react';
+
+const DEFECT_TYPES = [
+  { key: 'watermark1', label: 'Watermark 1', color: 'blue' },
+  { key: 'watermark2', label: 'Watermark 2', color: 'cyan' },
+  { key: 'maskingProblem', label: 'Masking Problem', color: 'amber' },
+  { key: 'scratchMark', label: 'Scratch Mark', color: 'red' },
+  { key: 'pvcPeelOff', label: 'PVC Peel Off', color: 'purple' },
+];
 
 // Helper function to format seconds to MM:SS
 const formatTimeToMMSS = (minutes) => {
@@ -108,6 +116,14 @@ export default function ProductionPage() {
     stoppedBaskets: 0,
     avgCycleTime: 0,
     totalLostTime: 0
+  });
+
+  // QC State
+  const [showQCModal, setShowQCModal] = useState(false);
+  const [selectedQC, setSelectedQC] = useState(null);
+  const [qcFormData, setQCFormData] = useState({
+    goodQuantity: '',
+    defects: { watermark1: 0, watermark2: 0, maskingProblem: 0, scratchMark: 0, pvcPeelOff: 0 },
   });
 
   useEffect(() => {
@@ -306,6 +322,57 @@ export default function ProductionPage() {
       fetchBaskets();
     } catch (err) {
       console.error('End error:', err);
+    }
+    setActionLoading(null);
+  };
+
+  const handleOpenQCModal = (basket) => {
+    setSelectedQC(basket);
+    setQCFormData({
+      goodQuantity: basket.masterDataId?.partsPerBasket || '',
+      defects: { watermark1: 0, watermark2: 0, maskingProblem: 0, scratchMark: 0, pvcPeelOff: 0 },
+    });
+    setShowQCModal(true);
+  };
+
+  const handleQCDefectChange = (defectKey, value) => {
+    setQCFormData(prev => ({
+      ...prev,
+      defects: { ...prev.defects, [defectKey]: Number(value) || 0 }
+    }));
+  };
+
+  const handleSubmitQC = async () => {
+    if (!selectedQC || !userData) return;
+    const basketId = selectedQC._id;
+    const inspectedQty = selectedQC.masterDataId?.partsPerBasket;
+
+    if (!inspectedQty) return alert('Inspected quantity is missing from master data');
+
+    setActionLoading(basketId);
+    try {
+      const res = await fetch('/api/elogbook/qc', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          basketId,
+          companyId: userData.companyId,
+          inspectorName: userData.name || userData.username,
+          inspectedQuantity: Number(inspectedQty),
+          goodQuantity: Number(qcFormData.goodQuantity) || 0,
+          defects: qcFormData.defects,
+        }),
+      });
+      const data = await res.json();
+      if (data.success) {
+        setShowQCModal(false);
+        fetchBaskets();
+      } else {
+        alert(data.message || 'Failed to submit QC');
+      }
+    } catch (err) {
+      console.error('QC Submit error:', err);
+      alert('Error submitting QC');
     }
     setActionLoading(null);
   };
@@ -592,9 +659,19 @@ export default function ProductionPage() {
                       <p className="text-xs text-gray-400">{basket.masterDataId?.customerName} - {basket.masterDataId?.partName}</p>
                     </div>
                   </div>
-                  <span className={`px-2.5 py-1 rounded-lg text-xs font-semibold border ${getStatusColor(basket.status)}`}>
-                    {getStatusLabel(basket.status)}
-                  </span>
+                  {basket.status === 'pending-qc' ? (
+                    <button
+                      onClick={() => handleOpenQCModal(basket)}
+                      disabled={actionLoading === basket._id}
+                      className="flex items-center gap-1.5 px-3 py-1.5 bg-indigo-50 text-indigo-700 border border-indigo-200 rounded-lg text-xs font-bold hover:bg-indigo-100 transition-all active:scale-95 shadow-sm"
+                    >
+                      <ClipboardCheck className="w-3.5 h-3.5" /> Perform QC
+                    </button>
+                  ) : (
+                    <span className={`px-2.5 py-1 rounded-lg text-xs font-semibold border ${getStatusColor(basket.status)}`}>
+                      {getStatusLabel(basket.status)}
+                    </span>
+                  )}
                 </div>
 
                 {/* Timer for active baskets */}
@@ -713,6 +790,7 @@ export default function ProductionPage() {
                     )}
                   </div>
                 )}
+
               </div>
             );
           })}
@@ -803,6 +881,101 @@ export default function ProductionPage() {
               <button onClick={handleStopBasket}
                 className="flex-1 flex items-center justify-center gap-2 px-4 py-2.5 bg-gradient-to-r from-amber-500 to-orange-500 text-white rounded-xl font-semibold text-sm shadow-lg shadow-amber-200 hover:shadow-xl transition-all active:scale-95">
                 <Pause className="w-4 h-4" /> Log Stoppage
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* QC Modal */}
+      {showQCModal && selectedQC && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+          <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" onClick={() => setShowQCModal(false)} />
+          <div className="relative bg-white rounded-2xl shadow-2xl w-full max-w-lg p-6 overflow-y-auto max-h-[90vh]">
+            <div className="flex items-center justify-between mb-6">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 bg-gradient-to-br from-indigo-500 to-purple-500 rounded-xl flex items-center justify-center text-white">
+                  <ClipboardCheck className="w-6 h-6" />
+                </div>
+                <div>
+                  <h2 className="text-lg font-bold text-gray-900">Quality Control Inspection</h2>
+                  <p className="text-xs text-gray-500">Basket {selectedQC.basketNumber} • {selectedQC.masterDataId?.partName}</p>
+                </div>
+              </div>
+              <button onClick={() => setShowQCModal(false)} className="p-2 rounded-lg hover:bg-gray-100 text-gray-400">
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            <div className="space-y-6">
+              {/* Stats Card */}
+              <div className="grid grid-cols-3 gap-3 p-3 bg-gray-50 rounded-xl border border-gray-100">
+                <div className="text-center">
+                  <div className="text-[10px] text-gray-500 uppercase font-bold tracking-wider">Inspected</div>
+                  <div className="text-lg font-bold text-blue-600">{selectedQC.masterDataId?.partsPerBasket || 0}</div>
+                </div>
+                <div className="text-center">
+                  <div className="text-[10px] text-gray-500 uppercase font-bold tracking-wider">Good</div>
+                  <div className="text-lg font-bold text-emerald-600">{qcFormData.goodQuantity || 0}</div>
+                </div>
+                <div className="text-center">
+                  <div className="text-[10px] text-gray-500 uppercase font-bold tracking-wider">Rework</div>
+                  <div className="text-lg font-bold text-amber-600">
+                    {(selectedQC.masterDataId?.partsPerBasket || 0) - (Number(qcFormData.goodQuantity) || 0)}
+                  </div>
+                </div>
+              </div>
+
+              {/* Main Inputs */}
+              <div>
+                <label className="block text-xs font-semibold text-gray-600 mb-1.5">Good Quantity</label>
+                <input
+                  type="number"
+                  value={qcFormData.goodQuantity}
+                  onChange={(e) => setQCFormData(prev => ({ ...prev, goodQuantity: e.target.value }))}
+                  className="w-full px-3 py-2.5 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-400"
+                  placeholder="Enter number of good parts..."
+                />
+              </div>
+
+              {/* Defects Breakdown */}
+              <div>
+                <h4 className="text-xs font-bold text-gray-500 uppercase tracking-wider mb-3 flex items-center gap-2">
+                  <XCircle className="w-3.5 h-3.5 text-red-400" /> Defect Breakdown
+                </h4>
+                <div className="grid grid-cols-2 gap-4">
+                  {DEFECT_TYPES.map(defect => (
+                    <div key={defect.key}>
+                      <label className="block text-[11px] font-medium text-gray-500 mb-1">{defect.label}</label>
+                      <input
+                        type="number"
+                        min="0"
+                        value={qcFormData.defects[defect.key]}
+                        onChange={(e) => handleQCDefectChange(defect.key, e.target.value)}
+                        className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm transition-all focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-400"
+                      />
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
+
+            <div className="flex gap-3 mt-8">
+              <button onClick={() => setShowQCModal(false)}
+                className="flex-1 px-4 py-2.5 text-sm font-semibold text-gray-600 border border-gray-200 rounded-xl hover:bg-gray-50 transition-all">
+                Cancel
+              </button>
+              <button
+                onClick={handleSubmitQC}
+                disabled={actionLoading === selectedQC._id}
+                className="flex-[2] flex items-center justify-center gap-2 px-4 py-2.5 bg-gradient-to-r from-indigo-600 to-purple-600 text-white rounded-xl font-semibold text-sm shadow-lg shadow-indigo-200 hover:shadow-xl transition-all active:scale-95 disabled:opacity-50"
+              >
+                {actionLoading === selectedQC._id ? (
+                  <Loader2 className="w-4 h-4 animate-spin" />
+                ) : (
+                  <Save className="w-4 h-4" />
+                )}
+                Submit QC Inspection
               </button>
             </div>
           </div>

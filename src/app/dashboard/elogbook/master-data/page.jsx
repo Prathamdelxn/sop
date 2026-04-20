@@ -471,7 +471,7 @@ export default function MasterDataPage() {
                       placeholder="400"
                     />
                   </div>
-                  <div className="col-span-2">
+                  {/* <div className="col-span-2">
                     <label className="block text-xs font-semibold text-gray-600 mb-1.5">Total Baskets</label>
                     <input
                       type="number"
@@ -480,7 +480,7 @@ export default function MasterDataPage() {
                       className="w-full px-3 py-2.5 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-400"
                       placeholder="3"
                     />
-                  </div>
+                  </div> */}
                 </div>
               </div>
 
