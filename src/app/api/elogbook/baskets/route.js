@@ -11,6 +11,8 @@ export async function GET(req) {
     const { searchParams } = new URL(req.url);
     const companyId = searchParams.get("companyId");
     const date = searchParams.get("date");
+    const startDate = searchParams.get("startDate");
+    const endDate = searchParams.get("endDate");
     const masterDataId = searchParams.get("masterDataId");
     const status = searchParams.get("status");
 
@@ -26,6 +28,18 @@ export async function GET(req) {
       const end = new Date(date);
       end.setHours(23, 59, 59, 999);
       filter.date = { $gte: start, $lte: end };
+    } else if (startDate || endDate) {
+      filter.date = {};
+      if (startDate) {
+        const s = new Date(startDate);
+        s.setHours(0, 0, 0, 0);
+        filter.date.$gte = s;
+      }
+      if (endDate) {
+        const e = new Date(endDate);
+        e.setHours(23, 59, 59, 999);
+        filter.date.$lte = e;
+      }
     }
 
     if (masterDataId) filter.masterDataId = masterDataId;
