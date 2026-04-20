@@ -25,6 +25,7 @@ export default function MasterDataPage() {
     customerName: '', subCompany: '', partName: '',
     coatingRequirements: '', standardCycleTime: '',
     standardVoltage: '', standardTemperature: '',
+    maxCurrent: '', surfaceAreaPerBasket: '',
     partsPerBasket: '', basketCount: '3',
   };
   const [form, setForm] = useState(emptyForm);
@@ -68,6 +69,8 @@ export default function MasterDataPage() {
         standardCycleTime: Number(form.standardCycleTime),
         standardVoltage: Number(form.standardVoltage),
         standardTemperature: Number(form.standardTemperature),
+        maxCurrent: Number(form.maxCurrent),
+        surfaceAreaPerBasket: Number(form.surfaceAreaPerBasket),
         partsPerBasket: Number(form.partsPerBasket),
         basketCount: Number(form.basketCount),
       };
@@ -113,6 +116,8 @@ export default function MasterDataPage() {
       standardCycleTime: String(record.standardCycleTime || ''),
       standardVoltage: String(record.standardVoltage || ''),
       standardTemperature: String(record.standardTemperature || ''),
+      maxCurrent: String(record.maxCurrent || ''),
+      surfaceAreaPerBasket: String(record.surfaceAreaPerBasket || ''),
       partsPerBasket: String(record.partsPerBasket || ''),
       basketCount: String(record.basketCount || '3'),
     });
@@ -267,7 +272,13 @@ export default function MasterDataPage() {
                           <div className="flex items-center justify-center gap-1"><Zap className="w-3 h-3" /> Voltage</div>
                         </th>
                         <th className="text-center px-4 py-3 font-semibold text-gray-600 text-xs uppercase tracking-wider">
+                          <div className="flex items-center justify-center gap-1"><Zap className="w-3 h-3" /> Max Current</div>
+                        </th>
+                        <th className="text-center px-4 py-3 font-semibold text-gray-600 text-xs uppercase tracking-wider">
                           <div className="flex items-center justify-center gap-1"><Thermometer className="w-3 h-3" /> Temp</div>
+                        </th>
+                        <th className="text-center px-4 py-3 font-semibold text-gray-600 text-xs uppercase tracking-wider">
+                          <div className="flex items-center justify-center gap-1"><Package className="w-3 h-3" /> Surface Area</div>
                         </th>
                         <th className="text-center px-4 py-3 font-semibold text-gray-600 text-xs uppercase tracking-wider">
                           <div className="flex items-center justify-center gap-1"><Package className="w-3 h-3" /> Parts/Basket</div>
@@ -287,7 +298,9 @@ export default function MasterDataPage() {
                             </span>
                           </td>
                           <td className="px-4 py-3 text-center text-gray-700 font-medium">{record.standardVoltage}V</td>
+                          <td className="px-4 py-3 text-center text-gray-700 font-medium">{record.maxCurrent ? `${record.maxCurrent}A` : '-'}</td>
                           <td className="px-4 py-3 text-center text-gray-700 font-medium">{record.standardTemperature}°C</td>
+                          <td className="px-4 py-3 text-center text-gray-700 font-medium">{record.surfaceAreaPerBasket ? `${record.surfaceAreaPerBasket} dm²` : '-'}</td>
                           <td className="px-4 py-3 text-center font-bold text-gray-800">{record.partsPerBasket}</td>
                           <td className="px-4 py-3 text-center">
                             <span className="inline-flex items-center px-2 py-0.5 rounded-md bg-gray-100 text-gray-600 font-medium text-xs">{record.basketCount}</span>
@@ -319,7 +332,7 @@ export default function MasterDataPage() {
         </div>
       )}
 
-      {/* Modal - Same as before but with customer name disabled when adding part to existing customer */}
+      {/* Modal */}
       {showModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
           <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" onClick={() => setShowModal(false)} />
@@ -382,10 +395,10 @@ export default function MasterDataPage() {
                 />
               </div>
 
-              {/* Operational Standards - same as before */}
+              {/* Operational Standards */}
               <div className="pt-2 border-t border-gray-100">
                 <h3 className="text-xs font-bold text-gray-500 uppercase tracking-wider mb-3">Operational Standards</h3>
-                <div className="grid grid-cols-3 gap-3">
+                <div className="grid grid-cols-2 gap-3">
                   <div>
                     <label className="block text-xs font-semibold text-gray-600 mb-1.5">Cycle Time (min) *</label>
                     <input
@@ -409,7 +422,18 @@ export default function MasterDataPage() {
                     />
                   </div>
                   <div>
-                    <label className="block text-xs font-semibold text-gray-600 mb-1.5">Temp (°C)</label>
+                    <label className="block text-xs font-semibold text-gray-600 mb-1.5">Max Current (A)</label>
+                    <input
+                      type="number"
+                      step="0.1"
+                      value={form.maxCurrent}
+                      onChange={e => setForm({ ...form, maxCurrent: e.target.value })}
+                      className="w-full px-3 py-2.5 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-400"
+                      placeholder="500"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-xs font-semibold text-gray-600 mb-1.5">Bath Temp (°C)</label>
                     <input
                       type="number"
                       value={form.standardTemperature}
@@ -421,10 +445,21 @@ export default function MasterDataPage() {
                 </div>
               </div>
 
-              {/* Capacity - same as before */}
+              {/* Capacity */}
               <div className="pt-2 border-t border-gray-100">
-                <h3 className="text-xs font-bold text-gray-500 uppercase tracking-wider mb-3">Capacity</h3>
+                <h3 className="text-xs font-bold text-gray-500 uppercase tracking-wider mb-3">Capacity & Surface Area</h3>
                 <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <label className="block text-xs font-semibold text-gray-600 mb-1.5">Surface Area per Basket (dm²)</label>
+                    <input
+                      type="number"
+                      step="0.01"
+                      value={form.surfaceAreaPerBasket}
+                      onChange={e => setForm({ ...form, surfaceAreaPerBasket: e.target.value })}
+                      className="w-full px-3 py-2.5 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-400"
+                      placeholder="25.5"
+                    />
+                  </div>
                   <div>
                     <label className="block text-xs font-semibold text-gray-600 mb-1.5">Parts per Basket *</label>
                     <input
@@ -436,7 +471,7 @@ export default function MasterDataPage() {
                       placeholder="400"
                     />
                   </div>
-                  <div>
+                  <div className="col-span-2">
                     <label className="block text-xs font-semibold text-gray-600 mb-1.5">Total Baskets</label>
                     <input
                       type="number"

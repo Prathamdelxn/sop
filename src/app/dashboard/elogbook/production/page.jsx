@@ -5,7 +5,8 @@ import { useRouter } from 'next/navigation';
 import {
   ArrowLeft, Play, Square, RotateCcw, CheckCircle2, Timer,
   Loader2, Package, AlertTriangle, Clock, Pause, ScanBarcode,
-  Plus, ChevronDown, Users, X, Zap, Thermometer, Building2
+  Plus, ChevronDown, Users, X, Zap, Thermometer, Building2, Calendar,
+  BarChart3, TrendingUp, CheckCircle, AlertCircle
 } from 'lucide-react';
 
 // Helper function to format seconds to MM:SS
@@ -97,8 +98,17 @@ export default function ProductionPage() {
   const [showStartModal, setShowStartModal] = useState(false);
   const [startBasketNumber, setStartBasketNumber] = useState('');
   const [additionalUsers, setAdditionalUsers] = useState('');
-  const [todayFilter, setTodayFilter] = useState(true);
+  const [startDate, setStartDate] = useState(new Date().toISOString().split('T')[0]);
+  const [endDate, setEndDate] = useState(new Date().toISOString().split('T')[0]);
   const [customers, setCustomers] = useState([]);
+  const [summary, setSummary] = useState({
+    totalBaskets: 0,
+    completedBaskets: 0,
+    inProgressBaskets: 0,
+    stoppedBaskets: 0,
+    avgCycleTime: 0,
+    totalLostTime: 0
+  });
 
   useEffect(() => {
     const userdata = localStorage.getItem('user');
@@ -113,7 +123,7 @@ export default function ProductionPage() {
 
   useEffect(() => {
     if (userData?.companyId) fetchBaskets();
-  }, [userData, selectedMasterData, todayFilter]);
+  }, [userData, selectedMasterData, startDate, endDate]);
 
   useEffect(() => {
     // Extract unique customers from master data
@@ -129,6 +139,11 @@ export default function ProductionPage() {
       setSelectedMasterData(null);
     }
   }, [masterDataList]);
+
+  // Calculate summary statistics whenever baskets change
+  useEffect(() => {
+    calculateSummary();
+  }, [baskets]);
 
   const fetchMasterData = async () => {
     try {
@@ -148,7 +163,7 @@ export default function ProductionPage() {
     try {
       let url = `/api/elogbook/baskets?companyId=${userData.companyId}`;
       if (selectedMasterData) url += `&masterDataId=${selectedMasterData._id}`;
-      if (todayFilter) url += `&date=${new Date().toISOString().split('T')[0]}`;
+      if (startDate && endDate) url += `&startDate=${startDate}&endDate=${endDate}`;
 
       const res = await fetch(url);
       const data = await res.json();
@@ -157,6 +172,26 @@ export default function ProductionPage() {
       console.error('Fetch baskets error:', err);
     }
     setLoading(false);
+  };
+
+  const calculateSummary = () => {
+    const completed = baskets.filter(b => b.status === 'completed' || b.status === 'qc-done' || b.status === 'pending-qc');
+    const inProgress = baskets.filter(b => b.status === 'in-progress');
+    const stopped = baskets.filter(b => b.status === 'stopped');
+
+    const totalCycleTime = completed.reduce((sum, basket) => sum + (basket.actualCycleTime || 0), 0);
+    const avgTime = completed.length > 0 ? totalCycleTime / completed.length : 0;
+
+    const totalLost = baskets.reduce((sum, basket) => sum + (basket.totalLostTime || 0), 0);
+
+    setSummary({
+      totalBaskets: baskets.length,
+      completedBaskets: completed.length,
+      inProgressBaskets: inProgress.length,
+      stoppedBaskets: stopped.length,
+      avgCycleTime: avgTime,
+      totalLostTime: totalLost
+    });
   };
 
   // Get parts for selected customer
@@ -313,6 +348,65 @@ export default function ProductionPage() {
         </div>
       </div>
 
+      {/* Summary Cards */}
+      {selectedMasterData && baskets.length > 0 && (
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+          <div className="bg-gradient-to-br from-blue-500 to-blue-600 rounded-2xl p-4 text-white shadow-lg">
+            <div className="flex items-center justify-between mb-2">
+              <Package className="w-6 h-6 opacity-80" />
+              <BarChart3 className="w-5 h-5 opacity-80" />
+            </div>
+            <div className="text-2xl font-bold">{summary.totalBaskets}</div>
+            <div className="text-xs opacity-90 mt-1">Total Baskets</div>
+            <div className="text-xs opacity-75 mt-2">
+              {summary.completedBaskets} completed
+            </div>
+          </div>
+
+          <div className="bg-gradient-to-br from-emerald-500 to-emerald-600 rounded-2xl p-4 text-white shadow-lg">
+            <div className="flex items-center justify-between mb-2">
+              <CheckCircle className="w-6 h-6 opacity-80" />
+              <TrendingUp className="w-5 h-5 opacity-80" />
+            </div>
+            <div className="text-2xl font-bold">{summary.completedBaskets}</div>
+            <div className="text-xs opacity-90 mt-1">Completed Baskets</div>
+            <div className="text-xs opacity-75 mt-2">
+              {summary.totalBaskets > 0 ? Math.round((summary.completedBaskets / summary.totalBaskets) * 100) : 0}% completion rate
+            </div>
+          </div>
+
+          <div className="bg-gradient-to-br from-amber-500 to-amber-600 rounded-2xl p-4 text-white shadow-lg">
+            <div className="flex items-center justify-between mb-2">
+              <Clock className="w-6 h-6 opacity-80" />
+              <Timer className="w-5 h-5 opacity-80" />
+            </div>
+            <div className="text-xl font-bold">{formatTimeToMMSS(summary.avgCycleTime)}</div>
+            <div className="text-xs opacity-90 mt-1">Avg Cycle Time</div>
+            <div className="text-xs opacity-75 mt-2">
+              {selectedMasterData?.standardCycleTime && summary.avgCycleTime > selectedMasterData.standardCycleTime ? (
+                <span className="flex items-center gap-1">
+                  <AlertCircle className="w-3 h-3" /> +{formatTimeToMMSS(summary.avgCycleTime - selectedMasterData.standardCycleTime)} vs standard
+                </span>
+              ) : selectedMasterData?.standardCycleTime ? (
+                <span>-{formatTimeToMMSS(selectedMasterData.standardCycleTime - summary.avgCycleTime)} vs standard</span>
+              ) : null}
+            </div>
+          </div>
+
+          <div className="bg-gradient-to-br from-red-500 to-red-600 rounded-2xl p-4 text-white shadow-lg">
+            <div className="flex items-center justify-between mb-2">
+              <AlertCircle className="w-6 h-6 opacity-80" />
+              <Timer className="w-5 h-5 opacity-80" />
+            </div>
+            <div className="text-xl font-bold">{formatTimeToMMSS(summary.totalLostTime)}</div>
+            <div className="text-xs opacity-90 mt-1">Total Lost Time</div>
+            <div className="text-xs opacity-75 mt-2">
+              {summary.stoppedBaskets} stopped baskets
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Controls Bar */}
       <div className="bg-white rounded-2xl border border-gray-100 p-4 mb-6 shadow-sm">
         <div className="flex flex-col gap-4">
@@ -355,6 +449,32 @@ export default function ProductionPage() {
                   </option>
                 ))}
               </select>
+            </div>
+          </div>
+
+          {/* Date Range Picker */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+              <label className="block text-xs font-semibold text-gray-500 mb-1.5 uppercase tracking-wider flex items-center gap-2">
+                <Calendar className="w-3.5 h-3.5" /> From Date
+              </label>
+              <input
+                type="date"
+                value={startDate}
+                onChange={(e) => setStartDate(e.target.value)}
+                className="w-full px-3 py-2.5 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-400"
+              />
+            </div>
+            <div>
+              <label className="block text-xs font-semibold text-gray-500 mb-1.5 uppercase tracking-wider flex items-center gap-2">
+                <Calendar className="w-3.5 h-3.5" /> To Date
+              </label>
+              <input
+                type="date"
+                value={endDate}
+                onChange={(e) => setEndDate(e.target.value)}
+                className="w-full px-3 py-2.5 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-400"
+              />
             </div>
           </div>
 
@@ -419,10 +539,6 @@ export default function ProductionPage() {
             <div className="flex items-center gap-1.5 px-3 py-1.5 bg-purple-50 rounded-lg text-xs font-medium text-purple-700">
               <Package className="w-3.5 h-3.5" /> {selectedMasterData.partsPerBasket} parts/basket
             </div>
-            <label className="flex items-center gap-2 ml-auto text-xs text-gray-500 cursor-pointer">
-              <input type="checkbox" checked={todayFilter} onChange={e => setTodayFilter(e.target.checked)} className="rounded" />
-              Today only
-            </label>
           </div>
         )}
 
@@ -442,8 +558,11 @@ export default function ProductionPage() {
       ) : baskets.length === 0 ? (
         <div className="bg-white rounded-2xl border border-gray-100 p-12 text-center">
           <Package className="w-12 h-12 text-gray-300 mx-auto mb-4" />
-          <h3 className="text-lg font-bold text-gray-700 mb-1">No Baskets Yet</h3>
-          <p className="text-sm text-gray-400">Select a customer and part, then scan a barcode or click "Start Basket" to begin a new cycle.</p>
+          <h3 className="text-lg font-bold text-gray-700 mb-1">No Baskets Found</h3>
+          <p className="text-sm text-gray-400">
+            No baskets found from {new Date(startDate).toLocaleDateString()} to {new Date(endDate).toLocaleDateString()}.
+            Select a customer and part, then scan a barcode or click "Start Basket" to begin a new cycle.
+          </p>
         </div>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
@@ -547,7 +666,7 @@ export default function ProductionPage() {
                   <div className="flex justify-between">
                     <span className="text-gray-400">Started</span>
                     <span className="font-medium text-gray-600">
-                      {basket.startTime ? new Date(basket.startTime).toLocaleTimeString() : '—'}
+                      {basket.startTime ? new Date(basket.startTime).toLocaleString() : '—'}
                     </span>
                   </div>
                   <div className="flex justify-between">
@@ -557,7 +676,7 @@ export default function ProductionPage() {
                   {basket.endTime && (
                     <div className="flex justify-between">
                       <span className="text-gray-400">Ended</span>
-                      <span className="font-medium text-gray-600">{new Date(basket.endTime).toLocaleTimeString()}</span>
+                      <span className="font-medium text-gray-600">{new Date(basket.endTime).toLocaleString()}</span>
                     </div>
                   )}
                 </div>
