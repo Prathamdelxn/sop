@@ -71,6 +71,7 @@ export async function GET(request) {
     // Build chart data
     const cycleTimeData = [];
     const quantityData = [];
+    const basketDetails = [];
     let totalDefects = {
       watermark1: 0,
       watermark2: 0,
@@ -98,6 +99,8 @@ export async function GET(request) {
       });
 
       const qc = qcMap[basket._id.toString()];
+      const totalParts = basket.masterDataId?.partsPerBasket || 0;
+
       if (qc) {
         const goodQty = qc.finalGoodQuantity || qc.goodQuantity || 0;
         const reworkQty = qc.reworkQuantity || 0;
@@ -109,6 +112,7 @@ export async function GET(request) {
           defective: reworkQty,
           rejected: rejectedQty,
           inspected: qc.inspectedQuantity || 0,
+          totalParts: totalParts,
         });
 
         // Aggregate defects
@@ -128,8 +132,16 @@ export async function GET(request) {
           defective: 0,
           rejected: 0,
           inspected: 0,
+          totalParts: totalParts,
         });
       }
+
+      // Add detailed basket info
+      basketDetails.push({
+        doneBy: basket.endUser || basket.startUser || "-",
+        qualityCheckedBy: qc ? qc.inspectorName : "-",
+        totalParts: basket.masterDataId?.partsPerBasket || 0
+      });
 
       totalBaskets++;
       totalCycleTime += basket.actualCycleTime || 0;
@@ -152,6 +164,7 @@ export async function GET(request) {
       data: {
         cycleTimeData,
         quantityData,
+        basketDetails,
         defectTrendData,
         summary: {
           totalBaskets,

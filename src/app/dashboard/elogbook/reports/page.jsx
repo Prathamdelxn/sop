@@ -4,11 +4,11 @@ import React, { useState, useEffect, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import {
   ArrowLeft, BarChart3, Download, Loader2,
-  Clock, AlertTriangle, CheckCircle2, TrendingUp, Package
+  Clock, AlertTriangle, CheckCircle2, TrendingUp, Package, User, Shield, PackageCheck
 } from 'lucide-react';
 import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip,
-  Legend, ResponsiveContainer, Cell
+  Legend, ResponsiveContainer, Cell, LabelList
 } from 'recharts';
 
 const COLORS = {
@@ -55,6 +55,7 @@ const formatSecondsToTime = (seconds) => {
 // Custom tooltip component
 const CustomTooltip = ({ active, payload, label }) => {
   if (!active || !payload?.length) return null;
+  const rawData = payload[0].payload;
   return (
     <div className="bg-white rounded-xl shadow-lg border border-gray-100 p-3 text-xs">
       <p className="font-bold text-gray-800 mb-1">{label}</p>
@@ -67,7 +68,102 @@ const CustomTooltip = ({ active, payload, label }) => {
           }
         </p>
       ))}
+      {rawData.totalParts !== undefined && (
+        <div className="mt-2 pt-2 border-t border-gray-50 flex justify-between gap-4">
+          <span className="font-bold text-gray-500">Basket Capacity (Total)</span>
+          <span className="font-extrabold text-gray-900">{rawData.totalParts}</span>
+        </div>
+      )}
     </div>
+  );
+};
+
+// Custom Label Component for Time Values
+const CustomTimeLabel = (props) => {
+  const { x, y, width, value } = props;
+  if (!value && value !== 0) return null;
+  const formattedTime = formatMinutesToTime(value);
+  return (
+    <text
+      x={x + width / 2}
+      y={y - 8}
+      fill="#475569"
+      textAnchor="middle"
+      fontSize={11}
+      fontWeight="600"
+      className="font-semibold"
+    >
+      {formattedTime}
+    </text>
+  );
+};
+
+// Custom Label Component for Quantity Values
+const CustomQuantityLabel = (props) => {
+  const { x, y, width, value, color } = props;
+  if (!value && value !== 0) return null;
+  return (
+    <text
+      x={x + width / 2}
+      y={y - 8}
+      fill={color || '#475569'}
+      textAnchor="middle"
+      fontSize={11}
+      fontWeight="600"
+      className="font-semibold"
+    >
+      {value}
+    </text>
+  );
+};
+
+// Custom Label for Defect Count
+const CustomDefectLabel = (props) => {
+  const { x, y, width, value } = props;
+  if (!value && value !== 0) return null;
+  return (
+    <text
+      x={x + width + 8}
+      y={y + 4}
+      fill="#475569"
+      textAnchor="start"
+      fontSize={11}
+      fontWeight="600"
+      className="font-semibold"
+    >
+      {value}
+    </text>
+  );
+};
+
+// Custom Label for Total Capacity (visible directly on chart)
+const CustomCapacityLabel = (props) => {
+  const { x, y, width, value } = props;
+  if (!value && value !== 0) return null;
+  return (
+    <g>
+      <rect 
+        x={x - 10} 
+        y={y - 35} 
+        width={width + 20} 
+        height={18} 
+        rx={4} 
+        fill="#f8fafc" 
+        stroke="#e2e8f0" 
+        strokeWidth={1}
+      />
+      <text
+        x={x + width / 2}
+        y={y - 23}
+        fill="#64748b"
+        textAnchor="middle"
+        fontSize={10}
+        fontWeight="700"
+        className="font-bold"
+      >
+        CAP: {value}
+      </text>
+    </g>
   );
 };
 
@@ -155,6 +251,9 @@ export default function ReportsPage() {
       const element = reportRef.current;
       if (!element) return;
 
+      // Small delay to ensure all charts are fully rendered
+      await new Promise(r => setTimeout(r, 500));
+
       const canvas = await html2canvas(element, {
         scale: 2,
         useCORS: true,
@@ -167,18 +266,22 @@ export default function ReportsPage() {
       const pdfWidth = pdf.internal.pageSize.getWidth();
       const pdfHeight = (canvas.height * pdfWidth) / canvas.width;
 
+      const selectedMD = masterDataList.find(md => md._id === selectedMasterData);
+      const reportTitle = selectedMD ? `${selectedMD.customerName} - Report` : 'ELogBook Report';
+
       // Title
       pdf.setFontSize(18);
       pdf.setTextColor(55, 48, 163);
-      pdf.text('ELogBook Report', 14, 15);
+      pdf.text(reportTitle, 14, 15);
       pdf.setFontSize(10);
       pdf.setTextColor(107, 114, 128);
       pdf.text(`Generated: ${new Date().toLocaleString()}`, 14, 22);
-      if (startDate) pdf.text(`Date Range: ${startDate} to ${endDate || startDate}`, 14, 28);
+      if (selectedMD) pdf.text(`Part: ${selectedMD.partName}`, 14, 28);
+      if (startDate) pdf.text(`Date Range: ${startDate} to ${endDate || startDate}`, 14, 34);
 
       // Content
-      if (pdfHeight > pdf.internal.pageSize.getHeight() - 35) {
-        let y = 35;
+      if (pdfHeight > pdf.internal.pageSize.getHeight() - 40) {
+        let y = 40;
         const pageHeight = pdf.internal.pageSize.getHeight();
         const imgHeight = pdfHeight;
         let remainingHeight = imgHeight;
@@ -195,10 +298,13 @@ export default function ReportsPage() {
           }
         }
       } else {
-        pdf.addImage(imgData, 'PNG', 0, 35, pdfWidth, pdfHeight);
+        pdf.addImage(imgData, 'PNG', 0, 40, pdfWidth, pdfHeight);
       }
 
-      pdf.save(`elogbook-report-${startDate || 'all'}.pdf`);
+      const filename = selectedMD 
+        ? `elogbook-${selectedMD.customerName.replace(/\s+/g, '-').toLowerCase()}-${startDate || 'all'}.pdf`
+        : `elogbook-report-${startDate || 'all'}.pdf`;
+      pdf.save(filename);
     } catch (err) {
       console.error('PDF export error:', err);
     }
@@ -340,23 +446,23 @@ export default function ReportsPage() {
             <div className="bg-white rounded-2xl border border-gray-100 p-6 shadow-sm mb-6">
               <h3 className="text-sm font-bold text-gray-800 mb-1">Basket Cycle Time Comparison</h3>
               <p className="text-xs text-gray-400 mb-4">Actual cycle time for each basket (green = on target, red = over standard)</p>
-              <ResponsiveContainer width="100%" height={400}>
-                <BarChart data={reportData.cycleTimeData} barGap={8} margin={{ top: 20, right: 30, left: 60, bottom: 20 }}>
+              <ResponsiveContainer width="100%" height={450}>
+                <BarChart data={reportData.cycleTimeData} barGap={8} margin={{ top: 50, right: 30, left: 60, bottom: 80 }}>
                   <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" />
                   <XAxis dataKey="name" tick={{ fontSize: 12, fill: '#64748b' }} angle={-45} textAnchor="end" height={80} />
                   <YAxis
                     tick={{ fontSize: 11, fill: '#94a3b8' }}
-                    label={{ value: 'Time', angle: -90, position: 'insideLeft', style: { fontSize: 11, fill: '#94a3b8' } }}
-                    tickFormatter={(value) => formatMinutesToTime(value)}
+                    label={{ value: 'Time (minutes)', angle: -90, position: 'insideLeft', style: { fontSize: 11, fill: '#94a3b8' } }}
+                    tickFormatter={(value) => `${value}m`}
                   />
                   <Tooltip content={<CustomTooltip />} />
                   <Legend wrapperStyle={{ fontSize: '12px' }} />
-                  <Bar dataKey="actual" name="Actual Time" radius={[6, 6, 0, 0]}>
+                  <Bar dataKey="actual" name="Actual Time" radius={[6, 6, 0, 0]} isAnimationActive={false}>
                     {reportData.cycleTimeData.map((entry, i) => (
                       <Cell key={i} fill={entry.exceeds ? COLORS.red : COLORS.green} />
                     ))}
+                    <LabelList dataKey="actual" content={CustomTimeLabel} position="top" />
                   </Bar>
-                  {/* <Bar dataKey="standard" name="Standard Time" fill={COLORS.blue} radius={[6, 6, 0, 0]} opacity={0.5} /> */}
                 </BarChart>
               </ResponsiveContainer>
             </div>
@@ -367,8 +473,8 @@ export default function ReportsPage() {
             <div className="bg-white rounded-2xl border border-gray-100 p-6 shadow-sm mb-6">
               <h3 className="text-sm font-bold text-gray-800 mb-1">Parts Distribution per Basket</h3>
               <p className="text-xs text-gray-400 mb-4">Good vs Defective vs Rejected parts for each basket</p>
-              <ResponsiveContainer width="100%" height={400}>
-                <BarChart data={reportData.quantityData} barGap={8} margin={{ top: 20, right: 30, left: 60, bottom: 20 }}>
+              <ResponsiveContainer width="100%" height={450}>
+                <BarChart data={reportData.quantityData} barGap={8} margin={{ top: 50, right: 30, left: 60, bottom: 80 }}>
                   <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" />
                   <XAxis dataKey="name" tick={{ fontSize: 12, fill: '#64748b' }} angle={-45} textAnchor="end" height={80} />
                   <YAxis
@@ -377,9 +483,16 @@ export default function ReportsPage() {
                   />
                   <Tooltip content={<CustomTooltip />} />
                   <Legend wrapperStyle={{ fontSize: '12px' }} />
-                  <Bar dataKey="good" name="Good Parts" fill={COLORS.green} radius={[6, 6, 0, 0]} />
-                  <Bar dataKey="defective" name="Rework" fill={COLORS.amber} radius={[6, 6, 0, 0]} />
-                  <Bar dataKey="rejected" name="Rejected" fill={COLORS.red} radius={[6, 6, 0, 0]} />
+                  <Bar dataKey="good" name="Good Parts" fill={COLORS.green} radius={[6, 6, 0, 0]} isAnimationActive={false}>
+                    <LabelList dataKey="good" content={(props) => <CustomQuantityLabel {...props} color={COLORS.green} />} position="top" />
+                    <LabelList dataKey="totalParts" content={<CustomCapacityLabel />} position="top" />
+                  </Bar>
+                  <Bar dataKey="defective" name="Rework" fill={COLORS.amber} radius={[6, 6, 0, 0]} isAnimationActive={false}>
+                    <LabelList dataKey="defective" content={(props) => <CustomQuantityLabel {...props} color={COLORS.amber} />} position="top" />
+                  </Bar>
+                  <Bar dataKey="rejected" name="Rejected" fill={COLORS.red} radius={[6, 6, 0, 0]} isAnimationActive={false}>
+                    <LabelList dataKey="rejected" content={(props) => <CustomQuantityLabel {...props} color={COLORS.red} />} position="top" />
+                  </Bar>
                 </BarChart>
               </ResponsiveContainer>
             </div>
@@ -390,14 +503,16 @@ export default function ReportsPage() {
             <div className="bg-white rounded-2xl border border-gray-100 p-6 shadow-sm mb-6">
               <h3 className="text-sm font-bold text-gray-800 mb-1">Defect Type Frequency</h3>
               <p className="text-xs text-gray-400 mb-4">Breakdown of defect types across all baskets</p>
-              <ResponsiveContainer width="100%" height={400}>
-                <BarChart data={reportData.defectTrendData} layout="vertical" margin={{ top: 20, right: 30, left: 120, bottom: 20 }}>
+              <ResponsiveContainer width="100%" height={450}>
+                <BarChart data={reportData.defectTrendData} layout="vertical" margin={{ top: 20, right: 80, left: 120, bottom: 20 }}>
                   <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" horizontal={false} />
                   <XAxis type="number" tick={{ fontSize: 11, fill: '#94a3b8' }} />
                   <YAxis type="category" dataKey="name" tick={{ fontSize: 11, fill: '#64748b' }} width={120} />
                   <Tooltip content={<CustomTooltip />} />
                   <Legend wrapperStyle={{ fontSize: '12px' }} />
-                  <Bar dataKey="count" name="Defect Count" fill={COLORS.purple} radius={[0, 6, 6, 0]} />
+                  <Bar dataKey="count" name="Defect Count" fill={COLORS.purple} radius={[0, 6, 6, 0]} isAnimationActive={false}>
+                    <LabelList dataKey="count" content={CustomDefectLabel} position="right" />
+                  </Bar>
                 </BarChart>
               </ResponsiveContainer>
             </div>
@@ -417,15 +532,20 @@ export default function ReportsPage() {
                       <th className="text-center px-4 py-3 text-xs font-semibold text-gray-500 uppercase">Actual Time</th>
                       <th className="text-center px-4 py-3 text-xs font-semibold text-gray-500 uppercase">Standard</th>
                       <th className="text-center px-4 py-3 text-xs font-semibold text-gray-500 uppercase">Lost Time</th>
+                      <th className="text-center px-4 py-3 text-xs font-semibold text-gray-500 uppercase">Total Parts</th>
                       <th className="text-center px-4 py-3 text-xs font-semibold text-gray-500 uppercase">Good</th>
                       <th className="text-center px-4 py-3 text-xs font-semibold text-gray-500 uppercase">Rework</th>
                       <th className="text-center px-4 py-3 text-xs font-semibold text-gray-500 uppercase">Rejected</th>
+                      <th className="text-center px-4 py-3 text-xs font-semibold text-gray-500 uppercase">Done By</th>
+                      <th className="text-center px-4 py-3 text-xs font-semibold text-gray-500 uppercase">Quality Checked By</th>
                       <th className="text-center px-4 py-3 text-xs font-semibold text-gray-500 uppercase">Status</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-gray-50">
                     {reportData.cycleTimeData.map((ct, i) => {
                       const qty = reportData.quantityData?.[i] || { good: 0, defective: 0, rejected: 0 };
+                      const basketDetails = reportData.basketDetails?.[i] || {};
+                      const totalParts = basketDetails.totalParts || 0;
                       return (
                         <tr key={i} className="hover:bg-indigo-50/30 transition-colors">
                           <td className="px-4 py-3 font-semibold text-gray-800">{ct.name}</td>
@@ -438,6 +558,9 @@ export default function ReportsPage() {
                           <td className="px-4 py-3 text-center text-amber-600 font-medium">
                             {formatMinutesToTime(ct.lost)}
                           </td>
+                          <td className="px-4 py-3 text-center font-bold text-gray-700">
+                            {totalParts}
+                          </td>
                           <td className="px-4 py-3 text-center text-emerald-600 font-medium">
                             {qty.good || 0}
                           </td>
@@ -446,6 +569,18 @@ export default function ReportsPage() {
                           </td>
                           <td className="px-4 py-3 text-center text-red-600 font-medium">
                             {qty.rejected || 0}
+                          </td>
+                          <td className="px-4 py-3 text-center">
+                            <div className="flex items-center justify-center gap-1">
+                              <User className="w-3 h-3 text-gray-400" />
+                              <span className="text-gray-700 text-xs">{basketDetails.doneBy || '-'}</span>
+                            </div>
+                          </td>
+                          <td className="px-4 py-3 text-center">
+                            <div className="flex items-center justify-center gap-1">
+                              <Shield className="w-3 h-3 text-gray-400" />
+                              <span className="text-gray-700 text-xs">{basketDetails.qualityCheckedBy || '-'}</span>
+                            </div>
                           </td>
                           <td className="px-4 py-3 text-center">
                             <span className={`inline-flex px-2 py-0.5 rounded-md text-xs font-semibold ${ct.exceeds ? 'bg-red-50 text-red-600' : 'bg-emerald-50 text-emerald-600'}`}>
