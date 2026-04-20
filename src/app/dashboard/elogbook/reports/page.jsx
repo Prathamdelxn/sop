@@ -70,7 +70,7 @@ const CustomTooltip = ({ active, payload, label }) => {
       ))}
       {rawData.totalParts !== undefined && (
         <div className="mt-2 pt-2 border-t border-gray-50 flex justify-between gap-4">
-          <span className="font-bold text-gray-500">Basket Capacity (Total)</span>
+          <span className="font-bold text-gray-500">Total Parts:</span>
           <span className="font-extrabold text-gray-900">{rawData.totalParts}</span>
         </div>
       )}
@@ -497,6 +497,7 @@ export default function ReportsPage() {
                   <Bar dataKey="rejected" name="Rejected" fill={COLORS.red} radius={[6, 6, 0, 0]} isAnimationActive={false}>
                     <LabelList dataKey="rejected" content={(props) => <CustomQuantityLabel {...props} color={COLORS.red} />} position="top" />
                   </Bar>
+
                 </BarChart>
               </ResponsiveContainer>
             </div>
