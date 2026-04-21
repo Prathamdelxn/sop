@@ -37,5 +37,5 @@ const elogbookBasketSchema = new mongoose.Schema({
   },
 }, { timestamps: true });
 
-delete mongoose.models.ElogbookBasket;
+// delete mongoose.models.ElogbookBasket;
 export default mongoose.models.ElogbookBasket || mongoose.model("ElogbookBasket", elogbookBasketSchema);

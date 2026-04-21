@@ -21,5 +21,5 @@ const elogbookMasterDataSchema = new mongoose.Schema({
 // Optional: Create compound index to prevent duplicate part names for same customer
 elogbookMasterDataSchema.index({ companyId: 1, customerName: 1, partName: 1 }, { unique: true });
 
-delete mongoose.models.ElogbookMasterData;
+// delete mongoose.models.ElogbookMasterData;
 export default mongoose.models.ElogbookMasterData || mongoose.model("ElogbookMasterData", elogbookMasterDataSchema);
