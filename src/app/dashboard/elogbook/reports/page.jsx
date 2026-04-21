@@ -469,14 +469,11 @@ export default function ReportsPage() {
           )}
 
           {/* Graph 2: Parts Distribution per Basket */}
+          {/* Graph 2: Parts Distribution per Basket */}
           {reportData.quantityData && reportData.quantityData.length > 0 && (
             <div className="bg-white rounded-2xl border border-gray-100 p-6 shadow-sm mb-6">
               <h3 className="text-sm font-bold text-gray-800 mb-1">Parts Distribution per Basket</h3>
               <p className="text-xs text-gray-400 mb-2">Good vs Defective vs Rejected parts for each basket</p>
-              <div className="flex items-center gap-1.5 mb-4">
-                {/* <span className="px-1.5 py-0.5 bg-gray-100 text-[10px] font-bold text-gray-500 rounded uppercase tracking-wider">Legend</span> */}
-                <span className="text-[10px] font-bold text-gray-600 uppercase tracking-wider">CAP = Total Parts per Bucket</span>
-              </div>
               <ResponsiveContainer width="100%" height={450}>
                 <BarChart data={reportData.quantityData} barGap={8} margin={{ top: 50, right: 30, left: 60, bottom: 80 }}>
                   <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" />
@@ -486,7 +483,32 @@ export default function ReportsPage() {
                     label={{ value: 'Quantity', angle: -90, position: 'insideLeft', style: { fontSize: 11, fill: '#94a3b8' } }}
                   />
                   <Tooltip content={<CustomTooltip />} />
-                  <Legend wrapperStyle={{ fontSize: '12px' }} />
+
+                  {/* Custom Legend with CAP explanation */}
+                  <Legend
+                    wrapperStyle={{ fontSize: '12px', paddingTop: '20px' }}
+                    content={() => (
+                      <div className="flex flex-wrap items-center justify-center gap-4 mt-2">
+                        <div className="flex items-center gap-1.5">
+                          <div className="w-3 h-3 rounded-sm" style={{ backgroundColor: COLORS.green }}></div>
+                          <span className="text-xs text-gray-600">Good Parts</span>
+                        </div>
+                        <div className="flex items-center gap-1.5">
+                          <div className="w-3 h-3 rounded-sm" style={{ backgroundColor: COLORS.amber }}></div>
+                          <span className="text-xs text-gray-600">Rework</span>
+                        </div>
+                        <div className="flex items-center gap-1.5">
+                          <div className="w-3 h-3 rounded-sm" style={{ backgroundColor: COLORS.red }}></div>
+                          <span className="text-xs text-gray-600">Rejected</span>
+                        </div>
+                        <div className="flex items-center gap-1.5 border-l border-gray-200 pl-3 ml-1">
+                          <span className="text-xs font-bold text-gray-700">CAP:</span>
+                          <span className="text-xs text-gray-500">Total Parts per Bucket</span>
+                        </div>
+                      </div>
+                    )}
+                  />
+
                   <Bar dataKey="good" name="Good Parts" fill={COLORS.green} radius={[6, 6, 0, 0]} isAnimationActive={false}>
                     <LabelList dataKey="good" content={(props) => <CustomQuantityLabel {...props} color={COLORS.green} />} position="top" />
                     <LabelList dataKey="totalParts" content={<CustomCapacityLabel />} position="top" />
@@ -497,7 +519,6 @@ export default function ReportsPage() {
                   <Bar dataKey="rejected" name="Rejected" fill={COLORS.red} radius={[6, 6, 0, 0]} isAnimationActive={false}>
                     <LabelList dataKey="rejected" content={(props) => <CustomQuantityLabel {...props} color={COLORS.red} />} position="top" />
                   </Bar>
-
                 </BarChart>
               </ResponsiveContainer>
             </div>
