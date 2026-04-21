@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import connectDB from "@/utils/db";
 import ElogbookBasket from "@/model/ElogbookBasket";
 import ElogbookQC from "@/model/ElogbookQC";
-
+import ElogbookMasterData from "@/model/ElogbookMasterData";
 export const dynamic = "force-dynamic";
 
 // GET — aggregated report data for charts

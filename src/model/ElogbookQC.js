@@ -33,5 +33,5 @@ const elogbookQCSchema = new mongoose.Schema({
   remarks: { type: String, default: "" },
 }, { timestamps: true });
 
-delete mongoose.models.ElogbookQC;
+// delete mongoose.models.ElogbookQC;
 export default mongoose.models.ElogbookQC || mongoose.model("ElogbookQC", elogbookQCSchema);
