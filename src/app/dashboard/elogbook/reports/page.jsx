@@ -254,51 +254,79 @@ export default function ReportsPage() {
       // Small delay to ensure all charts are fully rendered
       await new Promise(r => setTimeout(r, 500));
 
-      const canvas = await html2canvas(element, {
-        scale: 2,
-        useCORS: true,
-        logging: false,
-        backgroundColor: '#ffffff',
-      });
-
-      const imgData = canvas.toDataURL('image/png');
-      const pdf = new jsPDF('p', 'mm', 'a4');
-      const pdfWidth = pdf.internal.pageSize.getWidth();
-      const pdfHeight = (canvas.height * pdfWidth) / canvas.width;
-
       const selectedMD = masterDataList.find(md => md._id === selectedMasterData);
       const reportTitle = selectedMD ? `${selectedMD.customerName} - Report` : 'ELogBook Report';
+
+      const pdf = new jsPDF('p', 'mm', 'a4');
+      const pdfWidth = pdf.internal.pageSize.getWidth();
+      const pdfHeight = pdf.internal.pageSize.getHeight();
+      const margin = 14;
+      const usableWidth = pdfWidth - (margin * 2);
 
       // Title
       pdf.setFontSize(18);
       pdf.setTextColor(55, 48, 163);
-      pdf.text(reportTitle, 14, 15);
+      pdf.text(reportTitle, margin, 15);
       pdf.setFontSize(10);
       pdf.setTextColor(107, 114, 128);
-      pdf.text(`Generated: ${new Date().toLocaleString()}`, 14, 22);
-      if (selectedMD) pdf.text(`Part: ${selectedMD.partName}`, 14, 28);
-      if (startDate) pdf.text(`Date Range: ${startDate} to ${endDate || startDate}`, 14, 34);
+      pdf.text(`Generated: ${new Date().toLocaleString()}`, margin, 22);
+      if (selectedMD) pdf.text(`Part: ${selectedMD.partName}`, margin, 28);
+      if (startDate) pdf.text(`Date Range: ${startDate} to ${endDate || startDate}`, margin, 34);
 
-      // Content
-      if (pdfHeight > pdf.internal.pageSize.getHeight() - 40) {
-        let y = 40;
-        const pageHeight = pdf.internal.pageSize.getHeight();
-        const imgHeight = pdfHeight;
-        let remainingHeight = imgHeight;
-        let currentY = 0;
+      let currentY = 40;
+      const children = Array.from(element.children);
 
-        while (remainingHeight > 0) {
-          const sliceHeight = Math.min(remainingHeight, pageHeight - y);
-          pdf.addImage(imgData, 'PNG', 0, y - currentY, pdfWidth, pdfHeight);
-          remainingHeight -= sliceHeight;
-          currentY += sliceHeight;
-          if (remainingHeight > 0) {
+      for (let i = 0; i < children.length; i++) {
+        const child = children[i];
+        
+        const canvas = await html2canvas(child, {
+          scale: 2,
+          useCORS: true,
+          logging: false,
+          backgroundColor: '#ffffff',
+        });
+
+        const imgData = canvas.toDataURL('image/png');
+        const imgHeight = (canvas.height * usableWidth) / canvas.width;
+
+        // Check if we should move to a new page to avoid splitting a section (e.g. a chart)
+        // If the section is NOT huge (fits on one page), but doesn't fit on THIS page, move it.
+        if (currentY + imgHeight > pdfHeight - margin) {
+          if (imgHeight < pdfHeight - (margin * 2)) {
             pdf.addPage();
-            y = 10;
+            currentY = 14;
           }
         }
-      } else {
-        pdf.addImage(imgData, 'PNG', 0, 40, pdfWidth, pdfHeight);
+
+        // Add the section image
+        // If it was moved to a new page, currentY is 14.
+        // If it's still bigger than the page (like a long table), we use the slicing logic.
+        if (currentY + imgHeight > pdfHeight - margin) {
+          let remainingSectionHeight = imgHeight;
+          let sectionTopOffset = 0;
+
+          while (remainingSectionHeight > 0) {
+            const spaceLeft = pdfHeight - currentY - margin;
+            const sliceHeight = Math.min(remainingSectionHeight, spaceLeft);
+            
+            // Draw the image with an vertical offset to "slice" it
+            pdf.addImage(imgData, 'PNG', margin, currentY - sectionTopOffset, usableWidth, imgHeight);
+            
+            remainingSectionHeight -= sliceHeight;
+            sectionTopOffset += sliceHeight;
+
+            if (remainingSectionHeight > 0) {
+              pdf.addPage();
+              currentY = 14;
+            } else {
+              currentY += sliceHeight;
+            }
+          }
+        } else {
+          // Fits normally
+          pdf.addImage(imgData, 'PNG', margin, currentY, usableWidth, imgHeight);
+          currentY += imgHeight + 8; // Gap between sections
+        }
       }
 
       const filename = selectedMD
