@@ -456,7 +456,21 @@ export default function ReportsPage() {
                     tickFormatter={(value) => `${value}m`}
                   />
                   <Tooltip content={<CustomTooltip />} />
-                  <Legend wrapperStyle={{ fontSize: '12px' }} />
+                  <Legend
+                    wrapperStyle={{ fontSize: '12px' }}
+                    content={() => (
+                      <div className="flex flex-wrap items-center justify-center gap-4 mt-2">
+                        <div className="flex items-center gap-1.5">
+                          <div className="w-3 h-3 rounded-sm" style={{ backgroundColor: COLORS.green }}></div>
+                          <span className="text-xs text-gray-600">On Target</span>
+                        </div>
+                        <div className="flex items-center gap-1.5">
+                          <div className="w-3 h-3 rounded-sm" style={{ backgroundColor: COLORS.red }}></div>
+                          <span className="text-xs text-gray-600">Time Exceed</span>
+                        </div>
+                      </div>
+                    )}
+                  />
                   <Bar dataKey="actual" name="Actual Time" radius={[6, 6, 0, 0]} isAnimationActive={false}>
                     {reportData.cycleTimeData.map((entry, i) => (
                       <Cell key={i} fill={entry.exceeds ? COLORS.red : COLORS.green} />
