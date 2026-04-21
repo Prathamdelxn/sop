@@ -300,26 +300,26 @@ const TaskExecutionPage = () => {
         currentY = doc.lastAutoTable.finalY + 15;
       }
 
-      if (task.visualReviewNotes && task.visualReviewNotes.length > 0) {
-        doc.setFontSize(16);
-        doc.setTextColor(255, 152, 0); // Amber for visual review
-        doc.text('Visual Review Feedback History', 20, currentY);
-        const visualReviewRows = task.visualReviewNotes.map(vrn => [
-          new Date(vrn.reviewedAt).toLocaleString(),
-          vrn.taskTitle || 'Visual Inspection',
-          vrn.note || 'No notes',
-          'NOT CLEAN',
-          vrn.reviewedBy?.name || 'Production Manager'
-        ]);
-        autoTable(doc, {
-          startY: currentY + 5,
-          head: [['Date', 'Target', 'Comment', 'Decision', 'Reviewer']],
-          body: visualReviewRows,
-          theme: 'striped',
-          headStyles: { fillColor: [255, 152, 0] },
-          styles: { fontSize: 8 },
-        });
-      }
+      // if (task.visualReviewNotes && task.visualReviewNotes.length > 0) {
+      //   doc.setFontSize(16);
+      //   doc.setTextColor(255, 152, 0); // Amber for visual review
+      //   doc.text('Visual Review Feedback History', 20, currentY);
+      //   const visualReviewRows = task.visualReviewNotes.map(vrn => [
+      //     new Date(vrn.reviewedAt).toLocaleString(),
+      //     vrn.taskTitle || 'Visual Inspection',
+      //     vrn.note || 'No notes',
+      //     'NOT CLEAN',
+      //     vrn.reviewedBy?.name || 'Production Manager'
+      //   ]);
+      //   autoTable(doc, {
+      //     startY: currentY + 5,
+      //     head: [['Date', 'Target', 'Comment', 'Decision', 'Reviewer']],
+      //     body: visualReviewRows,
+      //     theme: 'striped',
+      //     headStyles: { fillColor: [255, 152, 0] },
+      //     styles: { fontSize: 8 },
+      //   });
+      // }
     }
 
     // --- FOOTER ---
@@ -408,7 +408,7 @@ const TaskExecutionPage = () => {
 
       if (response.ok && result.assignmentId) {
         toast.dismiss(loadingToast);
-        
+
         // Set matched task to show in UI
         setMatchedTask(result);
 

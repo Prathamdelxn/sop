@@ -20,12 +20,13 @@ export default function ApproveAssignEquipmentPage() {
   const [sortConfig, setSortConfig] = useState({ key: null, direction: 'ascending' });
 
   const fetchAssignment = useCallback(async (isInitial = true) => {
+    if (!companyData?.companyId) return;
     try {
       if (isInitial) setLoading(true);
-      const res = await fetch('/api/assignment/fetchAll');
+      const res = await fetch(`/api/assignment/fetchAll?companyId=${companyData.companyId}`);
       const data = await res.json();
       
-      const filteredData = data.data.filter((t) => t.companyId === companyData?.companyId && t.status !== "InProgress" && t.userId !== companyData.id);
+      const filteredData = (data.data || []).filter((t) => t.companyId === companyData?.companyId && t.status !== "InProgress" && t.userId !== companyData.id);
       setAssignData(filteredData);
     } catch (error) {
       console.error('Error fetching assignments:', error);
@@ -82,7 +83,7 @@ export default function ApproveAssignEquipmentPage() {
     try {
       setLoading(true);
       if (passwordActionType === 'approve') {
-        const res = await fetch(`/api/assignment/update/${selectedAssignment._id}`, {
+        const res = await fetch(`/api/assignment/update/${companyData.companyId}/${selectedAssignment._id}`, {
           method: 'PUT',
           headers: {
             'Content-Type': 'application/json',
@@ -94,7 +95,7 @@ export default function ApproveAssignEquipmentPage() {
           throw new Error('Failed to approve assignment');
         }
       } else if (passwordActionType === 'reject') {
-        const res = await fetch(`/api/assignment/update/${selectedAssignment._id}`, {
+        const res = await fetch(`/api/assignment/update/${companyData.companyId}/${selectedAssignment._id}`, {
           method: 'PUT',
           headers: {
             'Content-Type': 'application/json',

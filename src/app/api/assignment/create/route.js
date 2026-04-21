@@ -1,43 +1,59 @@
-// /app/api/assignment/create/route.js
-
 import { NextResponse } from 'next/server';
-import connectDB from '@/utils/db'; // your DB connection util
-import NewAssignment from '@/model/NewAssignment';
+import connectDB from '@/utils/db';
+
+import ChecklistStatic from "@/model/ChecklistNew";
+import EquipmentStatic from "@/model/Equipment";
+import PrototypeStatic from "@/model/Task";
+import AssignmentStatic from "@/model/NewAssignment";
+import CompanyStatic from "@/model/Company";
+
 
 export async function POST(req) {
-  await connectDB();
-
   try {
+    await connectDB();
     const body = await req.json();
-    console.log(body);
-    const { generatedId, equipment, prototype ,companyId,userId} = body;
+    
+    const { generatedId, equipment, prototype, companyId, userId } = body;
 
     // Validation
+    if (!companyId) {
+      return NextResponse.json({ success: false, message: "Company ID is required for data isolation" }, { status: 400 });
+    }
+
     if (!generatedId || !equipment || !prototype) {
       return NextResponse.json(
-        { success: false, message: 'Missing fields' },
+        { success: false, message: 'Missing required fields (generatedId, equipment, or prototype)' },
         { status: 400 }
       );
     }
-    console.log(prototype)
-    
 
-    const newAssignment = await NewAssignment.create({
+    const AssignmentModel = AssignmentStatic; 
+    const __tenantCompanyId = companyId;
+
+    const newAssignment = await AssignmentModel.create({
       generatedId,
       equipment,
-      prototypeData:prototype,
+      prototypeData: prototype,
       companyId,
       userId
     });
-    console.log(newAssignment)
+
+    if (newAssignment && newAssignment._id) {
+       await CompanyStatic.findOneAndUpdate(
+           { companyId },
+           { $push: { assignments: newAssignment._id } }
+       );
+    }
+
     return NextResponse.json({
       success: true,
+      message: 'Assignment created successfully in tenant storage',
       data: newAssignment,
     });
   } catch (error) {
     console.error('Error creating assignment:', error);
     return NextResponse.json(
-      { success: false, message: 'Server error' },
+      { success: false, message: 'Server error: ' + error.message },
       { status: 500 }
     );
   }

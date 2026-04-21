@@ -8267,7 +8267,15 @@ export default function NestedDragDrop() {
       const fetchChecklist = async () => {
         try {
           setLoading(true);
-          const response = await fetch(`/api/checklistapi/fetch-by-id/${id}`);
+          const userData = JSON.parse(localStorage.getItem("user"));
+          const companyId = userData?.companyId;
+          
+          if (!companyId) {
+            toast.error("Company identification missing. Please log in again.");
+            return;
+          }
+
+          const response = await fetch(`/api/checklistapi/fetch-by-id/${id}?companyId=${companyId}`);
           if (!response.ok) {
             throw new Error("Failed to fetch checklist");
           }
@@ -9013,14 +9021,20 @@ const stagesWithoutDefault = schemaStages.length > 0
     console.log("Visual Representation:", JSON.stringify(schemaVisualRepresentation, null, 2));
     setIsSaving(true);
     const userData = JSON.parse(localStorage.getItem("user"));
-  const data = {
-  ...checklistData,
-  stages: stagesWithoutDefault,
-  defaultStage: schemaDefaultStage,
-  visualRepresntation: schemaVisualRepresentation,
-  companyId: userData.companyId,
-  userId: userData.id,
-};
+    if (!userData?.companyId) {
+      toast.error("Company identification missing. Please log in again.");
+      setIsSaving(false);
+      return;
+    }
+
+    const data = {
+      ...checklistData,
+      stages: stagesWithoutDefault,
+      defaultStage: schemaDefaultStage,
+      visualRepresntation: schemaVisualRepresentation,
+      companyId: userData.companyId,
+      userId: userData.id,
+    };
     console.log("ad",data);
     const url = isEditMode
       ? `/api/checklistapi/update/${id}`

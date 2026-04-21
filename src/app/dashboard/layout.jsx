@@ -24,30 +24,50 @@ import {
   Settings2,
   Activity,
   ShieldCheck,
-  UserCog
+  UserCog,
+  Book,
+  Database,
+  BarChart3,
+  Package,
 } from 'lucide-react';
+import {
+  FEATURE_PERMISSIONS,
+  getFeatureForPermission,
+  migrateLegacyPermissions,
+} from '@/utils/featurePermissions';
 
 const allNavigationItems = [
+  // ── Core ──
   { name: 'Dashboard', href: '/dashboard/', icon: Home, current: true, category: 'Core' },
-  { name: 'Review Access', href: '/dashboard/review-page', icon: Eye, current: false, category: 'Admin' },
-  { name: 'Create Checklist', href: '/dashboard/create-checklist', icon: Wrench, current: false, category: 'Management' },
-  { name: 'Create Equipment', href: '/dashboard/create-equipment', icon: HardHat, current: false, category: 'Management' },
-  { name: 'Assign Checklist to Equipment', href: '/dashboard/assign-checklist-to-equipment', icon: Link, current: false, category: 'Management' },
-  { name: 'Assign Task', href: '/dashboard/assign-task', icon: ClipboardList, current: false, category: 'Operations' },
-  { name: 'Task Execution', href: '/dashboard/task-execution', icon: PlayCircle, current: false, category: 'Operations' },
-  { name: 'Approve Equipment', href: '/dashboard/approve-equipment', icon: CheckCircle2, current: false, category: 'Approvals' },
-  { name: 'Review Task', href: '/dashboard/review-task', icon: UserCheck, current: false, category: 'Approvals' },
-  { name: 'Visual & QA Review', href: '/dashboard/visual-review', icon: ShieldCheck, current: false, category: 'Approvals' },
-  { name: 'Approve Checklist', href: '/dashboard/approve-checklist', icon: ListChecks, current: false, category: 'Approvals' },
-  { name: 'Approve Tagged Chechlist with Equipment', href: '/dashboard/approve-assign-checklist-to-equipment', icon: Layers, current: false, category: 'Approvals' },
+
+  // ── Checklist Management ──
+  { name: 'Create Checklist', href: '/dashboard/create-checklist', icon: Wrench, current: false, category: 'CHECKLIST' },
+  { name: 'Create Equipment', href: '/dashboard/create-equipment', icon: HardHat, current: false, category: 'CHECKLIST' },
+  { name: 'Assign Checklist to Equipment', href: '/dashboard/assign-checklist-to-equipment', icon: Link, current: false, category: 'CHECKLIST' },
+  { name: 'Assign Task', href: '/dashboard/assign-task', icon: ClipboardList, current: false, category: 'CHECKLIST' },
+  { name: 'Task Execution', href: '/dashboard/task-execution', icon: PlayCircle, current: false, category: 'CHECKLIST' },
+  { name: 'Approve Equipment', href: '/dashboard/approve-equipment', icon: CheckCircle2, current: false, category: 'CHECKLIST' },
+  { name: 'Review Task', href: '/dashboard/review-task', icon: UserCheck, current: false, category: 'CHECKLIST' },
+  { name: 'Visual Review', href: '/dashboard/visual-review', icon: Eye, current: false, category: 'CHECKLIST' },
+  { name: 'QA', href: '/dashboard/visual-review', icon: ShieldCheck, current: false, category: 'CHECKLIST' },
+  { name: 'Approve Checklist', href: '/dashboard/approve-checklist', icon: ListChecks, current: false, category: 'CHECKLIST' },
+  { name: 'Approve Tagged Checklist with Equipment', href: '/dashboard/approve-assign-checklist-to-equipment', icon: Layers, current: false, category: 'CHECKLIST' },
+  { name: 'Approve Tagged Chechlist with Equipment', href: '/dashboard/approve-assign-checklist-to-equipment', icon: Layers, current: false, category: 'CHECKLIST' },
+  { name: 'Review Access', href: '/dashboard/review-page', icon: Eye, current: false, category: 'CHECKLIST' },
+
+  // ── Non-Pharma E-Logbook ──
+  { name: 'Bucket Execution', href: '/dashboard/elogbook/production', icon: Package, current: false, category: 'NON-PHARMA-ELOGBOOK' },
+  { name: 'Master Data Management', href: '/dashboard/elogbook/master-data', icon: Database, current: false, category: 'NON-PHARMA-ELOGBOOK' },
+  { name: 'Quality Check', href: '/dashboard/elogbook/qc', icon: ShieldCheck, current: false, category: 'NON-PHARMA-ELOGBOOK' },
+  { name: 'Graphical Representation', href: '/dashboard/elogbook/reports', icon: BarChart3, current: false, category: 'NON-PHARMA-ELOGBOOK' },
 ];
 
 const categories = [
   { id: 'Core', name: 'General', icon: Home },
-  { id: 'Management', name: 'Resources', icon: Settings2 },
-  { id: 'Operations', name: 'Workflows', icon: Activity },
-  { id: 'Approvals', name: 'Approvals', icon: ShieldCheck },
-  { id: 'Admin', name: 'System', icon: UserCog },
+  { id: 'CHECKLIST', name: 'Checklist Management', icon: ListChecks },
+  { id: 'NON-PHARMA-ELOGBOOK', name: 'E-Logbook (Non-Pharma)', icon: Book },
+  { id: 'PHARMA-ELOGBOOK', name: 'E-Logbook (Pharma)', icon: Book },
+  { id: 'OPERATION', name: 'Operations', icon: Activity },
 ];
 
 // Loading skeleton component for sidebar items
@@ -80,10 +100,10 @@ export default function DashboardLayout({ children }) {
   const [isSidebarLoading, setIsSidebarLoading] = useState(true); // Separate loading state for sidebar
   const [expandedCategories, setExpandedCategories] = useState({
     Core: true,
-    Management: true,
-    Operations: true,
-    Approvals: true,
-    Admin: true
+    CHECKLIST: true,
+    'NON-PHARMA-ELOGBOOK': true,
+    'PHARMA-ELOGBOOK': true,
+    OPERATION: true
   });
   const dropdownRef = useRef(null);
 
@@ -93,11 +113,20 @@ export default function DashboardLayout({ children }) {
     setUserData(data);
 
     const datafetch = async () => {
-      const res = await fetch(`/api/superAdmin/fetchById/${data.companyId}`);
-      const da = await res.json();
-      setCompanyData(da.superAdmin);
+      if (!data?.companyId) return;
+      try {
+        const res = await fetch(`/api/superAdmin/fetchById/${data.companyId}`);
+        const da = await res.json();
+        if (da.success) {
+          setCompanyData(da.superAdmin);
+        }
+      } catch (err) {
+        console.error("Error fetching company data:", err);
+      }
     };
-    datafetch();
+    if (data?.companyId) {
+      datafetch();
+    }
   }, []);
 
   useEffect(() => {
@@ -121,50 +150,68 @@ export default function DashboardLayout({ children }) {
   };
 
   const fetchUser = async () => {
-    if (!userData?.id) return;
+    if (!userData?.id || !userData?.role) return;
 
     try {
-      setIsSidebarLoading(true); // Only set sidebar loading
-      const res = await fetch(`/api/superAdmin/users/fetch-by-id/${userData?.id}`);
-      const details = await res.json();
+      setIsSidebarLoading(true);
+      const enabledFeatures = userData.features || []; // From login response
+      let userTasks = [];
 
-      const filteredNavigation = [{
-        ...allNavigationItems[0],
-        current: isActiveRoute(allNavigationItems[0].href, pathname)
-      }];
-
-      if (details.user?.task?.length) {
-        const userTasks = details.user.task;
-        allNavigationItems.forEach(item => {
-          if (item.name === 'Dashboard') return;
-
-          let hasAccess = userTasks.includes(item.name);
-          
-          // Special cases for combined name
-          if (item.name === 'Visual & QA Review') {
-            hasAccess = userTasks.includes('Visual Review') || userTasks.includes('QA');
-          }
-
-          if (hasAccess) {
-            filteredNavigation.push({
-              ...item,
-              current: isActiveRoute(item.href, pathname)
-            });
-          }
-        });
+      if (userData.role === 'company-admin') {
+        // Company admins see all tasks for enabled features
+        // No need to fetch worker tasks
+        userTasks = []; 
+      } else {
+        // Regular users/workers - fetch their specific assigned tasks
+        const res = await fetch(`/api/superAdmin/users/fetch-by-id/${userData?.id}`);
+        const details = await res.json();
+        const rawTasks = details.user?.task || [];
+        userTasks = migrateLegacyPermissions(rawTasks);
       }
 
-      setNavigation(filteredNavigation);
-      setIsSidebarLoading(false); // Only set sidebar loading to false
+      const filteredNavigation = allNavigationItems.filter(item => {
+        // Dashboard is always visible
+        if (item.name === 'Dashboard') return true;
+
+        // 1. Feature Level Check — use centralized config
+        const featureKey = getFeatureForPermission(item.name);
+        let isFeatureEnabled = false;
+
+        if (featureKey) {
+          isFeatureEnabled = enabledFeatures.includes(featureKey);
+        }
+
+        if (!isFeatureEnabled) return false;
+
+        // 2. Permission Level Check (via tasks)
+        if (userData.role === 'company-admin') return true; // Admins see all enabled feature tasks
+
+        const hasPermission = userTasks.includes(item.name);
+        return hasPermission;
+      });
+
+      console.log('--- Sidebar Debug ---');
+      console.log('User Role:', userData.role);
+      console.log('Enabled Features:', enabledFeatures);
+      console.log('User Tasks (Migrated):', userTasks);
+      console.log('Filtered Nav:', filteredNavigation.map(n => n.name));
+      console.log('----------------------');
+
+      setNavigation(filteredNavigation.map(item => ({
+        ...item,
+        current: isActiveRoute(item.href, pathname)
+      })));
+      setIsSidebarLoading(false);
     } catch (error) {
       console.error('Error fetching user data:', error);
       setNavigation([{
         ...allNavigationItems[0],
         current: isActiveRoute(allNavigationItems[0].href, pathname)
       }]);
-      setIsSidebarLoading(false); // Only set sidebar loading to false
+      setIsSidebarLoading(false);
     }
   };
+
 
   // useEffect(() => {
   //   if (userData?.id) {
@@ -180,9 +227,10 @@ export default function DashboardLayout({ children }) {
   // }, [userData, pathname]);
 
   useEffect(() => {
-    if (userData?.id) {
-      fetchUser(true);
-    } else {
+    if (userData?.id && userData?.role) {
+      fetchUser();
+    } else if (userData) {
+      // If we have user data but it's incomplete, wait for local state to sync
       setNavigation([{ ...allNavigationItems[0], current: isActiveRoute(allNavigationItems[0].href, pathname) }]);
       setIsSidebarLoading(false);
     }

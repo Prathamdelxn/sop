@@ -1,47 +1,28 @@
-// import { NextResponse } from 'next/server';
-// import Equipment from '@/model/Equipment';
-// import connectToDB from '@/utils/db';
-
-// export async function PUT(request) {
-//   await connectToDB();
-
-//   const { equipmentId, status } = await request.json();
-
-//   try {
-//     const updatedEquipment = await Equipment.findByIdAndUpdate(
-//       equipmentId,
-//       { status },
-//       { new: true }
-//     );
-
-//     if (!updatedEquipment) {
-//       return NextResponse.json(
-//         { error: 'Equipment not found' },
-//         { status: 404 }
-//       );
-//     }
-
-//     return NextResponse.json(updatedEquipment);
-//   } catch (error) {
-//     console.error('Error updating equipment status:', error);
-//     return NextResponse.json(
-//       { error: 'Internal server error' },
-//       { status: 500 }
-//     );
-//   }
-// }
-
-
 import { NextResponse } from 'next/server';
-import Equipment from '@/model/Equipment';
+
 import connectToDB from '@/utils/db';
 
-export async function PUT(request) {
-  await connectToDB();
+import ChecklistStatic from "@/model/ChecklistNew";
+import EquipmentStatic from "@/model/Equipment";
+import PrototypeStatic from "@/model/Task";
+import AssignmentStatic from "@/model/NewAssignment";
+import CompanyStatic from "@/model/Company";
 
+// ✅ Update Equipment Status with Multi-Tenant Isolation
+export async function PUT(request) {
   try {
-    const { equipmentId, status,approver, rejectionReason } = await request.json();
-console.log("asdfasdsdfasd",approver);
+    await connectToDB();
+
+    const body = await request.json();
+    const { equipmentId, status, approver, rejectionReason, companyId } = body;
+
+    if (!companyId) {
+      return NextResponse.json(
+        { success: false, message: 'companyId is required for multi-tenant isolation' },
+        { status: 400 }
+      );
+    }
+
     if (!equipmentId || !status) {
       return NextResponse.json(
         { success: false, message: 'Missing required fields: equipmentId or status' },
@@ -49,8 +30,12 @@ console.log("asdfasdsdfasd",approver);
       );
     }
 
+    // Get the dynamic Equipment model for this company
+    const EquipmentModel = EquipmentStatic; 
+    const __tenantCompanyId = companyId;
+
     const updateFields = { status };
-     if (approver && approver.approverId && approver.approverName) {
+    if (approver && approver.approverId && approver.approverName) {
       updateFields.approver = {
         approverId: approver.approverId,
         approverName: approver.approverName,
@@ -64,16 +49,16 @@ console.log("asdfasdsdfasd",approver);
       updateFields.rejectionReason = ''; // Clear previous reason if status is changed
     }
 
-    const updatedEquipment = await Equipment.findByIdAndUpdate(
+    // Find and update the equipment within the tenant-specific collection
+    const updatedEquipment = await EquipmentModel.findByIdAndUpdate(
       equipmentId,
       updateFields,
-
       { new: true }
     );
 
     if (!updatedEquipment) {
       return NextResponse.json(
-        { success: false, message: 'Equipment not found' },
+        { success: false, message: 'Equipment not found in this company\'s collection' },
         { status: 404 }
       );
     }
@@ -85,9 +70,9 @@ console.log("asdfasdsdfasd",approver);
     });
 
   } catch (error) {
-    console.error('Error updating equipment status:', error);
+    console.error('❌ Error updating equipment status:', error);
     return NextResponse.json(
-      { success: false, message: 'Internal server error' },
+      { success: false, message: 'Internal server error', details: error.message },
       { status: 500 }
     );
   }

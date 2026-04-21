@@ -928,14 +928,22 @@ export default function AssignWorkerPage() {
                 try {
                     const res = await fetch(`/api/task-execution/${companyData.companyId}`)
                     const data = await res.json()
-                    setWorkers(data?.users || [])
+                    
+                    if (data.success === false) {
+                        console.error('API Error fetching workers:', data.message);
+                        setWorkers([]);
+                    } else {
+                        setWorkers(data?.users || [])
+                        console.log("Fetched workers for company:", companyData.companyId, data?.users?.length || 0);
+                    }
                 } catch (error) {
-                    console.error('Error fetching workers:', error)
+                    console.error('Network Error fetching workers:', error)
+                    setWorkers([]);
                 }
             }
         }
 
-        if (selectedAssignment) {
+        if (selectedAssignment && companyData?.companyId) {
             fetchWorkers()
         }
     }, [selectedAssignment, companyData])
@@ -1238,6 +1246,7 @@ export default function AssignWorkerPage() {
             body: JSON.stringify({
                 stages: updatedData.stages,
                 status: updatedData.status,
+                companyId: companyData?.companyId,
             }),
         })
         const data = await res.json()

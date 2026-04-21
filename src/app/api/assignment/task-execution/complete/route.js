@@ -1,17 +1,23 @@
 import connectDB from '@/utils/db';
-import NewAssignment from '@/model/NewAssignment';
+
 import { NextResponse } from 'next/server';
+
+import ChecklistStatic from "@/model/ChecklistNew";
+import EquipmentStatic from "@/model/Equipment";
+import PrototypeStatic from "@/model/Task";
+import AssignmentStatic from "@/model/NewAssignment";
+import CompanyStatic from "@/model/Company";
 
 export async function PUT(request) {
   try {
     await connectDB();
 
     const body = await request.json();
-    const { assignmentId, stageId, taskId, subtaskId, executionData } = body;
+    const { assignmentId, stageId, taskId, subtaskId, executionData, companyId } = body;
 
-    if (!assignmentId || !stageId || !taskId || !executionData) {
+    if (!assignmentId || !stageId || !taskId || !executionData || !companyId) {
       return NextResponse.json(
-        { success: false, message: 'Missing required fields' },
+        { success: false, message: 'Missing required fields (including companyId)' },
         { status: 400 }
       );
     }
@@ -56,8 +62,11 @@ export async function PUT(request) {
       );
     }
 
+    const AssignmentModel = AssignmentStatic; 
+    const __tenantCompanyId = companyId;
+
     // Fetch assignment
-    const assignment = await NewAssignment.findById(assignmentId);
+    const assignment = await AssignmentModel.findById(assignmentId);
     if (!assignment) {
       return NextResponse.json(
         { success: false, message: 'Assignment not found' },

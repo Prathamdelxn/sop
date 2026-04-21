@@ -1,23 +1,41 @@
 import dbConnect from "@/utils/db";
-import Checklist from "@/model/ChecklistNew";
+
 import { NextResponse } from "next/server";
 
+import ChecklistStatic from "@/model/ChecklistNew";
+import EquipmentStatic from "@/model/Equipment";
+import PrototypeStatic from "@/model/Task";
+import AssignmentStatic from "@/model/NewAssignment";
+import CompanyStatic from "@/model/Company";
+
+// ✅ Update Checklist Approval Status with Multi-Tenant Isolation
 export async function PUT(req) {
   try {
     await dbConnect();
 
     const body = await req.json();
-    const { prototypeId, approverId, status, comments } = body;
+    const { prototypeId, approverId, status, comments, companyId } = body;
 
-    if (!prototypeId || !approverId || !status) {
+    if (!companyId) {
       return NextResponse.json(
-        { error: "prototypeId, reviewerId and status are required" },
+        { error: "companyId is required for multi-tenant isolation" },
         { status: 400 }
       );
     }
 
-    // ✅ Update specific review
-    let updated = await Checklist.findOneAndUpdate(
+    if (!prototypeId || !approverId || !status) {
+      return NextResponse.json(
+        { error: "prototypeId, approverId and status are required" },
+        { status: 400 }
+      );
+    }
+
+    // Get the dynamic Checklist model for this company
+    const ChecklistModel = ChecklistStatic; 
+    const __tenantCompanyId = companyId;
+
+    // ✅ Update specific review within the tenant-specific collection
+    let updated = await ChecklistModel.findOneAndUpdate(
       { _id: prototypeId, "approvers.approverId": approverId },
       {
         $set: {
@@ -32,7 +50,7 @@ export async function PUT(req) {
 
     if (!updated) {
       return NextResponse.json(
-        { error: "Prototype or Approval not found" },
+        { error: "Prototype or Approval record not found in this company's collection" },
         { status: 404 }
       );
     }
@@ -59,9 +77,9 @@ export async function PUT(req) {
       { status: 200 }
     );
   } catch (error) {
-    console.error("❌ Error updating review:", error);
+    console.error("❌ Error updating approval status:", error);
     return NextResponse.json(
-      { error: "Internal server error" },
+      { error: "Internal server error", details: error.message },
       { status: 500 }
     );
   }

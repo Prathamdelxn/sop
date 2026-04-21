@@ -1,14 +1,30 @@
 import connectDB from '@/utils/db';
-import Assignment from '@/model/NewAssignment';
+
+import ChecklistStatic from "@/model/ChecklistNew";
+import EquipmentStatic from "@/model/Equipment";
+import PrototypeStatic from "@/model/Task";
+import AssignmentStatic from "@/model/NewAssignment";
+import CompanyStatic from "@/model/Company";
+
 
 export async function PUT(request) {
   try {
     await connectDB();
 
-    const { assignmentId, status, stages } = await request.json();
+    const { assignmentId, status, stages, companyId } = await request.json();
+
+    if (!assignmentId || !companyId) {
+       return Response.json(
+        { message: 'assignmentId and companyId are required' },
+        { status: 400 }
+      );
+    }
+
+    const AssignmentModel = AssignmentStatic; 
+    const __tenantCompanyId = companyId;
 
     // Fetch the assignment
-    const assignment = await Assignment.findById(assignmentId);
+    const assignment = await AssignmentModel.findById(assignmentId);
     if (!assignment) {
       return Response.json(
         { message: 'Assignment not found' },
@@ -71,3 +87,4 @@ export async function PUT(request) {
     );
   }
 }
+

@@ -23,16 +23,16 @@ const DryRunPage = () => {
         isRunning: false,
         startTime: null,
         elapsedTime: 0,
-        totalTrackedSeconds: 0 
+        totalTrackedSeconds: 0
     });
     const [userdata, setUserData] = useState();
-    const [subtaskTimers, setSubtaskTimers] = useState({}); 
-    const [activeValidationItem, setActiveValidationItem] = useState(null); 
+    const [subtaskTimers, setSubtaskTimers] = useState({});
+    const [activeValidationItem, setActiveValidationItem] = useState(null);
 
     // Modal states
     const [showVisualStandards, setShowVisualStandards] = useState(false);
     const [showReasonModal, setShowReasonModal] = useState(false);
-    const [reasonType, setReasonType] = useState(null); 
+    const [reasonType, setReasonType] = useState(null);
     const [reasonText, setReasonText] = useState('');
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [loadingActionId, setLoadingActionId] = useState(null);
@@ -44,7 +44,7 @@ const DryRunPage = () => {
     // Modal states for Pause
     const [showPauseModal, setShowPauseModal] = useState(false);
     const [pauseReason, setPauseReason] = useState("");
-    const [pausingItem, setPausingItem] = useState(null); 
+    const [pausingItem, setPausingItem] = useState(null);
 
     // --- CHECKPOINT LOGIC ---
     const { prototypeData, equipment } = assignmentData || {};
@@ -72,7 +72,7 @@ const DryRunPage = () => {
             return;
         }
         if (auto) return;
-        
+
         alert("Dry Run Complete! In a real assignment, this would send the checklist for review.");
         setAssignmentData(prev => ({
             ...prev,
@@ -129,16 +129,26 @@ const DryRunPage = () => {
     useEffect(() => {
         if (!id) return;
 
+        // In your DryRunPage component, update the fetchSOP function:
+
         const fetchSOP = async () => {
             try {
                 setLoading(true);
                 const storedUser = localStorage.getItem("user");
-                const userData = storedUser ? JSON.parse(storedUser) : { name: "Demo User", id: "demo-id" };
+                const userData = storedUser ? JSON.parse(storedUser) : { name: "Demo User", id: "demo-id", companyId: "demo-company-id" };
                 setUserData(userData);
 
-                const res = await fetch(`/api/checklistapi/fetch-by-id/${id}`);
-                if (!res.ok) throw new Error("Failed to fetch checklist configuration");
-                
+                // Get companyId from user data or use a demo value
+                const companyId = userData?.companyId || userData?.company?._id || "demo-company-id";
+
+                // Add companyId as a query parameter
+                const res = await fetch(`/api/checklistapi/fetch-by-id/${id}?companyId=${companyId}`);
+
+                if (!res.ok) {
+                    const errorData = await res.json().catch(() => ({}));
+                    throw new Error(errorData.error || `Failed to fetch checklist configuration (${res.status})`);
+                }
+
                 const sopData = await res.json();
                 if (!sopData) throw new Error("Checklist not found");
 
@@ -165,7 +175,7 @@ const DryRunPage = () => {
                         ...sopData,
                         stages: initializedStages
                     },
-                    equipment: { name: "Demo Equipment", model: "Preview Mode" },
+                    equipment: { name: sopData.equipment?.name || "Demo Equipment", model: "Preview Mode" },
                     assignedWorker: [{ id: userData.id || userData._id, name: userData.name }]
                 };
 
@@ -177,9 +187,65 @@ const DryRunPage = () => {
             } catch (err) {
                 console.error("Error fetching SOP:", err);
                 setError(err.message);
+                // Optional: Set fallback demo data here if you want the page to still work
+                setFallbackDemoData(id, userData);
             } finally {
                 setLoading(false);
             }
+        };
+
+        // Optional fallback function if API fails
+        const setFallbackDemoData = (id, userData) => {
+            const fallbackData = {
+                _id: id,
+                name: "Demo Checklist (API Unavailable)",
+                visualRepresentationEnabled: false,
+                stages: [
+                    {
+                        _id: "stage1",
+                        name: "Demo Stage",
+                        tasks: [
+                            {
+                                _id: "task1",
+                                taskId: "task1",
+                                title: "Demo Task",
+                                description: "This is a fallback task since the API couldn't be reached.",
+                                status: 'pending',
+                                addStop: false,
+                                minTime: { hours: 0, minutes: 0, seconds: 30 },
+                                maxTime: { hours: 0, minutes: 5, seconds: 0 },
+                                subtasks: []
+                            }
+                        ]
+                    }
+                ]
+            };
+
+            const initializedStages = (fallbackData.stages || []).map(stage => ({
+                ...stage,
+                tasks: (stage.tasks || []).map(task => ({
+                    ...task,
+                    status: 'pending',
+                    subtasks: (task.subtasks || []).map(st => ({
+                        ...st,
+                        status: 'pending',
+                        sessions: []
+                    })),
+                    sessions: [],
+                    assignedWorker: [{ id: userData?.id || "demo-id", name: userData?.name || "Demo User" }]
+                }))
+            }));
+
+            setAssignmentData({
+                _id: `dry-run-${id}`,
+                status: 'Assigned',
+                prototypeData: {
+                    ...fallbackData,
+                    stages: initializedStages
+                },
+                equipment: { name: "Demo Equipment", model: "Preview Mode" },
+                assignedWorker: [{ id: userData?.id || "demo-id", name: userData?.name || "Demo User" }]
+            });
         };
 
         fetchSOP();
@@ -302,7 +368,7 @@ const DryRunPage = () => {
     const handleStartTimerClick = async () => {
         if (!selectedTask) return;
         const currentStage = stages[selectedTask.stageIndex];
-        
+
         if (selectedTask.addStop === true) {
             if (!checkPreviousTaskStatus(currentStage, selectedTask)) {
                 const taskIndex = currentStage.tasks.findIndex(t => (t._id || t.taskId) === (selectedTask._id || selectedTask.taskId));
@@ -359,10 +425,10 @@ const DryRunPage = () => {
 
         const totalActive = getAccurateTotalSeconds(selectedTask, taskTimer);
         const now = new Date().toISOString();
-        
+
         const updatedStages = [...stages];
         const taskIdx = updatedStages[selectedTask.stageIndex].tasks.findIndex(t => (t._id || t.taskId) === (selectedTask._id || selectedTask.taskId));
-        
+
         if (taskIdx !== -1) {
             const currentTask = updatedStages[selectedTask.stageIndex].tasks[taskIdx];
             const newSession = {
@@ -381,7 +447,7 @@ const DryRunPage = () => {
                 totalActiveSeconds: totalActive,
                 sessions: [...(currentTask.sessions || []), newSession]
             };
-            
+
             setAssignmentData({ ...assignmentData, prototypeData: { ...assignmentData.prototypeData, stages: updatedStages } });
             setSelectedTask(prev => ({ ...prev, ...updatedStages[selectedTask.stageIndex].tasks[taskIdx] }));
         }
@@ -415,7 +481,7 @@ const DryRunPage = () => {
     const handleStartSubtaskTimer = async (subtask) => {
         const subtaskId = subtask._id || subtask.taskId;
         const now = new Date().toISOString();
-        
+
         const updatedStages = [...stages];
         const taskIdx = updatedStages[selectedTask.stageIndex].tasks.findIndex(t => (t._id || t.taskId) === (selectedTask._id || selectedTask.taskId));
 
@@ -456,7 +522,7 @@ const DryRunPage = () => {
 
         const updatedStages = [...stages];
         const taskIdx = updatedStages[selectedTask.stageIndex].tasks.findIndex(t => (t._id || t.taskId) === (selectedTask._id || selectedTask.taskId));
-        
+
         if (taskIdx !== -1) {
             const subtaskIdx = updatedStages[selectedTask.stageIndex].tasks[taskIdx].subtasks.findIndex(st => (st._id || st.taskId) === subtaskId);
             if (subtaskIdx !== -1) {
@@ -639,9 +705,9 @@ const DryRunPage = () => {
         const isSubtask = !!subtask;
         const item = isSubtask ? subtask : selectedTask;
         const subtaskId = isSubtask ? (subtask._id || subtask.taskId) : null;
-        
+
         let totalTime = activeValidationItem?.totalTime ?? getAccurateTotalSeconds(item, isSubtask ? subtaskTimers[subtaskId] : taskTimer);
-        
+
         const submissionData = {
             completedBy: { id: userdata.id, name: userdata.name },
             completedAt: new Date().toISOString(),
@@ -699,7 +765,7 @@ const DryRunPage = () => {
     return (
         <div className="w-full h-full p-2 bg-gray-100">
             <div className="h-full w-full bg-white rounded-2xl shadow-xl border border-gray-300 overflow-hidden relative flex flex-col">
-                
+
                 {/* DRY RUN BANNER */}
                 <div className="w-full bg-emerald-600 text-white px-4 py-2 flex items-center justify-between z-30 shadow-md">
                     <div className="flex items-center gap-3">
@@ -760,10 +826,10 @@ const DryRunPage = () => {
                                             {stage.tasks.map((task, tIdx) => {
                                                 const isBlocked = isTaskBlockedByStop(sIdx, tIdx);
                                                 return (
-                                                    <div key={tIdx} onClick={() => handleTaskClick(stage, task, sIdx)} 
+                                                    <div key={tIdx} onClick={() => handleTaskClick(stage, task, sIdx)}
                                                         className={`p-2 text-sm flex items-center gap-2 cursor-pointer hover:bg-blue-50 relative ${selectedTask?._id === task._id ? 'text-blue-500 font-bold bg-blue-50/50' : ''} ${isBlocked ? 'opacity-50 grayscale-[0.5]' : ''}`}>
                                                         <div className={`w-2 h-6 rounded-sm shrink-0 ${task.status === 'completed' ? 'bg-green-500' : task.status === 'Under Execution' ? 'bg-blue-500' : 'bg-gray-300'}`}></div>
-                                                        <span className="truncate flex-1">{sIdx+1}.{tIdx+1} {task.title}</span>
+                                                        <span className="truncate flex-1">{sIdx + 1}.{tIdx + 1} {task.title}</span>
                                                         {isBlocked && <div className="absolute right-2 text-gray-400 bg-gray-100 p-0.5 rounded-md border border-gray-200 shadow-sm"><Lock size={10} /></div>}
                                                     </div>
                                                 );
@@ -785,7 +851,7 @@ const DryRunPage = () => {
                                 <div className="flex justify-between items-start mb-6">
                                     <div className="flex-1">
                                         <h2 className="text-2xl font-bold flex items-center gap-2">
-                                            {selectedTask.stageIndex+1}.{stages[selectedTask.stageIndex].tasks.findIndex(t => (t._id || t.taskId) === (selectedTask._id || selectedTask.taskId))+1} {selectedTask.title}
+                                            {selectedTask.stageIndex + 1}.{stages[selectedTask.stageIndex].tasks.findIndex(t => (t._id || t.taskId) === (selectedTask._id || selectedTask.taskId)) + 1} {selectedTask.title}
                                             {selectedTask.addStop && (
                                                 <span className="text-[10px] font-black uppercase text-rose-600 bg-rose-50 border border-rose-200 px-2 py-0.5 rounded-full flex items-center gap-1">
                                                     <Lock size={10} fill="currentColor" /> Stop Point
@@ -821,7 +887,7 @@ const DryRunPage = () => {
                                 </div>
 
                                 <div className="mb-6"><h3 className="text-lg font-medium mb-2">Description</h3><p className="text-gray-700">{selectedTask.description}</p></div>
-                                
+
                                 <div className="grid grid-cols-2 gap-4 mb-6">
                                     <div className="bg-gray-50 p-4 rounded-xl border border-gray-100"><h4 className="text-xs font-bold text-gray-500 uppercase tracking-wider mb-1">Min Duration</h4><p className="text-lg font-black">{formatDuration(selectedTask.minTime)}</p></div>
                                     <div className="bg-gray-50 p-4 rounded-xl border border-gray-100"><h4 className="text-xs font-bold text-gray-500 uppercase tracking-wider mb-1">Max Duration</h4><p className="text-lg font-black">{formatDuration(selectedTask.maxTime)}</p></div>
@@ -883,7 +949,7 @@ const DryRunPage = () => {
                         <textarea className="w-full p-4 bg-gray-50 border rounded-xl mb-4" rows="3" placeholder="Reason..." value={pauseReason} onChange={e => setPauseReason(e.target.value)} />
                         <div className="flex justify-end gap-2">
                             <button onClick={() => setShowPauseModal(false)} className="px-4 py-2 font-bold text-gray-500">Cancel</button>
-                            <button onClick={() => { if(!pauseReason.trim()) return; if(pausingItem.type === 'sub') handlePauseSubtask(pausingItem.item, pauseReason); else handlePauseTask(pauseReason); setShowPauseModal(false); setPauseReason(""); }} className="px-6 py-2 bg-orange-500 text-white rounded-xl font-bold">Confirm</button>
+                            <button onClick={() => { if (!pauseReason.trim()) return; if (pausingItem.type === 'sub') handlePauseSubtask(pausingItem.item, pauseReason); else handlePauseTask(pauseReason); setShowPauseModal(false); setPauseReason(""); }} className="px-6 py-2 bg-orange-500 text-white rounded-xl font-bold">Confirm</button>
                         </div>
                     </div>
                 </div>
@@ -903,6 +969,6 @@ const DryRunPage = () => {
     );
 };
 
-const ArrowDown = ({ size }) => <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m6 9 6 6 6-6"/></svg>;
+const ArrowDown = ({ size }) => <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m6 9 6 6 6-6" /></svg>;
 
 export default DryRunPage;

@@ -47,23 +47,23 @@ const VisualReviewPage = () => {
     }
   }, []);
 
-  const isVR = 
-    companyData?.role === "SuperAdmin" || 
-    companyData?.role?.toLowerCase()?.includes("production") || 
+  const isVR =
+    companyData?.role === "SuperAdmin" ||
+    companyData?.role?.toLowerCase()?.includes("production") ||
     companyData?.role?.toLowerCase()?.includes("visual") ||
     companyData?.task?.includes("Visual Review") ||
     companyData?.task?.includes("Visual Reviewer");
 
-  const isQA = 
-    companyData?.role === "SuperAdmin" || 
+  const isQA =
+    companyData?.role === "SuperAdmin" ||
     companyData?.role?.toLowerCase()?.includes("qa") ||
     companyData?.task?.includes("QA");
 
   useEffect(() => {
     if (companyData) {
-        console.log("VisualReview Debug - Role:", companyData.role);
-        console.log("VisualReview Debug - Tasks:", companyData.task);
-        console.log("VisualReview Debug - isVR:", isVR, "isQA:", isQA);
+      console.log("VisualReview Debug - Role:", companyData.role);
+      console.log("VisualReview Debug - Tasks:", companyData.task);
+      console.log("VisualReview Debug - isVR:", isVR, "isQA:", isQA);
     }
   }, [companyData, isVR, isQA]);
 
@@ -77,21 +77,21 @@ const VisualReviewPage = () => {
       const data = await res.json();
       if (data.success) {
         setAssignments(data.data);
-        
+
         // If an assignment is selected, update its local data
         if (selectedAssignment) {
           const updated = data.data.find(a => a._id === selectedAssignment._id);
           if (updated) {
-               // Update checkpoint statuses from the assignment's prototypeData
-               const visualData = updated.prototypeData?.visualRepresntation || [];
-               const vStatuses = {};
-               const qStatuses = {};
-               visualData.forEach((row, idx) => {
-                 vStatuses[idx] = row.production || "";
-                 qStatuses[idx] = row.qa || "";
-               });
-               setCheckpointStatuses(vStatuses);
-               setQaStatuses(qStatuses);
+            // Update checkpoint statuses from the assignment's prototypeData
+            const visualData = updated.prototypeData?.visualRepresntation || [];
+            const vStatuses = {};
+            const qStatuses = {};
+            visualData.forEach((row, idx) => {
+              vStatuses[idx] = row.production || "";
+              qStatuses[idx] = row.qa || "";
+            });
+            setCheckpointStatuses(vStatuses);
+            setQaStatuses(qStatuses);
           }
         }
       }
@@ -128,7 +128,7 @@ const VisualReviewPage = () => {
     setSelectedAssignment(assignment);
     setCheckedItems({});
     setSharedNote("");
-    
+
     // Initialize checkpoint statuses from visual representation data
     const visualData = assignment.prototypeData?.visualRepresntation || [];
     const vStatuses = {};
@@ -208,7 +208,8 @@ const VisualReviewPage = () => {
   const isEverythingClean = useMemo(() => {
     if (!selectedAssignment) return false;
     const visualData = selectedAssignment.prototypeData?.visualRepresntation || [];
-    return visualData.length > 0 && visualData.every((_, idx) => 
+    if (visualData.length === 0) return true;
+    return visualData.every((_, idx) =>
       (checkpointStatuses[idx] === "Clean" || checkpointStatuses[idx] === "NA") &&
       (qaStatuses[idx] === "Clean" || qaStatuses[idx] === "NA")
     );
@@ -234,6 +235,7 @@ const VisualReviewPage = () => {
           reviewerName: companyData?.name,
           action: "approve",
           note: "All visual checkpoints approved by Production and QA.",
+          companyId: companyData.companyId
         }),
       });
       const data = await res.json();
@@ -264,14 +266,15 @@ const VisualReviewPage = () => {
           value: value,
           reviewerId: companyData?.id || companyData?._id,
           reviewerName: companyData?.name,
+          companyId: companyData.companyId
         })
       });
       const data = await res.json();
       if (data.success) {
         if (field === "production") {
-            setCheckpointStatuses(prev => ({ ...prev, [idx]: value }));
+          setCheckpointStatuses(prev => ({ ...prev, [idx]: value }));
         } else {
-            setQaStatuses(prev => ({ ...prev, [idx]: value }));
+          setQaStatuses(prev => ({ ...prev, [idx]: value }));
         }
       } else {
         alert("Failed to update status: " + data.message);
@@ -332,6 +335,7 @@ const VisualReviewPage = () => {
           action: "reopen",
           note: sharedNote,
           reopenItems,
+          companyId: companyData.companyId
         }),
       });
       const data = await res.json();
@@ -600,7 +604,7 @@ const VisualReviewPage = () => {
               <div className="mt-4 bg-amber-50 border border-amber-200 rounded-lg p-3">
                 <p className="text-sm text-amber-800">
                   <strong>Workflow:</strong> {isVR ? "You are a Visual Reviewer. " : isQA ? "You are a QA Reviewer. " : ""}
-                  QA can only remark after Visual Reviewer marks a record as Clean or NA. 
+                  QA can only remark after Visual Reviewer marks a record as Clean or NA.
                   Records must be completed sequentially.
                 </p>
               </div>
@@ -615,7 +619,7 @@ const VisualReviewPage = () => {
 
             {/* Modal Body - Scrollable */}
             <div className="flex-1 overflow-y-auto p-6">
-              {/* Visual Representation Table */}
+              {/* Visual Representation Table - UPDATED TO TABLE LAYOUT */}
               {selectedAssignment.prototypeData?.visualRepresntation?.length > 0 && (
                 <div className="mb-8">
                   <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center gap-2">
@@ -625,7 +629,7 @@ const VisualReviewPage = () => {
                   <div className="overflow-x-auto">
                     <table className="min-w-full bg-white border border-gray-200 rounded-xl overflow-hidden shadow-sm">
                       <thead>
-                        <tr className="bg-gray-100 boreder-b border-gray-200">
+                        <tr className="bg-gray-100 border-b border-gray-200">
                           <th className="py-3 px-4 text-left text-xs font-bold text-gray-700 uppercase tracking-wider w-12">#</th>
                           <th className="py-3 px-4 text-left text-xs font-bold text-gray-700 uppercase tracking-wider min-w-[200px]">Check Point</th>
                           <th className="py-3 px-4 text-left text-xs font-bold text-gray-700 uppercase tracking-wider w-40">Images</th>
@@ -635,21 +639,20 @@ const VisualReviewPage = () => {
                       </thead>
                       <tbody className="divide-y divide-gray-200">
                         {selectedAssignment.prototypeData.visualRepresntation.map((checkpoint, idx) => {
-                          const isVREnabled = isVR && (idx === 0 || (checkpointStatuses[idx-1] === "Clean" || checkpointStatuses[idx-1] === "NA"));
-                          const isQAEnabled = isQA && (checkpointStatuses[idx] === "Clean" || checkpointStatuses[idx] === "NA") && (idx === 0 || (qaStatuses[idx-1] === "Clean" || qaStatuses[idx-1] === "NA"));
-                          
+                          const isVREnabled = isVR && (idx === 0 || (checkpointStatuses[idx - 1] === "Clean" || checkpointStatuses[idx - 1] === "NA"));
+                          const isQAEnabled = isQA && (checkpointStatuses[idx] === "Clean" || checkpointStatuses[idx] === "NA") && (idx === 0 || (qaStatuses[idx - 1] === "Clean" || qaStatuses[idx - 1] === "NA"));
+
                           return (
-                            <tr key={idx} className={`group transition-colors ${
-                                (checkpointStatuses[idx] === "Not Clean" || qaStatuses[idx] === "Not Clean") ? "bg-rose-50" : "hover:bg-gray-50/80"
-                            }`}>
+                            <tr key={idx} className={`group transition-colors ${(checkpointStatuses[idx] === "Not Clean" || qaStatuses[idx] === "Not Clean") ? "bg-rose-50" : "hover:bg-gray-50/80"
+                              }`}>
                               <td className="py-4 px-4 text-sm text-gray-500 font-bold">{idx + 1}</td>
                               <td className="py-4 px-4">
                                 <span className="text-sm font-semibold text-gray-900">{checkpoint.checkPoint?.title || "Untitled"}</span>
                                 {checkpoint.completedBy?.production && (
-                                    <div className="text-[10px] text-orange-600 mt-1">VR: {checkpoint.completedBy.production.name} @ {formatDate(checkpoint.completedBy.production.at)}</div>
+                                  <div className="text-[10px] text-orange-600 mt-1">VR: {checkpoint.completedBy.production.name} @ {formatDate(checkpoint.completedBy.production.at)}</div>
                                 )}
                                 {checkpoint.completedBy?.qa && (
-                                    <div className="text-[10px] text-blue-600">QA: {checkpoint.completedBy.qa.name} @ {formatDate(checkpoint.completedBy.qa.at)}</div>
+                                  <div className="text-[10px] text-blue-600">QA: {checkpoint.completedBy.qa.name} @ {formatDate(checkpoint.completedBy.qa.at)}</div>
                                 )}
                               </td>
                               <td className="py-4 px-4">
@@ -668,18 +671,17 @@ const VisualReviewPage = () => {
                                   )}
                                 </div>
                               </td>
-                              
+
                               {/* Production / Visual Reviewer Column */}
                               <td className={`py-4 px-4 bg-orange-50/30`}>
                                 <select
                                   disabled={!isVREnabled}
                                   value={checkpointStatuses[idx] || ""}
                                   onChange={(e) => updateCheckpointStatus(idx, "production", e.target.value)}
-                                  className={`text-xs font-semibold border rounded-lg px-2 py-1.5 w-full focus:ring-2 transition-all ${!isVREnabled ? "opacity-30 cursor-not-allowed bg-gray-50" : "bg-white cursor-pointer"} ${
-                                    checkpointStatuses[idx] === "Not Clean" ? "border-rose-400 bg-rose-50 text-rose-800" :
-                                    checkpointStatuses[idx] === "Clean" ? "border-green-400 bg-green-50 text-green-800" :
-                                    checkpointStatuses[idx] === "NA" ? "border-blue-400 bg-blue-50 text-blue-800" : "border-gray-200"
-                                  }`}
+                                  className={`text-xs font-semibold border rounded-lg px-2 py-1.5 w-full focus:ring-2 transition-all ${!isVREnabled ? "opacity-30 cursor-not-allowed bg-gray-50" : "bg-white cursor-pointer"} ${checkpointStatuses[idx] === "Not Clean" ? "border-rose-400 bg-rose-50 text-rose-800" :
+                                      checkpointStatuses[idx] === "Clean" ? "border-green-400 bg-green-50 text-green-800" :
+                                        checkpointStatuses[idx] === "NA" ? "border-blue-400 bg-blue-50 text-blue-800" : "border-gray-200"
+                                    }`}
                                 >
                                   <option value="">Select</option>
                                   <option value="Clean">✓ Clean</option>
@@ -694,11 +696,10 @@ const VisualReviewPage = () => {
                                   disabled={!isQAEnabled}
                                   value={qaStatuses[idx] || ""}
                                   onChange={(e) => updateCheckpointStatus(idx, "qa", e.target.value)}
-                                  className={`text-xs font-semibold border rounded-lg px-2 py-1.5 w-full focus:ring-2 transition-all ${!isQAEnabled ? "opacity-30 cursor-not-allowed bg-gray-50" : "bg-white cursor-pointer"} ${
-                                    qaStatuses[idx] === "Not Clean" ? "border-rose-400 bg-rose-50 text-rose-800" :
-                                    qaStatuses[idx] === "Clean" ? "border-green-400 bg-green-50 text-green-800" :
-                                    qaStatuses[idx] === "NA" ? "border-blue-400 bg-blue-50 text-blue-800" : "border-gray-200"
-                                  }`}
+                                  className={`text-xs font-semibold border rounded-lg px-2 py-1.5 w-full focus:ring-2 transition-all ${!isQAEnabled ? "opacity-30 cursor-not-allowed bg-gray-50" : "bg-white cursor-pointer"} ${qaStatuses[idx] === "Not Clean" ? "border-rose-400 bg-rose-50 text-rose-800" :
+                                      qaStatuses[idx] === "Clean" ? "border-green-400 bg-green-50 text-green-800" :
+                                        qaStatuses[idx] === "NA" ? "border-blue-400 bg-blue-50 text-blue-800" : "border-gray-200"
+                                    }`}
                                 >
                                   <option value="">Select</option>
                                   <option value="Clean">✓ Clean</option>
@@ -768,9 +769,8 @@ const VisualReviewPage = () => {
                               return (
                                 <div
                                   key={taskKey}
-                                  className={`border-2 rounded-xl overflow-hidden transition-all ${
-                                    isChecked ? "border-rose-300 bg-rose-50" : "border-gray-200 bg-white shadow-sm"
-                                  }`}
+                                  className={`border-2 rounded-xl overflow-hidden transition-all ${isChecked ? "border-rose-300 bg-rose-50" : "border-gray-200 bg-white shadow-sm"
+                                    }`}
                                 >
                                   <div className="p-4">
                                     <div className="flex items-start gap-3">
@@ -811,7 +811,7 @@ const VisualReviewPage = () => {
                                   {hasSubtasks && isTaskExpanded && (
                                     <div className="border-t border-gray-100 bg-gray-50 p-4 ml-7 space-y-3">
                                       <div className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-2 flex items-center gap-2">
-                                          <Layers className="w-3 h-3" /> Subtasks ({task.subtasks.length})
+                                        <Layers className="w-3 h-3" /> Subtasks ({task.subtasks.length})
                                       </div>
                                       {task.subtasks.map((subtask, subtaskIndex) => {
                                         const subKey = `${stageIndex}-${taskIndex}-${subtaskIndex}`;
@@ -820,9 +820,8 @@ const VisualReviewPage = () => {
                                         return (
                                           <div
                                             key={subKey}
-                                            className={`p-3 rounded-lg border transition-all ${
-                                              isSubChecked ? "border-rose-300 bg-rose-50 shadow-inner" : "border-gray-200 bg-white"
-                                            }`}
+                                            className={`p-3 rounded-lg border transition-all ${isSubChecked ? "border-rose-300 bg-rose-50 shadow-inner" : "border-gray-200 bg-white"
+                                              }`}
                                           >
                                             <div className="flex items-start gap-3">
                                               <div className="pt-0.5">

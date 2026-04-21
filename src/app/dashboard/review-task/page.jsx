@@ -209,6 +209,7 @@ const ReviewTaskPage = () => {
           reviewerId: companyData?.id || companyData?._id,
           reviewerName: companyData?.name,
           action: "approve",
+          companyId: companyData.companyId
         }),
       });
       const data = await res.json();
@@ -277,6 +278,7 @@ const ReviewTaskPage = () => {
           reviewerName: companyData?.name,
           action: "reopen",
           reviewItems,
+          companyId: companyData.companyId
         }),
       });
       const data = await res.json();

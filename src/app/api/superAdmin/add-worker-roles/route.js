@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import connectDB from "@/utils/db";
 import SuperAdmin from "@/model/SuperAdmin";
+import { migrateLegacyPermissions } from "@/utils/featurePermissions";
 
 export const dynamic = "force-dynamic";
 
@@ -9,9 +10,6 @@ export async function PUT(req) {
 
   try {
     const { superadminId, workerRole } = await req.json();
-    
-
-   
 
     const superAdmin = await SuperAdmin.findById(superadminId);
     if (!superAdmin) {
@@ -20,9 +18,15 @@ export async function PUT(req) {
         { status: 404 }
       );
     }
-console.log(workerRole);
-    // Push new role into the existing workerRole array
-    superAdmin.workerRole.push(workerRole);
+
+    // Auto-migrate legacy permissions (e.g. "ElogBook" → 4 granular perms)
+    const migratedRole = {
+      ...workerRole,
+      task: migrateLegacyPermissions(workerRole.task || []),
+    };
+
+    console.log("Adding role:", migratedRole);
+    superAdmin.workerRole.push(migratedRole);
     await superAdmin.save();
 
     return NextResponse.json({

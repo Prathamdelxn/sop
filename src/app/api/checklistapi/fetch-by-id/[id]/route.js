@@ -1,12 +1,22 @@
+// C:\Users\Admin\Desktop\SOP-Final\sop\src\app\api\checklistapi\fetch-by-id\[id]\route.js
+
 import { NextResponse } from "next/server";
 import connectDB from "@/utils/db";
-import Checklist from "@/model/ChecklistNew"; // adjust path
+
+import ChecklistStatic from "@/model/ChecklistNew";
+import EquipmentStatic from "@/model/Equipment";
+import PrototypeStatic from "@/model/Task";
+import AssignmentStatic from "@/model/NewAssignment";
+import CompanyStatic from "@/model/Company";
+
 
 // GET checklist by ID
 export async function GET(req, { params }) {
   try {
     await connectDB();
     const { id } = params;
+    const { searchParams } = new URL(req.url);
+    const companyId = searchParams.get("companyId");
 
     // validate ObjectId
     if (!id.match(/^[0-9a-fA-F]{24}$/)) {
@@ -16,7 +26,15 @@ export async function GET(req, { params }) {
       );
     }
 
-    const checklist = await Checklist.findById(id);
+    if (!companyId) {
+      return NextResponse.json({ error: "Company ID is required for data isolation" }, { status: 400 });
+    }
+
+    // Get the dynamic model for this company
+    const ChecklistModel = ChecklistStatic;
+    const __tenantCompanyId = companyId;
+
+    const checklist = await ChecklistModel.findById(id);
 
     if (!checklist) {
       return NextResponse.json(

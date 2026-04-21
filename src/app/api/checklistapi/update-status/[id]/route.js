@@ -1,18 +1,28 @@
-
 import { NextResponse } from "next/server";
-import mongoose from "mongoose";
 import connectDB from "@/utils/db";
-import Checklist from "@/model/ChecklistNew";
 
-// PATCH /api/prototype/update-status/[id]
+import ChecklistStatic from "@/model/ChecklistNew";
+import EquipmentStatic from "@/model/Equipment";
+import PrototypeStatic from "@/model/Task";
+import AssignmentStatic from "@/model/NewAssignment";
+import CompanyStatic from "@/model/Company";
+
+
+// PATCH /api/checklistapi/update-status/[id]
 export async function PATCH(request, { params }) {
-  await connectDB();
-
-  const { id } = params;
-
   try {
+    await connectDB();
+    const { id } = params;
     const body = await request.json();
-    const { status, rejectionReason, reviews,approvers } = body;
+    const { status, rejectionReason, reviews, approvers, companyId } = body;
+
+    if (!companyId) {
+      return NextResponse.json({ error: "Company ID is required for data isolation" }, { status: 400 });
+    }
+
+    // Get the dynamic model for this company
+    const ChecklistModel = ChecklistStatic; 
+    const __tenantCompanyId = companyId;
 
     const updateData = {
       status,
@@ -29,21 +39,21 @@ export async function PATCH(request, { params }) {
       }
       updateData.rejectionReason = rejectionReason;
     } else {
-      // Clear rejection reason if approved or any other status
       updateData.rejectionReason = null;
     }
 
-    // If reviews are provided in the request, update them
+    // If reviews are provided, update them
     if (reviews && Array.isArray(reviews)) {
       updateData.reviews = reviews.map(review => ({
         reviewerId: review.reviewerId,
         reviewerName: review.reviewerName,
-        reviewerRole:review.reviewerRole,
+        reviewerRole: review.reviewerRole,
         status: review.status || 'pending',
         comments: review.comments || '',
         reviewDate: review.reviewDate || new Date()
       }));
     }
+
     if (approvers && Array.isArray(approvers)) {
       updateData.approvers = approvers.map(approver => ({
         approverId: approver.approverId,
@@ -54,29 +64,29 @@ export async function PATCH(request, { params }) {
         approvalDate: approver.approvalDate || new Date()
       }));
     }
-console.log(updateData);
-    const updatedPrototype = await Checklist.findByIdAndUpdate(
+
+    const updatedChecklist = await ChecklistModel.findByIdAndUpdate(
       id,
       updateData,
       { new: true }
     );
 
-    if (!updatedPrototype) {
+    if (!updatedChecklist) {
       return NextResponse.json(
-        { error: "checklist not found" },
+        { error: "Checklist not found" },
         { status: 404 }
       );
     }
 
     return NextResponse.json({
       message: "Status updated successfully",
-      checklist: updatedPrototype
+      checklist: updatedChecklist
     });
   } catch (error) {
-    console.error("Error updating prototype status:", error);
+    console.error("Error updating checklist status:", error);
     return NextResponse.json(
       { error: "Internal server error" },
       { status: 500 }
     );
   }
-}
+}

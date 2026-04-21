@@ -60,7 +60,8 @@
 import { NextResponse } from 'next/server';
 import connectDB from '@/utils/db';
 import SuperAdmin from '@/model/SuperAdmin';
-import User from '@/model/User'; // make sure to import User model
+import Company from '@/model/Company';
+import User from '@/model/User';
 import bcrypt from 'bcryptjs';
 
 export async function PUT(request) {
@@ -77,20 +78,23 @@ export async function PUT(request) {
       username,
       password,
       logo,
-      status
+      status,
+      enabledFeatures
     } = body;
 
     if (!id) {
       return NextResponse.json({ error: 'SuperAdmin ID is required' }, { status: 400 });
     }
 
-    // Fetch the existing SuperAdmin to compare the status later
+    // Fetch the existing SuperAdmin
     const existingSuperAdmin = await SuperAdmin.findById(id);
     if (!existingSuperAdmin) {
       return NextResponse.json({ error: 'SuperAdmin not found' }, { status: 404 });
     }
 
-    const updateFields = {
+    const { companyId } = existingSuperAdmin;
+
+    const adminUpdateFields = {
       name,
       email,
       phone,
@@ -100,36 +104,48 @@ export async function PUT(request) {
     };
 
     if (status) {
-      updateFields.status = status;
+      adminUpdateFields.status = status;
     }
 
-    // Only hash and update password if it's provided
+    if (enabledFeatures) {
+      adminUpdateFields.features = enabledFeatures; // Update cache
+    }
+
     if (password) {
       const hashedPassword = await bcrypt.hash(password, 10);
-      updateFields.password = hashedPassword;
+      adminUpdateFields.password = hashedPassword;
     }
 
     // Update SuperAdmin
-    const updatedSuperAdmin = await SuperAdmin.findByIdAndUpdate(id, updateFields, {
+    const updatedSuperAdmin = await SuperAdmin.findByIdAndUpdate(id, adminUpdateFields, {
       new: true
     });
 
-    // If status was updated, also update status for all Users with matching companyId
-    if (status && status !== existingSuperAdmin.status) {
-      const userUpdateResult = await User.updateMany(
-        { companyId: id },
-        { $set: { status } }
-      );
+    // Update Company Record if exists
+    if (companyId) {
+      const companyUpdateFields = {
+        name,
+        email,
+        phone,
+        logo,
+      };
+      if (status) companyUpdateFields.status = status;
+      if (enabledFeatures) companyUpdateFields.enabledFeatures = enabledFeatures;
 
-      return NextResponse.json({
-        message: 'SuperAdmin and related Users updated successfully',
-        updatedSuperAdmin,
-        userUpdateResult
-      }, { status: 200 });
+      await Company.findOneAndUpdate({ companyId }, companyUpdateFields);
+
+      // If status changed, propogate to Users too
+      if (status && status !== existingSuperAdmin.status) {
+        await User.updateMany(
+          { companyId: companyId },
+          { $set: { status } }
+        );
+      }
     }
 
     return NextResponse.json({
-      message: 'SuperAdmin updated successfully',
+      success: true,
+      message: 'Client and associated company records updated successfully',
       updatedSuperAdmin
     }, { status: 200 });
 

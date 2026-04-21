@@ -581,7 +581,9 @@ function NestedDragDropContent() {
     const initData = async () => {
       if (copyId) {
         try {
-          const res = await fetch(`/api/checklistapi/fetch-by-id/${copyId}`);
+          const userData = JSON.parse(localStorage.getItem('user'));
+          const companyId = userData?.companyId;
+          const res = await fetch(`/api/checklistapi/fetch-by-id/${copyId}?companyId=${companyId}`);
           if (res.ok) {
             const data = await res.json();
             setChecklistData({

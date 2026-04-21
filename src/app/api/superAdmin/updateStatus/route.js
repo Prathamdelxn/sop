@@ -47,9 +47,9 @@ export async function PUT(req) {
       return NextResponse.json({ message: 'SuperAdmin not found' }, { status: 404 });
     }
 
-    // 2. Update all Users with matching companyId
+    // 2. Update all Users with matching companyId slug
     const userUpdateResult = await User.updateMany(
-      { companyId: id },
+      { companyId: updatedSuperAdmin.companyId },
       { $set: { status } }
     );
 

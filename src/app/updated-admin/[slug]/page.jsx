@@ -12,6 +12,7 @@ export default function DynamicDashboardPage({ params }) {
   const [filterRole, setFilterRole] = useState('all');
   const [task, setTask] = useState([]);
   const [Id, setId] = useState();
+  const [companyId, setCompanyId] = useState();
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState(null);
   const [loggedInEmail, setLoggedInEmail] = useState('');
@@ -74,9 +75,11 @@ export default function DynamicDashboardPage({ params }) {
     const data = localStorage.getItem('user');
     if (data) {
       const userdata = JSON.parse(data);
-      console.log("userdata", userdata);
+      console.log("Session User Data:", userdata);
+      // 'id' is the internal hex ID, 'companyId' is the slug (e.g. comp_123)
       setId(userdata?.id);
-        setLoggedInEmail(userdata?.email?.toLowerCase() || '');
+      setCompanyId(userdata?.companyId || userdata?.id); // Priority to slug
+      setLoggedInEmail(userdata?.email?.toLowerCase() || '');
     }
   }, []);
 
@@ -93,16 +96,20 @@ export default function DynamicDashboardPage({ params }) {
   const fetchPeople = async () => {
     setIsLoading(true);
     try {
-      const res = await fetch('/api/superAdmin/users/fetchAll');
+      // Pass the company context (slug or ID) to the API
+      const targetContext = companyId || Id;
+      const res = await fetch(`/api/superAdmin/users/fetchAll?companyId=${targetContext}`);
+      
       if (!res.ok) throw new Error('Failed to fetch users');
       const data = await res.json();
-        const daita = localStorage.getItem('user');
-    
-      const userdata = JSON.parse(daita);
-      console.log("userdata", userdata);
      
-    
-      const filteredUsers = (data.users || []).filter(user => user.role === slug && user.companyId === Id);
+      // Flexible filtering to catch both legacy hex IDs and new slugs
+      const filteredUsers = (data.users || []).filter(user => {
+        const matchesRole = slugify(user.role) === slugify(slug);
+        const matchesCompany = user.companyId === Id || user.companyId === companyId || user.companyId === targetContext;
+        return matchesRole && matchesCompany;
+      });
+
       setPeople(filteredUsers);
     } catch (err) {
       console.error("Error fetching users:", err);
@@ -192,7 +199,8 @@ export default function DynamicDashboardPage({ params }) {
         body: JSON.stringify({ 
           email,
           idToExclude: editingUser?._id,
-          role: slug
+          role: slug,
+          companyId: companyId || Id
         })
       });
 
@@ -233,7 +241,8 @@ export default function DynamicDashboardPage({ params }) {
         body: JSON.stringify({ 
           username,
           idToExclude: editingUser?._id,
-          role: slug
+          role: slug,
+          companyId: companyId || Id
         })
       });
 
@@ -284,7 +293,8 @@ export default function DynamicDashboardPage({ params }) {
         body: JSON.stringify({ 
           phone,
           idToExclude: editingUser?._id,
-          role: slug
+          role: slug,
+          companyId: companyId || Id
         })
       });
 
@@ -320,7 +330,7 @@ export default function DynamicDashboardPage({ params }) {
     setFormData({
       name: '',
       email: '',
-      companyId: Id,
+      companyId: companyId || Id, // Use the slug (e.g. comp_123)
       task: task,
       username: '',
       password: '',
@@ -375,7 +385,7 @@ export default function DynamicDashboardPage({ params }) {
 
     const userData = {
       ...formData,
-      companyId: Id,
+      companyId: companyId || Id, // Ensure we use the slug if available
       task: task
     };
 
@@ -534,11 +544,33 @@ export default function DynamicDashboardPage({ params }) {
         </div>
       )}
 
-      {/* Header */}
-      <div className="flex justify-between items-center">
+      {/* Header and Company Info */}
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
           <h1 className="text-2xl font-semibold text-gray-900 capitalize">Management of {slug.replace('-', ' ')}</h1>
         </div>
+        
+        <div className="bg-white border border-indigo-100 rounded-2xl p-4 shadow-sm flex items-center space-x-4">
+          <div className="w-10 h-10 bg-indigo-50 rounded-xl flex items-center justify-center text-indigo-600">
+             <User size={20} />
+          </div>
+          <div>
+            <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">Share Login ID</p>
+            <div className="flex items-center space-x-2">
+              <code className="text-base font-bold text-indigo-600 bg-indigo-50 px-2 py-0.5 rounded">{companyId || Id}</code>
+              <button 
+                onClick={() => {
+                  navigator.clipboard.writeText(companyId || Id);
+                  alert("Company ID copied to clipboard!");
+                }}
+                className="p-1 text-gray-400 hover:text-indigo-600 transition-colors"
+              >
+                <Plus className="rotate-45" size={14} />
+              </button>
+            </div>
+          </div>
+        </div>
+
         <button
           onClick={handleAddPerson}
           className="flex items-center space-x-2 bg-gradient-to-r from-blue-600 to-purple-600 text-white px-6 py-3 rounded-xl hover:from-blue-700 hover:to-purple-700 transition-all duration-200 shadow-lg hover:shadow-xl"

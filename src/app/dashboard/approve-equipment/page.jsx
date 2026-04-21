@@ -522,12 +522,12 @@ const Dashboard = () => {
     if (!companyData) return;
     try {
       if (isInitial) setLoading(true);
-      const res = await fetch('/api/equipment/fetchAll');
+      const res = await fetch(`/api/equipment/fetchAll?companyId=${companyData?.companyId}`);
       if (!res.ok) throw new Error('Failed to fetch equipment data');
       const data = await res.json();
 
       const pendingTasks = data.data.filter(
-        (t) => t.companyId === companyData?.companyId && t.status !== "InProgress" && t.userId !== companyData.id
+        (t) => t.status !== "InProgress" && t.userId !== companyData.id
       );
       setTasks(pendingTasks);
 
@@ -588,6 +588,7 @@ const Dashboard = () => {
       body: JSON.stringify({
         equipmentId,
         status,
+        companyId: companyData?.companyId,
         approver: { approverId: companyData?.id, approverName: companyData?.name },
         rejectionReason: status === 'Rejected' ? reason : undefined
       })
@@ -600,7 +601,7 @@ const Dashboard = () => {
     const response = await fetch('/api/equipment/updateBarcode', {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ equipmentId, barcodeUrl })
+      body: JSON.stringify({ equipmentId, barcodeUrl, companyId: companyData?.companyId })
     });
     if (!response.ok) throw new Error('Failed to update equipment with barcode');
     return await response.json();

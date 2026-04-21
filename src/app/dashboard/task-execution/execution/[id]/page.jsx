@@ -80,7 +80,8 @@ const TaskPage = () => {
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
                     assignmentId: id,
-                    sentBy: { id: userdata?.id || userdata?._id, name: userdata?.name }
+                    sentBy: { id: userdata?.id || userdata?._id, name: userdata?.name },
+                    companyId: userdata?.companyId
                 })
             });
             const data = await res.json();
@@ -408,7 +409,8 @@ const TaskPage = () => {
                     assignmentId: id,
                     stageId: currentStage._id || currentStage.stageId,
                     taskId: selectedTask._id || selectedTask.taskId,
-                    startedBy: { id: userdata.id || userdata._id, name: userdata.name }
+                    startedBy: { id: userdata.id || userdata._id, name: userdata.name },
+                    companyId: userdata.companyId
                 })
             });
 
@@ -493,7 +495,8 @@ const TaskPage = () => {
                     stageId: stages[selectedTask.stageIndex]._id || stages[selectedTask.stageIndex].stageId,
                     taskId: selectedTask._id || selectedTask.taskId,
                     pausedBy: { id: userdata.id || userdata._id, name: userdata.name },
-                    pauseReason: reason
+                    pauseReason: reason,
+                    companyId: userdata.companyId
                 })
             });
             const result = await res.json();
@@ -534,7 +537,8 @@ const TaskPage = () => {
                     assignmentId: id,
                     stageId: stages[selectedTask.stageIndex]._id || stages[selectedTask.stageIndex].stageId,
                     taskId: selectedTask._id || selectedTask.taskId,
-                    resumedBy: { id: userdata.id || userdata._id, name: userdata.name }
+                    resumedBy: { id: userdata.id || userdata._id, name: userdata.name },
+                    companyId: userdata.companyId
                 })
             });
             const result = await res.json();
@@ -870,7 +874,8 @@ const TaskPage = () => {
                     stageId: currentStage._id || currentStage.stageId,
                     taskId: selectedTask._id || selectedTask.taskId,
                     subtaskId: subtaskId,
-                    startedBy: { id: userdata.id || userdata._id, name: userdata.name }
+                    startedBy: { id: userdata.id || userdata._id, name: userdata.name },
+                    companyId: userdata.companyId
                 })
             });
 
@@ -967,7 +972,8 @@ const TaskPage = () => {
                     taskId: selectedTask._id || selectedTask.taskId,
                     subtaskId: subtaskId,
                     pausedBy: { id: userdata.id || userdata._id, name: userdata.name },
-                    pauseReason: reason
+                    pauseReason: reason,
+                    companyId: userdata.companyId
                 })
             });
             const result = await res.json();
@@ -1020,7 +1026,8 @@ const TaskPage = () => {
                     stageId: stages[selectedTask.stageIndex]._id || stages[selectedTask.stageIndex].stageId,
                     taskId: selectedTask._id || selectedTask.taskId,
                     subtaskId: subtaskId,
-                    resumedBy: { id: userdata.id || userdata._id, name: userdata.name }
+                    resumedBy: { id: userdata.id || userdata._id, name: userdata.name },
+                    companyId: userdata.companyId
                 })
             });
             const result = await res.json();
@@ -1197,7 +1204,8 @@ const TaskPage = () => {
                     stageId,
                     taskId,
                     subtaskId,
-                    executionData: submissionData
+                    executionData: submissionData,
+                    companyId: userdata.companyId
                 })
             });
 
