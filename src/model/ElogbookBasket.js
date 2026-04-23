@@ -10,6 +10,7 @@ const stoppageSchema = new mongoose.Schema({
 const elogbookBasketSchema = new mongoose.Schema({
   companyId: { type: String, required: true },
   masterDataId: { type: mongoose.Schema.Types.ObjectId, ref: "ElogbookMasterData", required: true },
+  batchId: { type: mongoose.Schema.Types.ObjectId, ref: "ElogbookBatch", default: null },
   basketNumber: { type: Number, required: true },
   barcode: { type: String, default: "" }, // scanned barcode value
   date: { type: Date, default: Date.now },

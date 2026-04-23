@@ -98,8 +98,7 @@ export default function ProductionPage() {
   const [showStartModal, setShowStartModal] = useState(false);
   const [startBasketNumber, setStartBasketNumber] = useState('');
   const [additionalUsers, setAdditionalUsers] = useState('');
-  const [startDate, setStartDate] = useState(new Date().toISOString().split('T')[0]);
-  const [endDate, setEndDate] = useState(new Date().toISOString().split('T')[0]);
+  const [activeBatch, setActiveBatch] = useState(null);
   const [customers, setCustomers] = useState([]);
   const [summary, setSummary] = useState({
     totalBaskets: 0,
@@ -125,7 +124,7 @@ export default function ProductionPage() {
 
   useEffect(() => {
     if (userData?.companyId) fetchBaskets();
-  }, [userData, selectedMasterData, startDate, endDate]);
+  }, [userData, selectedMasterData, activeBatch]);
 
   useEffect(() => {
     // Extract unique customers from master data
@@ -159,13 +158,26 @@ export default function ProductionPage() {
     }
   };
 
+  const fetchActiveBatch = async (masterDataId) => {
+    if (!userData?.companyId || !masterDataId) return;
+    try {
+      const res = await fetch(`/api/elogbook/batches?companyId=${userData.companyId}&masterDataId=${masterDataId}`);
+      const data = await res.json();
+      if (data.success) {
+        setActiveBatch(data.data);
+      }
+    } catch (err) {
+      console.error('Fetch active batch error:', err);
+    }
+  };
+
   const fetchBaskets = async () => {
     if (!userData?.companyId) return;
     setLoading(true);
     try {
       let url = `/api/elogbook/baskets?companyId=${userData.companyId}`;
       if (selectedMasterData) url += `&masterDataId=${selectedMasterData._id}`;
-      if (startDate && endDate) url += `&startDate=${startDate}&endDate=${endDate}`;
+      if (activeBatch) url += `&batchId=${activeBatch._id}`;
 
       const res = await fetch(url);
       const data = await res.json();
@@ -214,6 +226,8 @@ export default function ProductionPage() {
     const part = masterDataList.find(md => md._id === partId);
     setSelectedPart(partId);
     setSelectedMasterData(part);
+    if (part) fetchActiveBatch(partId);
+    else setActiveBatch(null);
   };
 
   // Barcode scan handler
@@ -308,6 +322,64 @@ export default function ProductionPage() {
       fetchBaskets();
     } catch (err) {
       console.error('End error:', err);
+    }
+    setActionLoading(null);
+  };
+
+  const handleStartBatch = async () => {
+    if (!selectedMasterData) return;
+    setActionLoading('batch');
+    try {
+      const res = await fetch('/api/elogbook/batches', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          companyId: userData.companyId,
+          masterDataId: selectedMasterData._id,
+          startUser: userData.name || userData.username,
+        }),
+      });
+      const data = await res.json();
+      if (data.success) {
+        setActiveBatch(data.data);
+        // fetchBaskets is already triggered by activeBatch state change
+      } else {
+        alert(data.message || 'Failed to start batch');
+      }
+    } catch (err) {
+      console.error('Start batch error:', err);
+    }
+    setActionLoading(null);
+  };
+
+  const handleEndBatch = async () => {
+    if (!activeBatch) return;
+    if (!confirm('Are you sure you want to end the production batch for this part?')) return;
+    
+    // Check if any baskets are still in progress
+    const inProgress = baskets.some(b => b.status === 'in-progress' || b.status === 'stopped');
+    if (inProgress) {
+      alert('Please end all active baskets before ending the batch.');
+      return;
+    }
+
+    setActionLoading('batch');
+    try {
+      const res = await fetch(`/api/elogbook/batches/${activeBatch._id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          action: 'end',
+          endUser: userData.name || userData.username,
+        }),
+      });
+      const data = await res.json();
+      if (data.success) {
+        setActiveBatch(null);
+        setBaskets([]);
+      }
+    } catch (err) {
+      console.error('End batch error:', err);
     }
     setActionLoading(null);
   };
@@ -456,31 +528,51 @@ export default function ProductionPage() {
             </div>
           </div>
 
-          {/* Date Range Picker */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div>
-              <label className="block text-xs font-semibold text-gray-500 mb-1.5 uppercase tracking-wider flex items-center gap-2">
-                <Calendar className="w-3.5 h-3.5" /> From Date
-              </label>
-              <input
-                type="date"
-                value={startDate}
-                onChange={(e) => setStartDate(e.target.value)}
-                className="w-full px-3 py-2.5 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-400"
-              />
+          {/* Batch Control Bar */}
+          {selectedMasterData && (
+            <div className="bg-indigo-50/50 rounded-xl p-4 border border-indigo-100">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                <div className="flex items-center gap-4">
+                  <div className={`w-12 h-12 rounded-2xl flex items-center justify-center shadow-sm ${activeBatch ? 'bg-emerald-100 text-emerald-600' : 'bg-gray-100 text-gray-400'}`}>
+                    <Zap className={`w-6 h-6 ${activeBatch ? 'animate-pulse' : ''}`} />
+                  </div>
+                  <div>
+                    <h3 className="text-sm font-bold text-gray-900">
+                      {activeBatch ? 'Production Batch Active' : 'No Active Batch'}
+                    </h3>
+                    <p className="text-xs text-gray-500">
+                      {activeBatch 
+                        ? `Started: ${new Date(activeBatch.startTime).toLocaleString()}` 
+                        : 'Start a batch to begin production sequence'
+                      }
+                    </p>
+                  </div>
+                </div>
+
+                <div className="flex items-center gap-3">
+                  {!activeBatch ? (
+                    <button
+                      onClick={handleStartBatch}
+                      disabled={actionLoading === 'batch'}
+                      className="flex-1 sm:flex-none flex items-center justify-center gap-2 px-6 py-2.5 bg-gradient-to-r from-indigo-500 to-blue-600 text-white rounded-xl font-bold text-sm shadow-lg shadow-indigo-200 hover:shadow-xl transition-all active:scale-95 disabled:opacity-50"
+                    >
+                      {actionLoading === 'batch' ? <Loader2 className="w-4 h-4 animate-spin" /> : <Play className="w-4 h-4" />}
+                      Start Production Batch
+                    </button>
+                  ) : (
+                    <button
+                      onClick={handleEndBatch}
+                      disabled={actionLoading === 'batch'}
+                      className="flex-1 sm:flex-none flex items-center justify-center gap-2 px-6 py-2.5 bg-white text-red-600 border-2 border-red-100 rounded-xl font-bold text-sm hover:bg-red-50 transition-all active:scale-95 disabled:opacity-50"
+                    >
+                      {actionLoading === 'batch' ? <Loader2 className="w-4 h-4 animate-spin" /> : <Square className="w-4 h-4" />}
+                      End Production Batch
+                    </button>
+                  )}
+                </div>
+              </div>
             </div>
-            <div>
-              <label className="block text-xs font-semibold text-gray-500 mb-1.5 uppercase tracking-wider flex items-center gap-2">
-                <Calendar className="w-3.5 h-3.5" /> To Date
-              </label>
-              <input
-                type="date"
-                value={endDate}
-                onChange={(e) => setEndDate(e.target.value)}
-                className="w-full px-3 py-2.5 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-400"
-              />
-            </div>
-          </div>
+          )}
 
           {/* Barcode and Start Button Row */}
           <div className="flex flex-col lg:flex-row lg:items-end gap-4">
@@ -505,14 +597,14 @@ export default function ProductionPage() {
             <div>
               <button
                 onClick={() => {
-                  if (!selectedMasterData) {
-                    alert('Please select a customer and part first');
+                  if (!activeBatch) {
+                    alert('Please start a production batch first');
                     return;
                   }
                   setStartBasketNumber(String(baskets.length + 1));
                   setShowStartModal(true);
                 }}
-                disabled={!selectedMasterData}
+                disabled={!activeBatch}
                 className="flex items-center gap-2 px-5 py-2.5 bg-gradient-to-r from-emerald-500 to-teal-500 text-white rounded-xl font-semibold text-sm shadow-lg shadow-emerald-200 hover:shadow-xl transition-all hover:-translate-y-0.5 active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed whitespace-nowrap"
               >
                 <Plus className="w-4 h-4" />
@@ -564,8 +656,10 @@ export default function ProductionPage() {
           <Package className="w-12 h-12 text-gray-300 mx-auto mb-4" />
           <h3 className="text-lg font-bold text-gray-700 mb-1">No Baskets Found</h3>
           <p className="text-sm text-gray-400">
-            No baskets found from {new Date(startDate).toLocaleDateString()} to {new Date(endDate).toLocaleDateString()}.
-            Select a customer and part, then scan a barcode or click "Start Basket" to begin a new cycle.
+            {activeBatch 
+              ? "No baskets have been started in this batch yet." 
+              : "Select a customer and part, then start a production batch to begin."
+            }
           </p>
         </div>
       ) : (
