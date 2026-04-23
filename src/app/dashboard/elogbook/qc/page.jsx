@@ -5,9 +5,82 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import {
   ArrowLeft, ClipboardCheck, Loader2, Package, AlertTriangle,
   CheckCircle2, XCircle, RotateCcw, Save, ChevronDown, ChevronUp,
-  Search, Eye, Users, Building2, ChevronRight, Info, Plus
+  Search, Eye, Users, Building2, ChevronRight, Info, Plus,
+  Play, Square, Timer, Clock, Pause, Zap, Thermometer,
+  CheckCircle, AlertCircle, BarChart3, TrendingUp
 } from 'lucide-react';
 import { migrateLegacyPermissions } from '@/utils/featurePermissions';
+
+// Helper function to format minutes to MM:SS
+const formatTimeToMMSS = (minutes) => {
+  const totalSeconds = Math.round(minutes * 60);
+  const mins = Math.floor(totalSeconds / 60);
+  const secs = Math.floor(totalSeconds % 60);
+  return `${mins}m ${secs}s`;
+};
+
+// Helper function to format seconds to HH:MM:SS
+const formatSecondsToHMS = (seconds) => {
+  const hrs = String(Math.floor(seconds / 3600)).padStart(2, '0');
+  const mins = String(Math.floor((seconds % 3600) / 60)).padStart(2, '0');
+  const secs = String(seconds % 60).padStart(2, '0');
+  return `${hrs}:${mins}:${secs}`;
+};
+
+// Live timer component
+function LiveTimer({ startTime, stoppages, isPaused }) {
+  const [elapsed, setElapsed] = useState('00:00:00');
+  const [elapsedSeconds, setElapsedSeconds] = useState(0);
+  const [lostSeconds, setLostSeconds] = useState(0);
+
+  useEffect(() => {
+    if (!startTime) return;
+
+    const interval = setInterval(() => {
+      const now = new Date();
+      const start = new Date(startTime);
+      let totalLostMs = 0;
+
+      (stoppages || []).forEach(s => {
+        if (s.restartTime) {
+          totalLostMs += (new Date(s.restartTime) - new Date(s.stopTime));
+        } else {
+          // Currently stopped
+          totalLostMs += (now - new Date(s.stopTime));
+        }
+      });
+
+      const lostSecs = Math.floor(totalLostMs / 1000);
+      const totalElapsedSecs = Math.floor((now - start) / 1000);
+      const effectiveSecs = Math.max(0, totalElapsedSecs - lostSecs);
+
+      setLostSeconds(lostSecs);
+      setElapsedSeconds(effectiveSecs);
+      setElapsed(formatSecondsToHMS(effectiveSecs));
+    }, 1000);
+
+    return () => clearInterval(interval);
+  }, [startTime, stoppages]);
+
+  return (
+    <div className="flex flex-col gap-1">
+      <div className="flex items-center gap-3">
+        <div className={`font-mono text-2xl font-black ${isPaused ? 'text-amber-600' : 'text-emerald-600'}`}>
+          {elapsed}
+        </div>
+        {lostSeconds > 0 && (
+          <div className="text-xs text-red-500 font-medium bg-red-50 px-2 py-0.5 rounded-md">
+            -{Math.floor(lostSeconds / 60)}m {lostSeconds % 60}s lost
+          </div>
+        )}
+      </div>
+      <div className="text-xs text-gray-400">
+        Running: {Math.floor(elapsedSeconds / 60)}m {elapsedSeconds % 60}s
+        {lostSeconds > 0 && ` • Stopped: ${Math.floor(lostSeconds / 60)}m ${lostSeconds % 60}s`}
+      </div>
+    </div>
+  );
+}
 const DEFECT_TYPES = [
   { key: 'watermark1', label: 'Watermark 1', color: 'blue' },
   { key: 'watermark2', label: 'Watermark 2', color: 'cyan' },
@@ -29,6 +102,15 @@ export default function QCPage() {
   const [saving, setSaving] = useState(null);
   const [expandedQC, setExpandedQC] = useState(null);
   const [expandedCustomers, setExpandedCustomers] = useState(new Set());
+  const [activeQCForm, setActiveQCForm] = useState(null); // Track which basket's QC form is open
+  const [summary, setSummary] = useState({
+    totalBaskets: 0,
+    completedBaskets: 0,
+    inProgressBaskets: 0,
+    stoppedBaskets: 0,
+    avgCycleTime: 0,
+    totalLostTime: 0
+  });
   const [customerSearch, setCustomerSearch] = useState('');
 
   // QC form state per basket (stores the DELTA being entered)
@@ -70,6 +152,31 @@ export default function QCPage() {
       init();
     }
   }, [userData, directBasketId]);
+
+  useEffect(() => {
+    calculateSummary();
+  }, [pendingBaskets]);
+
+  const calculateSummary = () => {
+    const all = pendingBaskets;
+    const completed = all.filter(b => b.status === 'completed' || b.status === 'qc-done' || b.status === 'pending-qc');
+    const inProgress = all.filter(b => b.status === 'in-progress');
+    const stopped = all.filter(b => b.status === 'stopped');
+
+    const totalCycleTime = completed.reduce((sum, basket) => sum + (basket.actualCycleTime || 0), 0);
+    const avgTime = completed.length > 0 ? totalCycleTime / completed.length : 0;
+
+    const totalLost = all.reduce((sum, basket) => sum + (basket.totalLostTime || 0), 0);
+
+    setSummary({
+      totalBaskets: all.length,
+      completedBaskets: completed.length,
+      inProgressBaskets: inProgress.length,
+      stoppedBaskets: stopped.length,
+      avgCycleTime: avgTime,
+      totalLostTime: totalLost
+    });
+  };
 
   const fetchPendingBaskets = async () => {
     try {
@@ -240,6 +347,26 @@ export default function QCPage() {
       }
     });
     return groups;
+  };
+
+  const getStatusColor = (status) => {
+    switch (status) {
+      case 'in-progress': return 'bg-emerald-50 text-emerald-700 border-emerald-200';
+      case 'stopped': return 'bg-amber-50 text-amber-700 border-amber-200';
+      case 'completed': case 'pending-qc': case 'qc-done': return 'bg-blue-50 text-blue-700 border-blue-200';
+      default: return 'bg-gray-50 text-gray-600 border-gray-200';
+    }
+  };
+
+  const getStatusLabel = (status) => {
+    switch (status) {
+      case 'in-progress': return 'Running';
+      case 'stopped': return 'Stopped';
+      case 'pending-qc': return 'Pending QC';
+      case 'qc-done': return 'QC Done';
+      case 'completed': return 'Completed';
+      default: return 'Pending';
+    }
   };
 
   const reworkRecords = qcRecords.filter(qc => qc.reworkStatus === 'pending');
@@ -438,7 +565,6 @@ export default function QCPage() {
           Completed ({completedRecords.length})
         </button>
       </div>
-
       {/* Customer Search */}
       <div className="relative mb-6 max-w-md">
         <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
@@ -450,6 +576,59 @@ export default function QCPage() {
           className="w-full pl-10 pr-4 py-2.5 bg-white border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-400 transition-all"
         />
       </div>
+
+      {/* Summary Cards (Mirror Production) */}
+      {activeTab === 'pending' && pendingBaskets.length > 0 && (
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
+          <div className="bg-gradient-to-br from-indigo-500 to-indigo-600 rounded-2xl p-4 text-white shadow-lg">
+            <div className="flex items-center justify-between mb-2">
+              <Package className="w-6 h-6 opacity-80" />
+              <BarChart3 className="w-5 h-5 opacity-80" />
+            </div>
+            <div className="text-2xl font-bold">{summary.totalBaskets}</div>
+            <div className="text-xs opacity-90 mt-1">Total Pending Baskets</div>
+            <div className="text-xs opacity-75 mt-2">
+              {summary.inProgressBaskets} currently executing
+            </div>
+          </div>
+
+          <div className="bg-gradient-to-br from-emerald-500 to-emerald-600 rounded-2xl p-4 text-white shadow-lg">
+            <div className="flex items-center justify-between mb-2">
+              <CheckCircle className="w-6 h-6 opacity-80" />
+              <TrendingUp className="w-5 h-5 opacity-80" />
+            </div>
+            <div className="text-2xl font-bold">{summary.completedBaskets}</div>
+            <div className="text-xs opacity-90 mt-1">Ready for QC</div>
+            <div className="text-xs opacity-75 mt-2">
+              Baskets that have finished execution
+            </div>
+          </div>
+
+          <div className="bg-gradient-to-br from-amber-500 to-amber-600 rounded-2xl p-4 text-white shadow-lg">
+            <div className="flex items-center justify-between mb-2">
+              <Clock className="w-6 h-6 opacity-80" />
+              <Timer className="w-5 h-5 opacity-80" />
+            </div>
+            <div className="text-xl font-bold">{formatTimeToMMSS(summary.avgCycleTime)}</div>
+            <div className="text-xs opacity-90 mt-1">Avg Execution Time</div>
+            <div className="text-xs opacity-75 mt-2">
+              Average across finished baskets
+            </div>
+          </div>
+
+          <div className="bg-gradient-to-br from-red-500 to-red-600 rounded-2xl p-4 text-white shadow-lg">
+            <div className="flex items-center justify-between mb-2">
+              <AlertCircle className="w-6 h-6 opacity-80" />
+              <Timer className="w-5 h-5 opacity-80" />
+            </div>
+            <div className="text-xl font-bold">{formatTimeToMMSS(summary.totalLostTime)}</div>
+            <div className="text-xs opacity-90 mt-1">Total Lost Time</div>
+            <div className="text-xs opacity-75 mt-2">
+              {summary.stoppedBaskets} stopped baskets
+            </div>
+          </div>
+        </div>
+      )}
 
       {loading ? (
         <div className="flex items-center justify-center py-20">
@@ -496,142 +675,183 @@ export default function QCPage() {
                     </div>
                   </div>
 
-                  {/* Baskets for this customer */}
+                  {/* Baskets for this customer - Enhanced Execution View */}
                   {expandedCustomers.has(customerName) && (
-                    <div className="space-y-4 mt-4">
+                    <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6 mt-4">
                       {group.baskets.map(basket => {
                         const form = getFormForBasket(basket._id);
                         const existingQC = qcRecords.find(r => r.basketId?._id === basket._id);
-                        
+
                         const checkedSoFar = existingQC ? (existingQC.goodQuantity + existingQC.reworkQuantity) : 0;
                         const inspectedQty = basket.masterDataId?.partsPerBasket || 0;
                         const remaining = inspectedQty - checkedSoFar;
-                        
+
                         const incomingGood = Number(form.goodQuantity) || 0;
                         const incomingDefects = Object.values(form.defects).reduce((sum, v) => sum + v, 0);
                         const incomingTotal = incomingGood + incomingDefects;
 
+                        const standard = basket.masterDataId?.standardCycleTime || 0;
+                        const isActive = basket.status === 'in-progress' || basket.status === 'stopped';
+                        const isOver = basket.actualCycleTime > standard && !isActive;
+
+                        const isFormOpen = activeQCForm === basket._id;
+
                         return (
-                          <div key={basket._id} 
+                          <div key={basket._id}
                             id={`basket-${basket._id}`}
-                            className={`bg-white rounded-2xl border shadow-sm overflow-hidden transition-all ${
-                              directBasketId === basket._id ? 'ring-2 ring-indigo-500 border-transparent shadow-lg scale-[1.01]' : 'border-gray-100'
-                            }`}
+                            className={`bg-white rounded-2xl border transition-all duration-300 hover:shadow-xl flex flex-col ${directBasketId === basket._id ? 'ring-2 ring-indigo-500 border-transparent shadow-lg scale-[1.01]' :
+                              basket.status === 'in-progress' ? 'border-emerald-200 shadow-md shadow-emerald-50' :
+                                basket.status === 'stopped' ? 'border-amber-200 shadow-md shadow-amber-50' :
+                                  isOver ? 'border-red-200' : 'border-gray-100'
+                              }`}
                           >
-                            {/* Basket info header */}
-                            <div className={`px-6 py-4 border-b ${
-                              directBasketId === basket._id ? 'bg-gradient-to-r from-indigo-50 to-blue-50 border-indigo-100' : 'bg-gradient-to-r from-amber-50 to-orange-50 border-amber-100'
-                            }`}>
-                              <div className="flex items-center justify-between">
-                                <div className="flex items-center gap-3">
-                                  <div className={`w-10 h-10 rounded-xl flex items-center justify-center text-white font-bold ${
-                                    directBasketId === basket._id ? 'bg-gradient-to-br from-indigo-500 to-blue-500' : 'bg-gradient-to-br from-amber-500 to-orange-500'
-                                  }`}>
+                            {/* Execution Style Header */}
+                            <div className="p-5 border-b border-gray-50">
+                              <div className="flex items-center justify-between mb-4">
+                                <div className="flex items-center gap-2">
+                                  <div className={`w-10 h-10 rounded-xl flex items-center justify-center font-bold text-white ${basket.status === 'in-progress' ? 'bg-gradient-to-br from-emerald-500 to-teal-500' :
+                                    basket.status === 'stopped' ? 'bg-gradient-to-br from-amber-500 to-orange-500' :
+                                      'bg-gradient-to-br from-indigo-500 to-blue-500'
+                                    }`}>
                                     {basket.basketNumber}
                                   </div>
                                   <div>
                                     <h3 className="font-bold text-gray-900">Basket {basket.basketNumber}</h3>
-                                    <p className="text-xs text-gray-500">
-                                      {basket.masterDataId?.partName}
-                                      {' | '}Cycle: {basket.actualCycleTime?.toFixed(2)}min
-                                    </p>
+                                    <p className="text-xs text-gray-400">{basket.masterDataId?.partName}</p>
                                   </div>
                                 </div>
-                                <div className="flex flex-col items-end gap-1">
-                                  <span className={`px-3 py-1 rounded-lg text-xs font-semibold ${
-                                    checkedSoFar > 0 ? 'bg-blue-100 text-blue-700' : 'bg-amber-100 text-amber-700'
-                                  }`}>
-                                    {checkedSoFar > 0 ? `In Progress: ${checkedSoFar}/${inspectedQty}` : 'Pending Inspection'}
-                                  </span>
-                                  {checkedSoFar > 0 && (
-                                    <div className="w-24 h-1.5 bg-blue-100 rounded-full overflow-hidden">
-                                      <div className="h-full bg-blue-500 transition-all" style={{ width: `${(checkedSoFar/inspectedQty)*100}%` }} />
-                                    </div>
-                                  )}
-                                </div>
+                                <span className={`px-2.5 py-1 rounded-lg text-xs font-semibold border ${getStatusColor(basket.status)}`}>
+                                  {getStatusLabel(basket.status)}
+                                </span>
                               </div>
-                            </div>
 
-                            {/* QC Form */}
-                            <div className="p-6 space-y-5">
-                              {/* Progress Stats */}
-                              {checkedSoFar > 0 && (
-                                <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-                                  <div className="p-3 bg-gray-50 rounded-xl border border-gray-100">
-                                    <div className="text-[10px] text-gray-500 font-bold uppercase tracking-wider mb-1">Total Good</div>
-                                    <div className="text-lg font-bold text-gray-900">{existingQC.goodQuantity}</div>
+                              {/* Timer/Cycle Info */}
+                              {isActive ? (
+                                <div className="mb-4 p-3 bg-gray-50 rounded-xl border border-gray-100">
+                                  <div className="text-[10px] text-gray-500 mb-1 font-bold uppercase tracking-wider">Live Cycle Time</div>
+                                  <LiveTimer
+                                    startTime={basket.startTime}
+                                    stoppages={basket.stoppages}
+                                    isPaused={basket.status === 'stopped'}
+                                  />
+                                </div>
+                              ) : (
+                                <div className="grid grid-cols-2 gap-2 mb-4">
+                                  <div className="p-2.5 bg-gray-50 rounded-xl border border-gray-100">
+                                    <div className="text-[10px] text-gray-400 font-bold uppercase mb-1">Actual</div>
+                                    <div className={`text-sm font-bold ${isOver ? 'text-red-600' : 'text-emerald-600'}`}>
+                                      {formatTimeToMMSS(basket.actualCycleTime)}
+                                    </div>
                                   </div>
-                                  <div className="p-3 bg-gray-50 rounded-xl border border-gray-100">
-                                    <div className="text-[10px] text-gray-500 font-bold uppercase tracking-wider mb-1">Total Rework</div>
-                                    <div className="text-lg font-bold text-gray-900">{existingQC.reworkQuantity}</div>
-                                  </div>
-                                  <div className="p-3 bg-indigo-50 rounded-xl border border-indigo-100">
-                                    <div className="text-[10px] text-indigo-600 font-bold uppercase tracking-wider mb-1">Remaining</div>
-                                    <div className="text-lg font-bold text-indigo-700">{remaining}</div>
-                                  </div>
-                                  <div className="p-3 bg-emerald-50 rounded-xl border border-emerald-100">
-                                    <div className="text-[10px] text-emerald-600 font-bold uppercase tracking-wider mb-1">Adding Now</div>
-                                    <div className="text-lg font-bold text-emerald-700">+{incomingTotal}</div>
+                                  <div className="p-2.5 bg-gray-50 rounded-xl border border-gray-100">
+                                    <div className="text-[10px] text-gray-400 font-bold uppercase mb-1">Standard</div>
+                                    <div className="text-sm font-bold text-blue-600">
+                                      {formatTimeToMMSS(standard)}
+                                    </div>
                                   </div>
                                 </div>
                               )}
 
-                              {/* Incremental Inputs */}
-                              <div className="bg-gray-50/50 rounded-2xl p-4 border border-dashed border-gray-200">
-                                <h4 className="text-xs font-bold text-gray-500 uppercase tracking-wider mb-4 flex items-center gap-2">
-                                  <Plus className="w-3 h-3" /> Add Inspected Parts
-                                </h4>
-                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
-                                  <div>
-                                    <label className="block text-xs font-semibold text-gray-600 mb-1.5 flex items-center gap-2">
-                                      <CheckCircle2 className="w-3.5 h-3.5 text-emerald-500" /> Good Quantity
-                                    </label>
-                                    <input type="number" value={form.goodQuantity}
-                                      placeholder="0"
-                                      onChange={e => updateForm(basket._id, 'goodQuantity', e.target.value)}
-                                      className="w-full px-4 py-3 bg-white border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-400 font-bold" />
-                                  </div>
-                                  <div>
-                                    <label className="block text-xs font-semibold text-gray-600 mb-1.5 flex items-center gap-2">
-                                      <AlertTriangle className="w-3.5 h-3.5 text-amber-500" /> Defective/Rework (Details below)
-                                    </label>
-                                    <div className="px-4 py-3 bg-gray-100/50 border border-gray-200 rounded-xl text-sm font-bold text-gray-500">
-                                      {incomingDefects}
+                              {/* Timestamps & Operator */}
+                              <div className="space-y-1.5 text-[11px]">
+                                <div className="flex justify-between">
+                                  <span className="text-gray-400">Started</span>
+                                  <span className="font-medium text-gray-600">
+                                    {basket.startTime ? new Date(basket.startTime).toLocaleString([], { hour: '2-digit', minute: '2-digit' }) : '—'}
+                                  </span>
+                                </div>
+                                <div className="flex justify-between">
+                                  <span className="text-gray-400">Operator</span>
+                                  <span className="font-medium text-gray-600">{basket.startUser || '—'}</span>
+                                </div>
+                              </div>
+                            </div>
+
+                            {/* Perform QC Action Area */}
+                            <div className="flex-1 p-5 flex flex-col">
+                              <button
+                                onClick={() => setActiveQCForm(isFormOpen ? null : basket._id)}
+                                className={`w-full flex items-center justify-center gap-2 px-4 py-3 rounded-xl font-bold text-sm transition-all active:scale-[0.98] shadow-sm mb-4 ${isFormOpen
+                                    ? 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                                    : 'bg-indigo-600 text-white hover:bg-indigo-700 shadow-indigo-100'
+                                  }`}
+                              >
+                                {isFormOpen ? <ChevronUp className="w-4 h-4" /> : <ClipboardCheck className="w-4 h-4" />}
+                                {isFormOpen ? 'Hide Inspection Form' : 'Perform QC'}
+                              </button>
+
+                              {/* Inspection Form (Collapsible) */}
+                              {isFormOpen && (
+                                <div className="space-y-4 animate-in fade-in slide-in-from-top-2 duration-300">
+                                  {/* Progress Stats */}
+                                  {checkedSoFar > 0 && (
+                                    <div className="grid grid-cols-2 gap-2">
+                                      <div className="p-2 bg-indigo-50 rounded-lg border border-indigo-100">
+                                        <div className="text-[9px] text-indigo-600 font-bold uppercase mb-0.5">Checked</div>
+                                        <div className="text-sm font-bold text-indigo-700">{checkedSoFar}/{inspectedQty}</div>
+                                      </div>
+                                      <div className="p-2 bg-emerald-50 rounded-lg border border-emerald-100">
+                                        <div className="text-[9px] text-emerald-600 font-bold uppercase mb-0.5">Remaining</div>
+                                        <div className="text-sm font-bold text-emerald-700">{remaining}</div>
+                                      </div>
+                                    </div>
+                                  )}
+
+                                  {/* Inputs */}
+                                  <div className="grid grid-cols-2 gap-4">
+                                    <div>
+                                      <label className="block text-[10px] font-bold text-gray-500 uppercase mb-1.5 flex items-center gap-1">
+                                        <CheckCircle2 className="w-3 h-3 text-emerald-500" /> Good Qty
+                                      </label>
+                                      <input type="number" value={form.goodQuantity} placeholder="0"
+                                        onChange={e => updateForm(basket._id, 'goodQuantity', e.target.value)}
+                                        className="w-full px-3 py-2 bg-gray-50 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500/20 font-bold" />
+                                    </div>
+                                    <div>
+                                      <label className="block text-[10px] font-bold text-gray-500 uppercase mb-1.5 flex items-center gap-1">
+                                        <AlertTriangle className="w-3 h-3 text-amber-500" /> Defect Qty
+                                      </label>
+                                      <div className="px-3 py-2 bg-gray-100 border border-gray-200 rounded-lg text-sm font-bold text-gray-500">
+                                        {incomingDefects}
+                                      </div>
                                     </div>
                                   </div>
-                                </div>
-                              </div>
 
-                              {/* Defect Types */}
-                              <div>
-                                <h4 className="text-xs font-bold text-gray-500 uppercase tracking-wider mb-3">
-                                  Defect Breakdown
-                                </h4>
-                                <div className="grid grid-cols-2 sm:grid-cols-5 gap-3">
-                                  {DEFECT_TYPES.map(defect => (
-                                    <div key={defect.key} className="bg-white p-3 rounded-xl border border-gray-100">
-                                      <label className="block text-[10px] font-bold text-gray-400 uppercase mb-2">{defect.label}</label>
-                                      <input type="number" min="0" value={form.defects[defect.key]}
-                                        onChange={e => updateDefect(basket._id, defect.key, e.target.value)}
-                                        className="w-full px-2 py-2 border border-gray-100 bg-gray-50 rounded-lg text-sm text-center font-bold focus:outline-none focus:ring-2 focus:ring-indigo-500/20" />
+                                  {/* Defect Types Breakdown */}
+                                  <div className="grid grid-cols-2 gap-2">
+                                    {DEFECT_TYPES.map(defect => (
+                                      <div key={defect.key} className="bg-white p-2 rounded-lg border border-gray-100 flex items-center justify-between gap-2">
+                                        <label className="text-[9px] font-bold text-gray-400 uppercase truncate">{defect.label}</label>
+                                        <input type="number" min="0" value={form.defects[defect.key]}
+                                          onChange={e => updateDefect(basket._id, defect.key, e.target.value)}
+                                          className="w-12 px-1 py-1 border border-gray-100 bg-gray-50 rounded text-xs text-center font-bold focus:outline-none focus:ring-2 focus:ring-indigo-500/10" />
+                                      </div>
+                                    ))}
+                                  </div>
+
+                                  {/* Submit */}
+                                  <button onClick={() => handleSubmitQC(basket)}
+                                    disabled={saving === basket._id || incomingTotal === 0}
+                                    className="w-full flex items-center justify-center gap-2 px-4 py-2.5 bg-gradient-to-r from-emerald-600 to-teal-600 text-white rounded-xl font-bold text-sm shadow-md hover:shadow-lg transition-all active:scale-95 disabled:opacity-50">
+                                    {saving === basket._id ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
+                                    {checkedSoFar + incomingTotal >= inspectedQty ? 'Finalize QC' : 'Save Progress'}
+                                  </button>
+                                </div>
+                              )}
+
+                              {!isFormOpen && (
+                                <div className="mt-auto pt-4 border-t border-gray-50 flex items-center justify-between text-[10px]">
+                                  <div className="flex items-center gap-1 text-gray-400">
+                                    <Info className="w-3 h-3" />
+                                    <span>Total parts to inspect: <strong>{inspectedQty}</strong></span>
+                                  </div>
+                                  {checkedSoFar > 0 && (
+                                    <div className="text-indigo-600 font-bold">
+                                      {Math.round((checkedSoFar / inspectedQty) * 100)}% Checked
                                     </div>
-                                  ))}
+                                  )}
                                 </div>
-                              </div>
-
-                              {/* Submit */}
-                              <div className="flex items-center justify-between pt-2 border-t border-gray-100">
-                                <div className="flex items-center gap-2 text-xs text-gray-400">
-                                  <Info className="w-3.5 h-3.5" />
-                                  <span>Total to check: <strong>{inspectedQty}</strong></span>
-                                </div>
-                                <button onClick={() => handleSubmitQC(basket)}
-                                  disabled={saving === basket._id || incomingTotal === 0}
-                                  className="flex items-center gap-2 px-8 py-3 bg-gradient-to-r from-indigo-600 to-blue-600 text-white rounded-xl font-bold text-sm shadow-lg shadow-indigo-200 hover:shadow-xl transition-all active:scale-95 disabled:opacity-50 disabled:grayscale">
-                                  {saving === basket._id ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
-                                  {checkedSoFar + incomingTotal >= inspectedQty ? 'Finalize Inspection' : 'Save Progress'}
-                                </button>
-                              </div>
+                              )}
                             </div>
                           </div>
                         );
