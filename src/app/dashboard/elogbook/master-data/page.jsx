@@ -264,7 +264,7 @@ export default function MasterDataPage() {
                     <thead>
                       <tr className="bg-gray-50 border-b border-gray-100">
                         <th className="text-left px-4 py-3 font-semibold text-gray-600 text-xs uppercase tracking-wider">Part Name</th>
-                        <th className="text-left px-4 py-3 font-semibold text-gray-600 text-xs uppercase tracking-wider">Coating Requirements</th>
+                        <th className="text-left px-4 py-3 font-semibold text-gray-600 text-xs uppercase tracking-wider">Description</th>
                         <th className="text-center px-4 py-3 font-semibold text-gray-600 text-xs uppercase tracking-wider">
                           <div className="flex items-center justify-center gap-1"><Timer className="w-3 h-3" /> Cycle Time</div>
                         </th>
@@ -385,7 +385,7 @@ export default function MasterDataPage() {
               </div>
 
               <div>
-                <label className="block text-xs font-semibold text-gray-600 mb-1.5">Coating Requirements</label>
+                <label className="block text-xs font-semibold text-gray-600 mb-1.5">Description</label>
                 <textarea
                   value={form.coatingRequirements}
                   onChange={e => setForm({ ...form, coatingRequirements: e.target.value })}
@@ -450,7 +450,7 @@ export default function MasterDataPage() {
                 <h3 className="text-xs font-bold text-gray-500 uppercase tracking-wider mb-3">Capacity & Surface Area</h3>
                 <div className="grid grid-cols-2 gap-3">
                   <div>
-                    <label className="block text-xs font-semibold text-gray-600 mb-1.5">Surface Area per Basket (dm²)</label>
+                    <label className="block text-xs font-semibold text-gray-600 mb-1.5">Surface Area per Part (dm²)</label>
                     <input
                       type="number"
                       step="0.01"
