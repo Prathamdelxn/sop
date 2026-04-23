@@ -6,7 +6,7 @@ import {
   ArrowLeft, Play, Square, RotateCcw, CheckCircle2, Timer,
   Loader2, Package, AlertTriangle, Clock, Pause, ScanBarcode,
   Plus, ChevronDown, Users, X, Zap, Thermometer, Building2, Calendar,
-  BarChart3, TrendingUp, CheckCircle, AlertCircle
+  BarChart3, TrendingUp, CheckCircle, AlertCircle, ClipboardCheck
 } from 'lucide-react';
 
 // Helper function to format seconds to MM:SS
@@ -810,6 +810,15 @@ export default function ProductionPage() {
                       </button>
                     )}
                   </div>
+                )}
+
+                {['pending-qc', 'in-progress'].includes(basket.status) && (
+                  <button
+                    onClick={() => router.push(`/dashboard/elogbook/qc?basketId=${basket._id}`)}
+                    className="w-full mt-3 flex items-center justify-center gap-2 px-3 py-2 bg-indigo-600 text-white rounded-xl text-xs font-bold hover:bg-indigo-700 transition-all active:scale-95 shadow-sm"
+                  >
+                    <ClipboardCheck className="w-3.5 h-3.5" /> Perform Quality Check
+                  </button>
                 )}
 
               </div>

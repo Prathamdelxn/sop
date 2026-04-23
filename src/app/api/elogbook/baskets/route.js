@@ -64,7 +64,13 @@ export async function GET(req) {
       filter.masterDataId = masterDataId;
     }
 
-    if (status) filter.status = status;
+    if (status) {
+      if (status.includes(",")) {
+        filter.status = { $in: status.split(",") };
+      } else {
+        filter.status = status;
+      }
+    }
 
     const baskets = await ElogbookBasket.find(filter)
       .populate("masterDataId")

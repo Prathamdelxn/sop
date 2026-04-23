@@ -133,7 +133,7 @@ export async function PUT(req, { params }) {
     const body = await req.json();
     const { action } = body;
 
-    const basket = await ElogbookBasket.findById(id);
+    const basket = await ElogbookBasket.findById(id).populate("masterDataId");
     if (!basket) {
       return NextResponse.json({ success: false, message: "Basket not found" }, { status: 404 });
     }
@@ -227,6 +227,17 @@ export async function PUT(req, { params }) {
         basket.totalLostTime = parseFloat(totalLostMinutes.toFixed(2));
         basket.actualCycleTime = parseFloat(actualCycleMinutes.toFixed(2));
         basket.status = "pending-qc";
+
+        // Check if QC is already completed for this basket
+        const ElogbookQC = (await import("@/model/ElogbookQC")).default;
+        const qcRecord = await ElogbookQC.findOne({ basketId: basket._id });
+        if (qcRecord) {
+          const totalChecked = qcRecord.goodQuantity + qcRecord.reworkQuantity;
+          const partsPerBasket = basket.masterDataId?.partsPerBasket || 0;
+          if (partsPerBasket > 0 && totalChecked >= partsPerBasket) {
+            basket.status = "qc-done";
+          }
+        }
 
         // Optional: Add a debug log to verify calculations
         console.log("=== Basket Calculation Debug ===");
