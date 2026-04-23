@@ -6,6 +6,7 @@ import {
   ArrowLeft, BarChart3, Download, Loader2,
   Clock, AlertTriangle, CheckCircle2, TrendingUp, Package, User, Shield, PackageCheck
 } from 'lucide-react';
+import { migrateLegacyPermissions } from '@/utils/featurePermissions';
 import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip,
   Legend, ResponsiveContainer, Cell, LabelList
@@ -181,7 +182,18 @@ export default function ReportsPage() {
 
   useEffect(() => {
     const userdata = localStorage.getItem('user');
-    if (userdata) setUserData(JSON.parse(userdata));
+    if (userdata) {
+      const parsedUser = JSON.parse(userdata);
+      setUserData(parsedUser);
+
+      // Permission Check
+      if (parsedUser.role !== 'company-admin' && parsedUser.role !== 'super-manager') {
+        const tasks = migrateLegacyPermissions(parsedUser.task || []);
+        if (!tasks.includes('Graphical Representation')) {
+          router.replace('/dashboard/elogbook');
+        }
+      }
+    }
   }, []);
 
   useEffect(() => {

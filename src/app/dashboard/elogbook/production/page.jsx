@@ -8,6 +8,7 @@ import {
   Plus, ChevronDown, Users, X, Zap, Thermometer, Building2, Calendar,
   BarChart3, TrendingUp, CheckCircle, AlertCircle, ClipboardCheck
 } from 'lucide-react';
+import { migrateLegacyPermissions } from '@/utils/featurePermissions';
 
 // Helper function to format seconds to MM:SS
 const formatTimeToMMSS = (minutes) => {
@@ -100,6 +101,7 @@ export default function ProductionPage() {
   const [additionalUsers, setAdditionalUsers] = useState('');
   const [activeBatch, setActiveBatch] = useState(null);
   const [customers, setCustomers] = useState([]);
+  const [canDoQC, setCanDoQC] = useState(false);
   const [summary, setSummary] = useState({
     totalBaskets: 0,
     completedBaskets: 0,
@@ -113,7 +115,21 @@ export default function ProductionPage() {
 
   useEffect(() => {
     const userdata = localStorage.getItem('user');
-    if (userdata) setUserData(JSON.parse(userdata));
+    if (userdata) {
+      const parsedUser = JSON.parse(userdata);
+      setUserData(parsedUser);
+
+      // Permission Check
+      if (parsedUser.role !== 'company-admin' && parsedUser.role !== 'super-manager') {
+        const tasks = migrateLegacyPermissions(parsedUser.task || []);
+        if (!tasks.includes('Bucket Execution')) {
+          router.replace('/dashboard/elogbook');
+        }
+        setCanDoQC(tasks.includes('Quality Check'));
+      } else {
+        setCanDoQC(true);
+      }
+    }
   }, []);
 
   useEffect(() => {
@@ -812,7 +828,7 @@ export default function ProductionPage() {
                   </div>
                 )}
 
-                {['pending-qc', 'in-progress'].includes(basket.status) && (
+                {['pending-qc', 'in-progress'].includes(basket.status) && canDoQC && (
                   <button
                     onClick={() => router.push(`/dashboard/elogbook/qc?basketId=${basket._id}`)}
                     className="w-full mt-3 flex items-center justify-center gap-2 px-3 py-2 bg-indigo-600 text-white rounded-xl text-xs font-bold hover:bg-indigo-700 transition-all active:scale-95 shadow-sm"

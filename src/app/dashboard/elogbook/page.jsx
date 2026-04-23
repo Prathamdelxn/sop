@@ -7,20 +7,31 @@ import {
   ArrowRight, Activity, Package, AlertTriangle, CheckCircle2,
   Timer, Zap
 } from 'lucide-react';
+import { migrateLegacyPermissions } from '@/utils/featurePermissions';
 
 export default function ElogBookPage() {
   const router = useRouter();
   const [userData, setUserData] = useState(null);
+  const [filteredModules, setFilteredModules] = useState([]);
+  const [userTasks, setUserTasks] = useState([]);
 
   useEffect(() => {
     const userdata = localStorage.getItem('user');
-    if (userdata) setUserData(JSON.parse(userdata));
+    if (userdata) {
+      const parsedUser = JSON.parse(userdata);
+      setUserData(parsedUser);
+      
+      // Migrate permissions if necessary
+      const tasks = migrateLegacyPermissions(parsedUser.task || []);
+      setUserTasks(tasks);
+    }
   }, []);
 
-  const modules = [
+  const allModules = [
     {
       id: 'master-data',
       title: 'Master Data',
+      permission: 'Master Data Management',
       description: 'Configure customers, parts, coating standards, and basket capacity for your production line.',
       icon: Database,
       href: '/dashboard/elogbook/master-data',
@@ -34,6 +45,7 @@ export default function ElogBookPage() {
     {
       id: 'production',
       title: 'Production Cycle',
+      permission: 'Bucket Execution',
       description: 'Track basket lifecycle with barcode scanning — from loading to completion with real-time timers.',
       icon: PlayCircle,
       href: '/dashboard/elogbook/production',
@@ -47,6 +59,7 @@ export default function ElogBookPage() {
     {
       id: 'qc',
       title: 'Quality Control',
+      permission: 'Quality Check',
       description: 'Inspect coated parts for defects, manage rework flow, and track final quantities for invoicing.',
       icon: ClipboardCheck,
       href: '/dashboard/elogbook/qc',
@@ -60,6 +73,7 @@ export default function ElogBookPage() {
     {
       id: 'reports',
       title: 'Reports & Dashboard',
+      permission: 'Graphical Representation',
       description: 'View cycle time analysis, quantity breakdowns, defect trends, and export PDF reports.',
       icon: BarChart3,
       href: '/dashboard/elogbook/reports',
@@ -71,6 +85,17 @@ export default function ElogBookPage() {
       ],
     },
   ];
+
+  useEffect(() => {
+    if (!userData) return;
+
+    if (userData.role === 'company-admin' || userData.role === 'super-manager') {
+      setFilteredModules(allModules);
+    } else {
+      const filtered = allModules.filter(mod => userTasks.includes(mod.permission));
+      setFilteredModules(filtered);
+    }
+  }, [userData, userTasks]);
 
   return (
     <div className="min-h-screen p-4 sm:p-6 lg:p-8">
@@ -96,7 +121,7 @@ export default function ElogBookPage() {
 
       {/* Module Cards Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
-        {modules.map((mod, index) => (
+        {filteredModules.map((mod, index) => (
           <button
             key={mod.id}
             onClick={() => router.push(mod.href)}

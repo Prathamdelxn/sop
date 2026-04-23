@@ -7,6 +7,7 @@ import {
   CheckCircle2, XCircle, RotateCcw, Save, ChevronDown, ChevronUp,
   Search, Eye, Users, Building2, ChevronRight, Info, Plus
 } from 'lucide-react';
+import { migrateLegacyPermissions } from '@/utils/featurePermissions';
 const DEFECT_TYPES = [
   { key: 'watermark1', label: 'Watermark 1', color: 'blue' },
   { key: 'watermark2', label: 'Watermark 2', color: 'cyan' },
@@ -35,7 +36,18 @@ export default function QCPage() {
 
   useEffect(() => {
     const userdata = localStorage.getItem('user');
-    if (userdata) setUserData(JSON.parse(userdata));
+    if (userdata) {
+      const parsedUser = JSON.parse(userdata);
+      setUserData(parsedUser);
+      
+      // Permission Check
+      if (parsedUser.role !== 'company-admin' && parsedUser.role !== 'super-manager') {
+        const tasks = migrateLegacyPermissions(parsedUser.task || []);
+        if (!tasks.includes('Quality Check')) {
+          router.replace('/dashboard/elogbook');
+        }
+      }
+    }
   }, []);
 
   useEffect(() => {

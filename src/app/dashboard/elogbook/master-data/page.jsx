@@ -8,6 +8,7 @@ import {
   ArrowLeft, Plus, Pencil, Trash2, X, Save, Database,
   Thermometer, Zap, Timer, Package, Search, Loader2, ChevronDown, ChevronRight
 } from 'lucide-react';
+import { migrateLegacyPermissions } from '@/utils/featurePermissions';
 
 export default function MasterDataPage() {
   const router = useRouter();
@@ -35,6 +36,14 @@ export default function MasterDataPage() {
     if (userdata) {
       const data = JSON.parse(userdata);
       setUserData(data);
+
+      // Permission Check
+      if (data.role !== 'company-admin' && data.role !== 'super-manager') {
+        const tasks = migrateLegacyPermissions(data.task || []);
+        if (!tasks.includes('Master Data Management')) {
+          router.replace('/dashboard/elogbook');
+        }
+      }
     }
   }, []);
 
