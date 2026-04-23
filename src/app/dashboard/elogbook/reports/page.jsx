@@ -278,7 +278,7 @@ export default function ReportsPage() {
 
       for (let i = 0; i < children.length; i++) {
         const child = children[i];
-        
+
         const canvas = await html2canvas(child, {
           scale: 2,
           useCORS: true,
@@ -308,10 +308,10 @@ export default function ReportsPage() {
           while (remainingSectionHeight > 0) {
             const spaceLeft = pdfHeight - currentY - margin;
             const sliceHeight = Math.min(remainingSectionHeight, spaceLeft);
-            
+
             // Draw the image with an vertical offset to "slice" it
             pdf.addImage(imgData, 'PNG', margin, currentY - sectionTopOffset, usableWidth, imgHeight);
-            
+
             remainingSectionHeight -= sliceHeight;
             sectionTopOffset += sliceHeight;
 
@@ -531,22 +531,26 @@ export default function ReportsPage() {
                     wrapperStyle={{ fontSize: '12px', paddingTop: '20px' }}
                     content={() => (
                       <div className="flex flex-wrap items-center justify-center gap-4 mt-2">
-                        <div className="flex items-center gap-1.5">
-                          <div className="w-3 h-3 rounded-sm" style={{ backgroundColor: COLORS.green }}></div>
-                          <span className="text-xs text-gray-600">Good Parts</span>
-                        </div>
-                        <div className="flex items-center gap-1.5">
-                          <div className="w-3 h-3 rounded-sm" style={{ backgroundColor: COLORS.amber }}></div>
-                          <span className="text-xs text-gray-600">Rework</span>
-                        </div>
-                        <div className="flex items-center gap-1.5">
-                          <div className="w-3 h-3 rounded-sm" style={{ backgroundColor: COLORS.red }}></div>
-                          <span className="text-xs text-gray-600">Rejected</span>
-                        </div>
+
                         <div className="flex items-center gap-1.5 border-l border-gray-200 pl-3 ml-1">
                           <span className="text-xs font-bold text-gray-700">CAP:</span>
                           <span className="text-xs text-gray-500">Total Parts per Bucket</span>
                         </div>
+
+                        {/* <div className="flex items-center gap-1.5">
+                          <div className="w-3 h-3 rounded-sm" style={{ backgroundColor: COLORS.amber }}></div>
+                          <span className="text-xs text-gray-600">Rework</span>
+                        </div> */}
+                        <div className="flex items-center gap-1.5">
+                          <div className="w-3 h-3 rounded-sm" style={{ backgroundColor: COLORS.red }}></div>
+                          <span className="text-xs text-gray-600">Rejected</span>
+                        </div>
+
+                        <div className="flex items-center gap-1.5">
+                          <div className="w-3 h-3 rounded-sm" style={{ backgroundColor: COLORS.green }}></div>
+                          <span className="text-xs text-gray-600">Good Parts</span>
+                        </div>
+
                       </div>
                     )}
                   />
@@ -555,9 +559,9 @@ export default function ReportsPage() {
                     <LabelList dataKey="good" content={(props) => <CustomQuantityLabel {...props} color={COLORS.green} />} position="top" />
                     <LabelList dataKey="totalParts" content={<CustomCapacityLabel />} position="top" />
                   </Bar>
-                  <Bar dataKey="defective" name="Rework" fill={COLORS.amber} radius={[6, 6, 0, 0]} isAnimationActive={false}>
+                  {/* <Bar dataKey="defective" name="Rework" fill={COLORS.amber} radius={[6, 6, 0, 0]} isAnimationActive={false}>
                     <LabelList dataKey="defective" content={(props) => <CustomQuantityLabel {...props} color={COLORS.amber} />} position="top" />
-                  </Bar>
+                  </Bar> */}
                   <Bar dataKey="rejected" name="Rejected" fill={COLORS.red} radius={[6, 6, 0, 0]} isAnimationActive={false}>
                     <LabelList dataKey="rejected" content={(props) => <CustomQuantityLabel {...props} color={COLORS.red} />} position="top" />
                   </Bar>
