@@ -89,7 +89,7 @@ const DEFECT_TYPES = [
   { key: 'pvcPeelOff', label: 'PVC Peel Off', color: 'purple' },
 ];
 
-export default function QCPage() {
+function QCPageContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const directBasketId = searchParams.get('basketId');
@@ -956,5 +956,17 @@ export default function QCPage() {
         )
       )}
     </div>
+  );
+}
+
+export default function QCPage() {
+  return (
+    <React.Suspense fallback={
+      <div className="flex items-center justify-center min-h-screen">
+        <Loader2 className="w-8 h-8 text-indigo-500 animate-spin" />
+      </div>
+    }>
+      <QCPageContent />
+    </React.Suspense>
   );
 }
