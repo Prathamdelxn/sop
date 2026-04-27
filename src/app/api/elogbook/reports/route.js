@@ -73,11 +73,11 @@ export async function GET(request) {
     const quantityData = [];
     const basketDetails = [];
     let totalDefects = {
-      watermark1: 0,
-      watermark2: 0,
-      maskingProblem: 0,
-      scratchMark: 0,
-      pvcPeelOff: 0
+      watermark1: { count: 0, buckets: [] },
+      watermark2: { count: 0, buckets: [] },
+      maskingProblem: { count: 0, buckets: [] },
+      scratchMark: { count: 0, buckets: [] },
+      pvcPeelOff: { count: 0, buckets: [] }
     };
 
     let totalBaskets = 0;
@@ -115,10 +115,17 @@ export async function GET(request) {
           totalParts: totalParts,
         });
 
-        // Aggregate defects
+        // Aggregate defects with bucket info
         if (qc.defects) {
           Object.keys(totalDefects).forEach(key => {
-            totalDefects[key] += qc.defects[key] || 0;
+            const count = qc.defects[key] || 0;
+            if (count > 0) {
+              totalDefects[key].count += count;
+              totalDefects[key].buckets.push({
+                basketNumber: basket.basketNumber,
+                count: count
+              });
+            }
           });
         }
 
@@ -149,14 +156,15 @@ export async function GET(request) {
     });
 
     const defectTrendData = Object.entries(totalDefects)
-      .filter(([_, value]) => value > 0)
-      .map(([key, value]) => ({
+      .filter(([_, data]) => data.count > 0)
+      .map(([key, data]) => ({
         name: key === "watermark1" ? "Watermark 1"
           : key === "watermark2" ? "Watermark 2"
             : key === "maskingProblem" ? "Masking Problem"
               : key === "scratchMark" ? "Scratch Mark"
                 : "PVC Peel Off",
-        count: value,
+        count: data.count,
+        buckets: data.buckets,
       }));
 
     const responseData = {

@@ -38,7 +38,12 @@ export default function ReportsPage() {
         if (data.success) {
           setReportData(data.data);
           if (data.data.defectTrendData?.length > 0) {
-            setDefectPieData(data.data.defectTrendData.map((d, i) => ({ name: d.name, value: d.count, color: PIE_COLORS[i % PIE_COLORS.length] })));
+            setDefectPieData(data.data.defectTrendData.map((d, i) => ({
+              name: d.name,
+              value: d.count,
+              buckets: d.buckets || [],
+              color: PIE_COLORS[i % PIE_COLORS.length]
+            })));
           } else {
             setDefectPieData([{ name: 'Scratch Mark', value: 10, color: '#ef4444' }, { name: 'Masking Problem', value: 7, color: '#f59e0b' }, { name: 'Watermark 2', value: 5, color: '#3b82f6' }, { name: 'PVC Peel Off', value: 1, color: '#8b5cf6' }, { name: 'Watermark 1', value: 1, color: '#10b981' }]);
           }
@@ -212,6 +217,32 @@ export default function ReportsPage() {
                 </ResponsiveContainer>
               </div>
               <CustomPieLegend payload={defectPieData.map(d => ({ value: d.name, color: d.color, payload: d }))} />
+
+              {/* Bucket-wise breakdown grid */}
+              <div className="mt-10 pt-8 border-t border-gray-50">
+                <h4 className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-4 text-center">Detailed Bucket-wise Breakdown</h4>
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-4">
+                  {defectPieData.map((defect, idx) => (
+                    <div key={idx} className="bg-gray-50/50 rounded-2xl p-4 border border-gray-100 flex flex-col">
+                      <div className="flex items-center gap-2 mb-3 pb-2 border-b border-gray-200/50">
+                        <div className="w-2.5 h-2.5 rounded-full shadow-sm" style={{ backgroundColor: defect.color }}></div>
+                        <span className="font-bold text-gray-800 text-[13px] truncate" title={defect.name}>{defect.name}</span>
+                        <span className="ml-auto text-[11px] font-black text-indigo-600 bg-white px-2 py-0.5 rounded-lg border border-indigo-50 shadow-sm">{defect.value}</span>
+                      </div>
+                      <div className="space-y-1.5 max-h-40 overflow-y-auto pr-1 custom-scrollbar">
+                        {defect.buckets?.length > 0 ? defect.buckets.map((b, bIdx) => (
+                          <div key={bIdx} className="flex justify-between items-center text-[11px] py-1 px-2 bg-white/60 rounded-lg border border-gray-50 shadow-[0_1px_2px_rgba(0,0,0,0.02)]">
+                            <span className="text-gray-500 font-medium">Basket {b.basketNumber}</span>
+                            <span className="font-bold text-gray-900">{b.count}</span>
+                          </div>
+                        )) : (
+                          <p className="text-[10px] text-gray-400 text-center py-2 italic">No bucket data</p>
+                        )}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
             </div>
           )}
 

@@ -31,13 +31,34 @@ export const CustomTooltip = ({ active, payload, label }) => {
 /** Custom tooltip for pie chart */
 export const CustomPieTooltip = ({ active, payload, totalDefects }) => {
   if (!active || !payload?.length) return null;
-  const { name, value } = payload[0].payload;
+  const { name, value, buckets } = payload[0].payload;
   const percentage = ((value / totalDefects) * 100).toFixed(1);
+
   return (
-    <div className="bg-white px-4 py-3 rounded-xl shadow-xl border border-gray-100 text-sm">
-      <p className="font-semibold text-gray-900">{name}</p>
-      <p className="text-gray-600">Count: <span className="font-bold text-gray-900">{value}</span></p>
-      <p className="text-gray-500">{percentage}% of total defects</p>
+    <div className="bg-white px-4 py-3 rounded-xl shadow-xl border border-gray-100 text-sm min-w-[200px]">
+      <p className="font-bold text-gray-900 border-b border-gray-100 pb-2 mb-2">{name}</p>
+      <div className="flex justify-between items-center mb-1">
+        <span className="text-gray-600">Total Count:</span>
+        <span className="font-bold text-gray-900">{value}</span>
+      </div>
+      <div className="flex justify-between items-center mb-2">
+        <span className="text-gray-500 text-xs">Share:</span>
+        <span className="text-indigo-600 font-semibold text-xs">{percentage}%</span>
+      </div>
+
+      {buckets && buckets.length > 0 && (
+        <div className="mt-3 pt-2 border-t border-gray-100">
+          <p className="text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-2">Basket-wise Breakdown</p>
+          <div className="max-h-40 overflow-y-auto space-y-1 pr-1 custom-scrollbar">
+            {buckets.map((b, idx) => (
+              <div key={idx} className="flex justify-between items-center text-xs bg-gray-50/50 px-2 py-1.5 rounded-lg border border-gray-100/50">
+                <span className="text-gray-500">Basket {b.basketNumber}</span>
+                <span className="font-bold text-gray-900">{b.count}</span>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
     </div>
   );
 };
