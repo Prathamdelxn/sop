@@ -72,15 +72,46 @@ export default function ProductionPage() {
     setSelectedCustomer(customerName);
     setSelectedPart('');
     setSelectedMasterData(null);
+    if (customerName) {
+      localStorage.setItem('ELOGBOOK_PRODUCTION_CUSTOMER', customerName);
+      localStorage.removeItem('ELOGBOOK_PRODUCTION_PART');
+    } else {
+      localStorage.removeItem('ELOGBOOK_PRODUCTION_CUSTOMER');
+      localStorage.removeItem('ELOGBOOK_PRODUCTION_PART');
+    }
   };
 
   const handlePartChange = (partId) => {
     const part = masterDataList.find((md) => md._id === partId);
     setSelectedPart(partId);
     setSelectedMasterData(part);
-    if (part) fetchActiveBatch(partId);
-    else setActiveBatch(null);
+    if (part) {
+      fetchActiveBatch(partId);
+      localStorage.setItem('ELOGBOOK_PRODUCTION_PART', partId);
+    } else {
+      setActiveBatch(null);
+      localStorage.removeItem('ELOGBOOK_PRODUCTION_PART');
+    }
   };
+
+  // --- Persist Selection: Load ---
+  useEffect(() => {
+    const savedCustomer = localStorage.getItem('ELOGBOOK_PRODUCTION_CUSTOMER');
+    const savedPart = localStorage.getItem('ELOGBOOK_PRODUCTION_PART');
+
+    if (savedCustomer && !selectedCustomer) {
+      setSelectedCustomer(savedCustomer);
+    }
+
+    if (savedPart && !selectedPart && masterDataList.length > 0) {
+      const part = masterDataList.find((md) => md._id === savedPart);
+      if (part) {
+        setSelectedPart(savedPart);
+        setSelectedMasterData(part);
+        fetchActiveBatch(savedPart);
+      }
+    }
+  }, [masterDataList, fetchActiveBatch, selectedCustomer, selectedPart]);
 
   // --- Barcode handler ---
   const handleBarcodeScan = useCallback(

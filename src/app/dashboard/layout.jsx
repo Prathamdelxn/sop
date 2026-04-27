@@ -56,8 +56,8 @@ const allNavigationItems = [
   { name: 'Review Access', href: '/dashboard/review-page', icon: Eye, current: false, category: 'CHECKLIST' },
 
   // ── Non-Pharma E-Logbook ──
-  { name: 'Bucket Execution', href: '/dashboard/elogbook/production', icon: Package, current: false, category: 'NON-PHARMA-ELOGBOOK' },
   { name: 'Master Data Management', href: '/dashboard/elogbook/master-data', icon: Database, current: false, category: 'NON-PHARMA-ELOGBOOK' },
+  { name: 'Bucket Execution', href: '/dashboard/elogbook/production', icon: Package, current: false, category: 'NON-PHARMA-ELOGBOOK' },
   { name: 'Quality Check', href: '/dashboard/elogbook/qc', icon: ShieldCheck, current: false, category: 'NON-PHARMA-ELOGBOOK' },
   { name: 'Graphical Representation', href: '/dashboard/elogbook/reports', icon: BarChart3, current: false, category: 'NON-PHARMA-ELOGBOOK' },
 ];
@@ -160,7 +160,7 @@ export default function DashboardLayout({ children }) {
       if (userData.role === 'company-admin') {
         // Company admins see all tasks for enabled features
         // No need to fetch worker tasks
-        userTasks = []; 
+        userTasks = [];
       } else {
         // Regular users/workers - fetch their specific assigned tasks
         const res = await fetch(`/api/superAdmin/users/fetch-by-id/${userData?.id}`);
@@ -387,7 +387,7 @@ export default function DashboardLayout({ children }) {
                         </div>
                         <ChevronDown className={`w-3 h-3 transition-transform duration-300 ${isExpanded ? 'rotate-180' : ''}`} />
                       </button>
-                      
+
                       {isExpanded && (
                         <ul className="space-y-1">
                           {categoryItems.map((item, index) => (
