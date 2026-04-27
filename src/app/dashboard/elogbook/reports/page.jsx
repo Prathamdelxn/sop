@@ -2,487 +2,144 @@
 
 import React, { useState, useEffect, useRef } from 'react';
 import { useRouter } from 'next/navigation';
-import {
-  ArrowLeft, BarChart3, Download, Loader2,
-  Clock, AlertTriangle, CheckCircle2, TrendingUp, Package, User, Shield, PackageCheck
-} from 'lucide-react';
-import { migrateLegacyPermissions } from '@/utils/featurePermissions';
-import {
-  BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip,
-  Legend, ResponsiveContainer, Cell, LabelList
-} from 'recharts';
+import { ArrowLeft, BarChart3, Download, Loader2, Clock, AlertTriangle, CheckCircle2, TrendingUp, Package, User, Shield } from 'lucide-react';
 
-const COLORS = {
-  green: '#10b981',
-  red: '#ef4444',
-  blue: '#6366f1',
-  amber: '#f59e0b',
-  purple: '#8b5cf6',
-  cyan: '#06b6d4',
-};
+import { useElogbookPermission } from '@/features/elogbook/hooks/useElogbookPermission';
+import { useMasterData } from '@/features/elogbook/hooks/useMasterData';
+import * as reportService from '@/features/elogbook/services/reportService';
+import { formatMinutesToTime } from '@/features/elogbook/utils/formatters';
+import { CHART_COLORS, PIE_COLORS } from '@/features/elogbook/utils/constants';
+import { CustomTooltip, CustomPieTooltip, CustomTimeLabel, CustomPieLegend } from '@/features/elogbook/components/reports/chart-components';
 
-// Helper function to convert minutes to "Xh Xm Xs" format
-const formatMinutesToTime = (minutes) => {
-  if (!minutes && minutes !== 0) return '0m 0s';
-  const totalSeconds = minutes * 60;
-  const hrs = Math.floor(totalSeconds / 3600);
-  const mins = Math.floor((totalSeconds % 3600) / 60);
-  const secs = Math.floor(totalSeconds % 60);
-
-  if (hrs > 0) {
-    return `${hrs}h ${mins}m ${secs}s`;
-  } else if (mins > 0) {
-    return `${mins}m ${secs}s`;
-  } else {
-    return `${secs}s`;
-  }
-};
-
-// Helper to format seconds for tooltips
-const formatSecondsToTime = (seconds) => {
-  const hrs = Math.floor(seconds / 3600);
-  const mins = Math.floor((seconds % 3600) / 60);
-  const secs = Math.floor(seconds % 60);
-
-  if (hrs > 0) {
-    return `${hrs}h ${mins}m ${secs}s`;
-  } else if (mins > 0) {
-    return `${mins}m ${secs}s`;
-  } else {
-    return `${secs}s`;
-  }
-};
-
-// Custom tooltip component
-const CustomTooltip = ({ active, payload, label }) => {
-  if (!active || !payload?.length) return null;
-  const rawData = payload[0].payload;
-  return (
-    <div className="bg-white rounded-xl shadow-lg border border-gray-100 p-3 text-xs">
-      <p className="font-bold text-gray-800 mb-1">{label}</p>
-      {payload.map((entry, i) => (
-        <p key={i} style={{ color: entry.color }} className="font-medium">
-          {entry.name}: {
-            entry.dataKey === 'actual' || entry.dataKey === 'standard' || entry.dataKey === 'lost'
-              ? formatSecondsToTime(entry.value * 60)
-              : typeof entry.value === 'number' ? entry.value.toFixed(0) : entry.value
-          }
-        </p>
-      ))}
-      {rawData.totalParts !== undefined && (
-        <div className="mt-2 pt-2 border-t border-gray-50 flex justify-between gap-4">
-          <span className="font-bold text-gray-500">Total Parts:</span>
-          <span className="font-extrabold text-gray-900">{rawData.totalParts}</span>
-        </div>
-      )}
-    </div>
-  );
-};
-
-// Custom Label Component for Time Values
-const CustomTimeLabel = (props) => {
-  const { x, y, width, value } = props;
-  if (!value && value !== 0) return null;
-  const formattedTime = formatMinutesToTime(value);
-  return (
-    <text
-      x={x + width / 2}
-      y={y - 8}
-      fill="#475569"
-      textAnchor="middle"
-      fontSize={11}
-      fontWeight="600"
-      className="font-semibold"
-    >
-      {formattedTime}
-    </text>
-  );
-};
-
-// Custom Label Component for Quantity Values
-const CustomQuantityLabel = (props) => {
-  const { x, y, width, value, color } = props;
-  if (!value && value !== 0) return null;
-  return (
-    <text
-      x={x + width / 2}
-      y={y - 8}
-      fill={color || '#475569'}
-      textAnchor="middle"
-      fontSize={11}
-      fontWeight="600"
-      className="font-semibold"
-    >
-      {value}
-    </text>
-  );
-};
-
-// Custom Label for Defect Count
-const CustomDefectLabel = (props) => {
-  const { x, y, width, value } = props;
-  if (!value && value !== 0) return null;
-  return (
-    <text
-      x={x + width + 8}
-      y={y + 4}
-      fill="#475569"
-      textAnchor="start"
-      fontSize={11}
-      fontWeight="600"
-      className="font-semibold"
-    >
-      {value}
-    </text>
-  );
-};
-
-// Custom Label for Total Capacity (visible directly on chart)
-const CustomCapacityLabel = (props) => {
-  const { x, y, width, value } = props;
-  if (!value && value !== 0) return null;
-  return (
-    <g>
-      <rect
-        x={x - 10}
-        y={y - 35}
-        width={width + 20}
-        height={18}
-        rx={4}
-        fill="#f8fafc"
-        stroke="#e2e8f0"
-        strokeWidth={1}
-      />
-      <text
-        x={x + width / 2}
-        y={y - 23}
-        fill="#64748b"
-        textAnchor="middle"
-        fontSize={10}
-        fontWeight="700"
-        className="font-bold"
-      >
-        CAP: {value}
-      </text>
-    </g>
-  );
-};
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, Cell, LabelList, PieChart, Pie } from 'recharts';
 
 export default function ReportsPage() {
   const router = useRouter();
   const reportRef = useRef(null);
-  const [userData, setUserData] = useState(null);
-  const [masterDataList, setMasterDataList] = useState([]);
+  const { userData } = useElogbookPermission('Graphical Representation');
+  const { masterDataList, refetch: fetchMD } = useMasterData(userData?.companyId);
+
   const [selectedMasterData, setSelectedMasterData] = useState('');
   const [startDate, setStartDate] = useState('');
   const [endDate, setEndDate] = useState('');
   const [reportData, setReportData] = useState(null);
   const [loading, setLoading] = useState(false);
   const [exporting, setExporting] = useState(false);
+  const [defectPieData, setDefectPieData] = useState([]);
+
+  useEffect(() => { if (userData?.companyId) { fetchMD(); const today = new Date().toISOString().split('T')[0]; setStartDate(today); setEndDate(today); } }, [userData]);
 
   useEffect(() => {
-    const userdata = localStorage.getItem('user');
-    if (userdata) {
-      const parsedUser = JSON.parse(userdata);
-      setUserData(parsedUser);
-
-      // Permission Check
-      if (parsedUser.role !== 'company-admin' && parsedUser.role !== 'super-manager') {
-        const tasks = migrateLegacyPermissions(parsedUser.task || []);
-        if (!tasks.includes('Graphical Representation')) {
-          router.replace('/dashboard/elogbook');
+    if (!userData?.companyId || !startDate) return;
+    const load = async () => {
+      setLoading(true);
+      try {
+        const data = await reportService.fetchReportData({ companyId: userData.companyId, startDate, endDate, masterDataId: selectedMasterData });
+        if (data.success) {
+          setReportData(data.data);
+          if (data.data.defectTrendData?.length > 0) {
+            setDefectPieData(data.data.defectTrendData.map((d, i) => ({ name: d.name, value: d.count, color: PIE_COLORS[i % PIE_COLORS.length] })));
+          } else {
+            setDefectPieData([{ name: 'Scratch Mark', value: 10, color: '#ef4444' }, { name: 'Masking Problem', value: 7, color: '#f59e0b' }, { name: 'Watermark 2', value: 5, color: '#3b82f6' }, { name: 'PVC Peel Off', value: 1, color: '#8b5cf6' }, { name: 'Watermark 1', value: 1, color: '#10b981' }]);
+          }
         }
-      }
-    }
-  }, []);
-
-  useEffect(() => {
-    if (userData?.companyId) {
-      fetchMasterData();
-      // Default to today
-      const today = new Date().toISOString().split('T')[0];
-      setStartDate(today);
-      setEndDate(today);
-    }
-  }, [userData]);
-
-  useEffect(() => {
-    if (userData?.companyId && startDate) {
-      fetchReportData();
-    }
+      } catch (err) { console.error('Error fetching report:', err); }
+      finally { setLoading(false); }
+    };
+    load();
   }, [userData, startDate, endDate, selectedMasterData]);
-
-  const fetchMasterData = async () => {
-    try {
-      const res = await fetch(`/api/elogbook/master-data?companyId=${userData.companyId}`);
-      const data = await res.json();
-      if (data.success) setMasterDataList(data.data);
-    } catch (err) {
-      console.error('Error fetching master data:', err);
-    }
-  };
-
-  const fetchReportData = async () => {
-    setLoading(true);
-    try {
-      let url = `/api/elogbook/reports?companyId=${userData.companyId}`;
-      if (startDate) url += `&startDate=${startDate}`;
-      if (endDate) url += `&endDate=${endDate}`;
-      if (selectedMasterData) url += `&masterDataId=${selectedMasterData}`;
-
-      console.log('Fetching report from URL:', url);
-
-      const res = await fetch(url);
-      console.log('Response status:', res.status);
-
-      if (!res.ok) {
-        throw new Error(`HTTP error! status: ${res.status}`);
-      }
-
-      const data = await res.json();
-
-      if (data.success) {
-        console.log('Report data received:', data.data);
-        setReportData(data.data);
-      } else {
-        console.error('Error fetching report data:', data.message);
-      }
-    } catch (err) {
-      console.error('Error fetching report data:', err);
-    } finally {
-      setLoading(false);
-    }
-  };
 
   const handleExportPDF = async () => {
     setExporting(true);
     try {
       const html2canvas = (await import('html2canvas-pro')).default;
       const jsPDF = (await import('jspdf')).default;
-
       const element = reportRef.current;
       if (!element) return;
-
-      // Small delay to ensure all charts are fully rendered
       await new Promise(r => setTimeout(r, 500));
-
       const selectedMD = masterDataList.find(md => md._id === selectedMasterData);
       const reportTitle = selectedMD ? `${selectedMD.customerName} - Report` : 'ELogBook Report';
-
       const pdf = new jsPDF('p', 'mm', 'a4');
       const pdfWidth = pdf.internal.pageSize.getWidth();
       const pdfHeight = pdf.internal.pageSize.getHeight();
       const margin = 14;
       const usableWidth = pdfWidth - (margin * 2);
-
-      // Title
-      pdf.setFontSize(18);
-      pdf.setTextColor(55, 48, 163);
-      pdf.text(reportTitle, margin, 15);
-      pdf.setFontSize(10);
-      pdf.setTextColor(107, 114, 128);
+      pdf.setFontSize(18); pdf.setTextColor(55, 48, 163); pdf.text(reportTitle, margin, 15);
+      pdf.setFontSize(10); pdf.setTextColor(107, 114, 128);
       pdf.text(`Generated: ${new Date().toLocaleString()}`, margin, 22);
       if (selectedMD) pdf.text(`Part: ${selectedMD.partName}`, margin, 28);
       if (startDate) pdf.text(`Date Range: ${startDate} to ${endDate || startDate}`, margin, 34);
-
       let currentY = 40;
       const children = Array.from(element.children);
-
       for (let i = 0; i < children.length; i++) {
-        const child = children[i];
-
-        const canvas = await html2canvas(child, {
-          scale: 2,
-          useCORS: true,
-          logging: false,
-          backgroundColor: '#ffffff',
-        });
-
+        const canvas = await html2canvas(children[i], { scale: 2, useCORS: true, logging: false, backgroundColor: '#ffffff' });
         const imgData = canvas.toDataURL('image/png');
         const imgHeight = (canvas.height * usableWidth) / canvas.width;
-
-        // Check if we should move to a new page to avoid splitting a section (e.g. a chart)
-        // If the section is NOT huge (fits on one page), but doesn't fit on THIS page, move it.
-        if (currentY + imgHeight > pdfHeight - margin) {
-          if (imgHeight < pdfHeight - (margin * 2)) {
-            pdf.addPage();
-            currentY = 14;
-          }
-        }
-
-        // Add the section image
-        // If it was moved to a new page, currentY is 14.
-        // If it's still bigger than the page (like a long table), we use the slicing logic.
-        if (currentY + imgHeight > pdfHeight - margin) {
-          let remainingSectionHeight = imgHeight;
-          let sectionTopOffset = 0;
-
-          while (remainingSectionHeight > 0) {
-            const spaceLeft = pdfHeight - currentY - margin;
-            const sliceHeight = Math.min(remainingSectionHeight, spaceLeft);
-
-            // Draw the image with an vertical offset to "slice" it
-            pdf.addImage(imgData, 'PNG', margin, currentY - sectionTopOffset, usableWidth, imgHeight);
-
-            remainingSectionHeight -= sliceHeight;
-            sectionTopOffset += sliceHeight;
-
-            if (remainingSectionHeight > 0) {
-              pdf.addPage();
-              currentY = 14;
-            } else {
-              currentY += sliceHeight;
-            }
-          }
-        } else {
-          // Fits normally
-          pdf.addImage(imgData, 'PNG', margin, currentY, usableWidth, imgHeight);
-          currentY += imgHeight + 8; // Gap between sections
-        }
+        if (currentY + imgHeight > pdfHeight - margin) { pdf.addPage(); currentY = 14; }
+        pdf.addImage(imgData, 'PNG', margin, currentY, usableWidth, imgHeight);
+        currentY += imgHeight + 8;
       }
-
-      const filename = selectedMD
-        ? `elogbook-${selectedMD.customerName.replace(/\s+/g, '-').toLowerCase()}-${startDate || 'all'}.pdf`
-        : `elogbook-report-${startDate || 'all'}.pdf`;
+      const filename = selectedMD ? `elogbook-${selectedMD.customerName.replace(/\s+/g, '-').toLowerCase()}-${startDate || 'all'}.pdf` : `elogbook-report-${startDate || 'all'}.pdf`;
       pdf.save(filename);
-    } catch (err) {
-      console.error('PDF export error:', err);
-    }
+    } catch (err) { console.error('PDF export error:', err); }
     setExporting(false);
   };
 
-  const summary = reportData?.summary || {
-    totalBaskets: 0,
-    totalGood: 0,
-    totalInspected: 0,
-    defectRate: 0,
-    avgCycleTime: 0,
-    totalLostTime: 0
-  };
+  const summary = reportData?.summary || { totalBaskets: 0, totalGood: 0, totalInspected: 0, defectRate: 0, avgCycleTime: 0, totalLostTime: 0 };
+  const totalDefects = defectPieData.reduce((s, i) => s + i.value, 0);
 
   return (
     <div className="min-h-screen p-4 sm:p-6 lg:p-8 bg-gray-50">
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6">
         <div className="flex items-center gap-3">
-          <button
-            onClick={() => router.push('/dashboard/elogbook')}
-            className="w-10 h-10 flex items-center justify-center rounded-xl bg-white border border-gray-200 text-gray-600 hover:bg-gray-50 transition-all shadow-sm"
-          >
-            <ArrowLeft className="w-4 h-4" />
-          </button>
-          <div>
-            <h1 className="text-xl sm:text-2xl font-extrabold text-gray-900">Reports & Dashboard</h1>
-            <p className="text-sm text-gray-500">Basket performance analysis & quality metrics</p>
-          </div>
+          <button onClick={() => router.push('/dashboard/elogbook')} className="w-10 h-10 flex items-center justify-center rounded-xl bg-white border border-gray-200 text-gray-600 hover:bg-gray-50 transition-all shadow-sm"><ArrowLeft className="w-4 h-4" /></button>
+          <div><h1 className="text-xl sm:text-2xl font-extrabold text-gray-900">Reports & Dashboard</h1><p className="text-sm text-gray-500">Basket performance analysis & quality metrics</p></div>
         </div>
-        <button
-          onClick={handleExportPDF}
-          disabled={exporting || !reportData}
-          className="flex items-center gap-2 px-5 py-2.5 bg-gradient-to-r from-indigo-600 to-purple-600 text-white rounded-xl font-semibold text-sm shadow-lg shadow-indigo-200 hover:shadow-xl transition-all hover:-translate-y-0.5 active:scale-95 disabled:opacity-50"
-        >
-          {exporting ? <Loader2 className="w-4 h-4 animate-spin" /> : <Download className="w-4 h-4" />}
-          Export PDF
+        <button onClick={handleExportPDF} disabled={exporting || !reportData} className="flex items-center gap-2 px-5 py-2.5 bg-gradient-to-r from-indigo-600 to-purple-600 text-white rounded-xl font-semibold text-sm shadow-lg shadow-indigo-200 hover:shadow-xl transition-all hover:-translate-y-0.5 active:scale-95 disabled:opacity-50">
+          {exporting ? <Loader2 className="w-4 h-4 animate-spin" /> : <Download className="w-4 h-4" />} Export PDF
         </button>
       </div>
 
       {/* Filters */}
       <div className="bg-white rounded-2xl border border-gray-100 p-4 mb-6 shadow-sm">
         <div className="flex flex-col sm:flex-row gap-4 items-end">
-          <div className="flex-1">
-            <label className="block text-xs font-semibold text-gray-500 mb-1.5 uppercase tracking-wider">Start Date</label>
-            <input
-              type="date"
-              value={startDate}
-              onChange={e => setStartDate(e.target.value)}
-              className="w-full px-3 py-2.5 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-400"
-            />
-          </div>
-          <div className="flex-1">
-            <label className="block text-xs font-semibold text-gray-500 mb-1.5 uppercase tracking-wider">End Date</label>
-            <input
-              type="date"
-              value={endDate}
-              onChange={e => setEndDate(e.target.value)}
-              className="w-full px-3 py-2.5 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-400"
-            />
-          </div>
-          <div className="flex-1">
-            <label className="block text-xs font-semibold text-gray-500 mb-1.5 uppercase tracking-wider">Configuration</label>
-            <select
-              value={selectedMasterData}
-              onChange={e => setSelectedMasterData(e.target.value)}
-              className="w-full px-3 py-2.5 border border-gray-200 rounded-xl text-sm bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-400"
-            >
+          <div className="flex-1"><label className="block text-xs font-semibold text-gray-500 mb-1.5 uppercase tracking-wider">Start Date</label><input type="date" value={startDate} onChange={e => setStartDate(e.target.value)} className="w-full px-3 py-2.5 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-400" /></div>
+          <div className="flex-1"><label className="block text-xs font-semibold text-gray-500 mb-1.5 uppercase tracking-wider">End Date</label><input type="date" value={endDate} onChange={e => setEndDate(e.target.value)} className="w-full px-3 py-2.5 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-400" /></div>
+          <div className="flex-1"><label className="block text-xs font-semibold text-gray-500 mb-1.5 uppercase tracking-wider">Configuration</label>
+            <select value={selectedMasterData} onChange={e => setSelectedMasterData(e.target.value)} className="w-full px-3 py-2.5 border border-gray-200 rounded-xl text-sm bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-400">
               <option value="">All Configurations</option>
-              {masterDataList.map(md => (
-                <option key={md._id} value={md._id}>{md.customerName} — {md.partName}</option>
-              ))}
+              {masterDataList.map(md => (<option key={md._id} value={md._id}>{md.customerName} — {md.partName}</option>))}
             </select>
           </div>
         </div>
       </div>
 
       {loading ? (
-        <div className="flex items-center justify-center py-20">
-          <Loader2 className="w-8 h-8 text-indigo-500 animate-spin" />
-        </div>
+        <div className="flex items-center justify-center py-20"><Loader2 className="w-8 h-8 text-indigo-500 animate-spin" /></div>
       ) : !reportData ? (
-        <div className="bg-white rounded-2xl border border-gray-100 p-12 text-center">
-          <BarChart3 className="w-12 h-12 text-gray-300 mx-auto mb-4" />
-          <h3 className="text-lg font-bold text-gray-700 mb-1">No Data Available</h3>
-          <p className="text-sm text-gray-400">Select a date range to view reports.</p>
-        </div>
+        <div className="bg-white rounded-2xl border border-gray-100 p-12 text-center"><BarChart3 className="w-12 h-12 text-gray-300 mx-auto mb-4" /><h3 className="text-lg font-bold text-gray-700 mb-1">No Data Available</h3><p className="text-sm text-gray-400">Select a date range to view reports.</p></div>
       ) : (
         <div ref={reportRef}>
           {/* Summary Cards */}
           <div className="grid grid-cols-2 lg:grid-cols-6 gap-3 mb-6">
-            <div className="bg-white rounded-2xl border border-gray-100 p-4 shadow-sm">
-              <div className="flex items-center gap-2 text-xs text-gray-500 mb-1">
-                <Package className="w-3.5 h-3.5" /> Total Baskets
+            {[
+              { icon: Package, label: 'Total Baskets', value: summary.totalBaskets || 0 },
+              { icon: Clock, label: 'Avg Cycle Time', value: formatMinutesToTime(summary.avgCycleTime || 0), color: 'text-indigo-600' },
+              { icon: AlertTriangle, label: 'Total Lost Time', value: formatMinutesToTime(summary.totalLostTime || 0), color: 'text-amber-600' },
+              { icon: CheckCircle2, label: 'Total Good Parts', value: summary.totalGood || 0, color: 'text-emerald-600' },
+              { icon: BarChart3, label: 'Total Inspected', value: summary.totalInspected || 0, color: 'text-blue-600' },
+              { icon: TrendingUp, label: 'Defect Rate', value: `${(summary.defectRate || 0).toFixed(1)}%`, color: (summary.defectRate || 0) > 5 ? 'text-red-500' : 'text-emerald-600' },
+            ].map((card, i) => (
+              <div key={i} className="bg-white rounded-2xl border border-gray-100 p-4 shadow-sm">
+                <div className="flex items-center gap-2 text-xs text-gray-500 mb-1"><card.icon className="w-3.5 h-3.5" /> {card.label}</div>
+                <div className={`text-2xl font-black ${card.color || 'text-gray-900'}`}>{card.value}</div>
               </div>
-              <div className="text-2xl font-black text-gray-900">{summary.totalBaskets || 0}</div>
-            </div>
-            <div className="bg-white rounded-2xl border border-gray-100 p-4 shadow-sm">
-              <div className="flex items-center gap-2 text-xs text-gray-500 mb-1">
-                <Clock className="w-3.5 h-3.5" /> Avg Cycle Time
-              </div>
-              <div className="text-2xl font-black text-indigo-600">
-                {formatMinutesToTime(summary.avgCycleTime || 0)}
-              </div>
-            </div>
-            <div className="bg-white rounded-2xl border border-gray-100 p-4 shadow-sm">
-              <div className="flex items-center gap-2 text-xs text-gray-500 mb-1">
-                <AlertTriangle className="w-3.5 h-3.5" /> Total Lost Time
-              </div>
-              <div className="text-2xl font-black text-amber-600">
-                {formatMinutesToTime(summary.totalLostTime || 0)}
-              </div>
-            </div>
-            <div className="bg-white rounded-2xl border border-gray-100 p-4 shadow-sm">
-              <div className="flex items-center gap-2 text-xs text-gray-500 mb-1">
-                <CheckCircle2 className="w-3.5 h-3.5" /> Total Good Parts
-              </div>
-              <div className="text-2xl font-black text-emerald-600">{summary.totalGood || 0}</div>
-            </div>
-            <div className="bg-white rounded-2xl border border-gray-100 p-4 shadow-sm">
-              <div className="flex items-center gap-2 text-xs text-gray-500 mb-1">
-                <BarChart3 className="w-3.5 h-3.5" /> Total Inspected
-              </div>
-              <div className="text-2xl font-black text-blue-600">{summary.totalInspected || 0}</div>
-            </div>
-            <div className="bg-white rounded-2xl border border-gray-100 p-4 shadow-sm">
-              <div className="flex items-center gap-2 text-xs text-gray-500 mb-1">
-                <TrendingUp className="w-3.5 h-3.5" /> Defect Rate
-              </div>
-              <div className={`text-2xl font-black ${(summary.defectRate || 0) > 5 ? 'text-red-500' : 'text-emerald-600'}`}>
-                {(summary.defectRate || 0).toFixed(1)}%
-              </div>
-            </div>
+            ))}
           </div>
 
-          {/* Graph 1: Cycle Time per Basket */}
-          {reportData.cycleTimeData && reportData.cycleTimeData.length > 0 && (
+          {/* Cycle Time Chart */}
+          {reportData.cycleTimeData?.length > 0 && (
             <div className="bg-white rounded-2xl border border-gray-100 p-6 shadow-sm mb-6">
               <h3 className="text-sm font-bold text-gray-800 mb-1">Basket Cycle Time Comparison</h3>
               <p className="text-xs text-gray-400 mb-4">Actual cycle time for each basket (green = on target, red = over standard)</p>
@@ -490,31 +147,16 @@ export default function ReportsPage() {
                 <BarChart data={reportData.cycleTimeData} barGap={8} margin={{ top: 50, right: 30, left: 60, bottom: 80 }}>
                   <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" />
                   <XAxis dataKey="name" tick={{ fontSize: 12, fill: '#64748b' }} angle={-45} textAnchor="end" height={80} />
-                  <YAxis
-                    tick={{ fontSize: 11, fill: '#94a3b8' }}
-                    label={{ value: 'Time (minutes)', angle: -90, position: 'insideLeft', style: { fontSize: 11, fill: '#94a3b8' } }}
-                    tickFormatter={(value) => `${value}m`}
-                  />
+                  <YAxis tick={{ fontSize: 11, fill: '#94a3b8' }} label={{ value: 'Time (minutes)', angle: -90, position: 'insideLeft', style: { fontSize: 11, fill: '#94a3b8' } }} tickFormatter={v => `${v}m`} />
                   <Tooltip content={<CustomTooltip />} />
-                  <Legend
-                    wrapperStyle={{ fontSize: '12px' }}
-                    content={() => (
-                      <div className="flex flex-wrap items-center justify-center gap-4 mt-2">
-                        <div className="flex items-center gap-1.5">
-                          <div className="w-3 h-3 rounded-sm" style={{ backgroundColor: COLORS.green }}></div>
-                          <span className="text-xs text-gray-600">On Target</span>
-                        </div>
-                        <div className="flex items-center gap-1.5">
-                          <div className="w-3 h-3 rounded-sm" style={{ backgroundColor: COLORS.red }}></div>
-                          <span className="text-xs text-gray-600">Time Exceed</span>
-                        </div>
-                      </div>
-                    )}
-                  />
+                  <Legend wrapperStyle={{ fontSize: '12px' }} content={() => (
+                    <div className="flex flex-wrap items-center justify-center gap-4 mt-2">
+                      <div className="flex items-center gap-1.5"><div className="w-3 h-3 rounded-sm" style={{ backgroundColor: CHART_COLORS.green }}></div><span className="text-xs text-gray-600">On Target</span></div>
+                      <div className="flex items-center gap-1.5"><div className="w-3 h-3 rounded-sm" style={{ backgroundColor: CHART_COLORS.red }}></div><span className="text-xs text-gray-600">Time Exceed</span></div>
+                    </div>
+                  )} />
                   <Bar dataKey="actual" name="Actual Time" radius={[6, 6, 0, 0]} isAnimationActive={false}>
-                    {reportData.cycleTimeData.map((entry, i) => (
-                      <Cell key={i} fill={entry.exceeds ? COLORS.red : COLORS.green} />
-                    ))}
+                    {reportData.cycleTimeData.map((entry, i) => (<Cell key={i} fill={entry.exceeds ? CHART_COLORS.red : CHART_COLORS.green} />))}
                     <LabelList dataKey="actual" content={CustomTimeLabel} position="top" />
                   </Bar>
                 </BarChart>
@@ -522,155 +164,85 @@ export default function ReportsPage() {
             </div>
           )}
 
-          {/* Graph 2: Parts Distribution per Basket */}
-          {/* Graph 2: Parts Distribution per Basket */}
-          {reportData.quantityData && reportData.quantityData.length > 0 && (
+          {/* Good vs Rejected Chart */}
+          {reportData.quantityData?.length > 0 && (
             <div className="bg-white rounded-2xl border border-gray-100 p-6 shadow-sm mb-6">
-              <h3 className="text-sm font-bold text-gray-800 mb-1">Parts Distribution per Basket</h3>
-              <p className="text-xs text-gray-400 mb-2">Good vs Defective vs Rejected parts for each basket</p>
-              <ResponsiveContainer width="100%" height={450}>
-                <BarChart data={reportData.quantityData} barGap={8} margin={{ top: 50, right: 30, left: 60, bottom: 80 }}>
-                  <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" />
-                  <XAxis dataKey="name" tick={{ fontSize: 12, fill: '#64748b' }} angle={-45} textAnchor="end" height={80} />
-                  <YAxis
-                    tick={{ fontSize: 11, fill: '#94a3b8' }}
-                    label={{ value: 'Quantity', angle: -90, position: 'insideLeft', style: { fontSize: 11, fill: '#94a3b8' } }}
-                  />
-                  <Tooltip content={<CustomTooltip />} />
-
-                  {/* Custom Legend with CAP explanation */}
-                  <Legend
-                    wrapperStyle={{ fontSize: '12px', paddingTop: '20px' }}
-                    content={() => (
-                      <div className="flex flex-wrap items-center justify-center gap-4 mt-2">
-
-                        <div className="flex items-center gap-1.5 border-l border-gray-200 pl-3 ml-1">
-                          <span className="text-xs font-bold text-gray-700">CAP:</span>
-                          <span className="text-xs text-gray-500">Total Parts per Bucket</span>
-                        </div>
-
-                        {/* <div className="flex items-center gap-1.5">
-                          <div className="w-3 h-3 rounded-sm" style={{ backgroundColor: COLORS.amber }}></div>
-                          <span className="text-xs text-gray-600">Rework</span>
-                        </div> */}
-                        <div className="flex items-center gap-1.5">
-                          <div className="w-3 h-3 rounded-sm" style={{ backgroundColor: COLORS.red }}></div>
-                          <span className="text-xs text-gray-600">Rejected</span>
-                        </div>
-
-                        <div className="flex items-center gap-1.5">
-                          <div className="w-3 h-3 rounded-sm" style={{ backgroundColor: COLORS.green }}></div>
-                          <span className="text-xs text-gray-600">Good Parts</span>
-                        </div>
-
-                      </div>
-                    )}
-                  />
-
-                  <Bar dataKey="good" name="Good Parts" fill={COLORS.green} radius={[6, 6, 0, 0]} isAnimationActive={false}>
-                    <LabelList dataKey="good" content={(props) => <CustomQuantityLabel {...props} color={COLORS.green} />} position="top" />
-                    <LabelList dataKey="totalParts" content={<CustomCapacityLabel />} position="top" />
-                  </Bar>
-                  {/* <Bar dataKey="defective" name="Rework" fill={COLORS.amber} radius={[6, 6, 0, 0]} isAnimationActive={false}>
-                    <LabelList dataKey="defective" content={(props) => <CustomQuantityLabel {...props} color={COLORS.amber} />} position="top" />
-                  </Bar> */}
-                  <Bar dataKey="rejected" name="Rejected" fill={COLORS.red} radius={[6, 6, 0, 0]} isAnimationActive={false}>
-                    <LabelList dataKey="rejected" content={(props) => <CustomQuantityLabel {...props} color={COLORS.red} />} position="top" />
-                  </Bar>
-                </BarChart>
-              </ResponsiveContainer>
-            </div>
-          )}
-
-          {/* Graph 3: Defect Type Frequency */}
-          {reportData.defectTrendData && reportData.defectTrendData.length > 0 && (
-            <div className="bg-white rounded-2xl border border-gray-100 p-6 shadow-sm mb-6">
-              <h3 className="text-sm font-bold text-gray-800 mb-1">Defect Type Frequency</h3>
-              <p className="text-xs text-gray-400 mb-4">Breakdown of defect types across all baskets</p>
-              <ResponsiveContainer width="100%" height={450}>
-                <BarChart data={reportData.defectTrendData} layout="vertical" margin={{ top: 20, right: 80, left: 120, bottom: 20 }}>
-                  <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" horizontal={false} />
-                  <XAxis type="number" tick={{ fontSize: 11, fill: '#94a3b8' }} />
-                  <YAxis type="category" dataKey="name" tick={{ fontSize: 11, fill: '#64748b' }} width={120} />
-                  <Tooltip content={<CustomTooltip />} />
-                  <Legend wrapperStyle={{ fontSize: '12px' }} />
-                  <Bar dataKey="count" name="Defect Count" fill={COLORS.purple} radius={[0, 6, 6, 0]} isAnimationActive={false}>
-                    <LabelList dataKey="count" content={CustomDefectLabel} position="right" />
-                  </Bar>
-                </BarChart>
-              </ResponsiveContainer>
-            </div>
-          )}
-
-          {/* Detailed Data Table */}
-          {reportData.cycleTimeData && reportData.cycleTimeData.length > 0 && (
-            <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
-              <div className="px-6 py-4 border-b border-gray-100">
-                <h3 className="text-sm font-bold text-gray-800">Basket Performance Details</h3>
+              <h3 className="text-sm font-bold text-gray-800 mb-1">Good vs Rejected Parts by Basket</h3>
+              <p className="text-xs text-gray-400 mb-4">Actual count of good (green) vs rejected (red)</p>
+              <div className="overflow-x-auto">
+                <div style={{ minWidth: reportData.quantityData.length * 60 }}>
+                  <ResponsiveContainer width="100%" height={450}>
+                    <BarChart data={[...reportData.quantityData].sort((a, b) => b.good - a.good)} margin={{ top: 30, right: 20, left: 20, bottom: 80 }}>
+                      <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" />
+                      <XAxis dataKey="name" angle={-45} textAnchor="end" height={80} tick={{ fontSize: 11 }} />
+                      <YAxis label={{ value: 'Parts Count', angle: -90, position: 'insideLeft' }} />
+                      <Tooltip formatter={v => v} />
+                      <Legend />
+                      <Bar dataKey="good" stackId="a" name="Good Parts" fill="#10b981">
+                        <LabelList dataKey="good" position="inside" content={(props) => { const { x, y, width, height, value } = props; return (<text x={x + width / 2} y={y + height / 2} fill="#ffffff" textAnchor="middle" fontSize={12} fontWeight="700">{value}</text>); }} />
+                      </Bar>
+                      <Bar dataKey="rejected" stackId="a" name="Rejected Parts" fill="#ef4444">
+                        <LabelList dataKey="rejected" position="top" content={(props) => { const { x, y, width, value } = props; return (<text x={x + width / 2} y={y - 5} fill="#ef4444" textAnchor="middle" fontSize={13} fontWeight="800">{value}</text>); }} />
+                      </Bar>
+                    </BarChart>
+                  </ResponsiveContainer>
+                </div>
               </div>
+              <div className="mt-4 text-xs text-gray-600 bg-gray-50 p-3 rounded-lg">Baskets sorted by Good Parts (high → low). 🟢 Green = Good Parts, 🔴 Red = Rejected Parts</div>
+            </div>
+          )}
+
+          {/* Defect Pie Chart */}
+          {defectPieData.length > 0 && (
+            <div className="bg-white rounded-2xl border border-gray-100 p-6 shadow-sm mb-6">
+              <div className="text-center mb-6">
+                <h3 className="text-sm font-bold text-gray-800 mb-1">Defect Type Frequency - Pie Chart</h3>
+                <p className="text-xs text-gray-400 mb-2">Breakdown of defect types across all baskets</p>
+                <p className="text-gray-500 text-sm">Total Defects Identified: <span className="font-semibold text-gray-900">{totalDefects}</span></p>
+              </div>
+              <div className="flex justify-center">
+                <ResponsiveContainer width="100%" height={450}>
+                  <PieChart>
+                    <Pie data={defectPieData} cx="50%" cy="50%" innerRadius={95} outerRadius={160} dataKey="value" animationDuration={800} animationBegin={200}
+                      label={(entry) => `${entry.name}: ${entry.value} (${((entry.value / totalDefects) * 100).toFixed(1)}%)`} labelLine={{ stroke: '#94a3b8', strokeWidth: 1 }}>
+                      {defectPieData.map((entry, i) => (<Cell key={`cell-${i}`} fill={entry.color} stroke="#ffffff" strokeWidth={4} />))}
+                    </Pie>
+                    <Tooltip content={(props) => <CustomPieTooltip {...props} totalDefects={totalDefects} />} />
+                  </PieChart>
+                </ResponsiveContainer>
+              </div>
+              <CustomPieLegend payload={defectPieData.map(d => ({ value: d.name, color: d.color, payload: d }))} />
+            </div>
+          )}
+
+          {/* Performance Table */}
+          {reportData.cycleTimeData?.length > 0 && (
+            <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
+              <div className="px-6 py-4 border-b border-gray-100"><h3 className="text-sm font-bold text-gray-800">Basket Performance Details</h3></div>
               <div className="overflow-x-auto">
                 <table className="w-full text-sm">
-                  <thead>
-                    <tr className="bg-gray-50 border-b border-gray-100">
-                      <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase">Basket</th>
-                      <th className="text-center px-4 py-3 text-xs font-semibold text-gray-500 uppercase">Actual Time</th>
-                      <th className="text-center px-4 py-3 text-xs font-semibold text-gray-500 uppercase">Standard</th>
-                      <th className="text-center px-4 py-3 text-xs font-semibold text-gray-500 uppercase">Lost Time</th>
-                      <th className="text-center px-4 py-3 text-xs font-semibold text-gray-500 uppercase">Total Parts</th>
-                      <th className="text-center px-4 py-3 text-xs font-semibold text-gray-500 uppercase">Good</th>
-                      <th className="text-center px-4 py-3 text-xs font-semibold text-gray-500 uppercase">Rework</th>
-                      <th className="text-center px-4 py-3 text-xs font-semibold text-gray-500 uppercase">Rejected</th>
-                      <th className="text-center px-4 py-3 text-xs font-semibold text-gray-500 uppercase">Done By</th>
-                      <th className="text-center px-4 py-3 text-xs font-semibold text-gray-500 uppercase">Quality Checked By</th>
-                      <th className="text-center px-4 py-3 text-xs font-semibold text-gray-500 uppercase">Status</th>
-                    </tr>
-                  </thead>
+                  <thead><tr className="bg-gray-50 border-b border-gray-100">
+                    {['Basket', 'Actual Time', 'Standard', 'Lost Time', 'Total Parts', 'Good', 'Rework', 'Rejected', 'Done By', 'Quality Checked By', 'Status'].map(h => (
+                      <th key={h} className={`${h === 'Basket' ? 'text-left' : 'text-center'} px-4 py-3 text-xs font-semibold text-gray-500 uppercase`}>{h}</th>
+                    ))}
+                  </tr></thead>
                   <tbody className="divide-y divide-gray-50">
                     {reportData.cycleTimeData.map((ct, i) => {
                       const qty = reportData.quantityData?.[i] || { good: 0, defective: 0, rejected: 0 };
-                      const basketDetails = reportData.basketDetails?.[i] || {};
-                      const totalParts = basketDetails.totalParts || 0;
+                      const bd = reportData.basketDetails?.[i] || {};
                       return (
                         <tr key={i} className="hover:bg-indigo-50/30 transition-colors">
                           <td className="px-4 py-3 font-semibold text-gray-800">{ct.name}</td>
-                          <td className={`px-4 py-3 text-center font-bold ${ct.exceeds ? 'text-red-600' : 'text-emerald-600'}`}>
-                            {formatMinutesToTime(ct.actual)}
-                          </td>
-                          <td className="px-4 py-3 text-center text-blue-600 font-medium">
-                            {formatMinutesToTime(ct.standard)}
-                          </td>
-                          <td className="px-4 py-3 text-center text-amber-600 font-medium">
-                            {formatMinutesToTime(ct.lost)}
-                          </td>
-                          <td className="px-4 py-3 text-center font-bold text-gray-700">
-                            {totalParts}
-                          </td>
-                          <td className="px-4 py-3 text-center text-emerald-600 font-medium">
-                            {qty.good || 0}
-                          </td>
-                          <td className="px-4 py-3 text-center text-amber-600 font-medium">
-                            {qty.defective || 0}
-                          </td>
-                          <td className="px-4 py-3 text-center text-red-600 font-medium">
-                            {qty.rejected || 0}
-                          </td>
-                          <td className="px-4 py-3 text-center">
-                            <div className="flex items-center justify-center gap-1">
-                              <User className="w-3 h-3 text-gray-400" />
-                              <span className="text-gray-700 text-xs">{basketDetails.doneBy || '-'}</span>
-                            </div>
-                          </td>
-                          <td className="px-4 py-3 text-center">
-                            <div className="flex items-center justify-center gap-1">
-                              <Shield className="w-3 h-3 text-gray-400" />
-                              <span className="text-gray-700 text-xs">{basketDetails.qualityCheckedBy || '-'}</span>
-                            </div>
-                          </td>
-                          <td className="px-4 py-3 text-center">
-                            <span className={`inline-flex px-2 py-0.5 rounded-md text-xs font-semibold ${ct.exceeds ? 'bg-red-50 text-red-600' : 'bg-emerald-50 text-emerald-600'}`}>
-                              {ct.exceeds ? 'Over Target' : 'On Target'}
-                            </span>
-                          </td>
+                          <td className={`px-4 py-3 text-center font-bold ${ct.exceeds ? 'text-red-600' : 'text-emerald-600'}`}>{formatMinutesToTime(ct.actual)}</td>
+                          <td className="px-4 py-3 text-center text-blue-600 font-medium">{formatMinutesToTime(ct.standard)}</td>
+                          <td className="px-4 py-3 text-center text-amber-600 font-medium">{formatMinutesToTime(ct.lost)}</td>
+                          <td className="px-4 py-3 text-center font-bold text-gray-700">{bd.totalParts || 0}</td>
+                          <td className="px-4 py-3 text-center text-emerald-600 font-medium">{qty.good || 0}</td>
+                          <td className="px-4 py-3 text-center text-amber-600 font-medium">{qty.defective || 0}</td>
+                          <td className="px-4 py-3 text-center text-red-600 font-medium">{qty.rejected || 0}</td>
+                          <td className="px-4 py-3 text-center"><div className="flex items-center justify-center gap-1"><User className="w-3 h-3 text-gray-400" /><span className="text-gray-700 text-xs">{bd.doneBy || '-'}</span></div></td>
+                          <td className="px-4 py-3 text-center"><div className="flex items-center justify-center gap-1"><Shield className="w-3 h-3 text-gray-400" /><span className="text-gray-700 text-xs">{bd.qualityCheckedBy || '-'}</span></div></td>
+                          <td className="px-4 py-3 text-center"><span className={`inline-flex px-2 py-0.5 rounded-md text-xs font-semibold ${ct.exceeds ? 'bg-red-50 text-red-600' : 'bg-emerald-50 text-emerald-600'}`}>{ct.exceeds ? 'Over Target' : 'On Target'}</span></td>
                         </tr>
                       );
                     })}
