@@ -136,11 +136,31 @@ export async function GET(request) {
         });
       }
 
+      // Build basket-specific defects
+      const basketDefects = [];
+      if (qc && qc.defects) {
+        const d = qc.defects.toObject ? qc.defects.toObject() : qc.defects;
+        ["watermark1", "watermark2", "maskingProblem", "scratchMark", "pvcPeelOff"].forEach(key => {
+          const val = d[key] || 0;
+          if (val > 0) {
+            basketDefects.push({
+              name: key === "watermark1" ? "Watermark 1"
+                  : key === "watermark2" ? "Watermark 2"
+                  : key === "maskingProblem" ? "Masking Problem"
+                  : key === "scratchMark" ? "Scratch Mark"
+                  : "PVC Peel Off",
+              count: val
+            });
+          }
+        });
+      }
+
       // Add detailed basket info
       basketDetails.push({
         doneBy: basket.endUser || basket.startUser || "-",
         qualityCheckedBy: qc ? qc.inspectorName : "-",
-        totalParts: basket.masterDataId?.partsPerBasket || 0
+        totalParts: basket.masterDataId?.partsPerBasket || 0,
+        defects: basketDefects
       });
 
       totalBaskets++;
