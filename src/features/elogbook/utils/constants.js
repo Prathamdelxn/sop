@@ -55,6 +55,9 @@ export const createEmptyQCForm = () => ({
 /** Empty master data form state */
 export const EMPTY_MASTER_DATA_FORM = {
   customerName: '',
+  country: 'India',
+  state: '',
+  city: '',
   subCompany: '',
   partName: '',
   coatingRequirements: '',

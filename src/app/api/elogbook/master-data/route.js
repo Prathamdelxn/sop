@@ -37,9 +37,8 @@ export async function POST(req) {
     await connectDB();
     const body = await req.json();
     const {
-      companyId, customerName, subCompany, partName,
-      coatingRequirements, standardCycleTime, standardVoltage,
-      standardTemperature, partsPerBasket, basketCount,
+      companyId, customerName, partName,
+      standardCycleTime, partsPerBasket
     } = body;
 
     if (!companyId || !customerName || !partName || !standardCycleTime || !partsPerBasket) {
@@ -61,16 +60,8 @@ export async function POST(req) {
     }
 
     const record = await ElogbookMasterData.create({
-      companyId,
-      customerName,
-      subCompany,
-      partName,
-      coatingRequirements,
-      standardCycleTime,
-      standardVoltage,
-      standardTemperature,
-      partsPerBasket,
-      basketCount: basketCount || 3,
+      ...body,
+      basketCount: body.basketCount || 3,
     });
 
     return NextResponse.json({ success: true, data: record }, { status: 201 });

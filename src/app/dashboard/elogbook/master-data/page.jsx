@@ -44,12 +44,37 @@ export default function MasterDataPage() {
     setSaving(false);
   };
 
-  const handleAddPart = (customerName) => { setForm({ ...EMPTY_MASTER_DATA_FORM, customerName }); setSelectedCustomer(customerName); setEditingId(null); setShowModal(true); };
+  const handleAddPart = (customerName) => {
+    const existing = masterDataList.find(r => r.customerName === customerName);
+    setForm({
+      ...EMPTY_MASTER_DATA_FORM,
+      customerName,
+      country: existing?.country || 'India',
+      state: existing?.state || '',
+      city: existing?.city || '',
+      subCompany: existing?.subCompany || '',
+    });
+    setSelectedCustomer(customerName);
+    setEditingId(null);
+    setShowModal(true);
+  };
 
   const handleEdit = (record) => {
-    setForm({ customerName: record.customerName || '', subCompany: record.subCompany || '', partName: record.partName || '', coatingRequirements: record.coatingRequirements || '',
-      standardCycleTime: String(record.standardCycleTime || ''), standardVoltage: String(record.standardVoltage || ''), standardTemperature: String(record.standardTemperature || ''),
-      maxCurrent: String(record.maxCurrent || ''), surfaceAreaPerBasket: String(record.surfaceAreaPerBasket || ''), partsPerBasket: String(record.partsPerBasket || ''), basketCount: String(record.basketCount || '3'),
+    setForm({
+      customerName: record.customerName || '',
+      country: record.country || 'India',
+      state: record.state || '',
+      city: record.city || '',
+      subCompany: record.subCompany || '',
+      partName: record.partName || '',
+      coatingRequirements: record.coatingRequirements || '',
+      standardCycleTime: String(record.standardCycleTime || ''),
+      standardVoltage: String(record.standardVoltage || ''),
+      standardTemperature: String(record.standardTemperature || ''),
+      maxCurrent: String(record.maxCurrent || ''),
+      surfaceAreaPerBasket: String(record.surfaceAreaPerBasket || ''),
+      partsPerBasket: String(record.partsPerBasket || ''),
+      basketCount: String(record.basketCount || '3'),
     });
     setSelectedCustomer(record.customerName); setEditingId(record._id); setShowModal(true);
   };
@@ -58,7 +83,19 @@ export default function MasterDataPage() {
 
   const toggleCustomer = (name) => { const n = new Set(expandedCustomers); n.has(name) ? n.delete(name) : n.add(name); setExpandedCustomers(n); };
 
-  const groupedRecords = masterDataList.reduce((acc, r) => { if (!acc[r.customerName]) acc[r.customerName] = { subCompany: r.subCompany, parts: [] }; acc[r.customerName].parts.push(r); return acc; }, {});
+  const groupedRecords = masterDataList.reduce((acc, r) => {
+    if (!acc[r.customerName]) {
+      acc[r.customerName] = {
+        subCompany: r.subCompany,
+        country: r.country,
+        state: r.state,
+        city: r.city,
+        parts: []
+      };
+    }
+    acc[r.customerName].parts.push(r);
+    return acc;
+  }, {});
 
   const filteredGrouped = searchQuery
     ? Object.entries(groupedRecords).reduce((acc, [name, data]) => {
@@ -97,7 +134,17 @@ export default function MasterDataPage() {
               <div className="flex items-center justify-between p-4 bg-gradient-to-r from-gray-50 to-gray-100/50 cursor-pointer hover:bg-gray-100 transition-colors" onClick={() => toggleCustomer(customerName)}>
                 <div className="flex items-center gap-3">
                   {expandedCustomers.has(customerName) ? <ChevronDown className="w-5 h-5 text-gray-400" /> : <ChevronRight className="w-5 h-5 text-gray-400" />}
-                  <div><h3 className="font-bold text-gray-900">{customerName}</h3>{customerData.subCompany && <p className="text-sm text-gray-500">{customerData.subCompany}</p>}</div>
+                  <div>
+                    <h3 className="font-bold text-gray-900">{customerName}</h3>
+                    <div className="flex flex-wrap items-center gap-x-3 text-xs text-gray-500">
+                      {customerData.subCompany && <span>{customerData.subCompany}</span>}
+                      {(customerData.city || customerData.state || customerData.country) && (
+                        <span className="flex items-center gap-1">
+                          • {[customerData.city, customerData.state, customerData.country].filter(Boolean).join(', ')}
+                        </span>
+                      )}
+                    </div>
+                  </div>
                   <span className="text-xs bg-indigo-100 text-indigo-700 px-2 py-1 rounded-full">{customerData.parts.length} {customerData.parts.length === 1 ? 'Part' : 'Parts'}</span>
                 </div>
                 <button onClick={(e) => { e.stopPropagation(); handleAddPart(customerName); }} className="px-3 py-1.5 text-xs font-semibold text-indigo-600 hover:bg-indigo-50 rounded-lg transition-colors"><Plus className="w-3 h-3 inline mr-1" />Add Part</button>
@@ -155,12 +202,33 @@ export default function MasterDataPage() {
             </div>
             <form onSubmit={handleSubmit} className="p-6 space-y-4">
               <div className="grid grid-cols-2 gap-4">
-                <div className="col-span-2 sm:col-span-1"><label className="block text-xs font-semibold text-gray-600 mb-1.5">Customer Name *</label>
+                <div className="col-span-2 sm:col-span-1">
+                  <label className="block text-xs font-semibold text-gray-600 mb-1.5">Customer Name *</label>
                   <input type="text" required value={form.customerName} onChange={e => setForm({ ...form, customerName: e.target.value })} disabled={!!selectedCustomer && !editingId}
-                    className={`w-full px-3 py-2.5 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-400 ${(selectedCustomer && !editingId) ? 'bg-gray-50 text-gray-500' : ''}`} placeholder="e.g., Tata Motors" /></div>
-                <div className="col-span-2 sm:col-span-1"><label className="block text-xs font-semibold text-gray-600 mb-1.5">Sub Company</label>
-                  <input type="text" value={form.subCompany} onChange={e => setForm({ ...form, subCompany: e.target.value })} className="w-full px-3 py-2.5 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-400" placeholder="e.g., Division A" /></div>
+                    className={`w-full px-3 py-2.5 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-400 ${(selectedCustomer && !editingId) ? 'bg-gray-50 text-gray-500' : ''}`} placeholder="e.g., Tata Motors" />
+                </div>
+                <div className="col-span-2 sm:col-span-1">
+                  <label className="block text-xs font-semibold text-gray-600 mb-1.5">Country *</label>
+                  <input type="text" required value={form.country} onChange={e => setForm({ ...form, country: e.target.value })}
+                    className="w-full px-3 py-2.5 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-400" placeholder="e.g., India" />
+                </div>
               </div>
+              <div className="grid grid-cols-2 gap-4">
+                <div className="col-span-2 sm:col-span-1">
+                  <label className="block text-xs font-semibold text-gray-600 mb-1.5">State</label>
+                  <input type="text" value={form.state} onChange={e => setForm({ ...form, state: e.target.value })}
+                    className="w-full px-3 py-2.5 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-400" placeholder="e.g., Maharashtra" />
+                </div>
+                <div className="col-span-2 sm:col-span-1">
+                  <label className="block text-xs font-semibold text-gray-600 mb-1.5">City</label>
+                  <input type="text" value={form.city} onChange={e => setForm({ ...form, city: e.target.value })}
+                    className="w-full px-3 py-2.5 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-400" placeholder="e.g., Pune" />
+                </div>
+              </div>
+              {/* <div>
+                <label className="block text-xs font-semibold text-gray-600 mb-1.5">Sub Company</label>
+                <input type="text" value={form.subCompany} onChange={e => setForm({ ...form, subCompany: e.target.value })} className="w-full px-3 py-2.5 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-400" placeholder="e.g., Division A" />
+              </div> */}
               <div><label className="block text-xs font-semibold text-gray-600 mb-1.5">Part Name *</label>
                 <input type="text" required value={form.partName} onChange={e => setForm({ ...form, partName: e.target.value })} className="w-full px-3 py-2.5 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-400" placeholder="e.g., Door Handle" /></div>
               <div><label className="block text-xs font-semibold text-gray-600 mb-1.5">Description</label>
@@ -169,12 +237,12 @@ export default function MasterDataPage() {
                 <h3 className="text-xs font-bold text-gray-500 uppercase tracking-wider mb-3">Operational Standards</h3>
                 <div className="grid grid-cols-2 gap-3">
                   {[{ label: 'Cycle Time (min) *', key: 'standardCycleTime', required: true, step: '0.01', placeholder: '7.45' },
-                    { label: 'Voltage (V)', key: 'standardVoltage', placeholder: '150' },
-                    { label: 'Max Current (A)', key: 'maxCurrent', step: '0.1', placeholder: '500' },
-                    { label: 'Bath Temp (°C)', key: 'standardTemperature', placeholder: '48' },
+                  { label: 'Voltage (V)', key: 'standardVoltage', placeholder: '150', step: '0.1' },
+                  { label: 'Max Current (A)', key: 'maxCurrent', step: '0.1', placeholder: '500' },
+                  { label: 'Bath Temp (°C)', key: 'standardTemperature', placeholder: '48', step: '0.1' },
                   ].map(f => (
                     <div key={f.key}><label className="block text-xs font-semibold text-gray-600 mb-1.5">{f.label}</label>
-                      <input type="number" step={f.step} required={f.required} value={form[f.key]} onChange={e => setForm({ ...form, [f.key]: e.target.value })}
+                      <input type="number" step={f.step} min="0" required={f.required} value={form[f.key]} onChange={e => setForm({ ...form, [f.key]: e.target.value })}
                         className="w-full px-3 py-2.5 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-400" placeholder={f.placeholder} /></div>
                   ))}
                 </div>
@@ -183,9 +251,9 @@ export default function MasterDataPage() {
                 <h3 className="text-xs font-bold text-gray-500 uppercase tracking-wider mb-3">Capacity & Surface Area</h3>
                 <div className="grid grid-cols-2 gap-3">
                   <div><label className="block text-xs font-semibold text-gray-600 mb-1.5">Surface Area per Part (dm²)</label>
-                    <input type="number" step="0.01" value={form.surfaceAreaPerBasket} onChange={e => setForm({ ...form, surfaceAreaPerBasket: e.target.value })} className="w-full px-3 py-2.5 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-400" placeholder="25.5" /></div>
+                    <input type="number" step="0.01" min="0" value={form.surfaceAreaPerBasket} onChange={e => setForm({ ...form, surfaceAreaPerBasket: e.target.value })} className="w-full px-3 py-2.5 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-400" placeholder="25.5" /></div>
                   <div><label className="block text-xs font-semibold text-gray-600 mb-1.5">Parts per Basket *</label>
-                    <input type="number" required value={form.partsPerBasket} onChange={e => setForm({ ...form, partsPerBasket: e.target.value })} className="w-full px-3 py-2.5 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-400" placeholder="400" /></div>
+                    <input type="number" step="1" min="0" required value={form.partsPerBasket} onChange={e => setForm({ ...form, partsPerBasket: e.target.value })} className="w-full px-3 py-2.5 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-400" placeholder="400" /></div>
                 </div>
               </div>
               <div className="pt-4 flex items-center justify-end gap-3">
