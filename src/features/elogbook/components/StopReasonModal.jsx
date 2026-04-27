@@ -1,5 +1,6 @@
 'use client';
 
+import React from 'react';
 import { Pause, X } from 'lucide-react';
 import { STOP_REASONS } from '../utils/constants';
 
@@ -13,6 +14,15 @@ export default function StopReasonModal({
   setStopReason,
   onSubmit,
 }) {
+  const [isOther, setIsOther] = React.useState(false);
+
+  // Reset local "Other" state when modal opens/closes
+  React.useEffect(() => {
+    if (!show) {
+      setIsOther(false);
+    }
+  }, [show]);
+
   if (!show) return null;
 
   return (
@@ -30,8 +40,16 @@ export default function StopReasonModal({
             Reason for Stoppage
           </label>
           <select
-            value={stopReason}
-            onChange={(e) => setStopReason(e.target.value)}
+            value={isOther ? 'Other' : stopReason}
+            onChange={(e) => {
+              if (e.target.value === 'Other') {
+                setIsOther(true);
+                setStopReason('');
+              } else {
+                setIsOther(false);
+                setStopReason(e.target.value);
+              }
+            }}
             className="w-full px-3 py-2.5 border border-gray-200 rounded-xl text-sm mb-3 focus:outline-none focus:ring-2 focus:ring-amber-500/20 focus:border-amber-400"
           >
             <option value="">Select a reason...</option>
@@ -41,9 +59,11 @@ export default function StopReasonModal({
               </option>
             ))}
           </select>
-          {stopReason === 'Other' && (
+          {isOther && (
             <input
               type="text"
+              autoFocus
+              value={stopReason}
               placeholder="Describe reason..."
               onChange={(e) => setStopReason(e.target.value)}
               className="w-full px-3 py-2.5 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-amber-500/20 focus:border-amber-400"
