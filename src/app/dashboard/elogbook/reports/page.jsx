@@ -2,10 +2,12 @@
 
 import React, { useState, useEffect, useRef } from 'react';
 import { useRouter } from 'next/navigation';
-import { ArrowLeft, BarChart3, Download, Loader2, Clock, AlertTriangle, CheckCircle2, TrendingUp, Package, User, Shield } from 'lucide-react';
+import { ArrowLeft, BarChart3, Download, Loader2, Clock, AlertTriangle, CheckCircle2, TrendingUp, Package, User, Shield, Factory, GitBranch, Hash } from 'lucide-react';
 
 import { useElogbookPermission } from '@/features/elogbook/hooks/useElogbookPermission';
 import { useMasterData } from '@/features/elogbook/hooks/useMasterData';
+import { usePlants } from '@/features/elogbook/hooks/usePlants';
+import { useLines } from '@/features/elogbook/hooks/useLines';
 import * as reportService from '@/features/elogbook/services/reportService';
 import { formatMinutesToTime } from '@/features/elogbook/utils/formatters';
 import { CHART_COLORS, PIE_COLORS } from '@/features/elogbook/utils/constants';
@@ -18,6 +20,10 @@ export default function ReportsPage() {
   const reportRef = useRef(null);
   const { userData } = useElogbookPermission('Graphical Representation');
   const { masterDataList, refetch: fetchMD } = useMasterData(userData?.companyId);
+  const { plants, refetch: fetchPlants } = usePlants(userData?.companyId);
+  const [selectedPlantId, setSelectedPlantId] = useState('');
+  const { lines, refetch: fetchLines } = useLines(userData?.companyId, selectedPlantId || undefined);
+  const [selectedLineId, setSelectedLineId] = useState('');
 
   const [selectedMasterData, setSelectedMasterData] = useState('');
   const [startDate, setStartDate] = useState('');
@@ -27,14 +33,15 @@ export default function ReportsPage() {
   const [exporting, setExporting] = useState(false);
   const [defectPieData, setDefectPieData] = useState([]);
 
-  useEffect(() => { if (userData?.companyId) { fetchMD(); const today = new Date().toISOString().split('T')[0]; setStartDate(today); setEndDate(today); } }, [userData]);
+  useEffect(() => { if (userData?.companyId) { fetchMD(); fetchPlants(); const today = new Date().toISOString().split('T')[0]; setStartDate(today); setEndDate(today); } }, [userData]);
+  useEffect(() => { if (selectedPlantId) fetchLines(); }, [selectedPlantId, fetchLines]);
 
   useEffect(() => {
     if (!userData?.companyId || !startDate) return;
     const load = async () => {
       setLoading(true);
       try {
-        const data = await reportService.fetchReportData({ companyId: userData.companyId, startDate, endDate, masterDataId: selectedMasterData });
+        const data = await reportService.fetchReportData({ companyId: userData.companyId, startDate, endDate, masterDataId: selectedMasterData, plantId: selectedPlantId, lineId: selectedLineId });
         if (data.success) {
           setReportData(data.data);
           if (data.data.defectTrendData?.length > 0) {
@@ -52,7 +59,7 @@ export default function ReportsPage() {
       finally { setLoading(false); }
     };
     load();
-  }, [userData, startDate, endDate, selectedMasterData]);
+  }, [userData, startDate, endDate, selectedMasterData, selectedPlantId, selectedLineId]);
 
   const handleExportPDF = async () => {
     setExporting(true);
@@ -73,8 +80,13 @@ export default function ReportsPage() {
       pdf.setFontSize(10); pdf.setTextColor(107, 114, 128);
       pdf.text(`Generated: ${new Date().toLocaleString()}`, margin, 22);
       if (selectedMD) pdf.text(`Part: ${selectedMD.partName}`, margin, 28);
-      if (startDate) pdf.text(`Date Range: ${startDate} to ${endDate || startDate}`, margin, 34);
-      let currentY = 40;
+      const selectedPlantObj = plants.find(p => p._id === selectedPlantId);
+      const selectedLineObj = lines.find(l => l._id === selectedLineId);
+      let infoY = 34;
+      if (selectedPlantObj) { pdf.text(`Plant: ${selectedPlantObj.name} (${selectedPlantObj.code})`, margin, infoY); infoY += 6; }
+      if (selectedLineObj) { pdf.text(`Line: ${selectedLineObj.lineNumber}${selectedLineObj.name ? ` — ${selectedLineObj.name}` : ''}`, margin, infoY); infoY += 6; }
+      if (startDate) { pdf.text(`Date Range: ${startDate} to ${endDate || startDate}`, margin, infoY); infoY += 6; }
+      let currentY = infoY + 4;
       const children = Array.from(element.children);
       for (let i = 0; i < children.length; i++) {
         const canvas = await html2canvas(children[i], { scale: 2, useCORS: true, logging: false, backgroundColor: '#ffffff' });
@@ -108,13 +120,27 @@ export default function ReportsPage() {
 
       {/* Filters */}
       <div className="bg-white rounded-2xl border border-gray-100 p-4 mb-6 shadow-sm">
-        <div className="flex flex-col sm:flex-row gap-4 items-end">
-          <div className="flex-1"><label className="block text-xs font-semibold text-gray-500 mb-1.5 uppercase tracking-wider">Start Date</label><input type="date" value={startDate} onChange={e => setStartDate(e.target.value)} className="w-full px-3 py-2.5 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-400" /></div>
-          <div className="flex-1"><label className="block text-xs font-semibold text-gray-500 mb-1.5 uppercase tracking-wider">End Date</label><input type="date" value={endDate} onChange={e => setEndDate(e.target.value)} className="w-full px-3 py-2.5 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-400" /></div>
-          <div className="flex-1"><label className="block text-xs font-semibold text-gray-500 mb-1.5 uppercase tracking-wider">Configuration</label>
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 mb-4">
+          <div><label className="block text-xs font-semibold text-gray-500 mb-1.5 uppercase tracking-wider">Start Date</label><input type="date" value={startDate} onChange={e => setStartDate(e.target.value)} className="w-full px-3 py-2.5 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-400" /></div>
+          <div><label className="block text-xs font-semibold text-gray-500 mb-1.5 uppercase tracking-wider">End Date</label><input type="date" value={endDate} onChange={e => setEndDate(e.target.value)} className="w-full px-3 py-2.5 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-400" /></div>
+          <div><label className="block text-xs font-semibold text-gray-500 mb-1.5 uppercase tracking-wider">Configuration</label>
             <select value={selectedMasterData} onChange={e => setSelectedMasterData(e.target.value)} className="w-full px-3 py-2.5 border border-gray-200 rounded-xl text-sm bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-400">
               <option value="">All Configurations</option>
               {masterDataList.map(md => (<option key={md._id} value={md._id}>{md.customerName} — {md.partName}</option>))}
+            </select>
+          </div>
+        </div>
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <div><label className="block text-xs font-semibold text-gray-500 mb-1.5 uppercase tracking-wider flex items-center gap-1"><Factory className="w-3.5 h-3.5" /> Plant</label>
+            <select value={selectedPlantId} onChange={e => { setSelectedPlantId(e.target.value); setSelectedLineId(''); }} className="w-full px-3 py-2.5 border border-gray-200 rounded-xl text-sm bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-400">
+              <option value="">All Plants</option>
+              {plants.map(p => (<option key={p._id} value={p._id}>{p.name} ({p.code})</option>))}
+            </select>
+          </div>
+          <div><label className="block text-xs font-semibold text-gray-500 mb-1.5 uppercase tracking-wider flex items-center gap-1"><GitBranch className="w-3.5 h-3.5" /> Line</label>
+            <select value={selectedLineId} onChange={e => setSelectedLineId(e.target.value)} disabled={!selectedPlantId} className="w-full px-3 py-2.5 border border-gray-200 rounded-xl text-sm bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-400 disabled:bg-gray-50 disabled:cursor-not-allowed">
+              <option value="">All Lines</option>
+              {lines.map(l => (<option key={l._id} value={l._id}>Line {l.lineNumber}{l.name ? ` — ${l.name}` : ''}</option>))}
             </select>
           </div>
         </div>
@@ -253,7 +279,7 @@ export default function ReportsPage() {
               <div className="overflow-x-auto">
                 <table className="w-full text-sm">
                   <thead><tr className="bg-gray-50 border-b border-gray-100">
-                    {['Basket', 'Actual Time', 'Standard', 'Lost Time', 'Total Parts', 'Good', 'Rework', 'Rejected', 'Done By', 'Quality Checked By', 'Status'].map(h => (
+                    {['Basket', 'Batch #', 'Plant', 'Line', 'Actual Time', 'Standard', 'Lost Time', 'Total Parts', 'Good', 'Rework', 'Rejected', 'Done By', 'QC By', 'Status'].map(h => (
                       <th key={h} className={`${h === 'Basket' ? 'text-left' : 'text-center'} px-4 py-3 text-xs font-semibold text-gray-500 uppercase`}>{h}</th>
                     ))}
                   </tr></thead>
@@ -264,6 +290,9 @@ export default function ReportsPage() {
                       return (
                         <tr key={i} className="hover:bg-indigo-50/30 transition-colors">
                           <td className="px-4 py-3 font-semibold text-gray-800">{ct.name}</td>
+                          <td className="px-4 py-3 text-center"><span className="inline-flex items-center gap-1 px-2 py-0.5 bg-indigo-50 text-indigo-700 rounded-md text-xs font-bold">{bd.batchNumber || '-'}</span></td>
+                          <td className="px-4 py-3 text-center text-gray-600 text-xs font-medium">{bd.plantName || '-'}</td>
+                          <td className="px-4 py-3 text-center text-gray-600 text-xs font-medium">{bd.lineNumber ? `Line ${bd.lineNumber}` : '-'}</td>
                           <td className={`px-4 py-3 text-center font-bold ${ct.exceeds ? 'text-red-600' : 'text-emerald-600'}`}>{formatMinutesToTime(ct.actual)}</td>
                           <td className="px-4 py-3 text-center text-blue-600 font-medium">{formatMinutesToTime(ct.standard)}</td>
                           <td className="px-4 py-3 text-center text-amber-600 font-medium">{formatMinutesToTime(ct.lost)}</td>

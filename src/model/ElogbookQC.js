@@ -3,6 +3,9 @@ import mongoose from "mongoose";
 const elogbookQCSchema = new mongoose.Schema({
   basketId: { type: mongoose.Schema.Types.ObjectId, ref: "ElogbookBasket", required: true },
   companyId: { type: String, required: true },
+  plantId: { type: mongoose.Schema.Types.ObjectId, ref: "Plant", default: null },
+  lineId: { type: mongoose.Schema.Types.ObjectId, ref: "ProductionLine", default: null },
+  batchNumber: { type: String, default: "" }, // Denormalized for fast reporting
   inspectorName: { type: String, required: true },
   inspectionDate: { type: Date, default: Date.now },
 

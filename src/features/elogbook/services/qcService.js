@@ -5,10 +5,14 @@
 /**
  * Fetch QC records for a company.
  */
-export async function fetchQCRecords(companyId) {
+export async function fetchQCRecords(companyId, plantId, lineId) {
   if (!companyId) return { success: false, data: [] };
 
-  const res = await fetch(`/api/elogbook/qc?companyId=${companyId}`);
+  let url = `/api/elogbook/qc?companyId=${companyId}`;
+  if (plantId) url += `&plantId=${plantId}`;
+  if (lineId) url += `&lineId=${lineId}`;
+
+  const res = await fetch(url);
   return res.json();
 }
 

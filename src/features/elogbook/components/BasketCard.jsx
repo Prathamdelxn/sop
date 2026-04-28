@@ -62,6 +62,11 @@ export default function BasketCard({
               {basket.masterDataId?.customerName} -{' '}
               {basket.masterDataId?.partName}
             </p>
+            {basket.batchId?.batchNumber && (
+              <span className="inline-flex items-center px-1.5 py-0.5 bg-indigo-50 text-indigo-600 rounded text-[10px] font-bold mt-0.5">
+                #{basket.batchId.batchNumber}
+              </span>
+            )}
           </div>
         </div>
         <span

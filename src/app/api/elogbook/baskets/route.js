@@ -16,6 +16,8 @@ export async function GET(req) {
     const endDate = searchParams.get("endDate");
     const masterDataId = searchParams.get("masterDataId");
     const batchId = searchParams.get("batchId");
+    const plantId = searchParams.get("plantId");
+    const lineId = searchParams.get("lineId");
     const status = searchParams.get("status");
 
     if (!companyId) {
@@ -23,6 +25,10 @@ export async function GET(req) {
     }
 
     const filter = { companyId };
+
+    // Plant/Line filters
+    if (plantId) filter.plantId = plantId;
+    if (lineId) filter.lineId = lineId;
 
     if (date) {
       const start = new Date(date);
@@ -48,16 +54,15 @@ export async function GET(req) {
       filter.batchId = batchId;
     } else if (masterDataId && !startDate && !endDate && !date) {
       // If masterDataId is provided but no dates, find the active batch
-      const activeBatch = await ElogbookBatch.findOne({
-        companyId,
-        masterDataId,
-        status: "in-progress"
-      });
+      const batchFilter = { companyId, masterDataId, status: "in-progress" };
+      if (plantId) batchFilter.plantId = plantId;
+      if (lineId) batchFilter.lineId = lineId;
+
+      const activeBatch = await ElogbookBatch.findOne(batchFilter);
       if (activeBatch) {
         filter.batchId = activeBatch._id;
       } else {
-        // If no active batch, maybe show the last completed batch? 
-        // For now, let's just filter by masterDataId
+        // If no active batch, filter by masterDataId
         filter.masterDataId = masterDataId;
       }
     } else if (masterDataId) {
@@ -74,6 +79,9 @@ export async function GET(req) {
 
     const baskets = await ElogbookBasket.find(filter)
       .populate("masterDataId")
+      .populate("batchId", "batchNumber plantId lineId")
+      .populate("plantId", "name code")
+      .populate("lineId", "lineNumber name")
       .sort({ createdAt: -1 });
 
     return NextResponse.json({ success: true, data: baskets });
@@ -94,12 +102,12 @@ export async function POST(req) {
       return NextResponse.json({ success: false, message: "Missing required fields" }, { status: 400 });
     }
 
-    // Find active batch
-    const activeBatch = await ElogbookBatch.findOne({
-      companyId,
-      masterDataId,
-      status: "in-progress"
-    });
+    // Find active batch (scoped by plant/line if present on the body)
+    const batchFilter = { companyId, masterDataId, status: "in-progress" };
+    if (body.plantId) batchFilter.plantId = body.plantId;
+    if (body.lineId) batchFilter.lineId = body.lineId;
+
+    const activeBatch = await ElogbookBatch.findOne(batchFilter);
 
     if (!activeBatch) {
       return NextResponse.json({ success: false, message: "No active batch found for this part. Please start a batch first." }, { status: 400 });
@@ -114,6 +122,8 @@ export async function POST(req) {
 
     const basket = await ElogbookBasket.create({
       companyId,
+      plantId: activeBatch.plantId || null,
+      lineId: activeBatch.lineId || null,
       masterDataId,
       batchId: activeBatch._id,
       basketNumber: finalBasketNumber,
@@ -125,7 +135,12 @@ export async function POST(req) {
       status: "in-progress",
     });
 
-    const populated = await ElogbookBasket.findById(basket._id).populate("masterDataId");
+    const populated = await ElogbookBasket.findById(basket._id)
+      .populate("masterDataId")
+      .populate("batchId", "batchNumber plantId lineId")
+      .populate("plantId", "name code")
+      .populate("lineId", "lineNumber name");
+
     return NextResponse.json({ success: true, data: populated }, { status: 201 });
   } catch (error) {
     console.error("ElogbookBasket POST error:", error);

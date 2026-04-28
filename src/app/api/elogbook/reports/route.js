@@ -3,6 +3,7 @@ import connectDB from "@/utils/db";
 import ElogbookBasket from "@/model/ElogbookBasket";
 import ElogbookQC from "@/model/ElogbookQC";
 import ElogbookMasterData from "@/model/ElogbookMasterData";
+import ElogbookBatch from "@/model/ElogbookBatch";
 export const dynamic = "force-dynamic";
 
 // GET — aggregated report data for charts
@@ -15,8 +16,10 @@ export async function GET(request) {
     const startDate = searchParams.get("startDate");
     const endDate = searchParams.get("endDate");
     const masterDataId = searchParams.get("masterDataId");
+    const plantId = searchParams.get("plantId");
+    const lineId = searchParams.get("lineId");
 
-    console.log("Reports API called with params:", { companyId, startDate, endDate, masterDataId });
+    console.log("Reports API called with params:", { companyId, startDate, endDate, masterDataId, plantId, lineId });
 
     if (!companyId) {
       return NextResponse.json({
@@ -29,6 +32,12 @@ export async function GET(request) {
     const basketFilter = { companyId };
     if (masterDataId && masterDataId !== "") {
       basketFilter.masterDataId = masterDataId;
+    }
+    if (plantId && plantId !== "") {
+      basketFilter.plantId = plantId;
+    }
+    if (lineId && lineId !== "") {
+      basketFilter.lineId = lineId;
     }
 
     if (startDate || endDate) {
@@ -50,6 +59,9 @@ export async function GET(request) {
     // Fetch baskets
     const baskets = await ElogbookBasket.find(basketFilter)
       .populate("masterDataId")
+      .populate("batchId", "batchNumber")
+      .populate("plantId", "name code")
+      .populate("lineId", "lineNumber name")
       .sort({ basketNumber: 1 });
 
     console.log(`Found ${baskets.length} baskets`);
@@ -90,12 +102,22 @@ export async function GET(request) {
       const standard = basket.masterDataId?.standardCycleTime || 0;
       const label = `Basket ${basket.basketNumber}`;
 
+      // Get batch and line info
+      const batchNum = basket.batchId?.batchNumber || "";
+      const plantName = basket.plantId?.name || "";
+      const plantCode = basket.plantId?.code || "";
+      const lineNum = basket.lineId?.lineNumber || "";
+      const lineName = basket.lineId?.name || "";
+
       cycleTimeData.push({
         name: label,
         actual: basket.actualCycleTime || 0,
         standard: standard,
         lost: basket.totalLostTime || 0,
         exceeds: (basket.actualCycleTime || 0) > standard,
+        batchNumber: batchNum,
+        plantName,
+        lineNumber: lineNum,
       });
 
       const qc = qcMap[basket._id.toString()];
@@ -113,6 +135,8 @@ export async function GET(request) {
           rejected: rejectedQty,
           inspected: qc.inspectedQuantity || 0,
           totalParts: totalParts,
+          batchNumber: batchNum,
+          lineNumber: lineNum,
         });
 
         // Aggregate defects with bucket info
@@ -140,6 +164,8 @@ export async function GET(request) {
           rejected: 0,
           inspected: 0,
           totalParts: totalParts,
+          batchNumber: batchNum,
+          lineNumber: lineNum,
         });
       }
 
@@ -147,7 +173,12 @@ export async function GET(request) {
       basketDetails.push({
         doneBy: basket.endUser || basket.startUser || "-",
         qualityCheckedBy: qc ? qc.inspectorName : "-",
-        totalParts: basket.masterDataId?.partsPerBasket || 0
+        totalParts: basket.masterDataId?.partsPerBasket || 0,
+        batchNumber: batchNum,
+        plantName: plantName,
+        plantCode: plantCode,
+        lineNumber: lineNum,
+        lineName: lineName,
       });
 
       totalBaskets++;

@@ -10,7 +10,7 @@ import { DEFECT_TYPES } from '../utils/constants';
  * QCBasketCard — A basket card in the QC pending view with inline inspection form.
  */
 export default function QCBasketCard({
-  basket, form, qcRecords, saving, activeQCForm, directBasketId,
+  basket, form, qcRecords, saving, activeQCForm, directBasketId, isLocked,
   onToggleForm, onUpdateForm, onUpdateDefect, onSubmitQC,
 }) {
   const existingQC = qcRecords.find(r => r.basketId?._id === basket._id);
@@ -48,7 +48,14 @@ export default function QCBasketCard({
             }`}>{basket.basketNumber}</div>
             <div>
               <h3 className="font-bold text-gray-900">Basket {basket.basketNumber}</h3>
-              <p className="text-xs text-gray-400">{basket.masterDataId?.partName}</p>
+              <div className="flex items-center gap-1.5 flex-wrap">
+                <p className="text-xs text-gray-400">{basket.masterDataId?.partName}</p>
+                {basket.batchId?.batchNumber && (
+                  <span className="inline-flex items-center px-1.5 py-0.5 bg-indigo-50 text-indigo-700 rounded text-[10px] font-bold">
+                    #{basket.batchId.batchNumber}
+                  </span>
+                )}
+              </div>
             </div>
           </div>
           <span className={`px-2.5 py-1 rounded-lg text-xs font-semibold border ${getStatusColor(basket.status)}`}>
@@ -89,15 +96,27 @@ export default function QCBasketCard({
 
       {/* QC Action Area */}
       <div className="flex-1 p-5 flex flex-col">
-        <button
-          onClick={() => onToggleForm(basket._id)}
-          className={`w-full flex items-center justify-center gap-2 px-4 py-3 rounded-xl font-bold text-sm transition-all active:scale-[0.98] shadow-sm mb-4 ${
-            isFormOpen ? 'bg-gray-100 text-gray-700 hover:bg-gray-200' : 'bg-indigo-600 text-white hover:bg-indigo-700 shadow-indigo-100'
-          }`}
-        >
-          {isFormOpen ? <ChevronUp className="w-4 h-4" /> : <ClipboardCheck className="w-4 h-4" />}
-          {isFormOpen ? 'Hide Inspection Form' : 'Perform QC'}
-        </button>
+        {isLocked ? (
+          <div className="bg-amber-50 border border-amber-200 rounded-xl p-4 mb-4 flex items-start gap-3">
+            <AlertTriangle className="w-5 h-5 text-amber-600 shrink-0 mt-0.5" />
+            <div>
+              <p className="text-xs font-bold text-amber-800 mb-1">QC Interlock Active</p>
+              <p className="text-[10px] text-amber-700 leading-relaxed">
+                Please complete Quality Check for <strong>Basket {basket.basketNumber - 1}</strong> first to unlock this basket.
+              </p>
+            </div>
+          </div>
+        ) : (
+          <button
+            onClick={() => onToggleForm(basket._id)}
+            className={`w-full flex items-center justify-center gap-2 px-4 py-3 rounded-xl font-bold text-sm transition-all active:scale-[0.98] shadow-sm mb-4 ${
+              isFormOpen ? 'bg-gray-100 text-gray-700 hover:bg-gray-200' : 'bg-indigo-600 text-white hover:bg-indigo-700 shadow-indigo-100'
+            }`}
+          >
+            {isFormOpen ? <ChevronUp className="w-4 h-4" /> : <ClipboardCheck className="w-4 h-4" />}
+            {isFormOpen ? 'Hide Inspection Form' : 'Perform QC'}
+          </button>
+        )}
 
         {isFormOpen && (
           <div className="space-y-4 animate-in fade-in slide-in-from-top-2 duration-300">

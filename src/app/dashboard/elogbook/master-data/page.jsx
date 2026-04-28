@@ -4,17 +4,23 @@ import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import {
   ArrowLeft, Plus, Pencil, Trash2, X, Save, Database,
-  Thermometer, Zap, Timer, Package, Search, Loader2, ChevronDown, ChevronRight
+  Thermometer, Zap, Timer, Package, Search, Loader2, ChevronDown, ChevronRight,
+  Factory, GitBranch,
 } from 'lucide-react';
 
 import { useElogbookPermission } from '@/features/elogbook/hooks/useElogbookPermission';
 import { useMasterData } from '@/features/elogbook/hooks/useMasterData';
-import { EMPTY_MASTER_DATA_FORM } from '@/features/elogbook/utils/constants';
+import { usePlants } from '@/features/elogbook/hooks/usePlants';
+import { useLines } from '@/features/elogbook/hooks/useLines';
+import { EMPTY_MASTER_DATA_FORM, EMPTY_PLANT_FORM, EMPTY_LINE_FORM } from '@/features/elogbook/utils/constants';
 
 export default function MasterDataPage() {
   const router = useRouter();
   const { userData } = useElogbookPermission('Master Data Management');
   const { masterDataList, loading, refetch, handleCreate, handleUpdate, handleDelete } = useMasterData(userData?.companyId);
+  const { plants, refetch: fetchPlants, handleCreate: createPlant, handleUpdate: updatePlant, handleDelete: deletePlant } = usePlants(userData?.companyId);
+  const [selectedPlantForLines, setSelectedPlantForLines] = useState('');
+  const { lines, refetch: fetchLines, handleCreate: createLine, handleDelete: deleteLine } = useLines(userData?.companyId, selectedPlantForLines || undefined);
 
   const [showModal, setShowModal] = useState(false);
   const [editingId, setEditingId] = useState(null);
@@ -24,7 +30,17 @@ export default function MasterDataPage() {
   const [selectedCustomer, setSelectedCustomer] = useState(null);
   const [form, setForm] = useState(EMPTY_MASTER_DATA_FORM);
 
-  useEffect(() => { if (userData?.companyId) refetch(); }, [userData]);
+  // Plant & Line management state
+  const [showPlantSection, setShowPlantSection] = useState(false);
+  const [showPlantModal, setShowPlantModal] = useState(false);
+  const [plantForm, setPlantForm] = useState(EMPTY_PLANT_FORM);
+  const [editingPlantId, setEditingPlantId] = useState(null);
+  const [lineForm, setLineForm] = useState(EMPTY_LINE_FORM);
+  const [savingPlant, setSavingPlant] = useState(false);
+  const [savingLine, setSavingLine] = useState(false);
+
+  useEffect(() => { if (userData?.companyId) { refetch(); fetchPlants(); } }, [userData]);
+  useEffect(() => { if (selectedPlantForLines) fetchLines(); }, [selectedPlantForLines, fetchLines]);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -116,6 +132,126 @@ export default function MasterDataPage() {
           <Plus className="w-4 h-4" /> Add New Customer
         </button>
       </div>
+
+      {/* Plant & Line Management Section */}
+      <div className="bg-white rounded-2xl border border-gray-100 shadow-sm mb-6 overflow-hidden">
+        <div className="flex items-center justify-between p-4 bg-gradient-to-r from-emerald-50 to-teal-50 cursor-pointer hover:bg-emerald-100/50 transition-colors" onClick={() => setShowPlantSection(!showPlantSection)}>
+          <div className="flex items-center gap-3">
+            {showPlantSection ? <ChevronDown className="w-5 h-5 text-emerald-600" /> : <ChevronRight className="w-5 h-5 text-emerald-600" />}
+            <div className="w-10 h-10 bg-gradient-to-br from-emerald-500 to-teal-500 rounded-xl flex items-center justify-center"><Factory className="w-5 h-5 text-white" /></div>
+            <div><h3 className="font-bold text-gray-900">Plants & Production Lines</h3><p className="text-xs text-gray-500">Manage plant locations and production lines</p></div>
+          </div>
+          <span className="text-xs bg-emerald-100 text-emerald-700 px-2.5 py-1 rounded-full font-semibold">{plants.length} Plants</span>
+        </div>
+        {showPlantSection && (
+          <div className="p-4 space-y-4">
+            {/* Add Plant Button + Form */}
+            <div className="flex flex-wrap items-center gap-3">
+              <button onClick={() => { setPlantForm(EMPTY_PLANT_FORM); setEditingPlantId(null); setShowPlantModal(true); }}
+                className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-emerald-500 to-teal-500 text-white rounded-xl font-semibold text-xs shadow-md hover:shadow-lg transition-all active:scale-95">
+                <Plus className="w-3.5 h-3.5" /> Add Plant
+              </button>
+            </div>
+            {/* Plants List */}
+            {plants.length === 0 ? (
+              <p className="text-sm text-gray-400 text-center py-4">No plants configured yet. Add your first plant to get started.</p>
+            ) : (
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+                {plants.map(plant => (
+                  <div key={plant._id} className={`border rounded-xl p-3 transition-all ${selectedPlantForLines === plant._id ? 'border-emerald-300 bg-emerald-50/50 shadow-sm' : 'border-gray-100 hover:border-gray-200'}`}>
+                    <div className="flex items-center justify-between mb-2">
+                      <div className="flex items-center gap-2 cursor-pointer flex-1" onClick={() => setSelectedPlantForLines(selectedPlantForLines === plant._id ? '' : plant._id)}>
+                        <div className="w-8 h-8 bg-emerald-100 rounded-lg flex items-center justify-center"><Factory className="w-4 h-4 text-emerald-600" /></div>
+                        <div>
+                          <h4 className="font-bold text-sm text-gray-800">{plant.name}</h4>
+                          <p className="text-xs text-gray-400">{plant.code}{plant.city ? ` — ${plant.city}` : ''}</p>
+                        </div>
+                      </div>
+                      <div className="flex gap-1">
+                        <button onClick={() => { setPlantForm({ name: plant.name, code: plant.code, address: plant.address || '', city: plant.city || '', state: plant.state || '', country: plant.country || 'India' }); setEditingPlantId(plant._id); setShowPlantModal(true); }} className="p-1.5 rounded-lg hover:bg-indigo-50 text-gray-400 hover:text-indigo-600 transition-all"><Pencil className="w-3.5 h-3.5" /></button>
+                        <button onClick={async () => { if (confirm(`Delete plant "${plant.name}"?`)) await deletePlant(plant._id); }} className="p-1.5 rounded-lg hover:bg-red-50 text-gray-400 hover:text-red-600 transition-all"><Trash2 className="w-3.5 h-3.5" /></button>
+                      </div>
+                    </div>
+                    {/* Lines for this plant */}
+                    {selectedPlantForLines === plant._id && (
+                      <div className="mt-2 pt-2 border-t border-gray-100">
+                        <div className="flex items-center justify-between mb-2">
+                          <span className="text-xs font-semibold text-gray-500 uppercase">Production Lines</span>
+                        </div>
+                        {lines.length === 0 ? <p className="text-xs text-gray-400 py-1">No lines yet</p> : (
+                          <div className="space-y-1 mb-2">
+                            {lines.map(line => (
+                              <div key={line._id} className="flex items-center justify-between px-2 py-1.5 bg-white rounded-lg border border-gray-50">
+                                <span className="text-xs font-medium text-gray-700"><GitBranch className="w-3 h-3 inline mr-1 text-cyan-500" />Line {line.lineNumber}{line.name ? ` — ${line.name}` : ''}</span>
+                                <button onClick={async () => { if (confirm(`Delete Line ${line.lineNumber}?`)) await deleteLine(line._id); }} className="p-1 rounded hover:bg-red-50 text-gray-300 hover:text-red-500 transition-all"><Trash2 className="w-3 h-3" /></button>
+                              </div>
+                            ))}
+                          </div>
+                        )}
+                        {/* Quick add line */}
+                        <div className="flex gap-2 items-end">
+                          <input type="number" min="1" placeholder="Line #" value={lineForm.lineNumber} onChange={e => setLineForm({ ...lineForm, lineNumber: e.target.value })}
+                            className="w-20 px-2 py-1.5 border border-gray-200 rounded-lg text-xs focus:outline-none focus:ring-1 focus:ring-emerald-400" />
+                          <input type="text" placeholder="Name (optional)" value={lineForm.name} onChange={e => setLineForm({ ...lineForm, name: e.target.value })}
+                            className="flex-1 px-2 py-1.5 border border-gray-200 rounded-lg text-xs focus:outline-none focus:ring-1 focus:ring-emerald-400" />
+                          <button disabled={!lineForm.lineNumber || savingLine} onClick={async () => {
+                            setSavingLine(true);
+                            const res = await createLine({ plantId: plant._id, lineNumber: Number(lineForm.lineNumber), name: lineForm.name });
+                            if (!res.success) alert(res.message);
+                            else setLineForm(EMPTY_LINE_FORM);
+                            setSavingLine(false);
+                          }} className="px-3 py-1.5 bg-emerald-500 text-white rounded-lg text-xs font-semibold disabled:opacity-50 hover:bg-emerald-600 transition-all">
+                            {savingLine ? <Loader2 className="w-3 h-3 animate-spin" /> : <Plus className="w-3 h-3" />}
+                          </button>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        )}
+      </div>
+
+      {/* Plant Modal */}
+      {showPlantModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+          <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" onClick={() => setShowPlantModal(false)} />
+          <div className="relative bg-white rounded-2xl shadow-2xl w-full max-w-md">
+            <div className="sticky top-0 bg-white border-b border-gray-100 px-6 py-4 rounded-t-2xl flex items-center justify-between">
+              <h2 className="text-lg font-bold text-gray-900">{editingPlantId ? 'Edit Plant' : 'Add New Plant'}</h2>
+              <button onClick={() => setShowPlantModal(false)} className="p-2 rounded-lg hover:bg-gray-100 text-gray-400 hover:text-gray-600 transition-all"><X className="w-5 h-5" /></button>
+            </div>
+            <form onSubmit={async (e) => {
+              e.preventDefault(); setSavingPlant(true);
+              const res = editingPlantId ? await updatePlant(editingPlantId, plantForm) : await createPlant(plantForm);
+              if (res.success) { setShowPlantModal(false); setPlantForm(EMPTY_PLANT_FORM); setEditingPlantId(null); }
+              else alert(res.message);
+              setSavingPlant(false);
+            }} className="p-6 space-y-4">
+              <div className="grid grid-cols-2 gap-4">
+                <div><label className="block text-xs font-semibold text-gray-600 mb-1.5">Plant Name *</label>
+                  <input type="text" required value={plantForm.name} onChange={e => setPlantForm({ ...plantForm, name: e.target.value })} className="w-full px-3 py-2.5 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-400" placeholder="e.g., Mumbai Plant" /></div>
+                <div><label className="block text-xs font-semibold text-gray-600 mb-1.5">Code *</label>
+                  <input type="text" required value={plantForm.code} onChange={e => setPlantForm({ ...plantForm, code: e.target.value.toUpperCase() })} maxLength={5} className="w-full px-3 py-2.5 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-400 uppercase" placeholder="e.g., MUM" /></div>
+              </div>
+              <div className="grid grid-cols-3 gap-3">
+                <div><label className="block text-xs font-semibold text-gray-600 mb-1.5">City</label><input type="text" value={plantForm.city} onChange={e => setPlantForm({ ...plantForm, city: e.target.value })} className="w-full px-3 py-2.5 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-400" placeholder="Mumbai" /></div>
+                <div><label className="block text-xs font-semibold text-gray-600 mb-1.5">State</label><input type="text" value={plantForm.state} onChange={e => setPlantForm({ ...plantForm, state: e.target.value })} className="w-full px-3 py-2.5 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-400" placeholder="Maharashtra" /></div>
+                <div><label className="block text-xs font-semibold text-gray-600 mb-1.5">Country</label><input type="text" value={plantForm.country} onChange={e => setPlantForm({ ...plantForm, country: e.target.value })} className="w-full px-3 py-2.5 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-400" placeholder="India" /></div>
+              </div>
+              <div><label className="block text-xs font-semibold text-gray-600 mb-1.5">Address</label><input type="text" value={plantForm.address} onChange={e => setPlantForm({ ...plantForm, address: e.target.value })} className="w-full px-3 py-2.5 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-400" placeholder="Full address" /></div>
+              <div className="pt-4 flex items-center justify-end gap-3">
+                <button type="button" onClick={() => setShowPlantModal(false)} className="px-5 py-2.5 text-sm font-semibold text-gray-600 hover:text-gray-800 transition-colors">Cancel</button>
+                <button type="submit" disabled={savingPlant} className="flex items-center gap-2 px-6 py-2.5 bg-gradient-to-r from-emerald-500 to-teal-500 text-white rounded-xl font-semibold text-sm shadow-lg shadow-emerald-200 hover:shadow-xl transition-all disabled:opacity-50 active:scale-95">
+                  {savingPlant ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />} {editingPlantId ? 'Update' : 'Save'}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
 
       <div className="relative mb-6 max-w-md">
         <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />

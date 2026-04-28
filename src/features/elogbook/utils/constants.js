@@ -69,3 +69,19 @@ export const EMPTY_MASTER_DATA_FORM = {
   partsPerBasket: '',
   basketCount: '3',
 };
+
+/** Empty plant form state */
+export const EMPTY_PLANT_FORM = {
+  name: '',
+  code: '',
+  address: '',
+  city: '',
+  state: '',
+  country: 'India',
+};
+
+/** Empty production line form state */
+export const EMPTY_LINE_FORM = {
+  lineNumber: '',
+  name: '',
+};

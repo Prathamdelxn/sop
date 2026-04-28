@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import connectDB from "@/utils/db";
 import ElogbookQC from "@/model/ElogbookQC";
 import ElogbookBasket from "@/model/ElogbookBasket";
+import ElogbookBatch from "@/model/ElogbookBatch";
 
 export const dynamic = "force-dynamic";
 
@@ -23,7 +24,12 @@ export async function GET(req) {
     const records = await ElogbookQC.find(filter)
       .populate({
         path: "basketId",
-        populate: { path: "masterDataId" }
+        populate: [
+          { path: "masterDataId" },
+          { path: "batchId", select: "batchNumber plantId lineId" },
+          { path: "plantId", select: "name code" },
+          { path: "lineId", select: "lineNumber name" },
+        ]
       })
       .sort({ createdAt: -1 });
 
@@ -52,6 +58,19 @@ export async function POST(req) {
     const currentBasket = await ElogbookBasket.findById(basketId);
     if (!currentBasket) {
       return NextResponse.json({ success: false, message: "Basket not found" }, { status: 404 });
+    }
+
+    // Get batch info for denormalized fields
+    let batchNumber = "";
+    let plantId = currentBasket.plantId || null;
+    let lineId = currentBasket.lineId || null;
+    if (currentBasket.batchId) {
+      const batch = await ElogbookBatch.findById(currentBasket.batchId);
+      if (batch) {
+        batchNumber = batch.batchNumber || "";
+        plantId = batch.plantId || plantId;
+        lineId = batch.lineId || lineId;
+      }
     }
 
     // 2. Interlock Check (only if it's the first time starting QC for this basket)
@@ -113,10 +132,13 @@ export async function POST(req) {
 
       await qcRecord.save();
     } else {
-      // Create new record
+      // Create new record with denormalized plant/line/batch info
       qcRecord = await ElogbookQC.create({
         basketId,
         companyId,
+        plantId,
+        lineId,
+        batchNumber,
         inspectorName,
         inspectedQuantity,
         goodQuantity: incomingGood,

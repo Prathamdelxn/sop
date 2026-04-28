@@ -8,7 +8,7 @@ import { createEmptyQCForm } from '../utils/constants';
  * Hook encapsulating QC records state management and form handling.
  * Used by QC page.
  */
-export function useQCRecords(companyId) {
+export function useQCRecords(companyId, plantId, lineId) {
   const [qcRecords, setQCRecords] = useState([]);
   const [formData, setFormData] = useState({});
   const [saving, setSaving] = useState(null);
@@ -16,12 +16,12 @@ export function useQCRecords(companyId) {
   const fetchData = useCallback(async () => {
     if (!companyId) return;
     try {
-      const data = await qcService.fetchQCRecords(companyId);
+      const data = await qcService.fetchQCRecords(companyId, plantId, lineId);
       if (data.success) setQCRecords(data.data);
     } catch (err) {
       console.error('Fetch QC records error:', err);
     }
-  }, [companyId]);
+  }, [companyId, plantId, lineId]);
 
   // --- Form helpers ---
 
