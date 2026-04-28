@@ -70,6 +70,37 @@ export default function ReportsPage() {
     load();
   }, [userData, startDate, endDate, selectedMasterData, selectedCustomer, selectedPlantId, selectedLineId]);
 
+  const batchWiseData = React.useMemo(() => {
+    if (!reportData || !reportData.cycleTimeData) return [];
+    const batches = {};
+    reportData.cycleTimeData.forEach((ct, i) => {
+      const qty = reportData.quantityData?.[i] || {};
+      const bd = reportData.basketDetails?.[i] || {};
+      const batchNum = bd.batchNumber || ct.batchNumber || 'N/A';
+      if (!batches[batchNum]) {
+        batches[batchNum] = {
+          batchNumber: batchNum, plantName: bd.plantName || ct.plantName, lineNumber: bd.lineNumber || ct.lineNumber,
+          actual: 0, standard: 0, lost: 0, totalParts: 0, good: 0, defective: 0, rejected: 0,
+          doneBy: new Set(), qualityCheckedBy: new Set(), reasons: new Set(), basketCount: 0,
+        };
+      }
+      const b = batches[batchNum];
+      b.actual += ct.actual || 0; b.standard += ct.standard || 0; b.lost += ct.lost || 0;
+      b.totalParts += bd.totalParts || 0; b.good += qty.good || 0; b.defective += qty.defective || 0; b.rejected += qty.rejected || 0;
+      if (bd.doneBy && bd.doneBy !== '-') b.doneBy.add(bd.doneBy);
+      if (bd.qualityCheckedBy && bd.qualityCheckedBy !== '-') b.qualityCheckedBy.add(bd.qualityCheckedBy);
+      if (ct.stoppages) ct.stoppages.forEach(s => { if (s.reason) b.reasons.add(s.reason); });
+      b.basketCount++;
+    });
+    return Object.values(batches).map(b => ({
+      ...b,
+      doneBy: b.doneBy.size > 0 ? Array.from(b.doneBy).join(', ') : '-',
+      qualityCheckedBy: b.qualityCheckedBy.size > 0 ? Array.from(b.qualityCheckedBy).join(', ') : '-',
+      reasons: b.reasons.size > 0 ? Array.from(b.reasons).join(', ') : '-',
+      exceeds: b.actual > b.standard
+    }));
+  }, [reportData]);
+
   const handleExportPDF = async () => {
     setExporting(true);
     try {
@@ -343,6 +374,39 @@ export default function ReportsPage() {
                         </tr>
                       );
                     })}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          )}
+
+          {/* Batch-wise Execution Table */}
+          {batchWiseData.length > 0 && (
+            <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden mt-6">
+              <div className="px-6 py-4 border-b border-gray-100 flex items-center justify-between">
+                <h3 className="text-sm font-bold text-gray-800">Batch-wise Execution Details</h3>
+                <span className="text-[10px] font-bold text-indigo-600 bg-indigo-50 px-2 py-0.5 rounded-full uppercase tracking-wider">Aggregated View</span>
+              </div>
+              <div className="overflow-x-auto">
+                <table className="w-full text-sm">
+                  <thead><tr className="bg-gray-50 border-b border-gray-100">
+                    {['Batch #', 'Plant', 'Line', 'Total Baskets', 'Total Parts', 'Good', 'Rework', 'Rejected'].map(h => (
+                      <th key={h} className={`${h === 'Batch #' ? 'text-left' : 'text-center'} px-4 py-3 text-xs font-semibold text-gray-500 uppercase`}>{h}</th>
+                    ))}
+                  </tr></thead>
+                  <tbody className="divide-y divide-gray-50">
+                    {batchWiseData.map((b, i) => (
+                      <tr key={i} className="hover:bg-indigo-50/30 transition-colors">
+                        <td className="px-4 py-3 text-left"><span className="inline-flex items-center gap-1 px-2 py-0.5 bg-indigo-50 text-indigo-700 rounded-md text-xs font-bold">{b.batchNumber}</span></td>
+                        <td className="px-4 py-3 text-center text-gray-600 text-xs font-medium">{b.plantName || '-'}</td>
+                        <td className="px-4 py-3 text-center text-gray-600 text-xs font-medium">{b.lineNumber ? `Line ${b.lineNumber}` : '-'}</td>
+                        <td className="px-4 py-3 text-center font-bold text-indigo-600">{b.basketCount}</td>
+                        <td className="px-4 py-3 text-center font-bold text-gray-700">{b.totalParts || 0}</td>
+                        <td className="px-4 py-3 text-center text-emerald-600 font-medium">{b.good || 0}</td>
+                        <td className="px-4 py-3 text-center text-amber-600 font-medium">{b.defective || 0}</td>
+                        <td className="px-4 py-3 text-center text-red-600 font-medium">{b.rejected || 0}</td>
+                      </tr>
+                    ))}
                   </tbody>
                 </table>
               </div>

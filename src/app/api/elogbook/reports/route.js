@@ -124,6 +124,7 @@ export async function GET(request) {
         batchNumber: batchNum,
         plantName,
         lineNumber: lineNum,
+        stoppages: basket.stoppages || [],
       });
 
       const qc = qcMap[basket._id.toString()];
