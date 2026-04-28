@@ -16,10 +16,11 @@ export async function GET(request) {
     const startDate = searchParams.get("startDate");
     const endDate = searchParams.get("endDate");
     const masterDataId = searchParams.get("masterDataId");
+    const customerName = searchParams.get("customerName");
     const plantId = searchParams.get("plantId");
     const lineId = searchParams.get("lineId");
 
-    console.log("Reports API called with params:", { companyId, startDate, endDate, masterDataId, plantId, lineId });
+    console.log("Reports API called with params:", { companyId, startDate, endDate, masterDataId, customerName, plantId, lineId });
 
     if (!companyId) {
       return NextResponse.json({
@@ -32,6 +33,11 @@ export async function GET(request) {
     const basketFilter = { companyId };
     if (masterDataId && masterDataId !== "") {
       basketFilter.masterDataId = masterDataId;
+    } else if (customerName && customerName !== "") {
+      // Find all master data IDs for this customer
+      const mds = await ElogbookMasterData.find({ companyId, customerName }).select("_id");
+      const mdIds = mds.map(m => m._id);
+      basketFilter.masterDataId = { $in: mdIds };
     }
     if (plantId && plantId !== "") {
       basketFilter.plantId = plantId;

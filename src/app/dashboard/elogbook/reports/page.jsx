@@ -19,12 +19,13 @@ export default function ReportsPage() {
   const router = useRouter();
   const reportRef = useRef(null);
   const { userData } = useElogbookPermission('Graphical Representation');
-  const { masterDataList, refetch: fetchMD } = useMasterData(userData?.companyId);
+  const { masterDataList, customers, refetch: fetchMD } = useMasterData(userData?.companyId);
   const { plants, refetch: fetchPlants } = usePlants(userData?.companyId);
   const [selectedPlantId, setSelectedPlantId] = useState('');
   const { lines, refetch: fetchLines } = useLines(userData?.companyId, selectedPlantId || undefined);
   const [selectedLineId, setSelectedLineId] = useState('');
 
+  const [selectedCustomer, setSelectedCustomer] = useState('');
   const [selectedMasterData, setSelectedMasterData] = useState('');
   const [startDate, setStartDate] = useState('');
   const [endDate, setEndDate] = useState('');
@@ -41,7 +42,15 @@ export default function ReportsPage() {
     const load = async () => {
       setLoading(true);
       try {
-        const data = await reportService.fetchReportData({ companyId: userData.companyId, startDate, endDate, masterDataId: selectedMasterData, plantId: selectedPlantId, lineId: selectedLineId });
+        const data = await reportService.fetchReportData({ 
+          companyId: userData.companyId, 
+          startDate, 
+          endDate, 
+          masterDataId: selectedMasterData, 
+          customerName: selectedCustomer,
+          plantId: selectedPlantId, 
+          lineId: selectedLineId 
+        });
         if (data.success) {
           setReportData(data.data);
           if (data.data.defectTrendData?.length > 0) {
@@ -59,7 +68,7 @@ export default function ReportsPage() {
       finally { setLoading(false); }
     };
     load();
-  }, [userData, startDate, endDate, selectedMasterData, selectedPlantId, selectedLineId]);
+  }, [userData, startDate, endDate, selectedMasterData, selectedCustomer, selectedPlantId, selectedLineId]);
 
   const handleExportPDF = async () => {
     setExporting(true);
@@ -70,7 +79,11 @@ export default function ReportsPage() {
       if (!element) return;
       await new Promise(r => setTimeout(r, 500));
       const selectedMD = masterDataList.find(md => md._id === selectedMasterData);
-      const reportTitle = selectedMD ? `${selectedMD.customerName} - Report` : 'ELogBook Report';
+      const reportTitle = selectedMD 
+        ? `${selectedMD.customerName} - ${selectedMD.partName} Report` 
+        : selectedCustomer 
+          ? `${selectedCustomer} - Company Report`
+          : 'ELogBook Overall Report';
       const pdf = new jsPDF('p', 'mm', 'a4');
       const pdfWidth = pdf.internal.pageSize.getWidth();
       const pdfHeight = pdf.internal.pageSize.getHeight();
@@ -120,13 +133,37 @@ export default function ReportsPage() {
 
       {/* Filters */}
       <div className="bg-white rounded-2xl border border-gray-100 p-4 mb-6 shadow-sm">
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 mb-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-4">
           <div><label className="block text-xs font-semibold text-gray-500 mb-1.5 uppercase tracking-wider">Start Date</label><input type="date" value={startDate} onChange={e => setStartDate(e.target.value)} className="w-full px-3 py-2.5 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-400" /></div>
           <div><label className="block text-xs font-semibold text-gray-500 mb-1.5 uppercase tracking-wider">End Date</label><input type="date" value={endDate} onChange={e => setEndDate(e.target.value)} className="w-full px-3 py-2.5 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-400" /></div>
-          <div><label className="block text-xs font-semibold text-gray-500 mb-1.5 uppercase tracking-wider">Configuration</label>
-            <select value={selectedMasterData} onChange={e => setSelectedMasterData(e.target.value)} className="w-full px-3 py-2.5 border border-gray-200 rounded-xl text-sm bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-400">
-              <option value="">All Configurations</option>
-              {masterDataList.map(md => (<option key={md._id} value={md._id}>{md.customerName} — {md.partName}</option>))}
+          <div>
+            <label className="block text-xs font-semibold text-gray-500 mb-1.5 uppercase tracking-wider flex items-center gap-1">
+              <User className="w-3.5 h-3.5" /> Company
+            </label>
+            <select 
+              value={selectedCustomer} 
+              onChange={e => { setSelectedCustomer(e.target.value); setSelectedMasterData(''); }} 
+              className="w-full px-3 py-2.5 border border-gray-200 rounded-xl text-sm bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-400"
+            >
+              <option value="">All Companies</option>
+              {customers?.map(c => (<option key={c.customerName} value={c.customerName}>{c.customerName}</option>))}
+            </select>
+          </div>
+          <div>
+            <label className="block text-xs font-semibold text-gray-500 mb-1.5 uppercase tracking-wider flex items-center gap-1">
+              <Package className="w-3.5 h-3.5" /> Part / Configuration
+            </label>
+            <select 
+              value={selectedMasterData} 
+              onChange={e => setSelectedMasterData(e.target.value)} 
+              disabled={!selectedCustomer}
+              className="w-full px-3 py-2.5 border border-gray-200 rounded-xl text-sm bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-400 disabled:bg-gray-50 disabled:cursor-not-allowed"
+            >
+              <option value="">All {selectedCustomer ? `${selectedCustomer} Parts` : 'Parts'}</option>
+              {masterDataList
+                .filter(md => !selectedCustomer || md.customerName === selectedCustomer)
+                .map(md => (<option key={md._id} value={md._id}>{md.partName}</option>))
+              }
             </select>
           </div>
         </div>
