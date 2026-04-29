@@ -6,12 +6,16 @@
 /**
  * Fetch baskets with optional filters.
  */
-export async function fetchBaskets({ companyId, masterDataId, batchId, status }) {
+export async function fetchBaskets({
+  companyId, masterDataId, batchId, plantId, lineId, status,
+}) {
   if (!companyId) return { success: false, data: [] };
 
   let url = `/api/elogbook/baskets?companyId=${companyId}`;
   if (masterDataId) url += `&masterDataId=${masterDataId}`;
   if (batchId) url += `&batchId=${batchId}`;
+  if (plantId) url += `&plantId=${plantId}`;
+  if (lineId) url += `&lineId=${lineId}`;
   if (status) url += `&status=${status}`;
 
   const res = await fetch(url);
@@ -22,7 +26,7 @@ export async function fetchBaskets({ companyId, masterDataId, batchId, status })
  * Start (create) a new basket.
  */
 export async function startBasket({
-  companyId, masterDataId, basketNumber, barcode, startUser, additionalUsers,
+  companyId, masterDataId, batchId, plantId, lineId, basketNumber, barcode, startUser, additionalUsers,
 }) {
   const res = await fetch('/api/elogbook/baskets', {
     method: 'POST',
@@ -30,6 +34,9 @@ export async function startBasket({
     body: JSON.stringify({
       companyId,
       masterDataId,
+      batchId,
+      plantId,
+      lineId,
       basketNumber: Number(basketNumber),
       barcode: barcode || `BASKET-${basketNumber}`,
       startUser,

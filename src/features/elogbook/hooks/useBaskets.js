@@ -7,7 +7,7 @@ import * as basketService from '../services/basketService';
  * Hook encapsulating basket state management and API interactions.
  * Used by Production page.
  */
-export function useBaskets({ companyId, masterDataId, batchId }) {
+export function useBaskets({ companyId, plantId, lineId, masterDataId, batchId }) {
   const [baskets, setBaskets] = useState([]);
   const [loading, setLoading] = useState(true);
   const [actionLoading, setActionLoading] = useState(null);
@@ -20,21 +20,23 @@ export function useBaskets({ companyId, masterDataId, batchId }) {
     totalLostTime: 0,
   });
 
-  const fetchData = useCallback(async () => {
+  const fetchData = useCallback(async (isRefresh = false) => {
     if (!companyId) return;
-    setLoading(true);
+    if (!isRefresh) setLoading(true);
     try {
       const data = await basketService.fetchBaskets({
         companyId,
         masterDataId: masterDataId?._id || masterDataId,
         batchId: batchId?._id || batchId,
+        plantId,
+        lineId,
       });
       if (data.success) setBaskets(data.data);
     } catch (err) {
       console.error('Fetch baskets error:', err);
     }
-    setLoading(false);
-  }, [companyId, masterDataId, batchId]);
+    if (!isRefresh) setLoading(false);
+  }, [companyId, plantId, lineId, masterDataId, batchId]);
 
   // Calculate summary statistics when baskets change
   useEffect(() => {
@@ -67,16 +69,20 @@ export function useBaskets({ companyId, masterDataId, batchId }) {
     setActionLoading('start');
     try {
       const mdId = masterDataId?._id || masterDataId;
+      const bId = batchId?._id || batchId;
       const data = await basketService.startBasket({
         companyId,
         masterDataId: mdId,
+        batchId: bId,
+        plantId,
+        lineId,
         basketNumber: Number(startBasketNumber),
         barcode,
         startUser,
         additionalUsers,
       });
       if (data.success) {
-        await fetchData();
+        await fetchData(true);
         setActionLoading(null);
         return true;
       }
@@ -91,7 +97,7 @@ export function useBaskets({ companyId, masterDataId, batchId }) {
     setActionLoading(basketId);
     try {
       await basketService.stopBasket(basketId, reason);
-      await fetchData();
+      await fetchData(true);
     } catch (err) {
       console.error('Stop error:', err);
     }
@@ -102,7 +108,7 @@ export function useBaskets({ companyId, masterDataId, batchId }) {
     setActionLoading(basketId);
     try {
       await basketService.restartBasket(basketId);
-      await fetchData();
+      await fetchData(true);
     } catch (err) {
       console.error('Restart error:', err);
     }
@@ -116,7 +122,7 @@ export function useBaskets({ companyId, masterDataId, batchId }) {
       if (result.calculation) {
         console.log('Calculation details:', result.calculation);
       }
-      await fetchData();
+      await fetchData(true);
     } catch (err) {
       console.error('End error:', err);
     }

@@ -71,6 +71,8 @@ export default function ProductionPage() {
     handleStartBasket, handleStopBasket, handleRestartBasket, handleEndBasket,
   } = useBaskets({
     companyId: userData?.companyId,
+    plantId: selectedPlantId,
+    lineId: selectedLineId,
     masterDataId: selectedMasterData,
     batchId: activeBatch,
   });
@@ -88,7 +90,6 @@ export default function ProductionPage() {
   const handlePlantChange = (plantId) => {
     setSelectedPlantId(plantId);
     setSelectedLineId('');
-    setActiveBatch(null);
     if (plantId) {
       localStorage.setItem('ELOGBOOK_PRODUCTION_PLANT', plantId);
       localStorage.removeItem('ELOGBOOK_PRODUCTION_LINE');
@@ -100,15 +101,10 @@ export default function ProductionPage() {
 
   const handleLineChange = (lineId) => {
     setSelectedLineId(lineId);
-    setActiveBatch(null);
     if (lineId) {
       localStorage.setItem('ELOGBOOK_PRODUCTION_LINE', lineId);
     } else {
       localStorage.removeItem('ELOGBOOK_PRODUCTION_LINE');
-    }
-    // Re-fetch active batch if part is already selected
-    if (selectedPart) {
-      fetchActiveBatch(selectedPart);
     }
   };
 
@@ -135,10 +131,8 @@ export default function ProductionPage() {
     setSelectedPart(partId);
     setSelectedMasterData(part);
     if (part) {
-      fetchActiveBatch(partId);
       localStorage.setItem('ELOGBOOK_PRODUCTION_PART', partId);
     } else {
-      setActiveBatch(null);
       localStorage.removeItem('ELOGBOOK_PRODUCTION_PART');
     }
   };
@@ -165,10 +159,18 @@ export default function ProductionPage() {
       if (part) {
         setSelectedPart(savedPart);
         setSelectedMasterData(part);
-        fetchActiveBatch(savedPart);
       }
     }
-  }, [masterDataList, fetchActiveBatch, selectedCustomer, selectedPart, selectedPlantId, selectedLineId]);
+  }, [masterDataList, selectedCustomer, selectedPart, selectedPlantId, selectedLineId]);
+
+  // --- Auto-sync Active Batch ---
+  useEffect(() => {
+    if (selectedPart && selectedLineId) {
+      fetchActiveBatch(selectedPart);
+    } else {
+      setActiveBatch(null);
+    }
+  }, [selectedPart, selectedLineId, selectedPlantId, fetchActiveBatch, setActiveBatch]);
 
   // --- Barcode handler ---
   const handleBarcodeScan = useCallback(

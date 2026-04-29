@@ -102,15 +102,19 @@ export async function POST(req) {
       return NextResponse.json({ success: false, message: "Missing required fields" }, { status: 400 });
     }
 
-    // Find active batch (scoped by plant/line if present on the body)
-    const batchFilter = { companyId, masterDataId, status: "in-progress" };
-    if (body.plantId) batchFilter.plantId = body.plantId;
-    if (body.lineId) batchFilter.lineId = body.lineId;
-
-    const activeBatch = await ElogbookBatch.findOne(batchFilter);
+    // Find active batch
+    let activeBatch = null;
+    if (body.batchId) {
+      activeBatch = await ElogbookBatch.findById(body.batchId);
+    } else {
+      const batchFilter = { companyId, masterDataId, status: "in-progress" };
+      if (body.plantId) batchFilter.plantId = body.plantId;
+      if (body.lineId) batchFilter.lineId = body.lineId;
+      activeBatch = await ElogbookBatch.findOne(batchFilter);
+    }
 
     if (!activeBatch) {
-      return NextResponse.json({ success: false, message: "No active batch found for this part. Please start a batch first." }, { status: 400 });
+      return NextResponse.json({ success: false, message: "No active batch found. Please start a batch first." }, { status: 400 });
     }
 
     // Auto-calculate basket number if not provided
