@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect, useRef } from 'react';
 import { useRouter } from 'next/navigation';
-import { ArrowLeft, BarChart3, Download, Loader2, Clock, AlertTriangle, CheckCircle2, TrendingUp, Package, User, Shield, Factory, GitBranch, Hash } from 'lucide-react';
+import { ArrowLeft, BarChart3, Download, Loader2, Clock, AlertTriangle, CheckCircle2, TrendingUp, Package, User, Shield, Factory, GitBranch, Hash, Mail, X } from 'lucide-react';
 
 import { useElogbookPermission } from '@/features/elogbook/hooks/useElogbookPermission';
 import { useMasterData } from '@/features/elogbook/hooks/useMasterData';
@@ -33,6 +33,10 @@ export default function ReportsPage() {
   const [loading, setLoading] = useState(false);
   const [exporting, setExporting] = useState(false);
   const [defectPieData, setDefectPieData] = useState([]);
+  const [showExportModal, setShowExportModal] = useState(false);
+  const [exportEmail, setExportEmail] = useState('');
+  const [sendingEmail, setSendingEmail] = useState(false);
+  const [emailStatus, setEmailStatus] = useState(null);
 
   useEffect(() => { if (userData?.companyId) { fetchMD(); fetchPlants(); const today = new Date().toISOString().split('T')[0]; setStartDate(today); setEndDate(today); } }, [userData]);
   useEffect(() => { if (selectedPlantId) fetchLines(); }, [selectedPlantId, fetchLines]);
@@ -101,49 +105,108 @@ export default function ReportsPage() {
     }));
   }, [reportData]);
 
-  const handleExportPDF = async () => {
+  const generatePDFBlob = async () => {
+    const html2canvas = (await import('html2canvas-pro')).default;
+    const jsPDF = (await import('jspdf')).default;
+    const element = reportRef.current;
+    if (!element) return null;
+    
+    await new Promise(r => setTimeout(r, 500));
+    
+    const selectedMD = masterDataList.find(md => md._id === selectedMasterData);
+    const reportTitle = selectedMD 
+      ? `${selectedMD.customerName} - ${selectedMD.partName} Report` 
+      : selectedCustomer 
+        ? `${selectedCustomer} - Company Report`
+        : 'ELogBook Overall Report';
+        
+    const pdf = new jsPDF('p', 'mm', 'a4');
+    const pdfWidth = pdf.internal.pageSize.getWidth();
+    const pdfHeight = pdf.internal.pageSize.getHeight();
+    const margin = 14;
+    const usableWidth = pdfWidth - (margin * 2);
+    
+    pdf.setFontSize(18); pdf.setTextColor(55, 48, 163); pdf.text(reportTitle, margin, 15);
+    pdf.setFontSize(10); pdf.setTextColor(107, 114, 128);
+    pdf.text(`Generated: ${new Date().toLocaleString()}`, margin, 22);
+    
+    if (selectedMD) pdf.text(`Part: ${selectedMD.partName}`, margin, 28);
+    
+    const selectedPlantObj = plants.find(p => p._id === selectedPlantId);
+    const selectedLineObj = lines.find(l => l._id === selectedLineId);
+    let infoY = 34;
+    if (selectedPlantObj) { pdf.text(`Plant: ${selectedPlantObj.name} (${selectedPlantObj.code})`, margin, infoY); infoY += 6; }
+    if (selectedLineObj) { pdf.text(`Line: ${selectedLineObj.lineNumber}${selectedLineObj.name ? ` — ${selectedLineObj.name}` : ''}`, margin, infoY); infoY += 6; }
+    if (startDate) { pdf.text(`Date Range: ${startDate} to ${endDate || startDate}`, margin, infoY); infoY += 6; }
+    
+    let currentY = infoY + 4;
+    const children = Array.from(element.children);
+    
+    for (let i = 0; i < children.length; i++) {
+      // Use scale: 1.5 instead of 2 to reduce file size while maintaining readability
+      const canvas = await html2canvas(children[i], { scale: 1.5, useCORS: true, logging: false, backgroundColor: '#ffffff' });
+      // Use JPEG with 0.8 quality instead of PNG for significantly smaller file size
+      const imgData = canvas.toDataURL('image/jpeg', 0.8);
+      const imgHeight = (canvas.height * usableWidth) / canvas.width;
+      
+      if (currentY + imgHeight > pdfHeight - margin) { pdf.addPage(); currentY = 14; }
+      // Use 'FAST' compression alias
+      pdf.addImage(imgData, 'JPEG', margin, currentY, usableWidth, imgHeight, undefined, 'FAST');
+      currentY += imgHeight + 8;
+    }
+    
+    const filename = selectedMD ? `elogbook-${selectedMD.customerName.replace(/\s+/g, '-').toLowerCase()}-${startDate || 'all'}.pdf` : `elogbook-report-${startDate || 'all'}.pdf`;
+    return { pdf, filename };
+  };
+
+  const handleDownloadPDF = async () => {
     setExporting(true);
     try {
-      const html2canvas = (await import('html2canvas-pro')).default;
-      const jsPDF = (await import('jspdf')).default;
-      const element = reportRef.current;
-      if (!element) return;
-      await new Promise(r => setTimeout(r, 500));
-      const selectedMD = masterDataList.find(md => md._id === selectedMasterData);
-      const reportTitle = selectedMD 
-        ? `${selectedMD.customerName} - ${selectedMD.partName} Report` 
-        : selectedCustomer 
-          ? `${selectedCustomer} - Company Report`
-          : 'ELogBook Overall Report';
-      const pdf = new jsPDF('p', 'mm', 'a4');
-      const pdfWidth = pdf.internal.pageSize.getWidth();
-      const pdfHeight = pdf.internal.pageSize.getHeight();
-      const margin = 14;
-      const usableWidth = pdfWidth - (margin * 2);
-      pdf.setFontSize(18); pdf.setTextColor(55, 48, 163); pdf.text(reportTitle, margin, 15);
-      pdf.setFontSize(10); pdf.setTextColor(107, 114, 128);
-      pdf.text(`Generated: ${new Date().toLocaleString()}`, margin, 22);
-      if (selectedMD) pdf.text(`Part: ${selectedMD.partName}`, margin, 28);
-      const selectedPlantObj = plants.find(p => p._id === selectedPlantId);
-      const selectedLineObj = lines.find(l => l._id === selectedLineId);
-      let infoY = 34;
-      if (selectedPlantObj) { pdf.text(`Plant: ${selectedPlantObj.name} (${selectedPlantObj.code})`, margin, infoY); infoY += 6; }
-      if (selectedLineObj) { pdf.text(`Line: ${selectedLineObj.lineNumber}${selectedLineObj.name ? ` — ${selectedLineObj.name}` : ''}`, margin, infoY); infoY += 6; }
-      if (startDate) { pdf.text(`Date Range: ${startDate} to ${endDate || startDate}`, margin, infoY); infoY += 6; }
-      let currentY = infoY + 4;
-      const children = Array.from(element.children);
-      for (let i = 0; i < children.length; i++) {
-        const canvas = await html2canvas(children[i], { scale: 2, useCORS: true, logging: false, backgroundColor: '#ffffff' });
-        const imgData = canvas.toDataURL('image/png');
-        const imgHeight = (canvas.height * usableWidth) / canvas.width;
-        if (currentY + imgHeight > pdfHeight - margin) { pdf.addPage(); currentY = 14; }
-        pdf.addImage(imgData, 'PNG', margin, currentY, usableWidth, imgHeight);
-        currentY += imgHeight + 8;
+      const result = await generatePDFBlob();
+      if (result) {
+        result.pdf.save(result.filename);
+        setShowExportModal(false);
       }
-      const filename = selectedMD ? `elogbook-${selectedMD.customerName.replace(/\s+/g, '-').toLowerCase()}-${startDate || 'all'}.pdf` : `elogbook-report-${startDate || 'all'}.pdf`;
-      pdf.save(filename);
-    } catch (err) { console.error('PDF export error:', err); }
-    setExporting(false);
+    } catch (err) {
+      console.error('PDF export error:', err);
+    } finally {
+      setExporting(false);
+    }
+  };
+
+  const handleEmailPDF = async () => {
+    if (!exportEmail || !exportEmail.includes('@')) {
+      setEmailStatus({ type: 'error', message: 'Please enter a valid email address' });
+      return;
+    }
+
+    setSendingEmail(true);
+    setEmailStatus(null);
+    try {
+      const result = await generatePDFBlob();
+      if (!result) return;
+
+      const pdfBlob = result.pdf.output('blob');
+      
+      const response = await reportService.emailReport({
+        email: exportEmail,
+        pdfBlob: pdfBlob,
+        filename: result.filename,
+        subject: `E-Logbook Report: ${result.filename.replace('.pdf', '')}`
+      });
+
+      if (response.success) {
+        setEmailStatus({ type: 'success', message: 'Report sent successfully to ' + exportEmail });
+        setTimeout(() => setShowExportModal(false), 2000);
+      } else {
+        setEmailStatus({ type: 'error', message: response.message || 'Failed to send email' });
+      }
+    } catch (err) {
+      console.error('Email export error:', err);
+      setEmailStatus({ type: 'error', message: 'An error occurred while sending the email' });
+    } finally {
+      setSendingEmail(false);
+    }
   };
 
   const summary = reportData?.summary || { totalBaskets: 0, totalGood: 0, totalInspected: 0, defectRate: 0, avgCycleTime: 0, totalLostTime: 0 };
@@ -157,8 +220,8 @@ export default function ReportsPage() {
           <button onClick={() => router.push('/dashboard/elogbook')} className="w-10 h-10 flex items-center justify-center rounded-xl bg-white border border-gray-200 text-gray-600 hover:bg-gray-50 transition-all shadow-sm"><ArrowLeft className="w-4 h-4" /></button>
           <div><h1 className="text-xl sm:text-2xl font-extrabold text-gray-900">Reports & Dashboard</h1><p className="text-sm text-gray-500">Basket performance analysis & quality metrics</p></div>
         </div>
-        <button onClick={handleExportPDF} disabled={exporting || !reportData} className="flex items-center gap-2 px-5 py-2.5 bg-gradient-to-r from-indigo-600 to-purple-600 text-white rounded-xl font-semibold text-sm shadow-lg shadow-indigo-200 hover:shadow-xl transition-all hover:-translate-y-0.5 active:scale-95 disabled:opacity-50">
-          {exporting ? <Loader2 className="w-4 h-4 animate-spin" /> : <Download className="w-4 h-4" />} Export PDF
+        <button onClick={() => setShowExportModal(true)} disabled={exporting || !reportData} className="flex items-center gap-2 px-5 py-2.5 bg-gradient-to-r from-indigo-600 to-purple-600 text-white rounded-xl font-semibold text-sm shadow-lg shadow-indigo-200 hover:shadow-xl transition-all hover:-translate-y-0.5 active:scale-95 disabled:opacity-50">
+          <Download className="w-4 h-4" /> Export Report
         </button>
       </div>
 
@@ -412,6 +475,100 @@ export default function ReportsPage() {
               </div>
             </div>
           )}
+        </div>
+      )}
+
+      {/* Export Modal */}
+      {showExportModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-in fade-in duration-200">
+          <div className="bg-white rounded-3xl w-full max-w-md shadow-2xl overflow-hidden animate-in zoom-in-95 duration-200">
+            <div className="p-6">
+              <div className="flex items-center justify-between mb-6">
+                <div>
+                  <h3 className="text-xl font-extrabold text-gray-900">Export Report</h3>
+                  <p className="text-sm text-gray-500">Choose how you want to receive the PDF</p>
+                </div>
+                <button 
+                  onClick={() => setShowExportModal(false)}
+                  className="w-8 h-8 flex items-center justify-center rounded-full hover:bg-gray-100 text-gray-400 transition-colors"
+                >
+                  <X className="w-5 h-5" />
+                </button>
+              </div>
+
+              <div className="space-y-4">
+                {/* Download Option */}
+                <button
+                  onClick={handleDownloadPDF}
+                  disabled={exporting || sendingEmail}
+                  className="w-full group flex items-center gap-4 p-4 rounded-2xl border-2 border-indigo-50 hover:border-indigo-200 hover:bg-indigo-50/50 transition-all text-left"
+                >
+                  <div className="w-12 h-12 flex items-center justify-center rounded-xl bg-indigo-100 text-indigo-600 group-hover:scale-110 transition-transform">
+                    {exporting ? <Loader2 className="w-6 h-6 animate-spin" /> : <Download className="w-6 h-6" />}
+                  </div>
+                  <div>
+                    <div className="font-bold text-gray-900">Download PDF</div>
+                    <div className="text-xs text-gray-500">Generate and save to your device</div>
+                  </div>
+                </button>
+
+                <div className="relative">
+                  <div className="absolute inset-0 flex items-center"><div className="w-full border-t border-gray-100"></div></div>
+                  <div className="relative flex justify-center text-xs uppercase"><span className="bg-white px-2 text-gray-400 font-bold tracking-widest">or</span></div>
+                </div>
+
+                {/* Email Option */}
+                <div className="space-y-3">
+                  <div className="relative">
+                    <label className="block text-xs font-bold text-gray-400 uppercase tracking-widest mb-1.5 ml-1">Send to Email</label>
+                    <div className="relative">
+                      <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none">
+                        <Mail className="w-4 h-4 text-gray-400" />
+                      </div>
+                      <input
+                        type="email"
+                        placeholder="recipient@example.com"
+                        value={exportEmail}
+                        onChange={(e) => setExportEmail(e.target.value)}
+                        className="w-full pl-10 pr-4 py-3 bg-gray-50 border border-gray-200 rounded-2xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-400 transition-all"
+                      />
+                    </div>
+                  </div>
+
+                  <button
+                    onClick={handleEmailPDF}
+                    disabled={exporting || sendingEmail || !exportEmail}
+                    className="w-full flex items-center justify-center gap-2 py-3.5 bg-indigo-600 hover:bg-indigo-700 disabled:bg-gray-200 disabled:text-gray-400 text-white rounded-2xl font-bold text-sm shadow-lg shadow-indigo-100 transition-all active:scale-[0.98]"
+                  >
+                    {sendingEmail ? (
+                      <>
+                        <Loader2 className="w-4 h-4 animate-spin" />
+                        Generating & Sending...
+                      </>
+                    ) : (
+                      <>
+                        <Mail className="w-4 h-4" />
+                        Send Report via Email
+                      </>
+                    )}
+                  </button>
+
+                  {emailStatus && (
+                    <div className={`mt-2 p-3 rounded-xl text-xs font-medium flex items-center gap-2 ${
+                      emailStatus.type === 'success' ? 'bg-emerald-50 text-emerald-600 border border-emerald-100' : 'bg-red-50 text-red-600 border border-red-100'
+                    }`}>
+                      {emailStatus.type === 'success' ? <CheckCircle2 className="w-4 h-4" /> : <AlertTriangle className="w-4 h-4" />}
+                      {emailStatus.message}
+                    </div>
+                  )}
+                </div>
+              </div>
+            </div>
+            
+            <div className="p-4 bg-gray-50 border-t border-gray-100 text-center">
+              <p className="text-[10px] text-gray-400 font-medium">The PDF includes all charts and tables visible on this page.</p>
+            </div>
+          </div>
         </div>
       )}
     </div>
