@@ -86,6 +86,8 @@ export default function ReportsPage() {
           batchNumber: batchNum, plantName: bd.plantName || ct.plantName, lineNumber: bd.lineNumber || ct.lineNumber,
           actual: 0, standard: 0, lost: 0, totalParts: 0, good: 0, defective: 0, rejected: 0,
           doneBy: new Set(), qualityCheckedBy: new Set(), reasons: new Set(), basketCount: 0,
+          startTime: bd.batchStartTime || null, endTime: bd.batchEndTime || null,
+          startUser: bd.batchStartUser || '-', endUser: bd.batchEndUser || '-'
         };
       }
       const b = batches[batchNum];
@@ -95,6 +97,18 @@ export default function ReportsPage() {
       if (bd.qualityCheckedBy && bd.qualityCheckedBy !== '-') b.qualityCheckedBy.add(bd.qualityCheckedBy);
       if (ct.stoppages) ct.stoppages.forEach(s => { if (s.reason) b.reasons.add(s.reason); });
       b.basketCount++;
+      if (bd.batchStartTime) {
+        if (!b.startTime || new Date(bd.batchStartTime) < new Date(b.startTime)) {
+          b.startTime = bd.batchStartTime;
+          if (bd.batchStartUser && bd.batchStartUser !== '-') b.startUser = bd.batchStartUser;
+        }
+      }
+      if (bd.batchEndTime) {
+        if (!b.endTime || new Date(bd.batchEndTime) > new Date(b.endTime)) {
+          b.endTime = bd.batchEndTime;
+          if (bd.batchEndUser && bd.batchEndUser !== '-') b.endUser = bd.batchEndUser;
+        }
+      }
     });
     return Object.values(batches).map(b => ({
       ...b,
@@ -410,30 +424,43 @@ export default function ReportsPage() {
               <div className="overflow-x-auto">
                 <table className="w-full text-sm">
                   <thead><tr className="bg-gray-50 border-b border-gray-100">
-                    {['Basket', 'Batch #', 'Plant', 'Line', 'Actual Time', 'Standard', 'Lost Time', 'Total Parts', 'Good', 'Rework', 'Rejected', 'Done By', 'QC By', 'Status'].map(h => (
-                      <th key={h} className={`${h === 'Basket' ? 'text-left' : 'text-center'} px-4 py-3 text-xs font-semibold text-gray-500 uppercase`}>{h}</th>
+                    {['Basket', 'Batch #', 'Plant', 'Line', 'Actual Time', 'Standard', 'Lost Time / Reason', 'Total Parts', 'Good', 'Rejected', 'Done By', 'QC By', 'Status'].map(h => (
+                      <th key={h} className={`${h === 'Basket' ? 'text-left' : 'text-center'} px-2 py-2 text-[11px] font-semibold text-gray-500 uppercase tracking-tight whitespace-nowrap`}>{h}</th>
                     ))}
                   </tr></thead>
                   <tbody className="divide-y divide-gray-50">
                     {reportData.cycleTimeData.map((ct, i) => {
                       const qty = reportData.quantityData?.[i] || { good: 0, defective: 0, rejected: 0 };
                       const bd = reportData.basketDetails?.[i] || {};
+                      
+                      const reasonsSet = new Set();
+                      if (ct.stoppages) {
+                        ct.stoppages.forEach(s => {
+                          if (s.reason) reasonsSet.add(s.reason);
+                        });
+                      }
+                      const reasons = reasonsSet.size > 0 ? Array.from(reasonsSet).join(', ') : '';
+
                       return (
-                        <tr key={i} className="hover:bg-indigo-50/30 transition-colors">
-                          <td className="px-4 py-3 font-semibold text-gray-800">{ct.name}</td>
-                          <td className="px-4 py-3 text-center"><span className="inline-flex items-center gap-1 px-2 py-0.5 bg-indigo-50 text-indigo-700 rounded-md text-xs font-bold">{bd.batchNumber || '-'}</span></td>
-                          <td className="px-4 py-3 text-center text-gray-600 text-xs font-medium">{bd.plantName || '-'}</td>
-                          <td className="px-4 py-3 text-center text-gray-600 text-xs font-medium">{bd.lineNumber ? `Line ${bd.lineNumber}` : '-'}</td>
-                          <td className={`px-4 py-3 text-center font-bold ${ct.exceeds ? 'text-red-600' : 'text-emerald-600'}`}>{formatMinutesToTime(ct.actual)}</td>
-                          <td className="px-4 py-3 text-center text-blue-600 font-medium">{formatMinutesToTime(ct.standard)}</td>
-                          <td className="px-4 py-3 text-center text-amber-600 font-medium">{formatMinutesToTime(ct.lost)}</td>
-                          <td className="px-4 py-3 text-center font-bold text-gray-700">{bd.totalParts || 0}</td>
-                          <td className="px-4 py-3 text-center text-emerald-600 font-medium">{qty.good || 0}</td>
-                          <td className="px-4 py-3 text-center text-amber-600 font-medium">{qty.defective || 0}</td>
-                          <td className="px-4 py-3 text-center text-red-600 font-medium">{qty.rejected || 0}</td>
-                          <td className="px-4 py-3 text-center"><div className="flex items-center justify-center gap-1"><User className="w-3 h-3 text-gray-400" /><span className="text-gray-700 text-xs">{bd.doneBy || '-'}</span></div></td>
-                          <td className="px-4 py-3 text-center"><div className="flex items-center justify-center gap-1"><Shield className="w-3 h-3 text-gray-400" /><span className="text-gray-700 text-xs">{bd.qualityCheckedBy || '-'}</span></div></td>
-                          <td className="px-4 py-3 text-center"><span className={`inline-flex px-2 py-0.5 rounded-md text-xs font-semibold ${ct.exceeds ? 'bg-red-50 text-red-600' : 'bg-emerald-50 text-emerald-600'}`}>{ct.exceeds ? 'Over Target' : 'On Target'}</span></td>
+                        <tr key={i} className="hover:bg-indigo-50/30 transition-colors text-[13px]">
+                          <td className="px-2 py-2 font-semibold text-gray-800 whitespace-nowrap">{ct.name}</td>
+                          <td className="px-2 py-2 text-center whitespace-nowrap"><span className="inline-flex items-center gap-1 px-1.5 py-0.5 bg-indigo-50 text-indigo-700 rounded-md text-[11px] font-bold">{bd.batchNumber || '-'}</span></td>
+                          <td className="px-2 py-2 text-center text-gray-600 text-[11px] font-medium whitespace-nowrap">{bd.plantName || '-'}</td>
+                          <td className="px-2 py-2 text-center text-gray-600 text-[11px] font-medium whitespace-nowrap">{bd.lineNumber ? `Line ${bd.lineNumber}` : '-'}</td>
+                          <td className={`px-2 py-2 text-center font-bold whitespace-nowrap ${ct.exceeds ? 'text-red-600' : 'text-emerald-600'}`}>{formatMinutesToTime(ct.actual)}</td>
+                          <td className="px-2 py-2 text-center text-blue-600 font-medium whitespace-nowrap">{formatMinutesToTime(ct.standard)}</td>
+                          <td className="px-2 py-2 text-center">
+                            <div className="text-amber-600 font-medium whitespace-nowrap">{formatMinutesToTime(ct.lost)}</div>
+                            {reasons && (
+                              <div className="text-[10px] text-gray-800 font-bold mt-0.5 max-w-[160px] mx-auto whitespace-normal break-words leading-tight" title={reasons}>{reasons}</div>
+                            )}
+                          </td>
+                          <td className="px-2 py-2 text-center font-bold text-gray-700">{bd.totalParts || 0}</td>
+                          <td className="px-2 py-2 text-center text-emerald-600 font-medium">{qty.good || 0}</td>
+                          <td className="px-2 py-2 text-center text-red-600 font-medium">{qty.rejected || 0}</td>
+                          <td className="px-2 py-2 text-center"><div className="flex items-center justify-center gap-1"><User className="w-3 h-3 text-gray-400" /><span className="text-gray-700 text-[11px] whitespace-nowrap">{bd.doneBy || '-'}</span></div></td>
+                          <td className="px-2 py-2 text-center"><div className="flex items-center justify-center gap-1"><Shield className="w-3 h-3 text-gray-400" /><span className="text-gray-700 text-[11px] whitespace-nowrap">{bd.qualityCheckedBy || '-'}</span></div></td>
+                          <td className="px-2 py-2 text-center"><span className={`inline-flex px-1.5 py-0.5 rounded-md text-[10px] font-semibold whitespace-nowrap ${ct.exceeds ? 'bg-red-50 text-red-600' : 'bg-emerald-50 text-emerald-600'}`}>{ct.exceeds ? 'Over Target' : 'On Target'}</span></td>
                         </tr>
                       );
                     })}
@@ -453,20 +480,23 @@ export default function ReportsPage() {
               <div className="overflow-x-auto">
                 <table className="w-full text-sm">
                   <thead><tr className="bg-gray-50 border-b border-gray-100">
-                    {['Batch #', 'Plant', 'Line', 'Total Baskets', 'Total Parts', 'Good', 'Rework', 'Rejected'].map(h => (
-                      <th key={h} className={`${h === 'Batch #' ? 'text-left' : 'text-center'} px-4 py-3 text-xs font-semibold text-gray-500 uppercase`}>{h}</th>
+                    {['Batch #', 'Plant', 'Line', 'Start Time', 'End Time', 'Started By', 'Ended By', 'Total Baskets', 'Total Parts', 'Good', 'Rejected'].map(h => (
+                      <th key={h} className={`${h === 'Batch #' ? 'text-left' : 'text-center'} px-4 py-3 text-xs font-semibold text-gray-500 uppercase whitespace-nowrap`}>{h}</th>
                     ))}
                   </tr></thead>
                   <tbody className="divide-y divide-gray-50">
                     {batchWiseData.map((b, i) => (
-                      <tr key={i} className="hover:bg-indigo-50/30 transition-colors">
+                      <tr key={i} className="hover:bg-indigo-50/30 transition-colors whitespace-nowrap">
                         <td className="px-4 py-3 text-left"><span className="inline-flex items-center gap-1 px-2 py-0.5 bg-indigo-50 text-indigo-700 rounded-md text-xs font-bold">{b.batchNumber}</span></td>
                         <td className="px-4 py-3 text-center text-gray-600 text-xs font-medium">{b.plantName || '-'}</td>
                         <td className="px-4 py-3 text-center text-gray-600 text-xs font-medium">{b.lineNumber ? `Line ${b.lineNumber}` : '-'}</td>
+                        <td className="px-4 py-3 text-center text-gray-700 text-xs font-medium">{b.startTime && !isNaN(new Date(b.startTime)) ? new Date(b.startTime).toLocaleString([], { dateStyle: 'short', timeStyle: 'short' }) : '-'}</td>
+                        <td className="px-4 py-3 text-center text-gray-700 text-xs font-medium">{b.endTime && !isNaN(new Date(b.endTime)) ? new Date(b.endTime).toLocaleString([], { dateStyle: 'short', timeStyle: 'short' }) : '-'}</td>
+                        <td className="px-4 py-3 text-center"><div className="flex items-center justify-center gap-1"><User className="w-3 h-3 text-gray-400" /><span className="text-gray-700 text-xs">{b.startUser || '-'}</span></div></td>
+                        <td className="px-4 py-3 text-center"><div className="flex items-center justify-center gap-1"><User className="w-3 h-3 text-gray-400" /><span className="text-gray-700 text-xs">{b.endUser || '-'}</span></div></td>
                         <td className="px-4 py-3 text-center font-bold text-indigo-600">{b.basketCount}</td>
                         <td className="px-4 py-3 text-center font-bold text-gray-700">{b.totalParts || 0}</td>
                         <td className="px-4 py-3 text-center text-emerald-600 font-medium">{b.good || 0}</td>
-                        <td className="px-4 py-3 text-center text-amber-600 font-medium">{b.defective || 0}</td>
                         <td className="px-4 py-3 text-center text-red-600 font-medium">{b.rejected || 0}</td>
                       </tr>
                     ))}

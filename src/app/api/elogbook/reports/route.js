@@ -65,7 +65,7 @@ export async function GET(request) {
     // Fetch baskets
     const baskets = await ElogbookBasket.find(basketFilter)
       .populate("masterDataId")
-      .populate("batchId", "batchNumber")
+      .populate("batchId", "batchNumber startTime endTime startUser endUser")
       .populate("plantId", "name code")
       .populate("lineId", "lineNumber name")
       .sort({ basketNumber: 1 });
@@ -186,6 +186,10 @@ export async function GET(request) {
         plantCode: plantCode,
         lineNumber: lineNum,
         lineName: lineName,
+        batchStartTime: basket.batchId?.startTime || basket.startTime || null,
+        batchEndTime: basket.batchId?.endTime || basket.endTime || null,
+        batchStartUser: basket.batchId?.startUser || basket.startUser || "-",
+        batchEndUser: basket.batchId?.endUser || basket.endUser || "-",
       });
 
       totalBaskets++;
