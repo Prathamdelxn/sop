@@ -20,7 +20,7 @@ export default function MasterDataPage() {
   const { masterDataList, loading, refetch, handleCreate, handleUpdate, handleDelete } = useMasterData(userData?.companyId);
   const { plants, refetch: fetchPlants, handleCreate: createPlant, handleUpdate: updatePlant, handleDelete: deletePlant } = usePlants(userData?.companyId);
   const [selectedPlantForLines, setSelectedPlantForLines] = useState('');
-  const { lines, refetch: fetchLines, handleCreate: createLine, handleDelete: deleteLine } = useLines(userData?.companyId, selectedPlantForLines || undefined);
+  const { lines, refetch: fetchLines, handleCreate: createLine, handleUpdate: updateLine, handleDelete: deleteLine } = useLines(userData?.companyId, selectedPlantForLines || undefined);
 
   const [showModal, setShowModal] = useState(false);
   const [editingId, setEditingId] = useState(null);
@@ -38,6 +38,7 @@ export default function MasterDataPage() {
   const [lineForm, setLineForm] = useState(EMPTY_LINE_FORM);
   const [savingPlant, setSavingPlant] = useState(false);
   const [savingLine, setSavingLine] = useState(false);
+  const [editingLineId, setEditingLineId] = useState(null);
 
   useEffect(() => { if (userData?.companyId) { refetch(); fetchPlants(); } }, [userData]);
   useEffect(() => { if (selectedPlantForLines) fetchLines(); }, [selectedPlantForLines, fetchLines]);
@@ -183,7 +184,10 @@ export default function MasterDataPage() {
                             {lines.map(line => (
                               <div key={line._id} className="flex items-center justify-between px-2 py-1.5 bg-white rounded-lg border border-gray-50">
                                 <span className="text-xs font-medium text-gray-700"><GitBranch className="w-3 h-3 inline mr-1 text-cyan-500" />Line {line.lineNumber}{line.name ? ` — ${line.name}` : ''}</span>
-                                <button onClick={async () => { if (confirm(`Delete Line ${line.lineNumber}?`)) await deleteLine(line._id); }} className="p-1 rounded hover:bg-red-50 text-gray-300 hover:text-red-500 transition-all"><Trash2 className="w-3 h-3" /></button>
+                                <div className="flex gap-1">
+                                  <button onClick={() => { setLineForm({ lineNumber: line.lineNumber, name: line.name || '' }); setEditingLineId(line._id); }} className="p-1 rounded hover:bg-indigo-50 text-gray-300 hover:text-indigo-500 transition-all"><Pencil className="w-3 h-3" /></button>
+                                  <button onClick={async () => { if (confirm(`Delete Line ${line.lineNumber}?`)) await deleteLine(line._id); }} className="p-1 rounded hover:bg-red-50 text-gray-300 hover:text-red-500 transition-all"><Trash2 className="w-3 h-3" /></button>
+                                </div>
                               </div>
                             ))}
                           </div>
@@ -196,13 +200,19 @@ export default function MasterDataPage() {
                             className="flex-1 px-2 py-1.5 border border-gray-200 rounded-lg text-xs focus:outline-none focus:ring-1 focus:ring-emerald-400" />
                           <button disabled={!lineForm.lineNumber || savingLine} onClick={async () => {
                             setSavingLine(true);
-                            const res = await createLine({ plantId: plant._id, lineNumber: Number(lineForm.lineNumber), name: lineForm.name });
+                            const payload = { plantId: plant._id, lineNumber: Number(lineForm.lineNumber), name: lineForm.name };
+                            const res = editingLineId ? await updateLine(editingLineId, payload) : await createLine(payload);
                             if (!res.success) alert(res.message);
-                            else setLineForm(EMPTY_LINE_FORM);
+                            else { setLineForm(EMPTY_LINE_FORM); setEditingLineId(null); }
                             setSavingLine(false);
-                          }} className="px-3 py-1.5 bg-emerald-500 text-white rounded-lg text-xs font-semibold disabled:opacity-50 hover:bg-emerald-600 transition-all">
-                            {savingLine ? <Loader2 className="w-3 h-3 animate-spin" /> : <Plus className="w-3 h-3" />}
+                          }} className={`px-3 py-1.5 text-white rounded-lg text-xs font-semibold disabled:opacity-50 transition-all ${editingLineId ? 'bg-indigo-500 hover:bg-indigo-600' : 'bg-emerald-500 hover:bg-emerald-600'}`}>
+                            {savingLine ? <Loader2 className="w-3 h-3 animate-spin" /> : (editingLineId ? <Save className="w-3 h-3" /> : <Plus className="w-3 h-3" />)}
                           </button>
+                          {editingLineId && (
+                            <button onClick={() => { setLineForm(EMPTY_LINE_FORM); setEditingLineId(null); }} className="px-3 py-1.5 bg-gray-100 text-gray-600 rounded-lg text-xs font-semibold hover:bg-gray-200 transition-all">
+                              <X className="w-3 h-3" />
+                            </button>
+                          )}
                         </div>
                       </div>
                     )}
