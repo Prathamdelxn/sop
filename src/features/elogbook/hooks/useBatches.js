@@ -7,27 +7,33 @@ import * as batchService from '../services/batchService';
  * Hook encapsulating batch state management.
  * Used by Production page.
  */
-export function useBatches({ companyId }) {
+export function useBatches({ companyId, plantId, lineId }) {
   const [activeBatch, setActiveBatch] = useState(null);
   const [actionLoading, setActionLoading] = useState(null);
 
   const fetchActiveBatch = useCallback(async (masterDataId) => {
     if (!companyId || !masterDataId) return;
     try {
-      const data = await batchService.fetchActiveBatch(companyId, masterDataId);
+      const data = await batchService.fetchActiveBatch(companyId, masterDataId, plantId, lineId);
       if (data.success) {
         setActiveBatch(data.data);
       }
     } catch (err) {
       console.error('Fetch active batch error:', err);
     }
-  }, [companyId]);
+  }, [companyId, plantId, lineId]);
 
   const handleStartBatch = async ({ masterDataId, startUser }) => {
     if (!masterDataId) return false;
     setActionLoading('batch');
     try {
-      const data = await batchService.startBatch({ companyId, masterDataId, startUser });
+      const data = await batchService.startBatch({
+        companyId,
+        masterDataId,
+        startUser,
+        plantId: plantId || null,
+        lineId: lineId || null,
+      });
       if (data.success) {
         setActiveBatch(data.data);
         setActionLoading(null);

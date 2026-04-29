@@ -2,10 +2,12 @@
 
 import React, { useState, useEffect, useRef } from 'react';
 import { useRouter } from 'next/navigation';
-import { ArrowLeft, BarChart3, Download, Loader2, Clock, AlertTriangle, CheckCircle2, TrendingUp, Package, User, Shield } from 'lucide-react';
+import { ArrowLeft, BarChart3, Download, Loader2, Clock, AlertTriangle, CheckCircle2, TrendingUp, Package, User, Shield, Factory, GitBranch, Hash, Mail, X } from 'lucide-react';
 
 import { useElogbookPermission } from '@/features/elogbook/hooks/useElogbookPermission';
 import { useMasterData } from '@/features/elogbook/hooks/useMasterData';
+import { usePlants } from '@/features/elogbook/hooks/usePlants';
+import { useLines } from '@/features/elogbook/hooks/useLines';
 import * as reportService from '@/features/elogbook/services/reportService';
 import { formatMinutesToTime } from '@/features/elogbook/utils/formatters';
 import { CHART_COLORS, PIE_COLORS } from '@/features/elogbook/utils/constants';
@@ -17,8 +19,13 @@ export default function ReportsPage() {
   const router = useRouter();
   const reportRef = useRef(null);
   const { userData } = useElogbookPermission('Graphical Representation');
-  const { masterDataList, refetch: fetchMD } = useMasterData(userData?.companyId);
+  const { masterDataList, customers, refetch: fetchMD } = useMasterData(userData?.companyId);
+  const { plants, refetch: fetchPlants } = usePlants(userData?.companyId);
+  const [selectedPlantId, setSelectedPlantId] = useState('');
+  const { lines, refetch: fetchLines } = useLines(userData?.companyId, selectedPlantId || undefined);
+  const [selectedLineId, setSelectedLineId] = useState('');
 
+  const [selectedCustomer, setSelectedCustomer] = useState('');
   const [selectedMasterData, setSelectedMasterData] = useState('');
   const [startDate, setStartDate] = useState('');
   const [endDate, setEndDate] = useState('');
@@ -26,15 +33,28 @@ export default function ReportsPage() {
   const [loading, setLoading] = useState(false);
   const [exporting, setExporting] = useState(false);
   const [defectPieData, setDefectPieData] = useState([]);
+  const [showExportModal, setShowExportModal] = useState(false);
+  const [exportEmail, setExportEmail] = useState('');
+  const [sendingEmail, setSendingEmail] = useState(false);
+  const [emailStatus, setEmailStatus] = useState(null);
 
-  useEffect(() => { if (userData?.companyId) { fetchMD(); const today = new Date().toISOString().split('T')[0]; setStartDate(today); setEndDate(today); } }, [userData]);
+  useEffect(() => { if (userData?.companyId) { fetchMD(); fetchPlants(); const today = new Date().toISOString().split('T')[0]; setStartDate(today); setEndDate(today); } }, [userData]);
+  useEffect(() => { if (selectedPlantId) fetchLines(); }, [selectedPlantId, fetchLines]);
 
   useEffect(() => {
     if (!userData?.companyId || !startDate) return;
     const load = async () => {
       setLoading(true);
       try {
-        const data = await reportService.fetchReportData({ companyId: userData.companyId, startDate, endDate, masterDataId: selectedMasterData });
+        const data = await reportService.fetchReportData({ 
+          companyId: userData.companyId, 
+          startDate, 
+          endDate, 
+          masterDataId: selectedMasterData, 
+          customerName: selectedCustomer,
+          plantId: selectedPlantId, 
+          lineId: selectedLineId 
+        });
         if (data.success) {
           setReportData(data.data);
           if (data.data.defectTrendData?.length > 0) {
@@ -52,42 +72,141 @@ export default function ReportsPage() {
       finally { setLoading(false); }
     };
     load();
-  }, [userData, startDate, endDate, selectedMasterData]);
+  }, [userData, startDate, endDate, selectedMasterData, selectedCustomer, selectedPlantId, selectedLineId]);
 
-  const handleExportPDF = async () => {
+  const batchWiseData = React.useMemo(() => {
+    if (!reportData || !reportData.cycleTimeData) return [];
+    const batches = {};
+    reportData.cycleTimeData.forEach((ct, i) => {
+      const qty = reportData.quantityData?.[i] || {};
+      const bd = reportData.basketDetails?.[i] || {};
+      const batchNum = bd.batchNumber || ct.batchNumber || 'N/A';
+      if (!batches[batchNum]) {
+        batches[batchNum] = {
+          batchNumber: batchNum, plantName: bd.plantName || ct.plantName, lineNumber: bd.lineNumber || ct.lineNumber,
+          actual: 0, standard: 0, lost: 0, totalParts: 0, good: 0, defective: 0, rejected: 0,
+          doneBy: new Set(), qualityCheckedBy: new Set(), reasons: new Set(), basketCount: 0,
+        };
+      }
+      const b = batches[batchNum];
+      b.actual += ct.actual || 0; b.standard += ct.standard || 0; b.lost += ct.lost || 0;
+      b.totalParts += bd.totalParts || 0; b.good += qty.good || 0; b.defective += qty.defective || 0; b.rejected += qty.rejected || 0;
+      if (bd.doneBy && bd.doneBy !== '-') b.doneBy.add(bd.doneBy);
+      if (bd.qualityCheckedBy && bd.qualityCheckedBy !== '-') b.qualityCheckedBy.add(bd.qualityCheckedBy);
+      if (ct.stoppages) ct.stoppages.forEach(s => { if (s.reason) b.reasons.add(s.reason); });
+      b.basketCount++;
+    });
+    return Object.values(batches).map(b => ({
+      ...b,
+      doneBy: b.doneBy.size > 0 ? Array.from(b.doneBy).join(', ') : '-',
+      qualityCheckedBy: b.qualityCheckedBy.size > 0 ? Array.from(b.qualityCheckedBy).join(', ') : '-',
+      reasons: b.reasons.size > 0 ? Array.from(b.reasons).join(', ') : '-',
+      exceeds: b.actual > b.standard
+    }));
+  }, [reportData]);
+
+  const generatePDFBlob = async () => {
+    const html2canvas = (await import('html2canvas-pro')).default;
+    const jsPDF = (await import('jspdf')).default;
+    const element = reportRef.current;
+    if (!element) return null;
+    
+    await new Promise(r => setTimeout(r, 500));
+    
+    const selectedMD = masterDataList.find(md => md._id === selectedMasterData);
+    const reportTitle = selectedMD 
+      ? `${selectedMD.customerName} - ${selectedMD.partName} Report` 
+      : selectedCustomer 
+        ? `${selectedCustomer} - Company Report`
+        : 'ELogBook Overall Report';
+        
+    const pdf = new jsPDF('p', 'mm', 'a4');
+    const pdfWidth = pdf.internal.pageSize.getWidth();
+    const pdfHeight = pdf.internal.pageSize.getHeight();
+    const margin = 14;
+    const usableWidth = pdfWidth - (margin * 2);
+    
+    pdf.setFontSize(18); pdf.setTextColor(55, 48, 163); pdf.text(reportTitle, margin, 15);
+    pdf.setFontSize(10); pdf.setTextColor(107, 114, 128);
+    pdf.text(`Generated: ${new Date().toLocaleString()}`, margin, 22);
+    
+    if (selectedMD) pdf.text(`Part: ${selectedMD.partName}`, margin, 28);
+    
+    const selectedPlantObj = plants.find(p => p._id === selectedPlantId);
+    const selectedLineObj = lines.find(l => l._id === selectedLineId);
+    let infoY = 34;
+    if (selectedPlantObj) { pdf.text(`Plant: ${selectedPlantObj.name} (${selectedPlantObj.code})`, margin, infoY); infoY += 6; }
+    if (selectedLineObj) { pdf.text(`Line: ${selectedLineObj.lineNumber}${selectedLineObj.name ? ` — ${selectedLineObj.name}` : ''}`, margin, infoY); infoY += 6; }
+    if (startDate) { pdf.text(`Date Range: ${startDate} to ${endDate || startDate}`, margin, infoY); infoY += 6; }
+    
+    let currentY = infoY + 4;
+    const children = Array.from(element.children);
+    
+    for (let i = 0; i < children.length; i++) {
+      // Use scale: 1.5 instead of 2 to reduce file size while maintaining readability
+      const canvas = await html2canvas(children[i], { scale: 1.5, useCORS: true, logging: false, backgroundColor: '#ffffff' });
+      // Use JPEG with 0.8 quality instead of PNG for significantly smaller file size
+      const imgData = canvas.toDataURL('image/jpeg', 0.8);
+      const imgHeight = (canvas.height * usableWidth) / canvas.width;
+      
+      if (currentY + imgHeight > pdfHeight - margin) { pdf.addPage(); currentY = 14; }
+      // Use 'FAST' compression alias
+      pdf.addImage(imgData, 'JPEG', margin, currentY, usableWidth, imgHeight, undefined, 'FAST');
+      currentY += imgHeight + 8;
+    }
+    
+    const filename = selectedMD ? `elogbook-${selectedMD.customerName.replace(/\s+/g, '-').toLowerCase()}-${startDate || 'all'}.pdf` : `elogbook-report-${startDate || 'all'}.pdf`;
+    return { pdf, filename };
+  };
+
+  const handleDownloadPDF = async () => {
     setExporting(true);
     try {
-      const html2canvas = (await import('html2canvas-pro')).default;
-      const jsPDF = (await import('jspdf')).default;
-      const element = reportRef.current;
-      if (!element) return;
-      await new Promise(r => setTimeout(r, 500));
-      const selectedMD = masterDataList.find(md => md._id === selectedMasterData);
-      const reportTitle = selectedMD ? `${selectedMD.customerName} - Report` : 'ELogBook Report';
-      const pdf = new jsPDF('p', 'mm', 'a4');
-      const pdfWidth = pdf.internal.pageSize.getWidth();
-      const pdfHeight = pdf.internal.pageSize.getHeight();
-      const margin = 14;
-      const usableWidth = pdfWidth - (margin * 2);
-      pdf.setFontSize(18); pdf.setTextColor(55, 48, 163); pdf.text(reportTitle, margin, 15);
-      pdf.setFontSize(10); pdf.setTextColor(107, 114, 128);
-      pdf.text(`Generated: ${new Date().toLocaleString()}`, margin, 22);
-      if (selectedMD) pdf.text(`Part: ${selectedMD.partName}`, margin, 28);
-      if (startDate) pdf.text(`Date Range: ${startDate} to ${endDate || startDate}`, margin, 34);
-      let currentY = 40;
-      const children = Array.from(element.children);
-      for (let i = 0; i < children.length; i++) {
-        const canvas = await html2canvas(children[i], { scale: 2, useCORS: true, logging: false, backgroundColor: '#ffffff' });
-        const imgData = canvas.toDataURL('image/png');
-        const imgHeight = (canvas.height * usableWidth) / canvas.width;
-        if (currentY + imgHeight > pdfHeight - margin) { pdf.addPage(); currentY = 14; }
-        pdf.addImage(imgData, 'PNG', margin, currentY, usableWidth, imgHeight);
-        currentY += imgHeight + 8;
+      const result = await generatePDFBlob();
+      if (result) {
+        result.pdf.save(result.filename);
+        setShowExportModal(false);
       }
-      const filename = selectedMD ? `elogbook-${selectedMD.customerName.replace(/\s+/g, '-').toLowerCase()}-${startDate || 'all'}.pdf` : `elogbook-report-${startDate || 'all'}.pdf`;
-      pdf.save(filename);
-    } catch (err) { console.error('PDF export error:', err); }
-    setExporting(false);
+    } catch (err) {
+      console.error('PDF export error:', err);
+    } finally {
+      setExporting(false);
+    }
+  };
+
+  const handleEmailPDF = async () => {
+    if (!exportEmail || !exportEmail.includes('@')) {
+      setEmailStatus({ type: 'error', message: 'Please enter a valid email address' });
+      return;
+    }
+
+    setSendingEmail(true);
+    setEmailStatus(null);
+    try {
+      const result = await generatePDFBlob();
+      if (!result) return;
+
+      const pdfBlob = result.pdf.output('blob');
+      
+      const response = await reportService.emailReport({
+        email: exportEmail,
+        pdfBlob: pdfBlob,
+        filename: result.filename,
+        subject: `E-Logbook Report: ${result.filename.replace('.pdf', '')}`
+      });
+
+      if (response.success) {
+        setEmailStatus({ type: 'success', message: 'Report sent successfully to ' + exportEmail });
+        setTimeout(() => setShowExportModal(false), 2000);
+      } else {
+        setEmailStatus({ type: 'error', message: response.message || 'Failed to send email' });
+      }
+    } catch (err) {
+      console.error('Email export error:', err);
+      setEmailStatus({ type: 'error', message: 'An error occurred while sending the email' });
+    } finally {
+      setSendingEmail(false);
+    }
   };
 
   const summary = reportData?.summary || { totalBaskets: 0, totalGood: 0, totalInspected: 0, defectRate: 0, avgCycleTime: 0, totalLostTime: 0 };
@@ -101,20 +220,58 @@ export default function ReportsPage() {
           <button onClick={() => router.push('/dashboard/elogbook')} className="w-10 h-10 flex items-center justify-center rounded-xl bg-white border border-gray-200 text-gray-600 hover:bg-gray-50 transition-all shadow-sm"><ArrowLeft className="w-4 h-4" /></button>
           <div><h1 className="text-xl sm:text-2xl font-extrabold text-gray-900">Reports & Dashboard</h1><p className="text-sm text-gray-500">Basket performance analysis & quality metrics</p></div>
         </div>
-        <button onClick={handleExportPDF} disabled={exporting || !reportData} className="flex items-center gap-2 px-5 py-2.5 bg-gradient-to-r from-indigo-600 to-purple-600 text-white rounded-xl font-semibold text-sm shadow-lg shadow-indigo-200 hover:shadow-xl transition-all hover:-translate-y-0.5 active:scale-95 disabled:opacity-50">
-          {exporting ? <Loader2 className="w-4 h-4 animate-spin" /> : <Download className="w-4 h-4" />} Export PDF
+        <button onClick={() => setShowExportModal(true)} disabled={exporting || !reportData} className="flex items-center gap-2 px-5 py-2.5 bg-gradient-to-r from-indigo-600 to-purple-600 text-white rounded-xl font-semibold text-sm shadow-lg shadow-indigo-200 hover:shadow-xl transition-all hover:-translate-y-0.5 active:scale-95 disabled:opacity-50">
+          <Download className="w-4 h-4" /> Export Report
         </button>
       </div>
 
       {/* Filters */}
       <div className="bg-white rounded-2xl border border-gray-100 p-4 mb-6 shadow-sm">
-        <div className="flex flex-col sm:flex-row gap-4 items-end">
-          <div className="flex-1"><label className="block text-xs font-semibold text-gray-500 mb-1.5 uppercase tracking-wider">Start Date</label><input type="date" value={startDate} onChange={e => setStartDate(e.target.value)} className="w-full px-3 py-2.5 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-400" /></div>
-          <div className="flex-1"><label className="block text-xs font-semibold text-gray-500 mb-1.5 uppercase tracking-wider">End Date</label><input type="date" value={endDate} onChange={e => setEndDate(e.target.value)} className="w-full px-3 py-2.5 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-400" /></div>
-          <div className="flex-1"><label className="block text-xs font-semibold text-gray-500 mb-1.5 uppercase tracking-wider">Configuration</label>
-            <select value={selectedMasterData} onChange={e => setSelectedMasterData(e.target.value)} className="w-full px-3 py-2.5 border border-gray-200 rounded-xl text-sm bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-400">
-              <option value="">All Configurations</option>
-              {masterDataList.map(md => (<option key={md._id} value={md._id}>{md.customerName} — {md.partName}</option>))}
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-4">
+          <div><label className="block text-xs font-semibold text-gray-500 mb-1.5 uppercase tracking-wider">Start Date</label><input type="date" value={startDate} onChange={e => setStartDate(e.target.value)} className="w-full px-3 py-2.5 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-400" /></div>
+          <div><label className="block text-xs font-semibold text-gray-500 mb-1.5 uppercase tracking-wider">End Date</label><input type="date" value={endDate} onChange={e => setEndDate(e.target.value)} className="w-full px-3 py-2.5 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-400" /></div>
+          <div>
+            <label className="block text-xs font-semibold text-gray-500 mb-1.5 uppercase tracking-wider flex items-center gap-1">
+              <User className="w-3.5 h-3.5" /> Company
+            </label>
+            <select 
+              value={selectedCustomer} 
+              onChange={e => { setSelectedCustomer(e.target.value); setSelectedMasterData(''); }} 
+              className="w-full px-3 py-2.5 border border-gray-200 rounded-xl text-sm bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-400"
+            >
+              <option value="">All Companies</option>
+              {customers?.map(c => (<option key={c.customerName} value={c.customerName}>{c.customerName}</option>))}
+            </select>
+          </div>
+          <div>
+            <label className="block text-xs font-semibold text-gray-500 mb-1.5 uppercase tracking-wider flex items-center gap-1">
+              <Package className="w-3.5 h-3.5" /> Part / Configuration
+            </label>
+            <select 
+              value={selectedMasterData} 
+              onChange={e => setSelectedMasterData(e.target.value)} 
+              disabled={!selectedCustomer}
+              className="w-full px-3 py-2.5 border border-gray-200 rounded-xl text-sm bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-400 disabled:bg-gray-50 disabled:cursor-not-allowed"
+            >
+              <option value="">All {selectedCustomer ? `${selectedCustomer} Parts` : 'Parts'}</option>
+              {masterDataList
+                .filter(md => !selectedCustomer || md.customerName === selectedCustomer)
+                .map(md => (<option key={md._id} value={md._id}>{md.partName}</option>))
+              }
+            </select>
+          </div>
+        </div>
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <div><label className="block text-xs font-semibold text-gray-500 mb-1.5 uppercase tracking-wider flex items-center gap-1"><Factory className="w-3.5 h-3.5" /> Plant</label>
+            <select value={selectedPlantId} onChange={e => { setSelectedPlantId(e.target.value); setSelectedLineId(''); }} className="w-full px-3 py-2.5 border border-gray-200 rounded-xl text-sm bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-400">
+              <option value="">All Plants</option>
+              {plants.map(p => (<option key={p._id} value={p._id}>{p.name} ({p.code})</option>))}
+            </select>
+          </div>
+          <div><label className="block text-xs font-semibold text-gray-500 mb-1.5 uppercase tracking-wider flex items-center gap-1"><GitBranch className="w-3.5 h-3.5" /> Line</label>
+            <select value={selectedLineId} onChange={e => setSelectedLineId(e.target.value)} disabled={!selectedPlantId} className="w-full px-3 py-2.5 border border-gray-200 rounded-xl text-sm bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-400 disabled:bg-gray-50 disabled:cursor-not-allowed">
+              <option value="">All Lines</option>
+              {lines.map(l => (<option key={l._id} value={l._id}>Line {l.lineNumber}{l.name ? ` — ${l.name}` : ''}</option>))}
             </select>
           </div>
         </div>
@@ -253,7 +410,7 @@ export default function ReportsPage() {
               <div className="overflow-x-auto">
                 <table className="w-full text-sm">
                   <thead><tr className="bg-gray-50 border-b border-gray-100">
-                    {['Basket', 'Actual Time', 'Standard', 'Lost Time', 'Total Parts', 'Good', 'Rework', 'Rejected', 'Done By', 'Quality Checked By', 'Status'].map(h => (
+                    {['Basket', 'Batch #', 'Plant', 'Line', 'Actual Time', 'Standard', 'Lost Time', 'Total Parts', 'Good', 'Rework', 'Rejected', 'Done By', 'QC By', 'Status'].map(h => (
                       <th key={h} className={`${h === 'Basket' ? 'text-left' : 'text-center'} px-4 py-3 text-xs font-semibold text-gray-500 uppercase`}>{h}</th>
                     ))}
                   </tr></thead>
@@ -264,6 +421,9 @@ export default function ReportsPage() {
                       return (
                         <tr key={i} className="hover:bg-indigo-50/30 transition-colors">
                           <td className="px-4 py-3 font-semibold text-gray-800">{ct.name}</td>
+                          <td className="px-4 py-3 text-center"><span className="inline-flex items-center gap-1 px-2 py-0.5 bg-indigo-50 text-indigo-700 rounded-md text-xs font-bold">{bd.batchNumber || '-'}</span></td>
+                          <td className="px-4 py-3 text-center text-gray-600 text-xs font-medium">{bd.plantName || '-'}</td>
+                          <td className="px-4 py-3 text-center text-gray-600 text-xs font-medium">{bd.lineNumber ? `Line ${bd.lineNumber}` : '-'}</td>
                           <td className={`px-4 py-3 text-center font-bold ${ct.exceeds ? 'text-red-600' : 'text-emerald-600'}`}>{formatMinutesToTime(ct.actual)}</td>
                           <td className="px-4 py-3 text-center text-blue-600 font-medium">{formatMinutesToTime(ct.standard)}</td>
                           <td className="px-4 py-3 text-center text-amber-600 font-medium">{formatMinutesToTime(ct.lost)}</td>
@@ -282,6 +442,133 @@ export default function ReportsPage() {
               </div>
             </div>
           )}
+
+          {/* Batch-wise Execution Table */}
+          {batchWiseData.length > 0 && (
+            <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden mt-6">
+              <div className="px-6 py-4 border-b border-gray-100 flex items-center justify-between">
+                <h3 className="text-sm font-bold text-gray-800">Batch-wise Execution Details</h3>
+                <span className="text-[10px] font-bold text-indigo-600 bg-indigo-50 px-2 py-0.5 rounded-full uppercase tracking-wider">Aggregated View</span>
+              </div>
+              <div className="overflow-x-auto">
+                <table className="w-full text-sm">
+                  <thead><tr className="bg-gray-50 border-b border-gray-100">
+                    {['Batch #', 'Plant', 'Line', 'Total Baskets', 'Total Parts', 'Good', 'Rework', 'Rejected'].map(h => (
+                      <th key={h} className={`${h === 'Batch #' ? 'text-left' : 'text-center'} px-4 py-3 text-xs font-semibold text-gray-500 uppercase`}>{h}</th>
+                    ))}
+                  </tr></thead>
+                  <tbody className="divide-y divide-gray-50">
+                    {batchWiseData.map((b, i) => (
+                      <tr key={i} className="hover:bg-indigo-50/30 transition-colors">
+                        <td className="px-4 py-3 text-left"><span className="inline-flex items-center gap-1 px-2 py-0.5 bg-indigo-50 text-indigo-700 rounded-md text-xs font-bold">{b.batchNumber}</span></td>
+                        <td className="px-4 py-3 text-center text-gray-600 text-xs font-medium">{b.plantName || '-'}</td>
+                        <td className="px-4 py-3 text-center text-gray-600 text-xs font-medium">{b.lineNumber ? `Line ${b.lineNumber}` : '-'}</td>
+                        <td className="px-4 py-3 text-center font-bold text-indigo-600">{b.basketCount}</td>
+                        <td className="px-4 py-3 text-center font-bold text-gray-700">{b.totalParts || 0}</td>
+                        <td className="px-4 py-3 text-center text-emerald-600 font-medium">{b.good || 0}</td>
+                        <td className="px-4 py-3 text-center text-amber-600 font-medium">{b.defective || 0}</td>
+                        <td className="px-4 py-3 text-center text-red-600 font-medium">{b.rejected || 0}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* Export Modal */}
+      {showExportModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-in fade-in duration-200">
+          <div className="bg-white rounded-3xl w-full max-w-md shadow-2xl overflow-hidden animate-in zoom-in-95 duration-200">
+            <div className="p-6">
+              <div className="flex items-center justify-between mb-6">
+                <div>
+                  <h3 className="text-xl font-extrabold text-gray-900">Export Report</h3>
+                  <p className="text-sm text-gray-500">Choose how you want to receive the PDF</p>
+                </div>
+                <button 
+                  onClick={() => setShowExportModal(false)}
+                  className="w-8 h-8 flex items-center justify-center rounded-full hover:bg-gray-100 text-gray-400 transition-colors"
+                >
+                  <X className="w-5 h-5" />
+                </button>
+              </div>
+
+              <div className="space-y-4">
+                {/* Download Option */}
+                <button
+                  onClick={handleDownloadPDF}
+                  disabled={exporting || sendingEmail}
+                  className="w-full group flex items-center gap-4 p-4 rounded-2xl border-2 border-indigo-50 hover:border-indigo-200 hover:bg-indigo-50/50 transition-all text-left"
+                >
+                  <div className="w-12 h-12 flex items-center justify-center rounded-xl bg-indigo-100 text-indigo-600 group-hover:scale-110 transition-transform">
+                    {exporting ? <Loader2 className="w-6 h-6 animate-spin" /> : <Download className="w-6 h-6" />}
+                  </div>
+                  <div>
+                    <div className="font-bold text-gray-900">Download PDF</div>
+                    <div className="text-xs text-gray-500">Generate and save to your device</div>
+                  </div>
+                </button>
+
+                <div className="relative">
+                  <div className="absolute inset-0 flex items-center"><div className="w-full border-t border-gray-100"></div></div>
+                  <div className="relative flex justify-center text-xs uppercase"><span className="bg-white px-2 text-gray-400 font-bold tracking-widest">or</span></div>
+                </div>
+
+                {/* Email Option */}
+                <div className="space-y-3">
+                  <div className="relative">
+                    <label className="block text-xs font-bold text-gray-400 uppercase tracking-widest mb-1.5 ml-1">Send to Email</label>
+                    <div className="relative">
+                      <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none">
+                        <Mail className="w-4 h-4 text-gray-400" />
+                      </div>
+                      <input
+                        type="email"
+                        placeholder="recipient@example.com"
+                        value={exportEmail}
+                        onChange={(e) => setExportEmail(e.target.value)}
+                        className="w-full pl-10 pr-4 py-3 bg-gray-50 border border-gray-200 rounded-2xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-400 transition-all"
+                      />
+                    </div>
+                  </div>
+
+                  <button
+                    onClick={handleEmailPDF}
+                    disabled={exporting || sendingEmail || !exportEmail}
+                    className="w-full flex items-center justify-center gap-2 py-3.5 bg-indigo-600 hover:bg-indigo-700 disabled:bg-gray-200 disabled:text-gray-400 text-white rounded-2xl font-bold text-sm shadow-lg shadow-indigo-100 transition-all active:scale-[0.98]"
+                  >
+                    {sendingEmail ? (
+                      <>
+                        <Loader2 className="w-4 h-4 animate-spin" />
+                        Generating & Sending...
+                      </>
+                    ) : (
+                      <>
+                        <Mail className="w-4 h-4" />
+                        Send Report via Email
+                      </>
+                    )}
+                  </button>
+
+                  {emailStatus && (
+                    <div className={`mt-2 p-3 rounded-xl text-xs font-medium flex items-center gap-2 ${
+                      emailStatus.type === 'success' ? 'bg-emerald-50 text-emerald-600 border border-emerald-100' : 'bg-red-50 text-red-600 border border-red-100'
+                    }`}>
+                      {emailStatus.type === 'success' ? <CheckCircle2 className="w-4 h-4" /> : <AlertTriangle className="w-4 h-4" />}
+                      {emailStatus.message}
+                    </div>
+                  )}
+                </div>
+              </div>
+            </div>
+            
+            <div className="p-4 bg-gray-50 border-t border-gray-100 text-center">
+              <p className="text-[10px] text-gray-400 font-medium">The PDF includes all charts and tables visible on this page.</p>
+            </div>
+          </div>
         </div>
       )}
     </div>

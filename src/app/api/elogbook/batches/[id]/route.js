@@ -32,7 +32,11 @@ export async function PUT(req, { params }) {
 
     await batch.save();
 
-    return NextResponse.json({ success: true, data: batch });
+    const populated = await ElogbookBatch.findById(id)
+      .populate("plantId", "name code")
+      .populate("lineId", "lineNumber name");
+
+    return NextResponse.json({ success: true, data: populated });
   } catch (error) {
     console.error("ElogbookBatch PUT error:", error);
     return NextResponse.json({ success: false, message: error.message }, { status: 500 });

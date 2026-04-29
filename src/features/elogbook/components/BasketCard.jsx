@@ -62,6 +62,11 @@ export default function BasketCard({
               {basket.masterDataId?.customerName} -{' '}
               {basket.masterDataId?.partName}
             </p>
+            {basket.batchId?.batchNumber && (
+              <span className="inline-flex items-center px-1.5 py-0.5 bg-indigo-50 text-indigo-600 rounded text-[10px] font-bold mt-0.5">
+                #{basket.batchId.batchNumber}
+              </span>
+            )}
           </div>
         </div>
         <span
@@ -182,16 +187,26 @@ export default function BasketCard({
               <button
                 onClick={() => onStop(basket._id)}
                 disabled={actionLoading === basket._id}
-                className="flex-1 flex items-center justify-center gap-1.5 px-3 py-2 bg-amber-50 text-amber-700 border border-amber-200 rounded-xl text-xs font-semibold hover:bg-amber-100 transition-all active:scale-95"
+                className="flex-1 flex items-center justify-center gap-1.5 px-3 py-2 bg-amber-50 text-amber-700 border border-amber-200 rounded-xl text-xs font-semibold hover:bg-amber-100 transition-all active:scale-95 disabled:opacity-50"
               >
-                <Pause className="w-3.5 h-3.5" /> Stop
+                {actionLoading === basket._id ? (
+                  <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                ) : (
+                  <Pause className="w-3.5 h-3.5" />
+                )}
+                Stop
               </button>
               <button
                 onClick={() => onEnd(basket._id)}
                 disabled={actionLoading === basket._id}
-                className="flex-1 flex items-center justify-center gap-1.5 px-3 py-2 bg-blue-50 text-blue-700 border border-blue-200 rounded-xl text-xs font-semibold hover:bg-blue-100 transition-all active:scale-95"
+                className="flex-1 flex items-center justify-center gap-1.5 px-3 py-2 bg-blue-50 text-blue-700 border border-blue-200 rounded-xl text-xs font-semibold hover:bg-blue-100 transition-all active:scale-95 disabled:opacity-50"
               >
-                <CheckCircle2 className="w-3.5 h-3.5" /> End
+                {actionLoading === basket._id ? (
+                  <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                ) : (
+                  <CheckCircle2 className="w-3.5 h-3.5" />
+                )}
+                End
               </button>
             </>
           ) : (

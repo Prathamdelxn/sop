@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import {
   ArrowLeft, Plus, ScanBarcode, Loader2, Package,
   Building2, Timer, Zap, Thermometer, Play, Square,
+  Factory, GitBranch, Hash,
 } from 'lucide-react';
 
 // Feature modules
@@ -12,6 +13,8 @@ import { useElogbookPermission } from '@/features/elogbook/hooks/useElogbookPerm
 import { useBaskets } from '@/features/elogbook/hooks/useBaskets';
 import { useBatches } from '@/features/elogbook/hooks/useBatches';
 import { useMasterData } from '@/features/elogbook/hooks/useMasterData';
+import { usePlants } from '@/features/elogbook/hooks/usePlants';
+import { useLines } from '@/features/elogbook/hooks/useLines';
 
 // Feature components
 import SummaryCards from '@/features/elogbook/components/SummaryCards';
@@ -27,6 +30,20 @@ export default function ProductionPage() {
   const { userData, hasPermission } = useElogbookPermission('Bucket Execution');
   const canDoQC = hasPermission('Quality Check');
 
+  // --- Plant & Line Selection ---
+  const { plants, refetch: fetchPlants } = usePlants(userData?.companyId);
+  const [selectedPlantId, setSelectedPlantId] = useState('');
+  const { lines, refetch: fetchLines } = useLines(userData?.companyId, selectedPlantId || undefined);
+  const [selectedLineId, setSelectedLineId] = useState('');
+
+  useEffect(() => {
+    if (userData?.companyId) fetchPlants();
+  }, [userData, fetchPlants]);
+
+  useEffect(() => {
+    if (selectedPlantId) fetchLines();
+  }, [selectedPlantId, fetchLines]);
+
   // --- Master Data ---
   const { masterDataList, customers, refetch: fetchMD } = useMasterData(userData?.companyId);
   const [selectedCustomer, setSelectedCustomer] = useState('');
@@ -37,11 +54,15 @@ export default function ProductionPage() {
     if (userData?.companyId) fetchMD();
   }, [userData, fetchMD]);
 
-  // --- Batches ---
+  // --- Batches (now scoped by plant/line) ---
   const {
     activeBatch, setActiveBatch, batchActionLoading,
     fetchActiveBatch, handleStartBatch, handleEndBatch,
-  } = useBatches({ companyId: userData?.companyId });
+  } = useBatches({
+    companyId: userData?.companyId,
+    plantId: selectedPlantId || null,
+    lineId: selectedLineId || null,
+  });
 
   // --- Baskets ---
   const {
@@ -50,6 +71,8 @@ export default function ProductionPage() {
     handleStartBasket, handleStopBasket, handleRestartBasket, handleEndBasket,
   } = useBaskets({
     companyId: userData?.companyId,
+    plantId: selectedPlantId,
+    lineId: selectedLineId,
     masterDataId: selectedMasterData,
     batchId: activeBatch,
   });
@@ -62,6 +85,28 @@ export default function ProductionPage() {
   const [showStopModal, setShowStopModal] = useState(false);
   const [stopReason, setStopReason] = useState('');
   const [stoppingBasketId, setStoppingBasketId] = useState(null);
+
+  // --- Plant/Line Change Handlers ---
+  const handlePlantChange = (plantId) => {
+    setSelectedPlantId(plantId);
+    setSelectedLineId('');
+    if (plantId) {
+      localStorage.setItem('ELOGBOOK_PRODUCTION_PLANT', plantId);
+      localStorage.removeItem('ELOGBOOK_PRODUCTION_LINE');
+    } else {
+      localStorage.removeItem('ELOGBOOK_PRODUCTION_PLANT');
+      localStorage.removeItem('ELOGBOOK_PRODUCTION_LINE');
+    }
+  };
+
+  const handleLineChange = (lineId) => {
+    setSelectedLineId(lineId);
+    if (lineId) {
+      localStorage.setItem('ELOGBOOK_PRODUCTION_LINE', lineId);
+    } else {
+      localStorage.removeItem('ELOGBOOK_PRODUCTION_LINE');
+    }
+  };
 
   // --- Customer / Part Selection ---
   const partsForSelectedCustomer = selectedCustomer
@@ -86,19 +131,25 @@ export default function ProductionPage() {
     setSelectedPart(partId);
     setSelectedMasterData(part);
     if (part) {
-      fetchActiveBatch(partId);
       localStorage.setItem('ELOGBOOK_PRODUCTION_PART', partId);
     } else {
-      setActiveBatch(null);
       localStorage.removeItem('ELOGBOOK_PRODUCTION_PART');
     }
   };
 
   // --- Persist Selection: Load ---
   useEffect(() => {
+    const savedPlant = localStorage.getItem('ELOGBOOK_PRODUCTION_PLANT');
+    const savedLine = localStorage.getItem('ELOGBOOK_PRODUCTION_LINE');
     const savedCustomer = localStorage.getItem('ELOGBOOK_PRODUCTION_CUSTOMER');
     const savedPart = localStorage.getItem('ELOGBOOK_PRODUCTION_PART');
 
+    if (savedPlant && !selectedPlantId) {
+      setSelectedPlantId(savedPlant);
+    }
+    if (savedLine && !selectedLineId) {
+      setSelectedLineId(savedLine);
+    }
     if (savedCustomer && !selectedCustomer) {
       setSelectedCustomer(savedCustomer);
     }
@@ -108,10 +159,18 @@ export default function ProductionPage() {
       if (part) {
         setSelectedPart(savedPart);
         setSelectedMasterData(part);
-        fetchActiveBatch(savedPart);
       }
     }
-  }, [masterDataList, fetchActiveBatch, selectedCustomer, selectedPart]);
+  }, [masterDataList, selectedCustomer, selectedPart, selectedPlantId, selectedLineId]);
+
+  // --- Auto-sync Active Batch ---
+  useEffect(() => {
+    if (selectedPart && selectedLineId) {
+      fetchActiveBatch(selectedPart);
+    } else {
+      setActiveBatch(null);
+    }
+  }, [selectedPart, selectedLineId, selectedPlantId, fetchActiveBatch, setActiveBatch]);
 
   // --- Barcode handler ---
   const handleBarcodeScan = useCallback(
@@ -169,6 +228,14 @@ export default function ProductionPage() {
     }
   };
 
+  // Get selected plant/line names for display
+  const selectedPlant = plants.find(p => p._id === selectedPlantId);
+  const selectedLine = lines.find(l => l._id === selectedLineId);
+
+  // Execution interlock logic: Only one basket can be active at a time
+  const activeBasket = baskets.find(b => b.status === 'in-progress' || b.status === 'stopped');
+  const isExecutionInterlocked = !!activeBasket;
+
   return (
     <div className="min-h-screen p-4 sm:p-6 lg:p-8">
       {/* Header */}
@@ -203,6 +270,47 @@ export default function ProductionPage() {
       {/* Controls Bar */}
       <div className="bg-white rounded-2xl border border-gray-100 p-4 mb-6 shadow-sm">
         <div className="flex flex-col gap-4">
+
+          {/* Plant & Line Selectors */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+              <label className="block text-xs font-semibold text-gray-500 mb-1.5 uppercase tracking-wider flex items-center gap-2">
+                <Factory className="w-3.5 h-3.5" /> Plant / Location
+              </label>
+              <select
+                value={selectedPlantId}
+                onChange={(e) => handlePlantChange(e.target.value)}
+                className="w-full px-3 py-2.5 border border-gray-200 rounded-xl text-sm bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-400"
+              >
+                <option value="">-- Select Plant --</option>
+                {plants.map((plant) => (
+                  <option key={plant._id} value={plant._id}>
+                    {plant.name} ({plant.code})
+                    {plant.city ? ` — ${plant.city}` : ''}
+                  </option>
+                ))}
+              </select>
+            </div>
+            <div>
+              <label className="block text-xs font-semibold text-gray-500 mb-1.5 uppercase tracking-wider flex items-center gap-2">
+                <GitBranch className="w-3.5 h-3.5" /> Line Number
+              </label>
+              <select
+                value={selectedLineId}
+                onChange={(e) => handleLineChange(e.target.value)}
+                disabled={!selectedPlantId}
+                className="w-full px-3 py-2.5 border border-gray-200 rounded-xl text-sm bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-400 disabled:bg-gray-50 disabled:cursor-not-allowed"
+              >
+                <option value="">-- Select Line --</option>
+                {lines.map((line) => (
+                  <option key={line._id} value={line._id}>
+                    Line {line.lineNumber}{line.name ? ` — ${line.name}` : ''}
+                  </option>
+                ))}
+              </select>
+            </div>
+          </div>
+
           {/* Customer and Part Dropdowns */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
@@ -266,6 +374,26 @@ export default function ProductionPage() {
                         ? `Started: ${new Date(activeBatch.startTime).toLocaleString()}`
                         : 'Start a batch to begin production sequence'}
                     </p>
+                    {activeBatch?.batchNumber && (
+                      <div className="flex items-center gap-2 mt-1">
+                        <span className="inline-flex items-center gap-1 px-2.5 py-0.5 bg-indigo-100 text-indigo-700 rounded-lg text-xs font-bold">
+                          <Hash className="w-3 h-3" />
+                          {activeBatch.batchNumber}
+                        </span>
+                        {selectedPlant && (
+                          <span className="inline-flex items-center gap-1 px-2 py-0.5 bg-emerald-50 text-emerald-700 rounded-lg text-xs font-medium">
+                            <Factory className="w-3 h-3" />
+                            {selectedPlant.name}
+                          </span>
+                        )}
+                        {selectedLine && (
+                          <span className="inline-flex items-center gap-1 px-2 py-0.5 bg-blue-50 text-blue-700 rounded-lg text-xs font-medium">
+                            <GitBranch className="w-3 h-3" />
+                            Line {selectedLine.lineNumber}
+                          </span>
+                        )}
+                      </div>
+                    )}
                   </div>
                 </div>
                 <div className="flex items-center gap-3">
@@ -314,9 +442,16 @@ export default function ProductionPage() {
                   type="text"
                   value={barcodeInput}
                   onChange={(e) => setBarcodeInput(e.target.value)}
-                  onKeyDown={handleBarcodeScan}
-                  placeholder="Scan barcode or type basket number + Enter"
-                  className="w-full pl-10 pr-4 py-2.5 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-400"
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter' && isExecutionInterlocked) {
+                      alert(`Cannot start new basket. Please end Basket ${activeBasket.basketNumber} first.`);
+                      return;
+                    }
+                    handleBarcodeScan(e);
+                  }}
+                  placeholder={isExecutionInterlocked ? `Finish Basket ${activeBasket.basketNumber} to scan next` : "Scan barcode or type basket number + Enter"}
+                  disabled={isExecutionInterlocked}
+                  className="w-full pl-10 pr-4 py-2.5 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-400 disabled:bg-gray-50 disabled:cursor-not-allowed"
                 />
               </div>
             </div>
@@ -327,13 +462,17 @@ export default function ProductionPage() {
                     alert('Please start a production batch first');
                     return;
                   }
+                  if (isExecutionInterlocked) {
+                    alert(`Cannot start new basket. Please end Basket ${activeBasket.basketNumber} first.`);
+                    return;
+                  }
                   setStartBasketNumber(String(baskets.length + 1));
                   setShowStartModal(true);
                 }}
-                disabled={!activeBatch}
+                disabled={!activeBatch || isExecutionInterlocked}
                 className="flex items-center gap-2 px-5 py-2.5 bg-gradient-to-r from-emerald-500 to-teal-500 text-white rounded-xl font-semibold text-sm shadow-lg shadow-emerald-200 hover:shadow-xl transition-all hover:-translate-y-0.5 active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed whitespace-nowrap"
               >
-                <Plus className="w-4 h-4" /> Start Basket
+                <Plus className="w-4 h-4" /> {isExecutionInterlocked ? `Basket ${activeBasket.basketNumber} Active` : 'Start Basket'}
               </button>
             </div>
           </div>
@@ -342,6 +481,16 @@ export default function ProductionPage() {
         {/* Active Config Stats */}
         {selectedMasterData && (
           <div className="flex flex-wrap gap-3 mt-4 pt-4 border-t border-gray-100">
+            {selectedPlant && (
+              <div className="flex items-center gap-1.5 px-3 py-1.5 bg-emerald-50 rounded-lg text-xs font-medium text-emerald-700">
+                <Factory className="w-3.5 h-3.5" /> {selectedPlant.name}
+              </div>
+            )}
+            {selectedLine && (
+              <div className="flex items-center gap-1.5 px-3 py-1.5 bg-cyan-50 rounded-lg text-xs font-medium text-cyan-700">
+                <GitBranch className="w-3.5 h-3.5" /> Line {selectedLine.lineNumber}
+              </div>
+            )}
             <div className="flex items-center gap-1.5 px-3 py-1.5 bg-indigo-50 rounded-lg text-xs font-medium text-indigo-700">
               <Building2 className="w-3.5 h-3.5" /> {selectedMasterData.customerName}
             </div>
@@ -365,7 +514,7 @@ export default function ProductionPage() {
 
         {!selectedMasterData && masterDataList.length > 0 && (
           <div className="mt-4 pt-4 border-t border-gray-100 text-center text-sm text-amber-600 bg-amber-50 p-3 rounded-xl">
-            ⚠️ Please select a customer and part to start production
+            ⚠️ Please select a plant, line, customer, and part to start production
           </div>
         )}
       </div>
@@ -382,7 +531,7 @@ export default function ProductionPage() {
           <p className="text-sm text-gray-400">
             {activeBatch
               ? 'No baskets have been started in this batch yet.'
-              : 'Select a customer and part, then start a production batch to begin.'}
+              : 'Select a plant, line, customer, and part, then start a production batch to begin.'}
           </p>
         </div>
       ) : (

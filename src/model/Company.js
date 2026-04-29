@@ -7,6 +7,7 @@ const companySchema = new mongoose.Schema({
   address: { type: String },
   logo: { type: String },
   companyId: { type: String, required: true, unique: true }, // slug like 'company-a'
+  code: { type: String, default: "" }, // Short code for batch numbering (e.g., "KR")
   enabledFeatures: {
     type: [String],
     enum: ["CHECKLIST", "PHARMA-ELOGBOOK", "NON-PHARMA-ELOGBOOK", "OPERATION"],

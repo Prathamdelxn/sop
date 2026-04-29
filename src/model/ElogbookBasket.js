@@ -9,6 +9,8 @@ const stoppageSchema = new mongoose.Schema({
 
 const elogbookBasketSchema = new mongoose.Schema({
   companyId: { type: String, required: true },
+  plantId: { type: mongoose.Schema.Types.ObjectId, ref: "Plant", default: null },
+  lineId: { type: mongoose.Schema.Types.ObjectId, ref: "ProductionLine", default: null },
   masterDataId: { type: mongoose.Schema.Types.ObjectId, ref: "ElogbookMasterData", required: true },
   batchId: { type: mongoose.Schema.Types.ObjectId, ref: "ElogbookBatch", default: null },
   basketNumber: { type: Number, required: true },

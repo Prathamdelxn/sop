@@ -4,11 +4,13 @@ import React, { useState, useEffect } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import {
   ArrowLeft, ClipboardCheck, Loader2, RotateCcw, CheckCircle2,
-  Search, Building2, ChevronDown, ChevronRight,
+  Search, Building2, ChevronDown, ChevronRight, Factory, GitBranch,
 } from 'lucide-react';
 
 import { useElogbookPermission } from '@/features/elogbook/hooks/useElogbookPermission';
 import { useQCRecords } from '@/features/elogbook/hooks/useQCRecords';
+import { usePlants } from '@/features/elogbook/hooks/usePlants';
+import { useLines } from '@/features/elogbook/hooks/useLines';
 import { fetchBaskets } from '@/features/elogbook/services/basketService';
 import SummaryCards from '@/features/elogbook/components/SummaryCards';
 import QCBasketCard from '@/features/elogbook/components/QCBasketCard';
@@ -21,7 +23,13 @@ function QCPageContent() {
 
   const { userData } = useElogbookPermission('Quality Check');
 
+  const { plants, refetch: fetchPlants } = usePlants(userData?.companyId);
+  const [selectedPlantId, setSelectedPlantId] = useState('');
+  const { lines, refetch: fetchLines } = useLines(userData?.companyId, selectedPlantId || undefined);
+  const [selectedLineId, setSelectedLineId] = useState('');
+
   const [pendingBaskets, setPendingBaskets] = useState([]);
+  const [allBaskets, setAllBaskets] = useState([]);
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState('pending');
   const [expandedCustomers, setExpandedCustomers] = useState(new Set());
@@ -33,15 +41,23 @@ function QCPageContent() {
     qcRecords, reworkRecords, completedRecords, saving,
     refetch: fetchQC, getFormForBasket, updateForm, updateDefect,
     handleSubmitQC, handleReworkUpdate,
-  } = useQCRecords(userData?.companyId);
+  } = useQCRecords(userData?.companyId, selectedPlantId || undefined, selectedLineId || undefined);
+
+  useEffect(() => { if (userData?.companyId) fetchPlants(); }, [userData]);
+  useEffect(() => { if (selectedPlantId) fetchLines(); }, [selectedPlantId, fetchLines]);
 
   useEffect(() => {
     if (!userData?.companyId) return;
     const init = async () => {
       setLoading(true);
-      const bData = await fetchBaskets({ companyId: userData.companyId, status: 'pending-qc,in-progress' });
+      const params = { companyId: userData.companyId, status: 'pending-qc,in-progress,qc-done' };
+      if (selectedPlantId) params.plantId = selectedPlantId;
+      if (selectedLineId) params.lineId = selectedLineId;
+      
+      const bData = await fetchBaskets(params);
       if (bData.success) {
-        setPendingBaskets(bData.data);
+        setAllBaskets(bData.data);
+        setPendingBaskets(bData.data.filter(b => b.status !== 'qc-done'));
         if (directBasketId) {
           const target = bData.data.find(b => b._id === directBasketId);
           if (target?.masterDataId?.customerName) setExpandedCustomers(new Set([target.masterDataId.customerName]));
@@ -51,7 +67,7 @@ function QCPageContent() {
       setLoading(false);
     };
     init();
-  }, [userData, directBasketId]);
+  }, [userData, directBasketId, selectedPlantId, selectedLineId]);
 
   useEffect(() => {
     const all = pendingBaskets;
@@ -70,8 +86,14 @@ function QCPageContent() {
   const onSubmitQC = async (basket) => {
     const success = await handleSubmitQC(basket, userData?.name || userData?.username);
     if (success) {
-      const bData = await fetchBaskets({ companyId: userData.companyId, status: 'pending-qc,in-progress' });
-      if (bData.success) setPendingBaskets(bData.data);
+      const params = { companyId: userData.companyId, status: 'pending-qc,in-progress,qc-done' };
+      if (selectedPlantId) params.plantId = selectedPlantId;
+      if (selectedLineId) params.lineId = selectedLineId;
+      const bData = await fetchBaskets(params);
+      if (bData.success) {
+        setAllBaskets(bData.data);
+        setPendingBaskets(bData.data.filter(b => b.status !== 'qc-done'));
+      }
       await fetchQC();
     }
   };
@@ -141,6 +163,39 @@ function QCPageContent() {
         <div><h1 className="text-xl sm:text-2xl font-extrabold text-gray-900">Quality Control</h1><p className="text-sm text-gray-500">Inspect, record defects & manage rework</p></div>
       </div>
 
+      {/* Hierarchy Selectors */}
+      <div className="bg-white rounded-2xl border border-gray-100 p-4 mb-6 shadow-sm">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <div className="space-y-1.5">
+            <label className="text-[10px] font-bold text-gray-400 uppercase flex items-center gap-1.5 ml-1">
+              <Factory className="w-3 h-3 text-indigo-500" /> Select Plant
+            </label>
+            <select
+              value={selectedPlantId}
+              onChange={(e) => { setSelectedPlantId(e.target.value); setSelectedLineId(''); }}
+              className="w-full px-3 py-2.5 bg-gray-50 border border-gray-100 rounded-xl text-sm font-semibold text-gray-700 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-300 transition-all cursor-pointer"
+            >
+              <option value="">All Plants</option>
+              {plants.map(p => (<option key={p._id} value={p._id}>{p.name}</option>))}
+            </select>
+          </div>
+          <div className="space-y-1.5">
+            <label className="text-[10px] font-bold text-gray-400 uppercase flex items-center gap-1.5 ml-1">
+              <GitBranch className="w-3 h-3 text-indigo-500" /> Select Production Line
+            </label>
+            <select
+              value={selectedLineId}
+              onChange={(e) => setSelectedLineId(e.target.value)}
+              disabled={!selectedPlantId}
+              className="w-full px-3 py-2.5 bg-gray-50 border border-gray-100 rounded-xl text-sm font-semibold text-gray-700 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-300 transition-all cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              <option value="">All Lines</option>
+              {lines.map(l => (<option key={l._id} value={l._id}>Line {l.lineNumber}{l.name ? ` — ${l.name}` : ''}</option>))}
+            </select>
+          </div>
+        </div>
+      </div>
+
       {/* Tabs */}
       <div className="flex gap-1 bg-gray-100 rounded-xl p-1 mb-6 max-w-lg">
         {[
@@ -174,12 +229,19 @@ function QCPageContent() {
               {renderCustomerHeader(name, group.baskets.length, 'pending')}
               {expandedCustomers.has(name) && (
                 <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6 mt-4">
-                  {group.baskets.map(basket => (
-                    <QCBasketCard key={basket._id} basket={basket} form={getFormForBasket(basket._id)} qcRecords={qcRecords} saving={saving}
-                      activeQCForm={activeQCForm} directBasketId={directBasketId}
-                      onToggleForm={(id) => setActiveQCForm(activeQCForm === id ? null : id)}
-                      onUpdateForm={updateForm} onUpdateDefect={updateDefect} onSubmitQC={onSubmitQC} />
-                  ))}
+                  {group.baskets.map(basket => {
+                    const isLocked = basket.basketNumber > 1 && !allBaskets.some(b => 
+                      b.batchId?._id === basket.batchId?._id && 
+                      b.basketNumber === basket.basketNumber - 1 && 
+                      b.status === 'qc-done'
+                    );
+                    return (
+                      <QCBasketCard key={basket._id} basket={basket} form={getFormForBasket(basket._id)} qcRecords={qcRecords} saving={saving}
+                        activeQCForm={activeQCForm} directBasketId={directBasketId} isLocked={isLocked}
+                        onToggleForm={(id) => setActiveQCForm(activeQCForm === id ? null : id)}
+                        onUpdateForm={updateForm} onUpdateDefect={updateDefect} onSubmitQC={onSubmitQC} />
+                    );
+                  })}
                 </div>
               )}
             </div>
