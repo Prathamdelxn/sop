@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import connectDB from "@/utils/db";
 import ElogbookBasket from "@/model/ElogbookBasket";
 import ElogbookBatch from "@/model/ElogbookBatch";
+import MasterData from "@/model/MasterData";
 
 
 // GET — fetch baskets with optional filters
