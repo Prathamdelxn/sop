@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import connectDB from "@/utils/db";
 import ProductionLine from "@/model/ProductionLine";
-
+import Plant from "@/model/Plant";
 export const dynamic = "force-dynamic";
 
 // GET — fetch all lines for a plant (or all lines for a company)
