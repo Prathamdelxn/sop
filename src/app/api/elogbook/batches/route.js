@@ -4,7 +4,7 @@ import ElogbookBatch from "@/model/ElogbookBatch";
 import ElogbookBasket from "@/model/ElogbookBasket";
 import Company from "@/model/Company";
 import { generateBatchNumber } from "@/utils/batchNumberGenerator";
-import ProductionLine from "@/model/ProductionLine";
+
 
 export const dynamic = "force-dynamic";
 
