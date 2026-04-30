@@ -40,5 +40,15 @@ const elogbookBasketSchema = new mongoose.Schema({
   },
 }, { timestamps: true });
 
-// delete mongoose.models.ElogbookBasket;
-export default mongoose.models.ElogbookBasket || mongoose.model("ElogbookBasket", elogbookBasketSchema);
+// Ensure model is registered
+let ElogbookBasket;
+
+try {
+  // Try to get existing model
+  ElogbookBasket = mongoose.model('ElogbookBasket');
+} catch (error) {
+  // If doesn't exist, create it
+  ElogbookBasket = mongoose.model('ElogbookBasket', elogbookBasketSchema);
+}
+
+export default ElogbookBasket;
