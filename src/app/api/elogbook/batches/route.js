@@ -4,6 +4,7 @@ import ElogbookBatch from "@/model/ElogbookBatch";
 import ElogbookBasket from "@/model/ElogbookBasket";
 import Company from "@/model/Company";
 import { generateBatchNumber } from "@/utils/batchNumberGenerator";
+import ProductionLine from "@/model/ProductionLine";
 
 export const dynamic = "force-dynamic";
 
@@ -59,9 +60,9 @@ export async function POST(req) {
     const existingActiveBatch = await ElogbookBatch.findOne(activeFilter);
 
     if (existingActiveBatch) {
-      return NextResponse.json({ 
-        success: false, 
-        message: "A batch is already in progress for this part on this line. Please end it before starting a new one." 
+      return NextResponse.json({
+        success: false,
+        message: "A batch is already in progress for this part on this line. Please end it before starting a new one."
       }, { status: 400 });
     }
 
