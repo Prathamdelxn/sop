@@ -697,9 +697,22 @@ export default function ProductionPage() {
   // Fetch Lines when Plant changes
   useEffect(() => {
     if (selectedPlantId && isClient) {
-      fetchLines();
+      console.log('🔄 Fetching lines for plant:', selectedPlantId);
+      console.log('Company ID:', userData?.companyId);
+      fetchLines()
+        .then(() => {
+          console.log('Lines fetch completed');
+        })
+        .catch(err => {
+          console.error('Error fetching lines:', err);
+        });
     }
-  }, [selectedPlantId, fetchLines, isClient]);
+  }, [selectedPlantId, fetchLines, isClient, userData?.companyId]);
+
+  // Also log when lines data changes
+  useEffect(() => {
+    console.log('Lines data updated:', lines);
+  }, [lines]);
 
   // Fetch Active Batch
   useEffect(() => {
@@ -840,7 +853,10 @@ export default function ProductionPage() {
               <label className="block text-xs font-semibold text-gray-500 mb-1.5 uppercase tracking-wider flex items-center gap-2">
                 <Factory className="w-4 h-4" /> Plant / Location
               </label>
-              <select value={selectedPlantId} onChange={(e) => handlePlantChange(e.target.value)} className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500">
+              <select
+                value={selectedPlantId}
+                onChange={(e) => handlePlantChange(e.target.value)}
+                className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500">
                 <option value="">-- Select Plant --</option>
                 {plants.map((plant) => (
                   <option key={plant._id} value={plant._id}>
@@ -854,7 +870,12 @@ export default function ProductionPage() {
               <label className="block text-xs font-semibold text-gray-500 mb-1.5 uppercase tracking-wider flex items-center gap-2">
                 <GitBranch className="w-4 h-4" /> Line Number
               </label>
-              <select value={selectedLineId} onChange={(e) => handleLineChange(e.target.value)} disabled={!selectedPlantId} className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500 disabled:bg-gray-100 disabled:cursor-not-allowed">
+              <select
+                key={lines.length}
+                value={selectedLineId}
+                onChange={(e) => handleLineChange(e.target.value)}
+                disabled={!selectedPlantId}
+                className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500 disabled:bg-gray-100 disabled:cursor-not-allowed">
                 <option value="">-- Select Line --</option>
                 {lines.map((line) => (
                   <option key={line._id} value={line._id}>
