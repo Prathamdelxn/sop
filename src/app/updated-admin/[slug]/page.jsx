@@ -2,7 +2,7 @@
 "use client";
 
 import React, { use, useEffect, useState } from 'react';
-import { Plus, Search, Filter, MonitorCheck, Edit, Trash2, User, X } from 'lucide-react';
+import { Plus, Search, Filter, MonitorCheck, Edit, Trash2, User, X, Factory } from 'lucide-react';
 
 export default function DynamicDashboardPage({ params }) {
   const { slug } = use(params);
@@ -16,6 +16,7 @@ export default function DynamicDashboardPage({ params }) {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState(null);
   const [loggedInEmail, setLoggedInEmail] = useState('');
+  const [plants, setPlants] = useState([]);
 
 
 
@@ -45,7 +46,8 @@ export default function DynamicDashboardPage({ params }) {
     phone: '',
     role: slug,
     status: 'Active',
-    location: '' 
+    location: '',
+    plantId: ''
   });
 
   const showAlert = (title, message, onConfirm = null, confirmText = 'Confirm') => {
@@ -88,6 +90,7 @@ export default function DynamicDashboardPage({ params }) {
       if (Id) {
         await fetchPeople();
         await fetchRoleData();
+        await fetchPlants();
       }
     };
     fetchAllData();
@@ -145,6 +148,18 @@ export default function DynamicDashboardPage({ params }) {
       setError(err.message);
     } finally {
       setIsLoading(false);
+    }
+  };
+
+  const fetchPlants = async () => {
+    try {
+      const targetContext = companyId || Id;
+      const res = await fetch(`/api/elogbook/plants?companyId=${targetContext}`);
+      if (!res.ok) return;
+      const data = await res.json();
+      if (data.success) setPlants(data.data || []);
+    } catch (err) {
+      console.error('Error fetching plants:', err);
     }
   };
 
@@ -337,7 +352,8 @@ export default function DynamicDashboardPage({ params }) {
       phone: '',
       role: slug,
       status: 'Active',
-      location: '' 
+      location: '',
+      plantId: ''
     });
     setIsModalOpen(true);
   };
@@ -359,7 +375,8 @@ export default function DynamicDashboardPage({ params }) {
       phone: user.phone,
       role: slug,
       status: user.status,
-      location: user.location
+      location: user.location,
+      plantId: user.plantId || ''
     });
     setIsModalOpen(true);
   };
@@ -483,7 +500,8 @@ export default function DynamicDashboardPage({ params }) {
       phone: '',
       role: slug,
       status: 'Active',
-      location: ''
+      location: '',
+      plantId: ''
     });
   };
 
@@ -615,6 +633,7 @@ export default function DynamicDashboardPage({ params }) {
                 <th className="text-left py-4 px-6 font-semibold text-gray-900">Email</th>
                 <th className="text-left py-4 px-6 font-semibold text-gray-900">Username</th>
                 <th className="text-left py-4 px-6 font-semibold text-gray-900">Phone</th>
+                <th className="text-left py-4 px-6 font-semibold text-gray-900">Plant</th>
                 <th className="text-left py-4 px-6 font-semibold text-gray-900">Role</th>
                 <th className="text-left py-4 px-6 font-semibold text-gray-900">Status</th>
                 <th className="text-right py-4 px-6 font-semibold text-gray-900">Actions</th>
@@ -631,6 +650,19 @@ export default function DynamicDashboardPage({ params }) {
                   <td className="py-4 px-6 text-gray-600 truncate max-w-[180px]">{person.email}</td>
                   <td className="py-4 px-6 text-gray-600 truncate max-w-[180px]">{person.username}</td>
                   <td className="py-4 px-6 text-gray-600 ">{person.phone}</td>
+                  <td className="py-4 px-6">
+                    {(() => {
+                      const plant = plants.find(p => p._id === person.plantId);
+                      return plant ? (
+                        <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
+                          <Factory className="h-3 w-3" />
+                          {plant.name}
+                        </span>
+                      ) : (
+                        <span className="text-xs text-gray-400">Not assigned</span>
+                      );
+                    })()}
+                  </td>
                   <td className="py-4 px-6">
                     <span className={`px-3 py-1 truncate max-w-[180px] rounded-full text-xs font-medium ${getRoleColor(person.role)}`}>
                       {person.role}
@@ -780,6 +812,33 @@ export default function DynamicDashboardPage({ params }) {
                       />
                     </div>
                   </div>
+
+                  {/* Plant Assignment */}
+                  {plants.length > 0 && (
+                    <div className="mt-4">
+                      <label className="block text-sm font-medium text-gray-700 mb-1 flex items-center gap-1.5">
+                        <Factory className="h-4 w-4 text-blue-500" />
+                        Assign to Plant <span className='text-red-500'>*</span>
+                      </label>
+                      <select
+                        value={formData.plantId}
+                        onChange={(e) => setFormData({...formData, plantId: e.target.value})}
+                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500"
+                        required
+                        disabled={isLoading}
+                      >
+                        <option value="">-- Select Plant --</option>
+                        {plants.map((plant) => (
+                          <option key={plant._id} value={plant._id}>
+                            {plant.name} ({plant.code}){plant.city ? ` — ${plant.city}` : ''}
+                          </option>
+                        ))}
+                      </select>
+                      <p className="mt-1 text-xs text-gray-500">
+                        This determines which plant data the worker can access
+                      </p>
+                    </div>
+                  )}
                 </div>
 
                 {/* Contact Information */}

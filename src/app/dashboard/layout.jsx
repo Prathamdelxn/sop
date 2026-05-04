@@ -29,6 +29,8 @@ import {
   Database,
   BarChart3,
   Package,
+  Users,
+  MonitorCheck,
 } from 'lucide-react';
 import {
   FEATURE_PERMISSIONS,
@@ -59,7 +61,9 @@ const allNavigationItems = [
   { name: 'Master Data Management', href: '/dashboard/elogbook/master-data', icon: Database, current: false, category: 'NON-PHARMA-ELOGBOOK' },
   { name: 'Bucket Execution', href: '/dashboard/elogbook/production', icon: Package, current: false, category: 'NON-PHARMA-ELOGBOOK' },
   { name: 'Quality Check', href: '/dashboard/elogbook/qc', icon: ShieldCheck, current: false, category: 'NON-PHARMA-ELOGBOOK' },
+  { name: 'Worker Assignment', href: '/dashboard/elogbook/assignments', icon: Users, current: false, category: 'NON-PHARMA-ELOGBOOK' },
   { name: 'Graphical Representation', href: '/dashboard/elogbook/reports', icon: BarChart3, current: false, category: 'NON-PHARMA-ELOGBOOK' },
+  { name: 'Plant Monitor', href: '/dashboard/elogbook/monitor', icon: MonitorCheck, current: false, category: 'NON-PHARMA-ELOGBOOK' },
 ];
 
 const categories = [
@@ -184,7 +188,7 @@ export default function DashboardLayout({ children }) {
         if (!isFeatureEnabled) return false;
 
         // 2. Permission Level Check (via tasks)
-        if (userData.role === 'company-admin') return true; // Admins see all enabled feature tasks
+        if (userData.role === 'company-admin' || userData.role === 'plant-head') return true; // Admins and Plant Heads see all enabled feature tasks
 
         const hasPermission = userTasks.includes(item.name);
         return hasPermission;

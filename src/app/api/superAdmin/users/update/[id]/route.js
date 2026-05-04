@@ -22,7 +22,8 @@ console.log(body);
       phone,
       task,
       role,
-      location
+      location,
+      plantId
     } = body;
 
     // Find the existing user
@@ -50,6 +51,7 @@ console.log(body);
       email: email || existingUser.email,
       username: username || existingUser.username,
       companyId: companyId || existingUser.companyId,
+      plantId: plantId !== undefined ? (plantId || null) : existingUser.plantId,
       status: status || existingUser.status,
       phone: phone || existingUser.phone,
       task: task || existingUser.task,

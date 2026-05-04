@@ -36,6 +36,8 @@ export const FEATURE_PERMISSIONS = {
     "Master Data Management",
     "Quality Check",
     "Graphical Representation",
+    "Worker Assignment",
+    "Plant Monitor",
   ],
   "PHARMA-ELOGBOOK": [],   // Phase 3 — Coming Soon
   "OPERATION": [],          // Phase 4 — Coming Soon
@@ -78,6 +80,8 @@ export const LEGACY_PERMISSION_MAP = {
     "Master Data Management",
     "Quality Check",
     "Graphical Representation",
+    "Worker Assignment",
+    "Plant Monitor",
   ],
 };
 

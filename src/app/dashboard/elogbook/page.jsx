@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation';
 import {
   Book, Database, PlayCircle, ClipboardCheck, BarChart3,
   ArrowRight, Activity, Package, AlertTriangle, CheckCircle2,
-  Timer, Zap
+  Timer, Zap, Users, UserCheck, Calendar, MonitorCheck, Factory
 } from 'lucide-react';
 import { migrateLegacyPermissions } from '@/utils/featurePermissions';
 
@@ -82,6 +82,34 @@ export default function ElogBookPage() {
       stats: [
         { label: 'Charts & Graphs', icon: BarChart3 },
         { label: 'PDF Export', icon: Book },
+      ],
+    },
+    {
+      id: 'assignments',
+      title: 'Worker Assignment',
+      permission: 'Worker Assignment',
+      description: 'Assign operators and supervisors to specific production lines for daily operations.',
+      icon: Users,
+      href: '/dashboard/elogbook/assignments',
+      gradient: 'from-rose-500 to-orange-500',
+      bgGlow: 'bg-rose-500/10',
+      stats: [
+        { label: 'Line Assignment', icon: UserCheck },
+        { label: 'Daily Planning', icon: Calendar },
+      ],
+    },
+    {
+      id: 'monitor',
+      title: 'Plant Monitor',
+      permission: 'Plant Monitor',
+      description: 'Live monitoring of all production lines, worker activities, and basket statuses across the facility.',
+      icon: MonitorCheck,
+      href: '/dashboard/elogbook/monitor',
+      gradient: 'from-indigo-500 to-blue-600',
+      bgGlow: 'bg-indigo-500/10',
+      stats: [
+        { label: 'Live Status', icon: Activity },
+        { label: 'Plant View', icon: Factory },
       ],
     },
   ];
