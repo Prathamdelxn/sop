@@ -35,7 +35,7 @@ console.log(body);
     }
 
     // Check if email is being changed to one that already exists (within the same company)
-    const targetEmail = email || updateData.email;
+    const targetEmail = email || existingUser.email;
     const targetCompanyId = companyId || existingUser.companyId;
 
     if (email && email !== existingUser.email) {

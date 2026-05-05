@@ -15,10 +15,15 @@ export default function WorkerAssignmentPage() {
   const router = useRouter();
   const { userData } = useElogbookPermission('Worker Assignment');
 
+  // Use hex _id for plant/line queries (plants/lines are stored with hex _id as companyId)
+  // Use companyId slug for user-related queries (users are stored with the slug)
+  const adminId = userData?.id;
+  const companySlug = userData?.companyId || userData?.id;
+
   // --- Plant & Line Selection ---
-  const { plants, refetch: fetchPlants } = usePlants(userData?.companyId);
+  const { plants, refetch: fetchPlants } = usePlants(companySlug);
   const [selectedPlantId, setSelectedPlantId] = useState('');
-  const { lines, refetch: fetchLines } = useLines(userData?.companyId, selectedPlantId || undefined);
+  const { lines, refetch: fetchLines } = useLines(companySlug, selectedPlantId || undefined);
 
   // --- State ---
   const [assignments, setAssignments] = useState([]);
@@ -33,8 +38,8 @@ export default function WorkerAssignmentPage() {
   const isPlantLocked = userData && userData.plantId && userData.role !== 'company-admin' && userData.role !== 'super-manager';
 
   useEffect(() => {
-    if (userData?.companyId) fetchPlants();
-  }, [userData, fetchPlants]);
+    if (companySlug) fetchPlants();
+  }, [companySlug, fetchPlants]);
 
   useEffect(() => {
     if (isPlantLocked && userData.plantId && !selectedPlantId) {
@@ -43,18 +48,22 @@ export default function WorkerAssignmentPage() {
   }, [isPlantLocked, userData, selectedPlantId]);
 
   useEffect(() => {
-    if (selectedPlantId) fetchLines();
+    if (selectedPlantId) {
+      fetchLines();
+    }
   }, [selectedPlantId, fetchLines]);
 
   // Fetch assignments and available workers
   const fetchAssignments = useCallback(async () => {
-    if (!userData?.companyId || !selectedPlantId) return;
+    if (!companySlug) return;
     setLoading(true);
     try {
-      const [assignRes, workerRes] = await Promise.all([
-        fetch(`/api/elogbook/assignments?companyId=${userData.companyId}&plantId=${selectedPlantId}`),
-        fetch(`/api/elogbook/assignments?companyId=${userData.companyId}&plantId=${selectedPlantId}&available=true`),
-      ]);
+      const urls = [
+        fetch(`/api/elogbook/assignments?companyId=${companySlug}${selectedPlantId ? `&plantId=${selectedPlantId}` : ''}`),
+        fetch(`/api/elogbook/assignments?companyId=${companySlug}&available=true`),
+      ];
+      
+      const [assignRes, workerRes] = await Promise.all(urls);
       const assignData = await assignRes.json();
       const workerData = await workerRes.json();
 
@@ -64,7 +73,7 @@ export default function WorkerAssignmentPage() {
       console.error('Fetch assignments error:', err);
     }
     setLoading(false);
-  }, [userData?.companyId, selectedPlantId]);
+  }, [companySlug, selectedPlantId]);
 
   useEffect(() => {
     fetchAssignments();
@@ -82,7 +91,7 @@ export default function WorkerAssignmentPage() {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          companyId: userData.companyId,
+          companyId: companySlug,
           plantId: selectedPlantId,
           lineId: selectedLineId,
           userId: selectedWorkerId,
@@ -236,7 +245,7 @@ export default function WorkerAssignmentPage() {
                   >
                     <option value="">-- Select Line --</option>
                     {lines.map((line) => (
-                      <option key={line._id} value={line._id}>
+                      <option key={String(line._id)} value={String(line._id)}>
                         Line {line.lineNumber}{line.name ? ` — ${line.name}` : ''}
                       </option>
                     ))}
@@ -265,12 +274,11 @@ export default function WorkerAssignmentPage() {
                   >
                     {filteredWorkers.map((worker) => (
                       <option
-                        key={worker._id}
-                        value={worker._id}
-                        disabled={!worker.isAvailable}
-                        className={`px-3 py-2 ${!worker.isAvailable ? 'text-gray-400 bg-gray-50' : ''}`}
+                        key={String(worker._id)}
+                        value={String(worker._id)}
+                        className="px-3 py-2"
                       >
-                        {worker.name || worker.username}
+                        {worker.name} {worker.username ? `(@${worker.username})` : ''}
                         {' '}({worker.role})
                         {worker.isBusy ? ' — 🔴 Busy' : ''}
                         {worker.isAssigned ? ' — 📌 Assigned' : ''}
@@ -382,14 +390,14 @@ export default function WorkerAssignmentPage() {
                                 </div>
                                 <div>
                                   <div className="text-sm font-semibold text-gray-900">
-                                    {assignment.userId?.name || assignment.userId?.username}
+                                    {assignment.userId?.name} {assignment.userId?.username ? `(@${assignment.userId?.username})` : ''}
                                   </div>
                                   <div className="text-xs text-gray-400 flex items-center gap-1.5">
                                     <span className="capitalize">{assignment.userId?.role}</span>
                                     {assignment.assignedBy && (
                                       <>
                                         <span>•</span>
-                                        <span>By: {assignment.assignedBy.name || assignment.assignedBy.username}</span>
+                                        <span>By: {assignment.assignedBy.name} {assignment.assignedBy.username ? `(@${assignment.assignedBy.username})` : ''}</span>
                                       </>
                                     )}
                                   </div>

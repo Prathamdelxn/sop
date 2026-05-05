@@ -24,7 +24,7 @@ export async function GET(req) {
     const dateParam = searchParams.get("date");
     const availableOnly = searchParams.get("available") === "true";
 
-    if (!companyId || (!plantId && !userId)) {
+    if (!companyId || (!plantId && !userId && !availableOnly)) {
       return NextResponse.json(
         { success: false, message: "companyId and (plantId or userId) are required" },
         { status: 400 }

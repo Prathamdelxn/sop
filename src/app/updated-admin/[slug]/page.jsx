@@ -368,7 +368,7 @@ export default function DynamicDashboardPage({ params }) {
     setFormData({
       name: user.name,
       email: user.email,
-      companyId: Id,
+      companyId: companyId || Id,
       task: task,
       username: user.username,
       password: '', // Don't pre-fill password for security
@@ -814,31 +814,40 @@ export default function DynamicDashboardPage({ params }) {
                   </div>
 
                   {/* Plant Assignment */}
-                  {plants.length > 0 && (
-                    <div className="mt-4">
-                      <label className="block text-sm font-medium text-gray-700 mb-1 flex items-center gap-1.5">
-                        <Factory className="h-4 w-4 text-blue-500" />
-                        Assign to Plant <span className='text-red-500'>*</span>
-                      </label>
-                      <select
-                        value={formData.plantId}
-                        onChange={(e) => setFormData({...formData, plantId: e.target.value})}
-                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500"
-                        required
-                        disabled={isLoading}
-                      >
-                        <option value="">-- Select Plant --</option>
-                        {plants.map((plant) => (
-                          <option key={plant._id} value={plant._id}>
-                            {plant.name} ({plant.code}){plant.city ? ` — ${plant.city}` : ''}
-                          </option>
-                        ))}
-                      </select>
-                      <p className="mt-1 text-xs text-gray-500">
-                        This determines which plant data the worker can access
-                      </p>
-                    </div>
-                  )}
+                  <div className="mt-4">
+                    <label className="block text-sm font-medium text-gray-700 mb-1 flex items-center gap-1.5">
+                      <Factory className="h-4 w-4 text-blue-500" />
+                      Assign to Plant <span className='text-red-500'>*</span>
+                    </label>
+                    {plants.length > 0 ? (
+                      <>
+                        <select
+                          value={formData.plantId}
+                          onChange={(e) => setFormData({...formData, plantId: e.target.value})}
+                          className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500"
+                          required
+                          disabled={isLoading}
+                        >
+                          <option value="">-- Select Plant --</option>
+                          {plants.map((plant) => (
+                            <option key={plant._id} value={plant._id}>
+                              {plant.name} ({plant.code}){plant.city ? ` — ${plant.city}` : ''}
+                            </option>
+                          ))}
+                        </select>
+                        <p className="mt-1 text-xs text-gray-500">
+                          This determines which plant data the worker can access
+                        </p>
+                      </>
+                    ) : (
+                      <div className="p-3 bg-amber-50 border border-amber-200 rounded-lg">
+                        <p className="text-sm text-amber-700 flex items-center gap-2">
+                          <Plus className="h-4 w-4 rotate-45" />
+                          No plants configured. Please add plants first.
+                        </p>
+                      </div>
+                    )}
+                  </div>
                 </div>
 
                 {/* Contact Information */}
@@ -1094,7 +1103,8 @@ export default function DynamicDashboardPage({ params }) {
                       !validationStatus.username.available ||
                       !validationStatus.phone.available ||
                       (formData.email && !validationStatus.email.available) || // Only validate email if provided
-                      task.length === 0
+                      task.length === 0 ||
+                      !formData.plantId
                     }
                   >
                     {isLoading ? (

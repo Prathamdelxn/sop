@@ -78,10 +78,10 @@ export default function UpdateWorkerRoles() {
   }, []);
 
   // --- Plant & Line Fetchers ---
-  const fetchAllPlants = async (adminId) => {
+  const fetchAllPlants = async (targetCompanyId) => {
     setIsLoadingPlants(true);
     try {
-      const res = await fetch(`/api/elogbook/plants?companyId=${adminId}`);
+      const res = await fetch(`/api/elogbook/plants?companyId=${targetCompanyId}`);
       const data = await res.json();
       if (data.success) setAllPlants(data.data);
     } catch (err) {
@@ -91,14 +91,14 @@ export default function UpdateWorkerRoles() {
     }
   };
 
-  const fetchLinesForPlant = async (adminId, plantId) => {
+  const fetchLinesForPlant = async (targetCompanyId, plantId) => {
     if (!plantId) {
       setAllLines([]);
       return;
     }
     setIsLoadingLines(true);
     try {
-      const res = await fetch(`/api/elogbook/lines?companyId=${adminId}&plantId=${plantId}`);
+      const res = await fetch(`/api/elogbook/lines?companyId=${targetCompanyId}&plantId=${plantId}`);
       const data = await res.json();
       if (data.success) setAllLines(data.data);
     } catch (err) {
@@ -109,16 +109,16 @@ export default function UpdateWorkerRoles() {
   };
 
   useEffect(() => {
-    if (superadminId) {
-      fetchAllPlants(superadminId);
+    if (companyId) {
+      fetchAllPlants(companyId);
     }
-  }, [superadminId]);
+  }, [companyId]);
 
   useEffect(() => {
-    if (superadminId && selectedPlantId) {
-      fetchLinesForPlant(superadminId, selectedPlantId);
+    if (companyId && selectedPlantId) {
+      fetchLinesForPlant(companyId, selectedPlantId);
     }
-  }, [superadminId, selectedPlantId]);
+  }, [companyId, selectedPlantId]);
 
   const showAlert = (message) => {
     setPopupMessage(message);
@@ -248,6 +248,12 @@ export default function UpdateWorkerRoles() {
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (!superadminId || !roleTitle) return;
+
+    if (allPlants.length === 0) {
+      showAlert("Action Required: Please add at least one plant before creating roles and permissions.");
+      return;
+    }
+
     const newRoleTitle = roleTitle.trim().toLowerCase();
 
     // Duplicate check only on create
@@ -333,7 +339,7 @@ export default function UpdateWorkerRoles() {
       const res = await fetch(url, {
         method,
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ ...plantForm, companyId: superadminId }),
+        body: JSON.stringify({ ...plantForm, companyId: companyId }),
       });
       
       const data = await res.json();
@@ -563,11 +569,14 @@ export default function UpdateWorkerRoles() {
                                   >
                                     <button
                                       type="button"
+                                      disabled={allPlants.length === 0}
                                       onClick={() => handleTaskToggle(task)}
-                                      className={`w-full text-left p-2 sm:p-3 rounded-lg border transition-all flex items-center ${selectedTasks.includes(task)
+                                      className={`w-full text-left p-2 sm:p-3 rounded-lg border transition-all flex items-center ${
+                                        allPlants.length === 0 ? 'bg-gray-100 cursor-not-allowed opacity-50' :
+                                        selectedTasks.includes(task)
                                           ? 'bg-indigo-50 border-indigo-200 text-indigo-700'
                                           : 'bg-gray-50 hover:bg-gray-100 border-gray-200'
-                                        }`}
+                                      }`}
                                     >
                                       <span className={`w-5 h-5 flex items-center justify-center mr-2 sm:mr-3 rounded border ${selectedTasks.includes(task)
                                           ? 'bg-indigo-600 border-indigo-600 text-white'
@@ -588,11 +597,28 @@ export default function UpdateWorkerRoles() {
                   </div>
                 </div>
 
+                {allPlants.length === 0 && (
+                  <div className="bg-amber-50 border-l-4 border-amber-500 p-4 rounded-lg flex items-start space-x-3">
+                    <FiAlertTriangle className="text-amber-500 mt-1 flex-shrink-0" size={20} />
+                    <div>
+                      <h4 className="text-sm font-bold text-amber-800">Plants Required</h4>
+                      <p className="text-sm text-amber-700">You must add at least one plant before you can create roles and assign permissions. Go to the "Facility Setup" tab to add a plant.</p>
+                      <button 
+                        type="button"
+                        onClick={() => setActiveTab('plants')}
+                        className="mt-2 text-sm font-bold text-indigo-600 hover:text-indigo-800 underline"
+                      >
+                        Go to Facility Setup →
+                      </button>
+                    </div>
+                  </div>
+                )}
+
                 <div className="pt-2">
                   <button
                     type="submit"
-                    disabled={isSubmitting || !roleTitle}
-                    className={`w-full py-2 sm:py-3 px-4 rounded-lg font-medium text-white transition flex justify-center items-center ${isSubmitting || !roleTitle
+                    disabled={isSubmitting || !roleTitle || allPlants.length === 0}
+                    className={`w-full py-2 sm:py-3 px-4 rounded-lg font-medium text-white transition flex justify-center items-center ${isSubmitting || !roleTitle || allPlants.length === 0
                         ? 'bg-indigo-400 cursor-not-allowed'
                         : 'bg-indigo-600 hover:bg-indigo-700'
                       }`}
@@ -875,7 +901,7 @@ export default function UpdateWorkerRoles() {
                                   setSavingLine(true);
                                   const payload = { 
                                     plantId: selectedPlantId, 
-                                    companyId: superadminId,
+                                    companyId: companyId,
                                     lineNumber: Number(lineForm.lineNumber), 
                                     name: lineForm.name || `Line ${lineForm.lineNumber}`,
                                     sublines: lineForm.sublines

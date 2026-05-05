@@ -279,6 +279,12 @@ export default function ProductionPage() {
       case 'endBasket':
         await executeEndBasket(payload.basketId);
         break;
+      case 'startBatch':
+        await executeStartBatch();
+        break;
+      case 'endBatch':
+        await executeEndBatch();
+        break;
       default:
         break;
     }
@@ -314,6 +320,18 @@ export default function ProductionPage() {
     await handleEndBasket(basketId, userData?.name || userData?.username);
   };
 
+  const executeStartBatch = async () => {
+    await handleStartBatch({
+      masterDataId: selectedMasterData._id,
+      startUser: userData?.name || userData?.username,
+    });
+  };
+
+  const executeEndBatch = async () => {
+    const hasActive = baskets.some((b) => b.status === 'in-progress' || b.status === 'stopped');
+    await handleEndBatch(userData?.name || userData?.username, hasActive);
+  };
+
   // --- Public action handlers (trigger password modal) ---
   const onStartBasket = () => {
     requestPasswordFor('startBasket');
@@ -332,20 +350,13 @@ export default function ProductionPage() {
     requestPasswordFor('restartBasket', { basketId });
   };
 
-  const onStartBatch = async () => {
-    await handleStartBatch({
-      masterDataId: selectedMasterData._id,
-      startUser: userData?.name || userData?.username,
-    });
+  const onStartBatch = () => {
+    requestPasswordFor('startBatch');
   };
 
-  const onEndBatch = async () => {
+  const onEndBatch = () => {
     if (!confirm('Are you sure you want to end the production batch for this part?')) return;
-    const hasActive = baskets.some((b) => b.status === 'in-progress' || b.status === 'stopped');
-    const success = await handleEndBatch(userData?.name || userData?.username, hasActive);
-    if (success) {
-      // baskets will refetch via hook dependency change
-    }
+    requestPasswordFor('endBatch');
   };
 
   // Get selected plant/line names for display
@@ -752,7 +763,9 @@ export default function ProductionPage() {
           pendingAction?.type === 'startBasket' ? 'Start Basket' :
           pendingAction?.type === 'stopBasket' ? 'Pause Basket' :
           pendingAction?.type === 'restartBasket' ? 'Restart Basket' :
-          pendingAction?.type === 'endBasket' ? 'End Basket' : 'Confirm Action'
+          pendingAction?.type === 'endBasket' ? 'End Basket' : 
+          pendingAction?.type === 'startBatch' ? 'Start Batch' :
+          pendingAction?.type === 'endBatch' ? 'End Batch' : 'Confirm Action'
         }
       />
     </div>
