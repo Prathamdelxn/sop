@@ -6,6 +6,7 @@ import ElogbookBasket from "@/model/ElogbookBasket";
 
 import Plant from "@/model/Plant";
 import Company from "@/model/Company";
+import ProductionLine from "@/model/ProductionLine";
 
 
 export const dynamic = "force-dynamic";
@@ -28,9 +29,9 @@ export async function GET(req) {
     const dateParam = searchParams.get("date");
     const availableOnly = searchParams.get("available") === "true";
 
-    if (!companyId || (!plantId && !userId && !availableOnly)) {
+    if (!companyId) {
       return NextResponse.json(
-        { success: false, message: "companyId and (plantId or userId) are required" },
+        { success: false, message: "companyId is required" },
         { status: 400 }
       );
     }
