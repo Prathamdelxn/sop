@@ -22,7 +22,8 @@ console.log(body);
       phone,
       task,
       role,
-      location
+      location,
+      plantId
     } = body;
 
     // Find the existing user
@@ -34,7 +35,7 @@ console.log(body);
     }
 
     // Check if email is being changed to one that already exists (within the same company)
-    const targetEmail = email || updateData.email;
+    const targetEmail = email || existingUser.email;
     const targetCompanyId = companyId || existingUser.companyId;
 
     if (email && email !== existingUser.email) {
@@ -50,6 +51,7 @@ console.log(body);
       email: email || existingUser.email,
       username: username || existingUser.username,
       companyId: companyId || existingUser.companyId,
+      plantId: plantId !== undefined ? (plantId || null) : existingUser.plantId,
       status: status || existingUser.status,
       phone: phone || existingUser.phone,
       task: task || existingUser.task,

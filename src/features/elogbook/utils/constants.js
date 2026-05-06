@@ -84,4 +84,5 @@ export const EMPTY_PLANT_FORM = {
 export const EMPTY_LINE_FORM = {
   lineNumber: '',
   name: '',
+  sublines: [],
 };

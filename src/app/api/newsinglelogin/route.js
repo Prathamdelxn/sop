@@ -123,6 +123,7 @@ export async function POST(req) {
         email: user.email,
         role: roleFound,
         companyId: resolvedCompanyId,
+        plantId: user.plantId || null,
         features: enabledFeatures
       },
       process.env.JWT_SECRET,
@@ -136,6 +137,7 @@ export async function POST(req) {
       username: user.username,
       role: roleFound,
       companyId: resolvedCompanyId,
+      plantId: user.plantId || null,
       features: enabledFeatures
     };
 

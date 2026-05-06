@@ -37,6 +37,9 @@ function QCPageContent() {
   const [customerSearch, setCustomerSearch] = useState('');
   const [summary, setSummary] = useState({ totalBaskets: 0, completedBaskets: 0, inProgressBaskets: 0, stoppedBaskets: 0, avgCycleTime: 0, totalLostTime: 0 });
 
+  // Plant-wise isolation
+  const isPlantLocked = userData && userData.plantId && userData.role !== 'company-admin' && userData.role !== 'super-manager';
+
   const {
     qcRecords, reworkRecords, completedRecords, saving,
     refetch: fetchQC, getFormForBasket, updateForm, updateDefect,
@@ -45,6 +48,13 @@ function QCPageContent() {
 
   useEffect(() => { if (userData?.companyId) fetchPlants(); }, [userData]);
   useEffect(() => { if (selectedPlantId) fetchLines(); }, [selectedPlantId, fetchLines]);
+
+  // Auto-select locked plant
+  useEffect(() => {
+    if (isPlantLocked && userData.plantId && !selectedPlantId) {
+      setSelectedPlantId(userData.plantId);
+    }
+  }, [isPlantLocked, userData, selectedPlantId]);
 
   useEffect(() => {
     if (!userData?.companyId) return;
@@ -173,11 +183,15 @@ function QCPageContent() {
             <select
               value={selectedPlantId}
               onChange={(e) => { setSelectedPlantId(e.target.value); setSelectedLineId(''); }}
-              className="w-full px-3 py-2.5 bg-gray-50 border border-gray-100 rounded-xl text-sm font-semibold text-gray-700 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-300 transition-all cursor-pointer"
+              disabled={isPlantLocked}
+              className={`w-full px-3 py-2.5 bg-gray-50 border border-gray-100 rounded-xl text-sm font-semibold text-gray-700 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-300 transition-all cursor-pointer ${isPlantLocked ? 'opacity-75 cursor-not-allowed' : ''}`}
             >
               <option value="">All Plants</option>
               {plants.map(p => (<option key={p._id} value={p._id}>{p.name}</option>))}
             </select>
+            {isPlantLocked && (
+              <p className="text-[10px] text-amber-600 mt-1">🔒 Plant locked to your assigned location</p>
+            )}
           </div>
           <div className="space-y-1.5">
             <label className="text-[10px] font-bold text-gray-400 uppercase flex items-center gap-1.5 ml-1">

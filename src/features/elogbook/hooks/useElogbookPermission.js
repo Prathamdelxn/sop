@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { migrateLegacyPermissions } from '@/utils/featurePermissions';
+import { migrateLegacyPermissions, FEATURE_PERMISSIONS } from '@/utils/featurePermissions';
 
 /**
  * Hook for elogbook permission checking.
@@ -30,7 +30,8 @@ export function useElogbookPermission(requiredPermission) {
       if (
         requiredPermission &&
         parsedUser.role !== 'company-admin' &&
-        parsedUser.role !== 'super-manager'
+        parsedUser.role !== 'super-manager' &&
+        parsedUser.role !== 'plant-head'
       ) {
         if (!tasks.includes(requiredPermission)) {
           router.replace('/dashboard/elogbook');
@@ -43,7 +44,7 @@ export function useElogbookPermission(requiredPermission) {
 
   const hasPermission = (permission) => {
     if (!userData) return false;
-    if (userData.role === 'company-admin' || userData.role === 'super-manager') return true;
+    if (userData.role === 'company-admin' || userData.role === 'super-manager' || userData.role === 'plant-head') return true;
     return userTasks.includes(permission);
   };
 
