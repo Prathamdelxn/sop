@@ -55,6 +55,7 @@ export async function POST(req) {
       plantId,
       lineNumber: Number(lineNumber),
       name: name || `Line ${lineNumber}`,
+      sublines: body.sublines || [],
     });
 
     const populated = await ProductionLine.findById(line._id).populate("plantId", "name code");

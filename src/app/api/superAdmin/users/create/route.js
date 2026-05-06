@@ -21,7 +21,8 @@ export async function POST(req) {
       phone,
       task,
       role,
-      location 
+      location,
+      plantId
     } = body;
 
     // 1. Check for existing username (within the same company)
@@ -48,6 +49,7 @@ export async function POST(req) {
       password: hashedPassword,
       username: (username && username.trim() !== "") ? username : undefined,
       companyId,
+      plantId: plantId || null,
       status,
       phone: (phone && phone.trim() !== "") ? phone : undefined,
       task,

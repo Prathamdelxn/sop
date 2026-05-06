@@ -6,6 +6,7 @@ const userSchema = new mongoose.Schema({
   password: { type: String, required: true },
   username:{type:String},
   companyId:{type:String},
+  plantId: { type: mongoose.Schema.Types.ObjectId, ref: "Plant", default: null },
   status:{type:String},
   phone:{type:String,required: true},
   task:[String],

@@ -41,16 +41,16 @@ export async function PUT(req, { params }) {
   }
 }
 
-// DELETE — soft-delete a plant
+// DELETE — permanently delete a plant
 export async function DELETE(req, { params }) {
   await connectDB();
   try {
     const { id } = params;
-    const plant = await Plant.findByIdAndUpdate(id, { isActive: false }, { new: true });
+    const plant = await Plant.findByIdAndDelete(id);
     if (!plant) {
       return NextResponse.json({ success: false, message: "Plant not found" }, { status: 404 });
     }
-    return NextResponse.json({ success: true, data: plant });
+    return NextResponse.json({ success: true, message: "Plant deleted permanently" });
   } catch (error) {
     console.error("Plant DELETE error:", error);
     return NextResponse.json({ success: false, message: error.message }, { status: 500 });
