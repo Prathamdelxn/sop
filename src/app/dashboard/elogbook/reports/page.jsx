@@ -168,6 +168,30 @@ export default function ReportsPage() {
       pdf.addImage(imgData, 'JPEG', margin, currentY, usableWidth, imgHeight, undefined, 'FAST');
       currentY += imgHeight + 8;
     }
+
+    // Add signature lines at the end of the report for physical signatures
+    const signatureSectionHeight = 35;
+    if (currentY + signatureSectionHeight > pdfHeight - margin) {
+      pdf.addPage();
+      currentY = 20;
+    } else {
+      currentY += 10;
+    }
+
+    pdf.setDrawColor(150, 150, 150);
+    pdf.setLineWidth(0.2);
+    
+    // Left side: Prepared By
+    pdf.line(margin, currentY + 15, margin + 60, currentY + 15);
+    pdf.setFontSize(9);
+    pdf.setTextColor(107, 114, 128);
+    pdf.text('Prepared By', margin, currentY + 20);
+
+    // Right side: Verified By (Requested field)
+    const rightSideStart = pdfWidth - margin - 60;
+    pdf.line(rightSideStart, currentY + 15, rightSideStart + 60, currentY + 15);
+    pdf.text('Verified By', rightSideStart, currentY + 20);
+    
     
     const filename = selectedMD ? `elogbook-${selectedMD.customerName.replace(/\s+/g, '-').toLowerCase()}-${startDate || 'all'}.pdf` : `elogbook-report-${startDate || 'all'}.pdf`;
     return { pdf, filename };

@@ -5,6 +5,8 @@ import ElogbookQC from "@/model/ElogbookQC";
 import ElogbookMasterData from "@/model/ElogbookMasterData";
 import ElogbookBatch from "@/model/ElogbookBatch";
 export const dynamic = "force-dynamic";
+import ProductionLine from "@/model/ProductionLine";
+import Plant from "@/model/Plant";
 
 // GET — aggregated report data for charts
 export async function GET(request) {
