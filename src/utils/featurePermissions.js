@@ -38,6 +38,7 @@ export const FEATURE_PERMISSIONS = {
     "Graphical Representation",
     "Worker Assignment",
     "Plant Monitor",
+    "Utility Tracking",
   ],
   "PHARMA-ELOGBOOK": [],   // Phase 3 — Coming Soon
   "OPERATION": [],          // Phase 4 — Coming Soon
