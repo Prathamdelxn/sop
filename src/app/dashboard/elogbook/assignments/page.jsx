@@ -115,7 +115,7 @@ export default function WorkerAssignmentPage() {
 
   // Release worker from assignment
   const handleRelease = async (assignmentId) => {
-    if (!confirm('Release this worker from their assignment?')) return;
+    if (!confirm('Unassign this worker from their assignment?')) return;
     setActionLoading(assignmentId);
     try {
       const res = await fetch('/api/elogbook/assignments', {
@@ -127,7 +127,7 @@ export default function WorkerAssignmentPage() {
       if (data.success) {
         await fetchAssignments();
       } else {
-        alert(data.message || 'Failed to release worker');
+        alert(data.message || 'Failed to unassign worker');
       }
     } catch (err) {
       console.error('Release error:', err);
@@ -413,7 +413,7 @@ export default function WorkerAssignmentPage() {
                                 ) : (
                                   <UserMinus className="w-3 h-3" />
                                 )}
-                                Release
+                                Unassign
                               </button>
                             </div>
                           ))}
