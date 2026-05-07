@@ -92,7 +92,7 @@ export function useBaskets({ companyId, plantId, lineId, masterDataId, batchId }
     return () => eventSource.close();
   }, [companyId, lineId, fetchData]);
 
-  const handleStartBasket = async ({ startBasketNumber, barcode, startUser, additionalUsers }) => {
+  const handleStartBasket = async ({ startBasketNumber, barcode, items, startUser, additionalUsers }) => {
     if (!masterDataId || !startBasketNumber) return false;
     setActionLoading('start');
     try {
@@ -101,6 +101,7 @@ export function useBaskets({ companyId, plantId, lineId, masterDataId, batchId }
       const data = await basketService.startBasket({
         companyId,
         masterDataId: mdId,
+        items,
         batchId: bId,
         plantId,
         lineId,

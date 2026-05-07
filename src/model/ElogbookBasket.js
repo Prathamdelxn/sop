@@ -13,6 +13,10 @@ const elogbookBasketSchema = new mongoose.Schema({
   plantId: { type: mongoose.Schema.Types.ObjectId, ref: "Plant", default: null },
   lineId: { type: mongoose.Schema.Types.ObjectId, ref: "ProductionLine", default: null },
   masterDataId: { type: mongoose.Schema.Types.ObjectId, ref: "ElogbookMasterData", required: true },
+  items: [{
+    masterDataId: { type: mongoose.Schema.Types.ObjectId, ref: "ElogbookMasterData" },
+    quantity: { type: Number, default: 0 },
+  }],
   batchId: { type: mongoose.Schema.Types.ObjectId, ref: "ElogbookBatch", default: null },
   basketNumber: { type: Number, required: true },
   barcode: { type: String, default: "" }, // scanned barcode value

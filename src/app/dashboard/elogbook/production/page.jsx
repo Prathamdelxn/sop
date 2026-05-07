@@ -64,7 +64,7 @@ export default function ProductionPage() {
     companyId: userData?.companyId,
     plantId: selectedPlantId || null,
     lineId: selectedLineId || null,
-  }, selectedPart);
+  }, selectedPart || 'ALL'); // Use 'ALL' or empty to trigger fetch without mdId
 
   // --- Baskets ---
   const {
@@ -276,7 +276,7 @@ export default function ProductionPage() {
 
     switch (type) {
       case 'startBasket':
-        await executeStartBasket();
+        await executeStartBasket(payload?.items);
         break;
       case 'stopBasket':
         await executeStopBasket();
@@ -301,10 +301,11 @@ export default function ProductionPage() {
   };
 
   // --- Actual action executors (called after password verification) ---
-  const executeStartBasket = async () => {
+  const executeStartBasket = async (items = []) => {
     const success = await handleStartBasket({
       startBasketNumber,
       barcode: barcodeInput || `BASKET-${startBasketNumber}`,
+      items,
       startUser: userData?.name || userData?.username,
       additionalUsers,
     });
@@ -331,10 +332,22 @@ export default function ProductionPage() {
   };
 
   const executeStartBatch = async () => {
-    await handleStartBatch({
-      masterDataId: selectedMasterData._id,
+    // If no part selected, pick the first one for the customer as the 'anchor' part
+    const primaryPart = selectedMasterData || (partsForSelectedCustomer.length > 0 ? partsForSelectedCustomer[0] : null);
+    
+    if (!primaryPart) {
+      alert("No parts found for this customer.");
+      return;
+    }
+
+    const success = await handleStartBatch({
+      masterDataId: primaryPart._id,
       startUser: userData?.name || userData?.username,
     });
+    if (success) {
+      setStartBasketNumber('1');
+      setShowStartModal(true);
+    }
   };
 
   const executeEndBatch = async () => {
@@ -343,8 +356,8 @@ export default function ProductionPage() {
   };
 
   // --- Public action handlers (trigger password modal) ---
-  const onStartBasket = () => {
-    requestPasswordFor('startBasket');
+  const onStartBasket = (items = []) => {
+    requestPasswordFor('startBasket', { items });
   };
 
   const onStopBasket = () => {
@@ -443,11 +456,11 @@ export default function ProductionPage() {
       </div>
 
       {/* Summary Cards */}
-      {selectedMasterData && baskets.length > 0 && (
+      {(selectedMasterData || activeBatch) && baskets.length > 0 && (
         <SummaryCards
           summary={summary}
           variant="production"
-          selectedMasterData={selectedMasterData}
+          selectedMasterData={selectedMasterData || activeBatch?.masterDataId}
         />
       )}
 
@@ -558,28 +571,10 @@ export default function ProductionPage() {
                 ))}
               </select>
             </div>
-            <div>
-              <label className="block text-xs font-semibold text-gray-500 mb-1.5 uppercase tracking-wider flex items-center gap-2">
-                <Package className="w-3.5 h-3.5" /> Select Part
-              </label>
-              <select
-                value={selectedPart}
-                onChange={(e) => handlePartChange(e.target.value)}
-                disabled={!selectedCustomer}
-                className="w-full px-3 py-2.5 border border-gray-200 rounded-xl text-sm bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-400 disabled:bg-gray-50 disabled:cursor-not-allowed"
-              >
-                <option value="">-- Select Part --</option>
-                {partsForSelectedCustomer.map((part) => (
-                  <option key={part._id} value={part._id}>
-                    {part.partName} ({part.standardCycleTime}min, {part.partsPerBasket} parts)
-                  </option>
-                ))}
-              </select>
-            </div>
           </div>
 
           {/* Batch Control */}
-          {selectedMasterData && (
+          {selectedCustomer && (
             <div className="bg-indigo-50/50 rounded-xl p-4 border border-indigo-100">
               <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                 <div className="flex items-center gap-4">
@@ -705,7 +700,7 @@ export default function ProductionPage() {
         </div>
 
         {/* Active Config Stats */}
-        {selectedMasterData && (
+        {(selectedMasterData || activeBatch?.masterDataId) && (
           <div className="flex flex-wrap gap-3 mt-4 pt-4 border-t border-gray-100">
             {selectedPlant && (
               <div className="flex items-center gap-1.5 px-3 py-1.5 bg-emerald-50 rounded-lg text-xs font-medium text-emerald-700">
@@ -718,29 +713,22 @@ export default function ProductionPage() {
               </div>
             )}
             <div className="flex items-center gap-1.5 px-3 py-1.5 bg-indigo-50 rounded-lg text-xs font-medium text-indigo-700">
-              <Building2 className="w-3.5 h-3.5" /> {selectedMasterData.customerName}
+              <Building2 className="w-3.5 h-3.5" /> {selectedMasterData?.customerName || activeBatch?.masterDataId?.customerName}
             </div>
-            <div className="flex items-center gap-1.5 px-3 py-1.5 bg-indigo-50 rounded-lg text-xs font-medium text-indigo-700">
-              <Package className="w-3.5 h-3.5" /> {selectedMasterData.partName}
-            </div>
+            {(selectedMasterData || activeBatch?.masterDataId) && (
+              <div className="flex items-center gap-1.5 px-3 py-1.5 bg-indigo-50 rounded-lg text-xs font-medium text-indigo-700">
+                <Package className="w-3.5 h-3.5" /> {selectedMasterData?.partName || activeBatch?.masterDataId?.partName}
+              </div>
+            )}
             <div className="flex items-center gap-1.5 px-3 py-1.5 bg-blue-50 rounded-lg text-xs font-medium text-blue-700">
-              <Timer className="w-3.5 h-3.5" /> Standard: {selectedMasterData.standardCycleTime} min
-            </div>
-            <div className="flex items-center gap-1.5 px-3 py-1.5 bg-amber-50 rounded-lg text-xs font-medium text-amber-700">
-              <Zap className="w-3.5 h-3.5" /> {selectedMasterData.standardVoltage}V
-            </div>
-            <div className="flex items-center gap-1.5 px-3 py-1.5 bg-red-50 rounded-lg text-xs font-medium text-red-600">
-              <Thermometer className="w-3.5 h-3.5" /> {selectedMasterData.standardTemperature}°C
-            </div>
-            <div className="flex items-center gap-1.5 px-3 py-1.5 bg-purple-50 rounded-lg text-xs font-medium text-purple-700">
-              <Package className="w-3.5 h-3.5" /> {selectedMasterData.partsPerBasket} parts/basket
+              <Timer className="w-3.5 h-3.5" /> Standard: {selectedMasterData?.standardCycleTime || activeBatch?.masterDataId?.standardCycleTime} min
             </div>
           </div>
         )}
 
-        {!selectedMasterData && masterDataList.length > 0 && (
+        {!selectedCustomer && masterDataList.length > 0 && (
           <div className="mt-4 pt-4 border-t border-gray-100 text-center text-sm text-amber-600 bg-amber-50 p-3 rounded-xl">
-            ⚠️ Please select a plant, line, customer, and part to start production
+            ⚠️ Please select a plant, line, and customer to start production
           </div>
         )}
       </div>
@@ -790,6 +778,8 @@ export default function ProductionPage() {
         setAdditionalUsers={setAdditionalUsers}
         userData={userData}
         selectedMasterData={selectedMasterData}
+        selectedCustomer={selectedCustomer}
+        masterDataList={masterDataList}
         onStart={onStartBasket}
         loading={actionLoading === 'start'}
       />

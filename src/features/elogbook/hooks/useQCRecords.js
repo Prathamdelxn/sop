@@ -25,48 +25,57 @@ export function useQCRecords(companyId, plantId, lineId) {
 
   // --- Form helpers ---
 
-  const getFormForBasket = (basketId) => {
-    return formData[basketId] || createEmptyQCForm();
+  const getFormKey = (basketId, masterDataId) => `${basketId}_${masterDataId}`;
+
+  const getFormForBasket = (basketId, masterDataId) => {
+    const key = getFormKey(basketId, masterDataId);
+    return formData[key] || createEmptyQCForm();
   };
 
-  const updateForm = (basketId, field, value) => {
+  const updateForm = (basketId, masterDataId, field, value) => {
+    const key = getFormKey(basketId, masterDataId);
     setFormData((prev) => ({
       ...prev,
-      [basketId]: {
-        ...getFormForBasket(basketId),
+      [key]: {
+        ...getFormForBasket(basketId, masterDataId),
         [field]: value,
       },
     }));
   };
 
-  const updateDefect = (basketId, defectKey, value) => {
-    const current = getFormForBasket(basketId);
+  const updateDefect = (basketId, masterDataId, defectKey, value) => {
+    const key = getFormKey(basketId, masterDataId);
+    const current = getFormForBasket(basketId, masterDataId);
     setFormData((prev) => ({
       ...prev,
-      [basketId]: {
+      [key]: {
         ...current,
         defects: { ...current.defects, [defectKey]: Number(value) || 0 },
       },
     }));
   };
 
-  const clearForm = (basketId) => {
+  const clearForm = (basketId, masterDataId) => {
+    const key = getFormKey(basketId, masterDataId);
     setFormData((prev) => {
       const copy = { ...prev };
-      delete copy[basketId];
+      delete copy[key];
       return copy;
     });
   };
 
   // --- Actions ---
 
-  const handleSubmitQC = async (basket, inspectorName) => {
+  const handleSubmitQC = async (basket, masterDataId, inspectorName) => {
     const basketId = basket._id;
-    const form = getFormForBasket(basketId);
-    const inspectedQty = basket.masterDataId?.partsPerBasket;
+    const form = getFormForBasket(basketId, masterDataId);
+    
+    // Find item quantity in basket
+    const item = basket.items?.find(it => (it.masterDataId?._id || it.masterDataId).toString() === masterDataId.toString());
+    const inspectedQty = item ? item.quantity : (basket.masterDataId?.partsPerBasket || 0);
 
     if (!inspectedQty) {
-      alert('Inspected quantity is missing from master data');
+      alert('Inspected quantity is missing for this part');
       return false;
     }
 
@@ -79,29 +88,32 @@ export function useQCRecords(companyId, plantId, lineId) {
       return false;
     }
 
-    // Check capacity
-    const existing = qcRecords.find((r) => r.basketId?._id === basketId);
-    const checkedSoFar = existing ? existing.goodQuantity + existing.reworkQuantity : 0;
+    // Check capacity for this specific item in this basket
+    const existingQC = qcRecords.find((r) => r.basketId?._id === basketId);
+    const existingItem = existingQC?.items?.find(it => (it.masterDataId?._id || it.masterDataId).toString() === masterDataId.toString());
+    const checkedSoFar = existingItem ? existingItem.goodQuantity + existingItem.reworkQuantity : 0;
+    
     if (checkedSoFar + totalNew > inspectedQty) {
       alert(
-        `Cannot save: Entering ${totalNew} parts would exceed basket capacity (${inspectedQty}). Only ${inspectedQty - checkedSoFar} parts remaining.`
+        `Cannot save: Entering ${totalNew} parts would exceed item capacity (${inspectedQty}). Only ${inspectedQty - checkedSoFar} parts remaining.`
       );
       return false;
     }
 
-    setSaving(basketId);
+    setSaving(`${basketId}_${masterDataId}`);
     try {
       const data = await qcService.submitQCInspection({
         basketId,
         companyId,
         inspectorName,
-        inspectedQuantity: inspectedQty,
+        masterDataId,
+        inspectedQuantity: inspectedQty, // Total for item in basket
         goodQuantity: Number(form.goodQuantity) || 0,
         defects: form.defects,
       });
 
       if (data.success) {
-        clearForm(basketId);
+        clearForm(basketId, masterDataId);
         setSaving(null);
         return true;
       } else {

@@ -20,7 +20,7 @@ export async function fetchQCRecords(companyId, plantId, lineId) {
  * Submit a QC inspection (create or increment).
  */
 export async function submitQCInspection({
-  basketId, companyId, inspectorName, inspectedQuantity, goodQuantity, defects,
+  basketId, companyId, inspectorName, masterDataId, inspectedQuantity, goodQuantity, defects,
 }) {
   const res = await fetch('/api/elogbook/qc', {
     method: 'POST',
@@ -29,6 +29,7 @@ export async function submitQCInspection({
       basketId,
       companyId,
       inspectorName,
+      masterDataId,
       inspectedQuantity: Number(inspectedQuantity),
       goodQuantity: Number(goodQuantity) || 0,
       defects,

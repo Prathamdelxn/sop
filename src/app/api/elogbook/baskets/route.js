@@ -85,6 +85,7 @@ export async function GET(req) {
 
     const baskets = await ElogbookBasket.find(filter)
       .populate("masterDataId")
+      .populate("items.masterDataId")
       .populate("batchId", "batchNumber plantId lineId")
       .populate("plantId", "name code")
       .populate("lineId", "lineNumber name")
@@ -102,25 +103,35 @@ export async function POST(req) {
   await connectDB();
   try {
     const body = await req.json();
-    const { companyId, masterDataId, basketNumber, barcode, startUser, additionalUsers } = body;
+    const { companyId, masterDataId, items, basketNumber, barcode, startUser, additionalUsers } = body;
 
-    if (!companyId || !masterDataId) {
+    // Support both single masterDataId and items array
+    let finalItems = items || [];
+    let primaryMasterDataId = masterDataId;
+
+    if (finalItems.length > 0 && !primaryMasterDataId) {
+      primaryMasterDataId = finalItems[0].masterDataId;
+    } else if (!finalItems.length && primaryMasterDataId) {
+      finalItems = [{ masterDataId: primaryMasterDataId, quantity: 0 }]; // quantity 0 as placeholder
+    }
+
+    if (!companyId || !primaryMasterDataId) {
       return NextResponse.json({ success: false, message: "Missing required fields" }, { status: 400 });
     }
 
-    // Find active batch
+    // Find active batch (using primary masterDataId for now)
     let activeBatch = null;
     if (body.batchId) {
       activeBatch = await ElogbookBatch.findById(body.batchId);
     } else {
-      const batchFilter = { companyId, masterDataId, status: "in-progress" };
+      const batchFilter = { companyId, masterDataId: primaryMasterDataId, status: "in-progress" };
       if (body.plantId) batchFilter.plantId = body.plantId;
       if (body.lineId) batchFilter.lineId = body.lineId;
       activeBatch = await ElogbookBatch.findOne(batchFilter);
     }
 
     if (!activeBatch) {
-      return NextResponse.json({ success: false, message: "No active batch found. Please start a batch first." }, { status: 400 });
+      return NextResponse.json({ success: false, message: "No active batch found for primary part. Please start a batch first." }, { status: 400 });
     }
 
     // Auto-calculate basket number if not provided
@@ -134,7 +145,8 @@ export async function POST(req) {
       companyId,
       plantId: activeBatch.plantId || null,
       lineId: activeBatch.lineId || null,
-      masterDataId,
+      masterDataId: primaryMasterDataId,
+      items: finalItems,
       batchId: activeBatch._id,
       basketNumber: finalBasketNumber,
       barcode: barcode || `BASKET-${finalBasketNumber}-${activeBatch._id.toString().slice(-4)}`,
@@ -166,6 +178,7 @@ export async function POST(req) {
 
     const populated = await ElogbookBasket.findById(basket._id)
       .populate("masterDataId")
+      .populate("items.masterDataId")
       .populate("batchId", "batchNumber plantId lineId")
       .populate("plantId", "name code")
       .populate("lineId", "lineNumber name");

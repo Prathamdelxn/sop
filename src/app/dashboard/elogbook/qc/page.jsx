@@ -93,8 +93,8 @@ function QCPageContent() {
     });
   }, [pendingBaskets]);
 
-  const onSubmitQC = async (basket) => {
-    const success = await handleSubmitQC(basket, userData?.name || userData?.username);
+  const onSubmitQC = async (basket, masterDataId) => {
+    const success = await handleSubmitQC(basket, masterDataId, userData?.name || userData?.username);
     if (success) {
       const params = { companyId: userData.companyId, status: 'pending-qc,in-progress,qc-done' };
       if (selectedPlantId) params.plantId = selectedPlantId;
@@ -127,7 +127,11 @@ function QCPageContent() {
       const c = b.masterDataId?.customerName || 'Unknown';
       if (!stats[c]) stats[c] = { baskets: [], totalParts: 0 };
       stats[c].baskets.push(b);
-      stats[c].totalParts += b.masterDataId?.partsPerBasket || 0;
+      // Sum all items if available
+      const totalInBasket = (b.items && b.items.length > 0)
+        ? b.items.reduce((s, it) => s + (it.quantity || 0), 0)
+        : (b.masterDataId?.partsPerBasket || 0);
+      stats[c].totalParts += totalInBasket;
     });
     return stats;
   };
@@ -250,10 +254,11 @@ function QCPageContent() {
                       b.status === 'qc-done'
                     );
                     return (
-                      <QCBasketCard key={basket._id} basket={basket} form={getFormForBasket(basket._id)} qcRecords={qcRecords} saving={saving}
+                      <QCBasketCard key={basket._id} basket={basket} qcRecords={qcRecords} saving={saving}
                         activeQCForm={activeQCForm} directBasketId={directBasketId} isLocked={isLocked}
                         onToggleForm={(id) => setActiveQCForm(activeQCForm === id ? null : id)}
-                        onUpdateForm={updateForm} onUpdateDefect={updateDefect} onSubmitQC={onSubmitQC} />
+                        onUpdateForm={updateForm} onUpdateDefect={updateDefect} onSubmitQC={onSubmitQC}
+                        getFormForBasket={getFormForBasket} />
                     );
                   })}
                 </div>

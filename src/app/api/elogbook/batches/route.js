@@ -25,7 +25,7 @@ export async function GET(req) {
     }
 
     const filter = { companyId, status };
-    if (masterDataId) filter.masterDataId = masterDataId;
+    if (masterDataId && masterDataId !== "ALL") filter.masterDataId = masterDataId;
     if (plantId) filter.plantId = plantId;
     if (lineId) filter.lineId = lineId;
 
@@ -85,21 +85,6 @@ export async function POST(req) {
       lineId: lineId || null,
       masterDataId,
       batchNumber,
-      startTime: new Date(),
-      startUser: startUser || "",
-      status: "in-progress",
-    });
-
-    // Automatically create the first basket (Bucket 1)
-    await ElogbookBasket.create({
-      companyId,
-      plantId: plantId || null,
-      lineId: lineId || null,
-      masterDataId,
-      batchId: batch._id,
-      basketNumber: 1,
-      barcode: `BASKET-1-${batch._id.toString().slice(-4)}`,
-      date: new Date(),
       startTime: new Date(),
       startUser: startUser || "",
       status: "in-progress",

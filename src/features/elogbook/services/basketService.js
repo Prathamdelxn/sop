@@ -26,7 +26,7 @@ export async function fetchBaskets({
  * Start (create) a new basket.
  */
 export async function startBasket({
-  companyId, masterDataId, batchId, plantId, lineId, basketNumber, barcode, startUser, additionalUsers,
+  companyId, masterDataId, items, batchId, plantId, lineId, basketNumber, barcode, startUser, additionalUsers,
 }) {
   const res = await fetch('/api/elogbook/baskets', {
     method: 'POST',
@@ -34,6 +34,7 @@ export async function startBasket({
     body: JSON.stringify({
       companyId,
       masterDataId,
+      items,
       batchId,
       plantId,
       lineId,
