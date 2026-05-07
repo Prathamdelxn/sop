@@ -145,6 +145,7 @@ export async function PUT(req, { params }) {
         basket.stoppages.push({
           stopTime: new Date(),
           reason: body.reason || "",
+          stopUser: body.stopUser || "",
           restartTime: null,
           lostMinutes: 0 // Will be calculated when restarting
         });

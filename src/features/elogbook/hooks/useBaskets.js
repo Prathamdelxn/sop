@@ -93,10 +93,10 @@ export function useBaskets({ companyId, plantId, lineId, masterDataId, batchId }
     return false;
   };
 
-  const handleStopBasket = async (basketId, reason) => {
+  const handleStopBasket = async (basketId, reason, stopUser) => {
     setActionLoading(basketId);
     try {
-      await basketService.stopBasket(basketId, reason);
+      await basketService.stopBasket(basketId, reason, stopUser);
       await fetchData(true);
     } catch (err) {
       console.error('Stop error:', err);

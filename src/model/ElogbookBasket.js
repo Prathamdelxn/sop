@@ -4,6 +4,7 @@ const stoppageSchema = new mongoose.Schema({
   stopTime: { type: Date, required: true },
   restartTime: { type: Date, default: null },
   reason: { type: String, default: "" },
+  stopUser: { type: String, default: "" }, // Track who paused
   lostMinutes: { type: Number, default: 0 }, // auto-calculated
 }, { _id: true });
 

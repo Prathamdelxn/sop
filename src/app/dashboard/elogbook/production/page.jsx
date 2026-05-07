@@ -316,7 +316,7 @@ export default function ProductionPage() {
   };
 
   const executeStopBasket = async () => {
-    await handleStopBasket(stoppingBasketId, stopReason);
+    await handleStopBasket(stoppingBasketId, stopReason, userData?.name || userData?.username);
     setShowStopModal(false);
     setStopReason('');
     setStoppingBasketId(null);

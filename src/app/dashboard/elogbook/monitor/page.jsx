@@ -9,6 +9,7 @@ import {
 } from 'lucide-react';
 import { useElogbookPermission } from '@/features/elogbook/hooks/useElogbookPermission';
 import { usePlants } from '@/features/elogbook/hooks/usePlants';
+import { formatTimeToMMSS } from '@/features/elogbook/utils/formatters';
 
 export default function PlantMonitorPage() {
   const router = useRouter();
@@ -304,10 +305,40 @@ export default function PlantMonitorPage() {
                                 : '—'}
                             </span>
                           </div>
+                          {basket.status === 'stopped' && (
+                            <>
+                              <div className="flex justify-between mt-2 pt-2 border-t border-amber-100">
+                                <span className="text-amber-600 font-bold">Paused At</span>
+                                <span className="font-bold text-amber-700">
+                                  {basket.stoppages?.[basket.stoppages.length - 1]?.stopTime
+                                    ? new Date(basket.stoppages[basket.stoppages.length - 1].stopTime).toLocaleTimeString()
+                                    : '—'}
+                                </span>
+                              </div>
+                              <div className="flex justify-between">
+                                <span className="text-amber-600 font-bold">Paused By</span>
+                                <span className="font-bold text-amber-700">
+                                  {basket.stoppages?.[basket.stoppages.length - 1]?.stopUser || '—'}
+                                </span>
+                              </div>
+                              <div className="flex flex-col mt-1">
+                                <span className="text-[10px] text-amber-500 font-bold uppercase">Reason</span>
+                                <span className="text-xs text-amber-800 italic">
+                                  "{basket.stoppages?.[basket.stoppages.length - 1]?.reason || 'No reason provided'}"
+                                </span>
+                              </div>
+                            </>
+                          )}
+                          <div className="flex justify-between mt-2 pt-2 border-t border-gray-100">
+                            <span className="text-gray-400">Total Loss Time</span>
+                            <span className={`font-bold ${basket.totalLostTime > 0 ? 'text-red-500' : 'text-gray-400'}`}>
+                              {formatTimeToMMSS(basket.totalLostTime || 0)}
+                            </span>
+                          </div>
                           {basket.stoppages?.length > 0 && (
                             <div className="flex justify-between">
-                              <span className="text-gray-400">Stoppages</span>
-                              <span className="font-medium text-red-500">
+                              <span className="text-gray-400">Stoppage Count</span>
+                              <span className="font-medium text-gray-600">
                                 {basket.stoppages.length}
                               </span>
                             </div>

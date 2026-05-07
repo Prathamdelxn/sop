@@ -63,8 +63,8 @@ export async function updateBasket(basketId, payload) {
 /**
  * Stop a basket with a reason.
  */
-export async function stopBasket(basketId, reason) {
-  return updateBasket(basketId, { action: 'stop', reason });
+export async function stopBasket(basketId, reason, stopUser) {
+  return updateBasket(basketId, { action: 'stop', reason, stopUser });
 }
 
 /**
