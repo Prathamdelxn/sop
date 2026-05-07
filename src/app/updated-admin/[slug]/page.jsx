@@ -284,7 +284,17 @@ export default function DynamicDashboardPage({ params }) {
   };
 
   const validatePhone = async (phone) => {
-    if (!phone) return;
+    if (!phone) {
+      setValidationStatus(prev => ({
+        ...prev,
+        phone: { 
+          checking: false, 
+          available: true, 
+          error: '' 
+        }
+      }));
+      return;
+    }
      if (phone.length !== 10) {
     setValidationStatus(prev => ({
       ...prev,
@@ -392,8 +402,9 @@ export default function DynamicDashboardPage({ params }) {
     // Check validation status - only validate fields that have values
     const hasEmail = formData.email.trim() !== '';
     const emailValid = !hasEmail || validationStatus.email.available;
+    const hasPhone = formData.phone.trim() !== '';
+    const phoneValid = !hasPhone || validationStatus.phone.available;
     const usernameValid = validationStatus.username.available;
-    const phoneValid = validationStatus.phone.available;
 
     if (!emailValid || !usernameValid || !phoneValid) {
       showAlert("Validation Error", "Please fix the validation errors before submitting");
@@ -902,7 +913,7 @@ export default function DynamicDashboardPage({ params }) {
                     </div>
                     
                     <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">Phone Number <span className='text-red-500'>*</span></label>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">Phone Number</label>
                       <input
                         type="tel"
                         value={formData.phone}
@@ -919,8 +930,7 @@ export default function DynamicDashboardPage({ params }) {
                           validationStatus.phone.available && formData.phone ? 'border-green-500' : 
                           'border-gray-300'
                         }`}
-                        placeholder="Enter phone number"
-                        required
+                        placeholder="Enter phone number (optional)"
                         disabled={isLoading}
                       />
                       <div className="mt-1 h-5">
@@ -1097,11 +1107,10 @@ export default function DynamicDashboardPage({ params }) {
                     disabled={
                       isLoading || 
                       !formData.name || 
-                      !formData.phone || 
                       !formData.username || 
                       (!editingUser && !formData.password) ||
                       !validationStatus.username.available ||
-                      !validationStatus.phone.available ||
+                      (formData.phone && !validationStatus.phone.available) ||
                       (formData.email && !validationStatus.email.available) || // Only validate email if provided
                       task.length === 0 ||
                       !formData.plantId

@@ -8,7 +8,7 @@ const userSchema = new mongoose.Schema({
   companyId:{type:String},
   plantId: { type: mongoose.Schema.Types.ObjectId, ref: "Plant", default: null },
   status:{type:String},
-  phone:{type:String,required: true},
+  phone:{type:String},
   task:[String],
 location: {
   type: String,
