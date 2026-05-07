@@ -103,6 +103,7 @@ export async function POST(req) {
 
         if (company) {
           enabledFeatures = company.enabledFeatures || [];
+          user.companyNameFound = company.name; // Temporary storage for response mapping
         }
       } 
       
@@ -137,6 +138,7 @@ export async function POST(req) {
       username: user.username,
       role: roleFound,
       companyId: resolvedCompanyId,
+      companyName: user.companyNameFound || "",
       plantId: user.plantId || null,
       features: enabledFeatures
     };

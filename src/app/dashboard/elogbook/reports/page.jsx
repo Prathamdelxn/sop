@@ -37,6 +37,7 @@ export default function ReportsPage() {
   const [exportEmail, setExportEmail] = useState('');
   const [sendingEmail, setSendingEmail] = useState(false);
   const [emailStatus, setEmailStatus] = useState(null);
+  const [exportProgress, setExportProgress] = useState(0);
 
   useEffect(() => { if (userData?.companyId) { fetchMD(); fetchPlants(); const today = new Date().toISOString().split('T')[0]; setStartDate(today); setEndDate(today); } }, [userData]);
   useEffect(() => { if (selectedPlantId) fetchLines(); }, [selectedPlantId, fetchLines]);
@@ -128,46 +129,108 @@ export default function ReportsPage() {
     await new Promise(r => setTimeout(r, 500));
     
     const selectedMD = masterDataList.find(md => md._id === selectedMasterData);
-    const reportTitle = selectedMD 
-      ? `${selectedMD.customerName} - ${selectedMD.partName} Report` 
-      : selectedCustomer 
-        ? `${selectedCustomer} - Company Report`
-        : 'ELogBook Overall Report';
-        
     const pdf = new jsPDF('p', 'mm', 'a4');
     const pdfWidth = pdf.internal.pageSize.getWidth();
     const pdfHeight = pdf.internal.pageSize.getHeight();
     const margin = 14;
     const usableWidth = pdfWidth - (margin * 2);
     
-    pdf.setFontSize(18); pdf.setTextColor(55, 48, 163); pdf.text(reportTitle, margin, 15);
-    pdf.setFontSize(10); pdf.setTextColor(107, 114, 128);
-    pdf.text(`Generated: ${new Date().toLocaleString()}`, margin, 22);
+    // 1. Manufacturing Company Header (Absolute Top & Prominent)
+    const companyName = reportData?.companyName || userData?.companyName || 'MANUFACTURING REPORT';
     
-    if (selectedMD) pdf.text(`Part: ${selectedMD.partName}`, margin, 28);
+    const addHeader = (pageNum) => {
+      pdf.setFont('helvetica', 'bold');
+      pdf.setFontSize(8);
+      pdf.setTextColor(148, 163, 184); // Slate 400
+      pdf.text(companyName.toUpperCase(), margin, 8);
+      pdf.text(`PAGE ${pageNum}`, pdfWidth - margin - 15, 8);
+      pdf.setDrawColor(241, 245, 249);
+      pdf.setLineWidth(0.1);
+      pdf.line(margin, 10, pdfWidth - margin, 10);
+    };
+
+    // First Page Unique Header
+    pdf.setFont('helvetica', 'bold');
+    pdf.setFontSize(24);
+    pdf.setTextColor(15, 23, 42); // Slate 900
+    pdf.text(companyName.toUpperCase(), margin, 18);
     
+    // Thick Accent Line
+    pdf.setDrawColor(79, 70, 229); // Indigo 600
+    pdf.setLineWidth(1);
+    pdf.line(margin, 22, margin + 40, 22);
+
+    // 2. Report Subtitle & Generation Info
+    pdf.setFontSize(9);
+    pdf.setTextColor(100, 116, 139); // Slate 500
+    pdf.setFont('helvetica', 'normal');
+    pdf.text(`PRODUCTION EXECUTION REPORT | GENERATED: ${new Date().toLocaleString().toUpperCase()}`, margin, 28);
+
+    // 3. Entity & Production Details
+    let infoY = 38;
+    pdf.setFontSize(10);
+    pdf.setTextColor(51, 65, 85); // Slate 700
+    
+    const customerDisplay = selectedMD?.customerName || selectedCustomer || 'ALL CUSTOMERS';
     const selectedPlantObj = plants.find(p => p._id === selectedPlantId);
     const selectedLineObj = lines.find(l => l._id === selectedLineId);
-    let infoY = 34;
-    if (selectedPlantObj) { pdf.text(`Plant: ${selectedPlantObj.name} (${selectedPlantObj.code})`, margin, infoY); infoY += 6; }
-    if (selectedLineObj) { pdf.text(`Line: ${selectedLineObj.lineNumber}${selectedLineObj.name ? ` — ${selectedLineObj.name}` : ''}`, margin, infoY); infoY += 6; }
-    if (startDate) { pdf.text(`Date Range: ${startDate} to ${endDate || startDate}`, margin, infoY); infoY += 6; }
+
+    // Detail Grid Helper
+    const drawDetail = (label, value, y) => {
+      pdf.setFont('helvetica', 'bold');
+      pdf.text(label, margin, y);
+      pdf.setFont('helvetica', 'normal');
+      pdf.text(String(value), margin + 45, y);
+      return y + 6;
+    };
+
+    infoY = drawDetail('CUSTOMER ENTITY:', customerDisplay, infoY);
+    
+    if (selectedMD) {
+      infoY = drawDetail('PART / PRODUCT:', selectedMD.partName, infoY);
+    }
+
+    if (selectedPlantObj) {
+      infoY = drawDetail('MANUFACTURING PLANT:', `${selectedPlantObj.name} (${selectedPlantObj.code})`, infoY);
+    }
+
+    if (selectedLineObj) {
+      infoY = drawDetail('PRODUCTION LINE:', `Line ${selectedLineObj.lineNumber}${selectedLineObj.name ? ` — ${selectedLineObj.name}` : ''}`, infoY);
+    }
+
+    if (startDate) {
+      infoY = drawDetail('REPORTING PERIOD:', `${startDate} TO ${endDate || startDate}`, infoY);
+    }
     
     let currentY = infoY + 4;
     const children = Array.from(element.children);
-    
+    let pageCount = 1;
+
     for (let i = 0; i < children.length; i++) {
-      // Use scale: 1.5 instead of 2 to reduce file size while maintaining readability
-      const canvas = await html2canvas(children[i], { scale: 1.5, useCORS: true, logging: false, backgroundColor: '#ffffff' });
-      // Use JPEG with 0.8 quality instead of PNG for significantly smaller file size
-      const imgData = canvas.toDataURL('image/jpeg', 0.8);
+      setExportProgress(Math.round((i / children.length) * 100));
+      await new Promise(r => setTimeout(r, 100));
+      
+      const canvas = await html2canvas(children[i], { 
+        scale: 1.3,
+        useCORS: true, 
+        logging: false, 
+        backgroundColor: '#ffffff' 
+      });
+      
+      const imgData = canvas.toDataURL('image/jpeg', 0.75);
       const imgHeight = (canvas.height * usableWidth) / canvas.width;
       
-      if (currentY + imgHeight > pdfHeight - margin) { pdf.addPage(); currentY = 14; }
-      // Use 'FAST' compression alias
+      if (currentY + imgHeight > pdfHeight - margin) { 
+        pdf.addPage(); 
+        pageCount++;
+        addHeader(pageCount);
+        currentY = 15; 
+      }
+      
       pdf.addImage(imgData, 'JPEG', margin, currentY, usableWidth, imgHeight, undefined, 'FAST');
       currentY += imgHeight + 8;
     }
+    setExportProgress(100);
 
     // Add signature lines at the end of the report for physical signatures
     const signatureSectionHeight = 35;
@@ -199,6 +262,7 @@ export default function ReportsPage() {
 
   const handleDownloadPDF = async () => {
     setExporting(true);
+    setExportProgress(0);
     try {
       const result = await generatePDFBlob();
       if (result) {
@@ -219,6 +283,7 @@ export default function ReportsPage() {
     }
 
     setSendingEmail(true);
+    setExportProgress(0);
     setEmailStatus(null);
     try {
       const result = await generatePDFBlob();
@@ -565,6 +630,21 @@ export default function ReportsPage() {
                     <div className="text-xs text-gray-500">Generate and save to your device</div>
                   </div>
                 </button>
+
+                {(exporting || (sendingEmail && exportProgress < 100)) && (
+                  <div className="px-2 py-1">
+                    <div className="flex justify-between text-[10px] font-bold text-indigo-600 mb-1 uppercase tracking-wider">
+                      <span>{exportProgress < 100 ? 'Processing Report Sections...' : 'Finalizing PDF...'}</span>
+                      <span>{exportProgress}%</span>
+                    </div>
+                    <div className="w-full bg-gray-100 rounded-full h-2 overflow-hidden shadow-inner">
+                      <div 
+                        className="bg-gradient-to-r from-indigo-500 to-purple-500 h-full transition-all duration-300 ease-out" 
+                        style={{ width: `${exportProgress}%` }}
+                      ></div>
+                    </div>
+                  </div>
+                )}
 
                 <div className="relative">
                   <div className="absolute inset-0 flex items-center"><div className="w-full border-t border-gray-100"></div></div>

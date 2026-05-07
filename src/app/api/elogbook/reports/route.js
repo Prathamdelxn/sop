@@ -4,6 +4,7 @@ import ElogbookBasket from "@/model/ElogbookBasket";
 import ElogbookQC from "@/model/ElogbookQC";
 import ElogbookMasterData from "@/model/ElogbookMasterData";
 import ElogbookBatch from "@/model/ElogbookBatch";
+import Company from "@/model/Company";
 export const dynamic = "force-dynamic";
 import ProductionLine from "@/model/ProductionLine";
 import Plant from "@/model/Plant";
@@ -30,6 +31,13 @@ export async function GET(request) {
         message: "companyId required"
       }, { status: 400 });
     }
+
+    let company = await Company.findOne({ companyId });
+    // Robust fallback: if not found by slug, try searching by MongoDB ObjectId
+    if (!company && /^[0-9a-fA-F]{24}$/.test(companyId)) {
+      company = await Company.findById(companyId);
+    }
+    const companyName = company ? company.name : "Manufacturing Excellence";
 
     // Build basket filter
     const basketFilter = { companyId };
@@ -214,6 +222,7 @@ export async function GET(request) {
     const responseData = {
       success: true,
       data: {
+        companyName,
         cycleTimeData,
         quantityData,
         basketDetails,
