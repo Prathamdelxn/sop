@@ -64,6 +64,34 @@ export function useBaskets({ companyId, plantId, lineId, masterDataId, batchId }
     fetchData();
   }, [fetchData]);
 
+  // Real-time synchronization logic
+  useEffect(() => {
+    if (!companyId || !lineId) return;
+
+    // Use EventSource for real-time notifications
+    const eventSource = new EventSource(`/api/elogbook/events?lineId=${lineId}`);
+
+    eventSource.onmessage = (event) => {
+      try {
+        const data = JSON.parse(event.data);
+        if (data.type === 'BASKET_UPDATED') {
+          console.log('Real-time refresh triggered for basket');
+          fetchData(true); // Silent refresh
+        }
+      } catch (err) {
+        // Heartbeat or other non-JSON messages
+      }
+    };
+
+    eventSource.onerror = (err) => {
+      console.error('SSE Error:', err);
+      eventSource.close();
+      // Optionally implement reconnection logic here
+    };
+
+    return () => eventSource.close();
+  }, [companyId, lineId, fetchData]);
+
   const handleStartBasket = async ({ startBasketNumber, barcode, startUser, additionalUsers }) => {
     if (!masterDataId || !startBasketNumber) return false;
     setActionLoading('start');
@@ -104,10 +132,10 @@ export function useBaskets({ companyId, plantId, lineId, masterDataId, batchId }
     setActionLoading(null);
   };
 
-  const handleRestartBasket = async (basketId) => {
+  const handleRestartBasket = async (basketId, restartUser) => {
     setActionLoading(basketId);
     try {
-      await basketService.restartBasket(basketId);
+      await basketService.restartBasket(basketId, restartUser);
       await fetchData(true);
     } catch (err) {
       console.error('Restart error:', err);

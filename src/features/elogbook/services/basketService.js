@@ -70,8 +70,8 @@ export async function stopBasket(basketId, reason, stopUser) {
 /**
  * Restart a stopped basket.
  */
-export async function restartBasket(basketId) {
-  return updateBasket(basketId, { action: 'restart' });
+export async function restartBasket(basketId, restartUser) {
+  return updateBasket(basketId, { action: 'restart', restartUser });
 }
 
 /**

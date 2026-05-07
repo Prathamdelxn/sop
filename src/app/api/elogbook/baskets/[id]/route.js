@@ -105,6 +105,7 @@ import { NextResponse } from "next/server";
 import connectDB from "@/utils/db";
 import ElogbookBasket from "@/model/ElogbookBasket";
 import ElogbookMasterData from "@/model/ElogbookMasterData";
+import { triggerLineRefresh, EVENTS } from "@/utils/events";
 
 export const dynamic = "force-dynamic";
 
@@ -141,6 +142,15 @@ export async function PUT(req, { params }) {
 
     switch (action) {
       case "stop": {
+        // Exclusive control check
+        const stopUser = body.stopUser || "";
+        if (basket.currentOperator && stopUser && basket.currentOperator !== stopUser) {
+          return NextResponse.json({ 
+            success: false, 
+            message: `Only the active operator (${basket.currentOperator}) can pause this basket.` 
+          }, { status: 403 });
+        }
+
         // Add a new stoppage entry
         basket.stoppages.push({
           stopTime: new Date(),
@@ -159,6 +169,17 @@ export async function PUT(req, { params }) {
         if (lastStop) {
           const restartTime = new Date();
           const stopTime = new Date(lastStop.stopTime);
+          const restartUser = body.restartUser || "";
+
+          // Track Handover Logic: Add to executors if not present
+          if (restartUser && !basket.executors.includes(restartUser)) {
+            basket.executors.push(restartUser);
+            // Remove from supporters if they were a supporter before
+            basket.supporters = basket.supporters.filter(s => s !== restartUser);
+          }
+          
+          // Set as the new exclusive operator
+          basket.currentOperator = restartUser;
 
           // Calculate lost time in minutes with high precision
           const lostMilliseconds = restartTime - stopTime;
@@ -193,9 +214,25 @@ export async function PUT(req, { params }) {
 
       case "end": {
         const endTime = new Date();
+        const endUser = body.endUser || "";
+
+        // Exclusive control check
+        if (basket.currentOperator && endUser && basket.currentOperator !== endUser) {
+          return NextResponse.json({ 
+            success: false, 
+            message: `Only the active operator (${basket.currentOperator}) can end this basket.` 
+          }, { status: 403 });
+        }
+
         basket.endTime = endTime;
-        basket.endUser = body.endUser || "";
+        basket.endUser = endUser;
         basket.executionReason = body.executionReason || "";
+
+        // Track Handover/Completion Logic: Add to executors if not present
+        if (basket.endUser && !basket.executors.includes(basket.endUser)) {
+          basket.executors.push(basket.endUser);
+          basket.supporters = basket.supporters.filter(s => s !== basket.endUser);
+        }
 
         let totalLostMilliseconds = 0;
 
@@ -273,6 +310,9 @@ export async function PUT(req, { params }) {
 
     await basket.save();
     const populated = await ElogbookBasket.findById(id).populate("masterDataId");
+
+    // Trigger real-time refresh for other workers on this line
+    triggerLineRefresh(populated.lineId, EVENTS.BASKET_UPDATED);
 
     // Return calculation details in response for frontend debugging
     const responseData = {

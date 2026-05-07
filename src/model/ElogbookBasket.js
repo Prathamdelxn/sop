@@ -34,6 +34,11 @@ const elogbookBasketSchema = new mongoose.Schema({
   // Execution Reason (for early/late completion)
   executionReason: { type: String, default: "" },
 
+  // Role Tracking
+  executors: [{ type: String }], // People who started or resumed
+  supporters: [{ type: String }], // Other people assigned to the line
+  currentOperator: { type: String, default: "" }, // Person who currently has control (started or resumed)
+
   // Additional operators
   additionalUsers: [{ type: String }], // manually entered names
 

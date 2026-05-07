@@ -4,6 +4,7 @@ import ElogbookBatch from "@/model/ElogbookBatch";
 import ElogbookBasket from "@/model/ElogbookBasket";
 import Company from "@/model/Company";
 import { generateBatchNumber } from "@/utils/batchNumberGenerator";
+import { triggerLineRefresh, EVENTS } from "@/utils/events";
 
 
 export const dynamic = "force-dynamic";
@@ -108,6 +109,9 @@ export async function POST(req) {
     const populated = await ElogbookBatch.findById(batch._id)
       .populate("plantId", "name code")
       .populate("lineId", "lineNumber name");
+
+    // Trigger real-time refresh for other workers on this line
+    triggerLineRefresh(populated.lineId, EVENTS.BATCH_UPDATED);
 
     return NextResponse.json({ success: true, data: populated }, { status: 201 });
   } catch (error) {

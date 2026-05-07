@@ -64,7 +64,7 @@ export default function ProductionPage() {
     companyId: userData?.companyId,
     plantId: selectedPlantId || null,
     lineId: selectedLineId || null,
-  });
+  }, selectedPart);
 
   // --- Baskets ---
   const {
@@ -282,7 +282,7 @@ export default function ProductionPage() {
         await executeStopBasket();
         break;
       case 'restartBasket':
-        await executeRestartBasket(payload.basketId);
+        await executeRestartBasket(payload.basketId, payload.restartUser);
         break;
       case 'endBasket':
         await executeEndBasket(payload.basketId, payload.reason);
@@ -322,8 +322,8 @@ export default function ProductionPage() {
     setStoppingBasketId(null);
   };
 
-  const executeRestartBasket = async (basketId) => {
-    await handleRestartBasket(basketId);
+  const executeRestartBasket = async (basketId, restartUser) => {
+    await handleRestartBasket(basketId, restartUser);
   };
 
   const executeEndBasket = async (basketId, reason = "") => {
@@ -397,7 +397,10 @@ export default function ProductionPage() {
   };
 
   const onRestartBasket = (basketId) => {
-    requestPasswordFor('restartBasket', { basketId });
+    requestPasswordFor('restartBasket', { 
+      basketId,
+      restartUser: userData?.name || userData?.username
+    });
   };
 
   const onStartBatch = () => {
@@ -763,6 +766,7 @@ export default function ProductionPage() {
             <BasketCard
               key={basket._id}
               basket={basket}
+              currentUser={userData?.name || userData?.username}
               actionLoading={actionLoading}
               canDoQC={canDoQC}
               onStop={(id) => {

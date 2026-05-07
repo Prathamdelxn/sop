@@ -291,12 +291,22 @@ export default function PlantMonitorPage() {
                                 : '—'}
                             </span>
                           </div>
-                          <div className="flex justify-between">
-                            <span className="text-gray-400">Operator</span>
-                            <span className="font-medium text-gray-600">
-                              {basket.startUser || '—'}
+                          <div className="flex justify-between items-start">
+                            <span className="text-gray-400">Execution by</span>
+                            <span className="font-bold text-indigo-600 text-right max-w-[120px]">
+                              {basket.executors?.length > 0 
+                                ? basket.executors.join(", ") 
+                                : basket.startUser || '—'}
                             </span>
                           </div>
+                          {basket.supporters?.length > 0 && (
+                            <div className="flex justify-between items-start">
+                              <span className="text-gray-400">Supported by</span>
+                              <span className="font-medium text-gray-500 text-right max-w-[120px]">
+                                {basket.supporters.join(", ")}
+                              </span>
+                            </div>
+                          )}
                           <div className="flex justify-between">
                             <span className="text-gray-400">Started</span>
                             <span className="font-medium text-gray-600">

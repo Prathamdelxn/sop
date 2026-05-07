@@ -5,6 +5,9 @@ import ElogbookBatch from "@/model/ElogbookBatch";
 import ElogbookMasterData from "@/model/ElogbookMasterData";
 import Plant from "@/model/Plant";
 import ProductionLine from "@/model/ProductionLine";
+import WorkerAssignment from "@/model/WorkerAssignment";
+import User from "@/model/User";
+import { triggerLineRefresh, EVENTS } from "@/utils/events";
 
 
 
@@ -139,6 +142,25 @@ export async function POST(req) {
       startTime: new Date(),
       startUser: startUser || "",
       additionalUsers: additionalUsers || [],
+      currentOperator: startUser || "",
+      executors: [startUser || "Unknown"],
+      supporters: await (async () => {
+        // Find all active workers assigned to this line today
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+        const tomorrow = new Date(today);
+        tomorrow.setDate(tomorrow.getDate() + 1);
+
+        const assignments = await WorkerAssignment.find({
+          lineId: activeBatch.lineId,
+          date: { $gte: today, $lt: tomorrow },
+          status: "active"
+        }).populate("userId", "name username");
+
+        return assignments
+          .map(a => a.userId?.name || a.userId?.username)
+          .filter(name => name && name !== startUser);
+      })(),
       status: "in-progress",
     });
 
@@ -147,6 +169,9 @@ export async function POST(req) {
       .populate("batchId", "batchNumber plantId lineId")
       .populate("plantId", "name code")
       .populate("lineId", "lineNumber name");
+
+    // Trigger real-time refresh for other workers on this line
+    triggerLineRefresh(basket.lineId, EVENTS.BASKET_UPDATED);
 
     return NextResponse.json({ success: true, data: populated }, { status: 201 });
   } catch (error) {

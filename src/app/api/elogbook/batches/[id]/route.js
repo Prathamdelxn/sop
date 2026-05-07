@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import connectDB from "@/utils/db";
 import ElogbookBatch from "@/model/ElogbookBatch";
+import { triggerLineRefresh, EVENTS } from "@/utils/events";
 
 export async function PUT(req, { params }) {
   await connectDB();
@@ -35,6 +36,9 @@ export async function PUT(req, { params }) {
     const populated = await ElogbookBatch.findById(id)
       .populate("plantId", "name code")
       .populate("lineId", "lineNumber name");
+
+    // Trigger real-time refresh for other workers on this line
+    triggerLineRefresh(populated.lineId, EVENTS.BATCH_UPDATED);
 
     return NextResponse.json({ success: true, data: populated });
   } catch (error) {
