@@ -513,7 +513,7 @@ export default function ReportsPage() {
               <div className="overflow-x-auto">
                 <table className="w-full text-sm">
                   <thead><tr className="bg-gray-50 border-b border-gray-100">
-                    {['Basket', 'Batch #', 'Plant', 'Line', 'Actual Time', 'Standard', 'Lost Time / Reason', 'Total Parts', 'Good', 'Rejected', 'Done By', 'QC By', 'Status'].map(h => (
+                    {['Basket', 'Batch #', 'Plant', 'Line', 'Voltage', 'Temp', 'Actual Time', 'Standard', 'Lost Time / Reason', 'Total Parts', 'Good', 'Rejected', 'Done By', 'QC By', 'Status'].map(h => (
                       <th key={h} className={`${h === 'Basket' ? 'text-left' : 'text-center'} px-2 py-2 text-[11px] font-semibold text-gray-500 uppercase tracking-tight whitespace-nowrap`}>{h}</th>
                     ))}
                   </tr></thead>
@@ -536,6 +536,8 @@ export default function ReportsPage() {
                           <td className="px-2 py-2 text-center whitespace-nowrap"><span className="inline-flex items-center gap-1 px-1.5 py-0.5 bg-indigo-50 text-indigo-700 rounded-md text-[11px] font-bold">{bd.batchNumber || '-'}</span></td>
                           <td className="px-2 py-2 text-center text-gray-600 text-[11px] font-medium whitespace-nowrap">{bd.plantName || '-'}</td>
                           <td className="px-2 py-2 text-center text-gray-600 text-[11px] font-medium whitespace-nowrap">{bd.lineNumber ? `Line ${bd.lineNumber}` : '-'}</td>
+                          <td className="px-2 py-2 text-center text-gray-700 font-bold whitespace-nowrap text-[11px]">{bd.voltage ? `${bd.voltage}V` : '-'}</td>
+                          <td className="px-2 py-2 text-center text-gray-700 font-bold whitespace-nowrap text-[11px]">{bd.temperature ? `${bd.temperature}°C` : '-'}</td>
                           <td className={`px-2 py-2 text-center font-bold whitespace-nowrap ${ct.exceeds ? 'text-red-600' : 'text-emerald-600'}`}>{formatMinutesToTime(ct.actual)}</td>
                           <td className="px-2 py-2 text-center text-blue-600 font-medium whitespace-nowrap">{formatMinutesToTime(ct.standard)}</td>
                           <td className="px-2 py-2 text-center">

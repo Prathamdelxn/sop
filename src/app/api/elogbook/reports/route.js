@@ -196,6 +196,8 @@ export async function GET(request) {
         plantCode: plantCode,
         lineNumber: lineNum,
         lineName: lineName,
+        voltage: basket.masterDataId?.standardVoltage || 0,
+        temperature: basket.masterDataId?.standardTemperature || 0,
         batchStartTime: basket.batchId?.startTime || basket.startTime || null,
         batchEndTime: basket.batchId?.endTime || basket.endTime || null,
         batchStartUser: basket.batchId?.startUser || basket.startUser || "-",
