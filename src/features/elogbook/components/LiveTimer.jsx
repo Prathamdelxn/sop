@@ -62,7 +62,7 @@ export default function LiveTimer({ startTime, stoppages, isPaused }) {
       <div className="text-xs text-gray-400">
         Running: {Math.floor(elapsedSeconds / 60)}m {elapsedSeconds % 60}s
         {lostSeconds > 0 &&
-          ` • Stopped: ${Math.floor(lostSeconds / 60)}m ${lostSeconds % 60}s`}
+          ` • Paused: ${Math.floor(lostSeconds / 60)}m ${lostSeconds % 60}s`}
       </div>
     </div>
   );

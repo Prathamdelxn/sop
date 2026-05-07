@@ -54,7 +54,7 @@ export default function SummaryCards({ summary, variant = 'production', selected
       value: formatTimeToMMSS(summary.totalLostTime),
       label: 'Total Lost Time',
       isText: true,
-      sub: `${summary.stoppedBaskets} stopped baskets`,
+      sub: `${summary.stoppedBaskets} paused baskets`,
     },
   ];
 

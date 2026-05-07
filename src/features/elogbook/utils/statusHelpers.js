@@ -33,7 +33,7 @@ export const getStatusLabel = (status) => {
     case 'in-progress':
       return 'Running';
     case 'stopped':
-      return 'Stopped';
+      return 'Paused';
     case 'pending-qc':
       return 'Pending QC';
     case 'qc-done':

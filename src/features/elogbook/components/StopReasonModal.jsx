@@ -33,11 +33,11 @@ export default function StopReasonModal({
       />
       <div className="relative bg-white rounded-2xl shadow-2xl w-full max-w-md p-6">
         <h2 className="text-lg font-bold text-gray-900 mb-4">
-          Log Stoppage Reason
+          Log Pause Reason
         </h2>
         <div>
           <label className="block text-xs font-semibold text-gray-600 mb-1.5">
-            Reason for Stoppage
+            Reason for Pause
           </label>
           <select
             value={isOther ? 'Other' : stopReason}
@@ -81,7 +81,7 @@ export default function StopReasonModal({
             onClick={onSubmit}
             className="flex-1 flex items-center justify-center gap-2 px-4 py-2.5 bg-gradient-to-r from-amber-500 to-orange-500 text-white rounded-xl font-semibold text-sm shadow-lg shadow-amber-200 hover:shadow-xl transition-all active:scale-95"
           >
-            <Pause className="w-4 h-4" /> Log Stoppage
+            <Pause className="w-4 h-4" /> Pause Basket
           </button>
         </div>
       </div>

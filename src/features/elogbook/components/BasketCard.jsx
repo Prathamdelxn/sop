@@ -194,7 +194,7 @@ export default function BasketCard({
                 ) : (
                   <Pause className="w-3.5 h-3.5" />
                 )}
-                Stop
+                Pause
               </button>
               <button
                 onClick={() => onEnd(basket._id)}
