@@ -30,6 +30,9 @@ const elogbookBasketSchema = new mongoose.Schema({
   actualCycleTime: { type: Number, default: 0 }, // minutes
   totalLostTime: { type: Number, default: 0 }, // minutes
 
+  // Execution Reason (for early/late completion)
+  executionReason: { type: String, default: "" },
+
   // Additional operators
   additionalUsers: [{ type: String }], // manually entered names
 

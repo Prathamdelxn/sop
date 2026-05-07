@@ -115,10 +115,10 @@ export function useBaskets({ companyId, plantId, lineId, masterDataId, batchId }
     setActionLoading(null);
   };
 
-  const handleEndBasket = async (basketId, endUser) => {
+  const handleEndBasket = async (basketId, endUser, reason = "") => {
     setActionLoading(basketId);
     try {
-      const result = await basketService.endBasket(basketId, endUser);
+      const result = await basketService.endBasket(basketId, endUser, reason);
       if (result.calculation) {
         console.log('Calculation details:', result.calculation);
       }

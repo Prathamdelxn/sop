@@ -23,6 +23,18 @@ export const STOP_REASONS = [
   'Other',
 ];
 
+/** Reasons for early or late completion */
+export const EXECUTION_REASONS = [
+  'Efficiency improvement',
+  'Process optimization',
+  'Minor technical delay',
+  'Equipment startup delay',
+  'Operator learning curve',
+  'Material handling delay',
+  'Process deviation approved',
+  'Other',
+];
+
 /** Chart color palette for reports */
 export const CHART_COLORS = {
   green: '#10b981',

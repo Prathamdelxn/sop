@@ -77,6 +77,6 @@ export async function restartBasket(basketId) {
 /**
  * End a basket cycle.
  */
-export async function endBasket(basketId, endUser) {
-  return updateBasket(basketId, { action: 'end', endUser });
+export async function endBasket(basketId, endUser, executionReason = "") {
+  return updateBasket(basketId, { action: 'end', endUser, executionReason });
 }

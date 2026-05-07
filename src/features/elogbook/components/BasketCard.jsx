@@ -149,6 +149,14 @@ export default function BasketCard({
                 )}
               </div>
             )}
+            {basket.executionReason && (
+              <div className="col-span-2 mt-2 pt-2 border-t border-gray-100">
+                <div className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-1">Variance Reason</div>
+                <div className="px-2.5 py-1.5 bg-indigo-50/50 rounded-lg border border-indigo-100/50 text-xs text-indigo-700 font-medium italic">
+                  "{basket.executionReason}"
+                </div>
+              </div>
+            )}
           </div>
         </div>
       )}

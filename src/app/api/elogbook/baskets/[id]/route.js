@@ -194,6 +194,7 @@ export async function PUT(req, { params }) {
         const endTime = new Date();
         basket.endTime = endTime;
         basket.endUser = body.endUser || "";
+        basket.executionReason = body.executionReason || "";
 
         let totalLostMilliseconds = 0;
 

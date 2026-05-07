@@ -22,6 +22,7 @@ import BasketCard from '@/features/elogbook/components/BasketCard';
 import StartBasketModal from '@/features/elogbook/components/StartBasketModal';
 import StopReasonModal from '@/features/elogbook/components/StopReasonModal';
 import PasswordConfirmModal from '@/features/elogbook/components/PasswordConfirmModal';
+import ExecutionReasonModal from '@/features/elogbook/components/ExecutionReasonModal';
 
 export default function ProductionPage() {
   const router = useRouter();
@@ -90,6 +91,13 @@ export default function ProductionPage() {
   // --- Password Confirmation State ---
   const [showPasswordModal, setShowPasswordModal] = useState(false);
   const [pendingAction, setPendingAction] = useState(null); // { type, payload }
+
+  // --- Execution Reason State ---
+  const [showExecutionModal, setShowExecutionModal] = useState(false);
+  const [executionReason, setExecutionReason] = useState('');
+  const [endingBasketId, setEndingBasketId] = useState(null);
+  const [currentActualTime, setCurrentActualTime] = useState(0);
+  const [currentStandardTime, setCurrentStandardTime] = useState(0);
 
   // --- Worker Assignment Tracking ---
   const [userAssignment, setUserAssignment] = useState(null);
@@ -277,7 +285,9 @@ export default function ProductionPage() {
         await executeRestartBasket(payload.basketId);
         break;
       case 'endBasket':
-        await executeEndBasket(payload.basketId);
+        await executeEndBasket(payload.basketId, payload.reason);
+        setExecutionReason('');
+        setEndingBasketId(null);
         break;
       case 'startBatch':
         await executeStartBatch();
@@ -316,8 +326,8 @@ export default function ProductionPage() {
     await handleRestartBasket(basketId);
   };
 
-  const executeEndBasket = async (basketId) => {
-    await handleEndBasket(basketId, userData?.name || userData?.username);
+  const executeEndBasket = async (basketId, reason = "") => {
+    await handleEndBasket(basketId, userData?.name || userData?.username, reason);
   };
 
   const executeStartBatch = async () => {
@@ -342,8 +352,48 @@ export default function ProductionPage() {
   };
 
   const onEndBasket = (basketId) => {
+    const basket = baskets.find(b => b._id === basketId);
+    if (!basket) return;
+
     if (!confirm('Are you sure you want to end this cycle?')) return;
-    requestPasswordFor('endBasket', { basketId });
+
+    // Calculate current effective cycle time
+    const startTime = new Date(basket.startTime);
+    const now = new Date();
+    const elapsedMinutes = (now - startTime) / 60000;
+    
+    // Total lost time from completed stoppages
+    let totalLost = basket.stoppages?.reduce((sum, s) => {
+      if (s.restartTime) return sum + (s.lostMinutes || 0);
+      // If there's an active stoppage, include it
+      const stopTime = new Date(s.stopTime);
+      return sum + ((now - stopTime) / 60000);
+    }, 0) || 0;
+
+    const actualTime = Math.max(0, elapsedMinutes - totalLost);
+    const standardTime = basket.masterDataId?.standardCycleTime || 0;
+
+    // If variance is more than 0.1 minutes (6 seconds), ask for reason
+    // You can adjust this threshold as needed
+    const variance = Math.abs(actualTime - standardTime);
+    
+    if (variance > 0.1) {
+      setEndingBasketId(basketId);
+      setCurrentActualTime(actualTime);
+      setCurrentStandardTime(standardTime);
+      setShowExecutionModal(true);
+    } else {
+      requestPasswordFor('endBasket', { basketId });
+    }
+  };
+
+  const onExecutionReasonSubmit = () => {
+    setShowExecutionModal(false);
+    requestPasswordFor('endBasket', { 
+      basketId: endingBasketId, 
+      reason: executionReason 
+    });
+    // Don't clear reason yet, it will be cleared after password confirmation
   };
 
   const onRestartBasket = (basketId) => {
@@ -767,6 +817,19 @@ export default function ProductionPage() {
           pendingAction?.type === 'startBatch' ? 'Start Batch' :
           pendingAction?.type === 'endBatch' ? 'End Batch' : 'Confirm Action'
         }
+      />
+      <ExecutionReasonModal
+        show={showExecutionModal}
+        onClose={() => {
+          setShowExecutionModal(false);
+          setExecutionReason('');
+          setEndingBasketId(null);
+        }}
+        reason={executionReason}
+        setReason={setExecutionReason}
+        actualTime={currentActualTime}
+        standardTime={currentStandardTime}
+        onSubmit={onExecutionReasonSubmit}
       />
     </div>
   );
