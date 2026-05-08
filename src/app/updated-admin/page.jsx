@@ -2,8 +2,8 @@
 
 import { useEffect, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { 
-  ArrowLeft, Plus, Pencil, Trash2, X, Save, Factory, GitBranch, 
+import {
+  ArrowLeft, Plus, Pencil, Trash2, X, Save, Factory, GitBranch,
   ChevronDown, ChevronRight, Loader2, Building2, MapPin, Layers
 } from 'lucide-react';
 import { FiCheck, FiPlus, FiTrash2, FiEdit2, FiX, FiAlertCircle, FiCheckCircle, FiAlertTriangle, FiLock } from 'react-icons/fi';
@@ -170,9 +170,9 @@ export default function UpdateWorkerRoles() {
     if (!allUsers) return 0;
     const slugify = (str) => str.toLowerCase().replace(/\s+/g, '-').replace(/[^\w-]/g, '');
     const targetSlug = slugify(roleTitle);
-    
-    return allUsers.filter(user => 
-      slugify(user.role || '') === targetSlug && 
+
+    return allUsers.filter(user =>
+      slugify(user.role || '') === targetSlug &&
       (user.companyId === superadminId || user.companyId === companyId)
     ).length;
   };
@@ -261,13 +261,13 @@ export default function UpdateWorkerRoles() {
       const roleExists = roles.some(
         (r) => r.title?.trim().toLowerCase() === newRoleTitle
       );
-      
+
       if (roleExists) {
         showAlert(`Role "${roleTitle}" already exists. Please choose another name.`);
         return;
       }
     }
-    
+
     setIsSubmitting(true);
 
     try {
@@ -335,13 +335,13 @@ export default function UpdateWorkerRoles() {
     try {
       const method = editingPlantId ? 'PUT' : 'POST';
       const url = editingPlantId ? `/api/elogbook/plants/${editingPlantId}` : '/api/elogbook/plants';
-      
+
       const res = await fetch(url, {
         method,
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ ...plantForm, companyId: companyId }),
       });
-      
+
       const data = await res.json();
       if (data.success) {
         toast.success(`Plant ${editingPlantId ? 'updated' : 'created'} successfully`);
@@ -405,7 +405,7 @@ export default function UpdateWorkerRoles() {
           </motion.div>
 
           {/* New Company ID Badge for convenience */}
-          <motion.div 
+          <motion.div
             initial={{ opacity: 0, x: 20 }}
             animate={{ opacity: 1, x: 0 }}
             className="bg-white px-5 py-4 rounded-2xl shadow-sm border border-indigo-100 flex items-center space-x-4"
@@ -417,13 +417,13 @@ export default function UpdateWorkerRoles() {
               <p className="text-xs font-semibold text-gray-400 uppercase tracking-widest">Your Company ID</p>
               <div className="flex items-center space-x-2">
                 <code className="text-lg font-bold text-indigo-700 bg-indigo-50/50 px-2 rounded">{companyId || superadminId}</code>
-                <button 
-                   onClick={() => {
-                     navigator.clipboard.writeText(companyId || superadminId);
-                     toast.info("Company ID copied to clipboard!");
-                   }}
-                   className="p-1 hover:bg-gray-100 rounded transition-colors text-gray-400 hover:text-indigo-600"
-                   title="Copy ID"
+                <button
+                  onClick={() => {
+                    navigator.clipboard.writeText(companyId || superadminId);
+                    toast.info("Company ID copied to clipboard!");
+                  }}
+                  className="p-1 hover:bg-gray-100 rounded transition-colors text-gray-400 hover:text-indigo-600"
+                  title="Copy ID"
                 >
                   <FiPlus className="rotate-45" size={16} /> {/* Simple icon as placeholder for copy if FiCopy isn't available, but let's just use what's imported */}
                 </button>
@@ -441,8 +441,8 @@ export default function UpdateWorkerRoles() {
                 setActiveTab('manage');
               }}
               className={`px-4 sm:px-6 py-3 font-medium text-xs sm:text-sm ${activeTab === 'manage'
-                  ? 'text-indigo-600 border-b-2 border-indigo-600'
-                  : 'text-gray-500 hover:text-gray-700'
+                ? 'text-indigo-600 border-b-2 border-indigo-600'
+                : 'text-gray-500 hover:text-gray-700'
                 }`}
             >
               Manage Roles
@@ -453,8 +453,8 @@ export default function UpdateWorkerRoles() {
                 setActiveTab('create');
               }}
               className={`px-4 sm:px-6 py-3 font-medium text-xs sm:text-sm ${activeTab === 'create'
-                  ? 'text-indigo-600 border-b-2 border-indigo-600'
-                  : 'text-gray-500 hover:text-gray-700'
+                ? 'text-indigo-600 border-b-2 border-indigo-600'
+                : 'text-gray-500 hover:text-gray-700'
                 }`}
             >
               {editingRole ? 'Edit Role' : 'Create Role'}
@@ -464,8 +464,8 @@ export default function UpdateWorkerRoles() {
                 setActiveTab('plants');
               }}
               className={`px-4 sm:px-6 py-3 font-medium text-xs sm:text-sm ${activeTab === 'plants'
-                  ? 'text-indigo-600 border-b-2 border-indigo-600'
-                  : 'text-gray-500 hover:text-gray-700'
+                ? 'text-indigo-600 border-b-2 border-indigo-600'
+                : 'text-gray-500 hover:text-gray-700'
                 }`}
             >
               Facility Setup (Plants & Lines)
@@ -571,16 +571,15 @@ export default function UpdateWorkerRoles() {
                                       type="button"
                                       disabled={allPlants.length === 0}
                                       onClick={() => handleTaskToggle(task)}
-                                      className={`w-full text-left p-2 sm:p-3 rounded-lg border transition-all flex items-center ${
-                                        allPlants.length === 0 ? 'bg-gray-100 cursor-not-allowed opacity-50' :
-                                        selectedTasks.includes(task)
-                                          ? 'bg-indigo-50 border-indigo-200 text-indigo-700'
-                                          : 'bg-gray-50 hover:bg-gray-100 border-gray-200'
-                                      }`}
+                                      className={`w-full text-left p-2 sm:p-3 rounded-lg border transition-all flex items-center ${allPlants.length === 0 ? 'bg-gray-100 cursor-not-allowed opacity-50' :
+                                          selectedTasks.includes(task)
+                                            ? 'bg-indigo-50 border-indigo-200 text-indigo-700'
+                                            : 'bg-gray-50 hover:bg-gray-100 border-gray-200'
+                                        }`}
                                     >
                                       <span className={`w-5 h-5 flex items-center justify-center mr-2 sm:mr-3 rounded border ${selectedTasks.includes(task)
-                                          ? 'bg-indigo-600 border-indigo-600 text-white'
-                                          : 'bg-white border-gray-300'
+                                        ? 'bg-indigo-600 border-indigo-600 text-white'
+                                        : 'bg-white border-gray-300'
                                         }`}>
                                         {selectedTasks.includes(task) && <FiCheck size={14} />}
                                       </span>
@@ -603,7 +602,7 @@ export default function UpdateWorkerRoles() {
                     <div>
                       <h4 className="text-sm font-bold text-amber-800">Plants Required</h4>
                       <p className="text-sm text-amber-700">You must add at least one plant before you can create roles and assign permissions. Go to the "Facility Setup" tab to add a plant.</p>
-                      <button 
+                      <button
                         type="button"
                         onClick={() => setActiveTab('plants')}
                         className="mt-2 text-sm font-bold text-indigo-600 hover:text-indigo-800 underline"
@@ -619,8 +618,8 @@ export default function UpdateWorkerRoles() {
                     type="submit"
                     disabled={isSubmitting || !roleTitle || allPlants.length === 0}
                     className={`w-full py-2 sm:py-3 px-4 rounded-lg font-medium text-white transition flex justify-center items-center ${isSubmitting || !roleTitle || allPlants.length === 0
-                        ? 'bg-indigo-400 cursor-not-allowed'
-                        : 'bg-indigo-600 hover:bg-indigo-700'
+                      ? 'bg-indigo-400 cursor-not-allowed'
+                      : 'bg-indigo-600 hover:bg-indigo-700'
                       }`}
                   >
                     {isSubmitting ? (
@@ -674,8 +673,8 @@ export default function UpdateWorkerRoles() {
                   ) : (
                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                       {allPlants.map(plant => (
-                        <div 
-                          key={plant._id} 
+                        <div
+                          key={plant._id}
                           className={`relative group bg-white border rounded-2xl p-4 transition-all hover:shadow-md cursor-pointer ${selectedPlantId === plant._id ? 'ring-2 ring-indigo-500 border-transparent shadow-md' : 'border-gray-100 hover:border-indigo-200'}`}
                           onClick={() => setSelectedPlantId(plant._id)}
                         >
@@ -684,18 +683,18 @@ export default function UpdateWorkerRoles() {
                               <Factory className="w-5 h-5" />
                             </div>
                             <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                              <button 
+                              <button
                                 onClick={(e) => {
                                   e.stopPropagation();
                                   setPlantForm({ ...plant });
                                   setEditingPlantId(plant._id);
                                   setShowPlantModal(true);
-                                }} 
+                                }}
                                 className="p-1.5 hover:bg-indigo-50 text-gray-400 hover:text-indigo-600 rounded-lg transition-all"
                               >
                                 <Pencil className="w-4 h-4" />
                               </button>
-                              <button 
+                              <button
                                 onClick={async (e) => {
                                   e.stopPropagation();
                                   if (confirm(`Delete plant "${plant.name}"? This will also affect associated lines.`)) {
@@ -709,7 +708,7 @@ export default function UpdateWorkerRoles() {
                                       alert(data.message);
                                     }
                                   }
-                                }} 
+                                }}
                                 className="p-1.5 hover:bg-red-50 text-gray-400 hover:text-red-600 rounded-lg transition-all"
                               >
                                 <Trash2 className="w-4 h-4" />
@@ -772,12 +771,12 @@ export default function UpdateWorkerRoles() {
                                     </div>
                                   </div>
                                   <div className="flex gap-1">
-                                    <button 
+                                    <button
                                       onClick={() => {
-                                        setLineForm({ 
-                                          lineNumber: line.lineNumber, 
+                                        setLineForm({
+                                          lineNumber: line.lineNumber,
                                           name: line.name || '',
-                                          sublines: line.sublines ? line.sublines.map(s => typeof s === 'string' ? { name: s, order: 0 } : { ...s }) : [] 
+                                          sublines: line.sublines ? line.sublines.map(s => typeof s === 'string' ? { name: s, order: 0 } : { ...s }) : []
                                         });
                                         setEditingLineId(line._id);
                                       }}
@@ -785,7 +784,7 @@ export default function UpdateWorkerRoles() {
                                     >
                                       <Pencil className="w-3.5 h-3.5" />
                                     </button>
-                                    <button 
+                                    <button
                                       onClick={async () => {
                                         if (confirm(`Delete Line ${line.lineNumber}? This cannot be undone.`)) {
                                           const res = await fetch(`/api/elogbook/lines/${line._id}`, { method: 'DELETE' });
@@ -835,19 +834,25 @@ export default function UpdateWorkerRoles() {
                             <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
                               <div>
                                 <label className="block text-xs font-bold text-gray-500 uppercase mb-1.5">Line Number *</label>
-                                <input 
-                                  type="number" 
-                                  min="1" 
+                                <input
+                                  type="text"
+                                  inputMode='numeric'
+                                  min="1"
                                   value={lineForm.lineNumber}
-                                  onChange={e => setLineForm({ ...lineForm, lineNumber: e.target.value })}
+                                  onChange={e => {
+                                    const val = e.target.value;
+                                    if (/^\d*$/.test(val)) {
+                                      setLineForm({ ...lineForm, lineNumber: val });
+                                    }
+                                  }}
                                   className="w-full px-4 py-2.5 bg-white border border-gray-200 rounded-xl text-sm focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-400 transition-all outline-none"
                                   placeholder="e.g., 1"
                                 />
                               </div>
                               <div className="md:col-span-2">
                                 <label className="block text-xs font-bold text-gray-500 uppercase mb-1.5">Line Name</label>
-                                <input 
-                                  type="text" 
+                                <input
+                                  type="text"
                                   value={lineForm.name}
                                   onChange={e => setLineForm({ ...lineForm, name: e.target.value })}
                                   className="w-full px-4 py-2.5 bg-white border border-gray-200 rounded-xl text-sm focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-400 transition-all outline-none"
@@ -862,8 +867,8 @@ export default function UpdateWorkerRoles() {
                               <div className="space-y-3">
                                 {lineForm.sublines.map((sub, i) => (
                                   <div key={i} className="flex items-center gap-3 animate-in slide-in-from-left-2 duration-200">
-                                    <div className="w-8 h-8 bg-indigo-50 rounded-lg flex items-center justify-center text-indigo-600 text-xs font-bold">S{i+1}</div>
-                                    <input 
+                                    <div className="w-8 h-8 bg-indigo-50 rounded-lg flex items-center justify-center text-indigo-600 text-xs font-bold">S{i + 1}</div>
+                                    <input
                                       type="text"
                                       value={sub.name}
                                       onChange={(e) => {
@@ -874,7 +879,7 @@ export default function UpdateWorkerRoles() {
                                       className="flex-1 px-4 py-2 bg-white border border-gray-200 rounded-xl text-sm focus:ring-1 focus:ring-indigo-400 outline-none"
                                       placeholder="e.g., Degreasing Tank"
                                     />
-                                    <button 
+                                    <button
                                       onClick={() => {
                                         const newSub = lineForm.sublines.filter((_, idx) => idx !== i);
                                         setLineForm({ ...lineForm, sublines: newSub });
@@ -885,7 +890,7 @@ export default function UpdateWorkerRoles() {
                                     </button>
                                   </div>
                                 ))}
-                                <button 
+                                <button
                                   onClick={() => setLineForm({ ...lineForm, sublines: [...lineForm.sublines, { name: '', order: lineForm.sublines.length + 1 }] })}
                                   className="flex items-center gap-2 px-4 py-2 text-indigo-600 hover:bg-indigo-50 rounded-xl text-xs font-bold transition-all border border-dashed border-indigo-200 w-full justify-center"
                                 >
@@ -895,33 +900,33 @@ export default function UpdateWorkerRoles() {
                             </div>
 
                             <div className="flex gap-3">
-                              <button 
+                              <button
                                 disabled={!lineForm.lineNumber || savingLine}
                                 onClick={async () => {
                                   setSavingLine(true);
-                                  const payload = { 
-                                    plantId: selectedPlantId, 
+                                  const payload = {
+                                    plantId: selectedPlantId,
                                     companyId: companyId,
-                                    lineNumber: Number(lineForm.lineNumber), 
+                                    lineNumber: Number(lineForm.lineNumber),
                                     name: lineForm.name || `Line ${lineForm.lineNumber}`,
                                     sublines: lineForm.sublines
                                       .filter(s => s.name.trim() !== '')
                                       .map((s, idx) => ({ ...s, order: idx + 1 }))
                                   };
-                                  
+
                                   try {
-                                    const res = editingLineId 
+                                    const res = editingLineId
                                       ? await fetch(`/api/elogbook/lines/${editingLineId}`, {
-                                          method: 'PUT',
-                                          headers: { 'Content-Type': 'application/json' },
-                                          body: JSON.stringify(payload),
-                                        })
+                                        method: 'PUT',
+                                        headers: { 'Content-Type': 'application/json' },
+                                        body: JSON.stringify(payload),
+                                      })
                                       : await fetch('/api/elogbook/lines', {
-                                          method: 'POST',
-                                          headers: { 'Content-Type': 'application/json' },
-                                          body: JSON.stringify(payload),
-                                        });
-                                    
+                                        method: 'POST',
+                                        headers: { 'Content-Type': 'application/json' },
+                                        body: JSON.stringify(payload),
+                                      });
+
                                     const data = await res.json();
                                     if (data.success) {
                                       toast.success(`Line ${editingLineId ? 'updated' : 'created'} successfully`);
@@ -943,7 +948,7 @@ export default function UpdateWorkerRoles() {
                                 {editingLineId ? 'Update Production Line' : 'Save Production Line'}
                               </button>
                               {editingLineId && (
-                                <button 
+                                <button
                                   onClick={() => {
                                     setLineForm(EMPTY_LINE_FORM);
                                     setEditingLineId(null);
@@ -1093,219 +1098,219 @@ export default function UpdateWorkerRoles() {
         </div>
       </div>
 
-<AnimatePresence>
-  {showPopup && (
-    <motion.div
-      initial={{ opacity: 0 }}
-      animate={{ opacity: 1 }}
-      exit={{ opacity: 0 }}
-      className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-gray-900/40 backdrop-blur-sm"
-      onClick={() => setShowPopup(false)}
-    >
-      <motion.div
-        initial={{ scale: 0.9, opacity: 0, y: 20 }}
-        animate={{ scale: 1, opacity: 1, y: 0 }}
-        exit={{ scale: 0.9, opacity: 0, y: 20 }}
-        transition={{ type: "spring", damping: 25, stiffness: 300 }}
-        className="relative w-full max-w-md"
-        onClick={(e) => e.stopPropagation()}
-      >
-        <div className="overflow-hidden bg-white rounded-2xl shadow-2xl">
-          {/* Popup Header with Gradient Background */}
-          <div className={`px-6 py-5 ${popupType === 'success' ? 'bg-gradient-to-r from-green-50 to-emerald-50' : 
-            popupType === 'confirm' ? 'bg-gradient-to-r from-amber-50 to-orange-50' : 
-            'bg-gradient-to-r from-red-50 to-rose-50'}`}>
-            <div className="flex items-center justify-between">
-              <div className="flex items-center space-x-3">
-                <div className={`p-2.5 rounded-full ${popupType === 'success' ? 'bg-green-100 text-green-600' : 
-                  popupType === 'confirm' ? 'bg-amber-100 text-amber-600' : 
-                  'bg-red-100 text-red-600'}`}>
-                  {popupType === 'success' ? <FiCheckCircle className="w-6 h-6" /> : 
-                   popupType === 'confirm' ? <FiAlertTriangle className="w-6 h-6" /> : 
-                   <FiAlertCircle className="w-6 h-6" />}
+      <AnimatePresence>
+        {showPopup && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-gray-900/40 backdrop-blur-sm"
+            onClick={() => setShowPopup(false)}
+          >
+            <motion.div
+              initial={{ scale: 0.9, opacity: 0, y: 20 }}
+              animate={{ scale: 1, opacity: 1, y: 0 }}
+              exit={{ scale: 0.9, opacity: 0, y: 20 }}
+              transition={{ type: "spring", damping: 25, stiffness: 300 }}
+              className="relative w-full max-w-md"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <div className="overflow-hidden bg-white rounded-2xl shadow-2xl">
+                {/* Popup Header with Gradient Background */}
+                <div className={`px-6 py-5 ${popupType === 'success' ? 'bg-gradient-to-r from-green-50 to-emerald-50' :
+                  popupType === 'confirm' ? 'bg-gradient-to-r from-amber-50 to-orange-50' :
+                    'bg-gradient-to-r from-red-50 to-rose-50'}`}>
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center space-x-3">
+                      <div className={`p-2.5 rounded-full ${popupType === 'success' ? 'bg-green-100 text-green-600' :
+                        popupType === 'confirm' ? 'bg-amber-100 text-amber-600' :
+                          'bg-red-100 text-red-600'}`}>
+                        {popupType === 'success' ? <FiCheckCircle className="w-6 h-6" /> :
+                          popupType === 'confirm' ? <FiAlertTriangle className="w-6 h-6" /> :
+                            <FiAlertCircle className="w-6 h-6" />}
+                      </div>
+                      <h3 className="text-lg font-semibold text-gray-900">
+                        {popupType === 'success' ? 'Success!' :
+                          popupType === 'confirm' ? 'Confirm Action' :
+                            'Attention Required'}
+                      </h3>
+                    </div>
+                    <button
+                      onClick={() => setShowPopup(false)}
+                      className="p-1.5 rounded-lg text-gray-400 hover:text-gray-600 hover:bg-gray-100 transition-colors"
+                    >
+                      <FiX className="w-5 h-5" />
+                    </button>
+                  </div>
                 </div>
-                <h3 className="text-lg font-semibold text-gray-900">
-                  {popupType === 'success' ? 'Success!' : 
-                   popupType === 'confirm' ? 'Confirm Action' : 
-                   'Attention Required'}
-                </h3>
-              </div>
-              <button
-                onClick={() => setShowPopup(false)}
-                className="p-1.5 rounded-lg text-gray-400 hover:text-gray-600 hover:bg-gray-100 transition-colors"
-              >
-                <FiX className="w-5 h-5" />
-              </button>
-            </div>
-          </div>
 
-          {/* Popup Content */}
-          <div className="px-6 py-8">
-            <div className="text-center mb-6">
-              <p className="text-gray-700 text-base leading-relaxed">
-                {popupMessage}
-              </p>
-            </div>
+                {/* Popup Content */}
+                <div className="px-6 py-8">
+                  <div className="text-center mb-6">
+                    <p className="text-gray-700 text-base leading-relaxed">
+                      {popupMessage}
+                    </p>
+                  </div>
 
-            {/* Action Buttons */}
-            <div className={`flex ${popupType === 'confirm' ? 'justify-between' : 'justify-center'} gap-3`}>
-              {popupType === 'confirm' ? (
-                <>
-                  <button
-                    onClick={() => {
-                      setShowPopup(false);
-                      popupCallback && popupCallback(false);
-                    }}
-                    className="flex-1 px-5 py-3 border border-gray-300 rounded-xl text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 
+                  {/* Action Buttons */}
+                  <div className={`flex ${popupType === 'confirm' ? 'justify-between' : 'justify-center'} gap-3`}>
+                    {popupType === 'confirm' ? (
+                      <>
+                        <button
+                          onClick={() => {
+                            setShowPopup(false);
+                            popupCallback && popupCallback(false);
+                          }}
+                          className="flex-1 px-5 py-3 border border-gray-300 rounded-xl text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 
                              focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-500 transition-all duration-200 
                              shadow-sm hover:shadow-md"
+                        >
+                          Cancel
+                        </button>
+                        <button
+                          onClick={() => {
+                            setShowPopup(false);
+                            popupCallback && popupCallback(true);
+                          }}
+                          className={`flex-1 px-5 py-3 border border-transparent rounded-xl text-sm font-medium text-white 
+                             ${popupType === 'confirm' ?
+                              'bg-gradient-to-r from-red-600 to-rose-600 hover:from-red-700 hover:to-rose-700' :
+                              'bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700'
+                            } focus:outline-none focus:ring-2 focus:ring-offset-2 
+                             ${popupType === 'confirm' ? 'focus:ring-red-500' : 'focus:ring-indigo-500'}
+                             transition-all duration-200 shadow-lg hover:shadow-xl transform hover:-translate-y-0.5`}
+                        >
+                          Confirm
+                        </button>
+                      </>
+                    ) : (
+                      <button
+                        onClick={() => setShowPopup(false)}
+                        className={`px-8 py-3 border border-transparent rounded-xl text-sm font-medium text-white 
+                           ${popupType === 'success' ?
+                            'bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700' :
+                            'bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700'
+                          } focus:outline-none focus:ring-2 focus:ring-offset-2 
+                           ${popupType === 'success' ? 'focus:ring-green-500' : 'focus:ring-indigo-500'}
+                           transition-all duration-200 shadow-lg hover:shadow-xl transform hover:-translate-y-0.5`}
+                      >
+                        {popupType === 'success' ? 'Continue' : 'Got it'}
+                      </button>
+                    )}
+                  </div>
+
+                  {/* Additional Info for Confirm Popup */}
+                  {popupType === 'confirm' && (
+                    <div className="mt-6 p-3 bg-amber-50 rounded-lg border border-amber-200">
+                      <div className="flex items-start space-x-2">
+                        <FiAlertTriangle className="w-4 h-4 text-amber-500 mt-0.5 flex-shrink-0" />
+                        <p className="text-xs text-amber-700">
+                          This action cannot be undone. All users with this role will be permanently deleted.
+                        </p>
+                      </div>
+                    </div>
+                  )}
+                </div>
+
+                {/* Decorative Elements */}
+                {popupType === 'success' && (
+                  <div className="absolute -top-2 -right-2 w-16 h-16 bg-green-200 rounded-full opacity-10"></div>
+                )}
+                {popupType === 'confirm' && (
+                  <div className="absolute -bottom-2 -left-2 w-16 h-16 bg-amber-200 rounded-full opacity-10"></div>
+                )}
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* Plant Modal */}
+      <AnimatePresence>
+        {showPlantModal && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95, y: 20 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.95, y: 20 }}
+              className="bg-white rounded-3xl shadow-2xl w-full max-w-lg overflow-hidden"
+            >
+              <div className="p-6 border-b border-gray-100 flex items-center justify-between bg-gray-50/50">
+                <h3 className="text-xl font-bold text-gray-900 flex items-center">
+                  <Factory className="w-6 h-6 mr-3 text-indigo-600" />
+                  {editingPlantId ? 'Edit Plant Details' : 'Register New Plant'}
+                </h3>
+                <button onClick={() => setShowPlantModal(false)} className="p-2 hover:bg-gray-200 rounded-full transition-colors">
+                  <FiX size={20} />
+                </button>
+              </div>
+              <form onSubmit={handlePlantSubmit} className="p-6 space-y-5">
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="col-span-2 sm:col-span-1">
+                    <label className="block text-xs font-bold text-gray-500 uppercase mb-2">Plant Name *</label>
+                    <input
+                      required
+                      type="text"
+                      value={plantForm.name}
+                      onChange={e => setPlantForm({ ...plantForm, name: e.target.value })}
+                      className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-2xl text-sm focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 outline-none transition-all"
+                      placeholder="e.g., Main Assembly"
+                    />
+                  </div>
+                  <div className="col-span-2 sm:col-span-1">
+                    <label className="block text-xs font-bold text-gray-500 uppercase mb-2">Plant Code *</label>
+                    <input
+                      required
+                      type="text"
+                      value={plantForm.code}
+                      onChange={e => setPlantForm({ ...plantForm, code: e.target.value.toUpperCase() })}
+                      className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-2xl text-sm focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-400 outline-none transition-all"
+                      placeholder="e.g., PLT-01"
+                    />
+                  </div>
+                  <div className="col-span-2 sm:col-span-1">
+                    <label className="block text-xs font-bold text-gray-500 uppercase mb-2">City</label>
+                    <input
+                      type="text"
+                      value={plantForm.city}
+                      onChange={e => setPlantForm({ ...plantForm, city: e.target.value })}
+                      className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-2xl text-sm focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-400 outline-none transition-all"
+                      placeholder="e.g., Pune"
+                    />
+                  </div>
+                  <div className="col-span-2 sm:col-span-1">
+                    <label className="block text-xs font-bold text-gray-500 uppercase mb-2">State</label>
+                    <input
+                      type="text"
+                      value={plantForm.state}
+                      onChange={e => setPlantForm({ ...plantForm, state: e.target.value })}
+                      className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-2xl text-sm focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-400 outline-none transition-all"
+                      placeholder="e.g., Maharashtra"
+                    />
+                  </div>
+                </div>
+                <div className="pt-4 flex gap-3">
+                  <button
+                    type="submit"
+                    disabled={savingPlant}
+                    className="flex-1 flex items-center justify-center gap-2 px-6 py-3.5 bg-indigo-600 text-white rounded-2xl font-bold shadow-lg shadow-indigo-100 hover:bg-indigo-700 transition-all active:scale-95 disabled:opacity-50"
+                  >
+                    {savingPlant ? <Loader2 className="w-5 h-5 animate-spin" /> : <Save className="w-5 h-5" />}
+                    {editingPlantId ? 'Update Plant' : 'Save Plant'}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setShowPlantModal(false)}
+                    className="px-6 py-3.5 bg-white border border-gray-200 text-gray-600 rounded-2xl font-bold hover:bg-gray-50 transition-all"
                   >
                     Cancel
                   </button>
-                  <button
-                    onClick={() => {
-                      setShowPopup(false);
-                      popupCallback && popupCallback(true);
-                    }}
-                    className={`flex-1 px-5 py-3 border border-transparent rounded-xl text-sm font-medium text-white 
-                             ${popupType === 'confirm' ? 
-                               'bg-gradient-to-r from-red-600 to-rose-600 hover:from-red-700 hover:to-rose-700' :
-                               'bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700'
-                             } focus:outline-none focus:ring-2 focus:ring-offset-2 
-                             ${popupType === 'confirm' ? 'focus:ring-red-500' : 'focus:ring-indigo-500'}
-                             transition-all duration-200 shadow-lg hover:shadow-xl transform hover:-translate-y-0.5`}
-                  >
-                    Confirm
-                  </button>
-                </>
-              ) : (
-                <button
-                  onClick={() => setShowPopup(false)}
-                  className={`px-8 py-3 border border-transparent rounded-xl text-sm font-medium text-white 
-                           ${popupType === 'success' ? 
-                             'bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700' :
-                             'bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700'
-                           } focus:outline-none focus:ring-2 focus:ring-offset-2 
-                           ${popupType === 'success' ? 'focus:ring-green-500' : 'focus:ring-indigo-500'}
-                           transition-all duration-200 shadow-lg hover:shadow-xl transform hover:-translate-y-0.5`}
-                >
-                  {popupType === 'success' ? 'Continue' : 'Got it'}
-                </button>
-              )}
-            </div>
-
-            {/* Additional Info for Confirm Popup */}
-            {popupType === 'confirm' && (
-              <div className="mt-6 p-3 bg-amber-50 rounded-lg border border-amber-200">
-                <div className="flex items-start space-x-2">
-                  <FiAlertTriangle className="w-4 h-4 text-amber-500 mt-0.5 flex-shrink-0" />
-                  <p className="text-xs text-amber-700">
-                    This action cannot be undone. All users with this role will be permanently deleted.
-                  </p>
                 </div>
-              </div>
-            )}
+              </form>
+            </motion.div>
           </div>
-
-          {/* Decorative Elements */}
-          {popupType === 'success' && (
-            <div className="absolute -top-2 -right-2 w-16 h-16 bg-green-200 rounded-full opacity-10"></div>
-          )}
-          {popupType === 'confirm' && (
-            <div className="absolute -bottom-2 -left-2 w-16 h-16 bg-amber-200 rounded-full opacity-10"></div>
-          )}
-        </div>
-      </motion.div>
-    </motion.div>
-  )}
-</AnimatePresence>
-
-{/* Plant Modal */}
-<AnimatePresence>
-  {showPlantModal && (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
-      <motion.div 
-        initial={{ opacity: 0, scale: 0.95, y: 20 }}
-        animate={{ opacity: 1, scale: 1, y: 0 }}
-        exit={{ opacity: 0, scale: 0.95, y: 20 }}
-        className="bg-white rounded-3xl shadow-2xl w-full max-w-lg overflow-hidden"
-      >
-        <div className="p-6 border-b border-gray-100 flex items-center justify-between bg-gray-50/50">
-          <h3 className="text-xl font-bold text-gray-900 flex items-center">
-            <Factory className="w-6 h-6 mr-3 text-indigo-600" />
-            {editingPlantId ? 'Edit Plant Details' : 'Register New Plant'}
-          </h3>
-          <button onClick={() => setShowPlantModal(false)} className="p-2 hover:bg-gray-200 rounded-full transition-colors">
-            <FiX size={20} />
-          </button>
-        </div>
-        <form onSubmit={handlePlantSubmit} className="p-6 space-y-5">
-          <div className="grid grid-cols-2 gap-4">
-            <div className="col-span-2 sm:col-span-1">
-              <label className="block text-xs font-bold text-gray-500 uppercase mb-2">Plant Name *</label>
-              <input 
-                required
-                type="text"
-                value={plantForm.name}
-                onChange={e => setPlantForm({ ...plantForm, name: e.target.value })}
-                className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-2xl text-sm focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 outline-none transition-all"
-                placeholder="e.g., Main Assembly"
-              />
-            </div>
-            <div className="col-span-2 sm:col-span-1">
-              <label className="block text-xs font-bold text-gray-500 uppercase mb-2">Plant Code *</label>
-              <input 
-                required
-                type="text"
-                value={plantForm.code}
-                onChange={e => setPlantForm({ ...plantForm, code: e.target.value.toUpperCase() })}
-                className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-2xl text-sm focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-400 outline-none transition-all"
-                placeholder="e.g., PLT-01"
-              />
-            </div>
-            <div className="col-span-2 sm:col-span-1">
-              <label className="block text-xs font-bold text-gray-500 uppercase mb-2">City</label>
-              <input 
-                type="text"
-                value={plantForm.city}
-                onChange={e => setPlantForm({ ...plantForm, city: e.target.value })}
-                className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-2xl text-sm focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-400 outline-none transition-all"
-                placeholder="e.g., Pune"
-              />
-            </div>
-            <div className="col-span-2 sm:col-span-1">
-              <label className="block text-xs font-bold text-gray-500 uppercase mb-2">State</label>
-              <input 
-                type="text"
-                value={plantForm.state}
-                onChange={e => setPlantForm({ ...plantForm, state: e.target.value })}
-                className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-2xl text-sm focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-400 outline-none transition-all"
-                placeholder="e.g., Maharashtra"
-              />
-            </div>
-          </div>
-          <div className="pt-4 flex gap-3">
-            <button 
-              type="submit" 
-              disabled={savingPlant}
-              className="flex-1 flex items-center justify-center gap-2 px-6 py-3.5 bg-indigo-600 text-white rounded-2xl font-bold shadow-lg shadow-indigo-100 hover:bg-indigo-700 transition-all active:scale-95 disabled:opacity-50"
-            >
-              {savingPlant ? <Loader2 className="w-5 h-5 animate-spin" /> : <Save className="w-5 h-5" />}
-              {editingPlantId ? 'Update Plant' : 'Save Plant'}
-            </button>
-            <button 
-              type="button"
-              onClick={() => setShowPlantModal(false)}
-              className="px-6 py-3.5 bg-white border border-gray-200 text-gray-600 rounded-2xl font-bold hover:bg-gray-50 transition-all"
-            >
-              Cancel
-            </button>
-          </div>
-        </form>
-      </motion.div>
-    </div>
-  )}
-</AnimatePresence>
+        )}
+      </AnimatePresence>
     </div>
   );
 }
