@@ -1196,8 +1196,11 @@ export default function ClientManagement() {
 
       if (newClient.logo instanceof File) logoUrl = await uploadImageToCloudinary(newClient.logo);
 
+      // Remove logoPreview from payload to avoid "Content Too Large" error (413)
+      const { logoPreview, ...clientData } = newClient;
+
       const payload = {
-        ...newClient,
+        ...clientData,
         logo: logoUrl,
         enabledFeatures: newClient.enabledFeatures, // Include features in payload
         joined: isEditing
