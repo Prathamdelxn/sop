@@ -346,7 +346,7 @@ export default function UpdateWorkerRoles() {
       if (data.success) {
         toast.success(`Plant ${editingPlantId ? 'updated' : 'created'} successfully`);
         setShowPlantModal(false);
-        fetchAllPlants(superadminId);
+        fetchAllPlants(companyId);
         setPlantForm(EMPTY_PLANT_FORM);
       } else {
         alert(data.message);
@@ -703,7 +703,7 @@ export default function UpdateWorkerRoles() {
                                     const data = await res.json();
                                     if (data.success) {
                                       toast.success("Plant deleted successfully");
-                                      fetchAllPlants(superadminId);
+                                      fetchAllPlants(companyId);
                                       if (selectedPlantId === plant._id) setSelectedPlantId('');
                                     } else {
                                       alert(data.message);
@@ -791,7 +791,7 @@ export default function UpdateWorkerRoles() {
                                           const res = await fetch(`/api/elogbook/lines/${line._id}`, { method: 'DELETE' });
                                           if ((await res.json()).success) {
                                             toast.success("Line deleted");
-                                            fetchLinesForPlant(superadminId, selectedPlantId);
+                                            fetchLinesForPlant(companyId, selectedPlantId);
                                           }
                                         }
                                       }}
@@ -927,7 +927,7 @@ export default function UpdateWorkerRoles() {
                                       toast.success(`Line ${editingLineId ? 'updated' : 'created'} successfully`);
                                       setLineForm(EMPTY_LINE_FORM);
                                       setEditingLineId(null);
-                                      fetchLinesForPlant(superadminId, selectedPlantId);
+                                      fetchLinesForPlant(companyId, selectedPlantId);
                                     } else {
                                       alert(data.message);
                                     }
