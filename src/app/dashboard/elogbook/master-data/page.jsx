@@ -46,6 +46,29 @@ export default function MasterDataPage() {
   const handleSubmit = async (e) => {
     e.preventDefault();
     setSaving(true);
+
+    const numericFields = [
+      'standardCycleTime', 'standardVoltage', 'standardTemperature', 
+      'maxCurrent', 'surfaceAreaPerBasket', 'partsPerBasket'
+    ];
+    
+    const fieldLabels = {
+      standardCycleTime: 'Cycle Time',
+      standardVoltage: 'Voltage',
+      standardTemperature: 'Bath Temp',
+      maxCurrent: 'Max Current',
+      surfaceAreaPerBasket: 'Surface Area per Part',
+      partsPerBasket: 'Parts per Basket'
+    };
+
+    for (const key of numericFields) {
+      if (form[key] && Number(form[key]) <= 0) {
+        alert(`${fieldLabels[key]} must be greater than 0`);
+        setSaving(false);
+        return;
+      }
+    }
+
     const payload = {
       ...form,
       standardCycleTime: Number(form.standardCycleTime), standardVoltage: Number(form.standardVoltage),
@@ -259,7 +282,12 @@ export default function MasterDataPage() {
                   { label: 'Bath Temp (°C)', key: 'standardTemperature', placeholder: '48', step: '0.1' },
                   ].map(f => (
                     <div key={f.key}><label className="block text-xs font-semibold text-gray-600 mb-1.5">{f.label}</label>
-                      <input type="number" step={f.step} min="0" required={f.required} value={form[f.key]} onChange={e => setForm({ ...form, [f.key]: e.target.value })}
+                      <input type="text" inputMode='numeric' step={f.step} min="0" required={f.required} value={form[f.key]} onChange={e => {
+                        const val = e.target.value;
+                        if (/^\d*\.?\d*$/.test(val)) {
+                          setForm({ ...form, [f.key]: val });
+                        }
+                      }}
                         className="w-full px-3 py-2.5 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-400" placeholder={f.placeholder} /></div>
                   ))}
                 </div>
@@ -268,9 +296,19 @@ export default function MasterDataPage() {
                 <h3 className="text-xs font-bold text-gray-500 uppercase tracking-wider mb-3">Capacity & Surface Area</h3>
                 <div className="grid grid-cols-2 gap-3">
                   <div><label className="block text-xs font-semibold text-gray-600 mb-1.5">Surface Area per Part (dm²)</label>
-                    <input type="number" step="0.01" min="0" value={form.surfaceAreaPerBasket} onChange={e => setForm({ ...form, surfaceAreaPerBasket: e.target.value })} className="w-full px-3 py-2.5 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-400" placeholder="25.5" /></div>
+                    <input type="text" inputMode='numeric' step="0.01" min="0" value={form.surfaceAreaPerBasket} onChange={e => {
+                      const val = e.target.value;
+                      if (/^\d*\.?\d*$/.test(val)) {
+                        setForm({ ...form, surfaceAreaPerBasket: val });
+                      }
+                    }} className="w-full px-3 py-2.5 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-400" placeholder="25.5" /></div>
                   <div><label className="block text-xs font-semibold text-gray-600 mb-1.5">Parts per Basket *</label>
-                    <input type="number" step="1" min="0" required value={form.partsPerBasket} onChange={e => setForm({ ...form, partsPerBasket: e.target.value })} className="w-full px-3 py-2.5 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-400" placeholder="400" /></div>
+                    <input type="text" inputMode='numeric' step="1" min="0" required value={form.partsPerBasket} onChange={e => {
+                      const val = e.target.value;
+                      if (/^\d*$/.test(val)) {
+                        setForm({ ...form, partsPerBasket: val });
+                      }
+                    }} className="w-full px-3 py-2.5 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-400" placeholder="400" /></div>
                 </div>
               </div>
               <div className="pt-4 flex items-center justify-end gap-3">
