@@ -1897,7 +1897,10 @@ export default function ClientManagement() {
                 <p className="text-center text-gray-600 mb-6">{successMessage}</p>
                 <div className="flex justify-center">
                   <button
-                    onClick={() => setShowSuccessModal(false)}
+                    onClick={() => {
+                      setShowSuccessModal(false);
+                      window.location.reload();
+                    }}
                     className="px-6 py-2.5 bg-indigo-600 text-white rounded-xl hover:bg-indigo-700 transition-colors duration-200"
                   >
                     OK
