@@ -280,6 +280,7 @@ export default function WorkerAssignmentPage() {
                         key={String(worker._id)}
                         value={String(worker._id)}
                         className="px-3 py-2"
+                        disabled={worker.isAssigned}
                       >
                         {worker.name} {worker.username ? `(@${worker.username})` : ''}
                         {' '}({worker.role})

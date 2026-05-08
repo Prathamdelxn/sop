@@ -158,41 +158,16 @@ export async function POST(req) {
     });
 
     if (existingActive) {
-      // Already assigned to the SAME line — nothing to do
-      if (existingActive.lineId.toString() === lineId) {
-        return NextResponse.json(
-          { success: false, message: "Worker is already assigned to this line today" },
-          { status: 409 }
-        );
-      }
-
-      // Assigned to a DIFFERENT line — check for active baskets before releasing
-      const worker = await User.findById(userId);
-      const activeBasketsOnLine = await ElogbookBasket.find({
-        companyId,
-        lineId: existingActive.lineId,
-        status: { $in: ["in-progress", "stopped"] },
-      });
-
-      const hasActiveBasket = activeBasketsOnLine.some(
-        (b) =>
-          b.startUser === worker?.name ||
-          b.startUser === worker?.username
+      const isSameLine = existingActive.lineId.toString() === lineId;
+      return NextResponse.json(
+        { 
+          success: false, 
+          message: isSameLine 
+            ? "Worker is already assigned to this line today" 
+            : "Worker is already assigned to another line today. Please unassign them first." 
+        },
+        { status: 409 }
       );
-
-      if (hasActiveBasket) {
-        return NextResponse.json(
-          {
-            success: false,
-            message: "Worker has an active basket on another line. They must finish or pause it first.",
-          },
-          { status: 409 }
-        );
-      }
-
-      // No active basket — release the old assignment
-      existingActive.status = "released";
-      await existingActive.save();
     }
 
     // Create the new assignment
