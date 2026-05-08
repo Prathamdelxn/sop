@@ -3,6 +3,7 @@ import connectDB from "@/utils/db";
 import ElogbookQC from "@/model/ElogbookQC";
 import ElogbookBasket from "@/model/ElogbookBasket";
 import ElogbookBatch from "@/model/ElogbookBatch";
+import ElogbookMasterData from "@/model/ElogbookMasterData";
 
 export const dynamic = "force-dynamic";
 
@@ -56,10 +57,14 @@ export async function POST(req) {
     }
 
     // 1. Find the current basket
-    const currentBasket = await ElogbookBasket.findById(basketId);
+    const currentBasket = await ElogbookBasket.findById(basketId).populate("masterDataId");
     if (!currentBasket) {
       return NextResponse.json({ success: false, message: "Basket not found" }, { status: 404 });
     }
+
+    const totalPartsInBasket = (currentBasket.items && currentBasket.items.length > 0)
+      ? currentBasket.items.reduce((sum, item) => sum + (item.quantity || 0), 0)
+      : (currentBasket.masterDataId?.partsPerBasket || 0);
 
     // Target part for this inspection call
     const targetPartId = masterDataId || currentBasket.masterDataId;
@@ -135,7 +140,7 @@ export async function POST(req) {
 
       qcRecord = await ElogbookQC.create({
         basketId, companyId, plantId, lineId, batchNumber, inspectorName,
-        inspectedQuantity, // Total for basket
+        inspectedQuantity: totalPartsInBasket, // Total for basket
         goodQuantity: 0,
         reworkQuantity: 0,
         items: initialItems,
@@ -195,21 +200,22 @@ export async function POST(req) {
     qcRecord.defects.scratchMark = qcRecord.items.reduce((sum, it) => sum + it.defects.scratchMark, 0);
     qcRecord.defects.pvcPeelOff = qcRecord.items.reduce((sum, it) => sum + it.defects.pvcPeelOff, 0);
 
-    if (qcRecord.reworkQuantity > 0 && qcRecord.reworkStatus === "none") {
-      qcRecord.reworkStatus = "pending";
-    } else if (qcRecord.reworkQuantity === 0) {
-      qcRecord.reworkStatus = "none";
-    }
-
-    await qcRecord.save();
-
-    // 4. Update basket status if fully checked
     const totalChecked = qcRecord.goodQuantity + qcRecord.reworkQuantity;
-    if (totalChecked >= inspectedQuantity) {
+
+    if (totalChecked >= totalPartsInBasket) {
+      if (qcRecord.reworkQuantity > 0 && qcRecord.reworkStatus === "none") {
+        qcRecord.reworkStatus = "pending";
+      }
       if (currentBasket.status === "pending-qc") {
         await ElogbookBasket.findByIdAndUpdate(basketId, { status: "qc-done" });
       }
     }
+
+    if (qcRecord.reworkQuantity === 0) {
+      qcRecord.reworkStatus = "none";
+    }
+
+    await qcRecord.save();
 
     return NextResponse.json({ success: true, data: qcRecord });
   } catch (error) {
