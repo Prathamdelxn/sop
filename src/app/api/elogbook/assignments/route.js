@@ -38,7 +38,7 @@ export async function GET(req) {
 
     // Normalize date to midnight
     const targetDate = dateParam ? new Date(dateParam) : new Date();
-    targetDate.setHours(0, 0, 0, 0);
+    targetDate.setUTCHours(0, 0, 0, 0);
 
     if (availableOnly) {
       // Fetch workers with Bucket Execution access for this company
@@ -147,7 +147,7 @@ export async function POST(req) {
     }
 
     const today = new Date();
-    today.setHours(0, 0, 0, 0);
+    today.setUTCHours(0, 0, 0, 0);
 
     // Check if this worker already has an active assignment today
     const existingActive = await WorkerAssignment.findOne({
