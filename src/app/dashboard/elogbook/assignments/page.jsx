@@ -60,7 +60,7 @@ export default function WorkerAssignmentPage() {
     try {
       const urls = [
         fetch(`/api/elogbook/assignments?companyId=${companySlug}${selectedPlantId ? `&plantId=${selectedPlantId}` : ''}`),
-        fetch(`/api/elogbook/assignments?companyId=${companySlug}&available=true`),
+        fetch(`/api/elogbook/assignments?companyId=${companySlug}&available=true${selectedPlantId ? `&plantId=${selectedPlantId}` : ''}`),
       ];
       
       const [assignRes, workerRes] = await Promise.all(urls);

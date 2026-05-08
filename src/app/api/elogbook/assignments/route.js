@@ -41,13 +41,19 @@ export async function GET(req) {
     targetDate.setHours(0, 0, 0, 0);
 
     if (availableOnly) {
-      // Fetch ALL workers with Bucket Execution access for this company
-      const allWorkers = await User.find({
+      // Fetch workers with Bucket Execution access for this company
+      const workerQuery = {
         companyId,
         task: { $in: ["Bucket Execution", "ElogBook"] },
         status: { $ne: "InActive" },
         role: { $nin: ["company-admin", "super-manager"] },
-      }).select("_id name username role phone plantId");
+      };
+
+      if (plantId) {
+        workerQuery.plantId = plantId;
+      }
+
+      const allWorkers = await User.find(workerQuery).select("_id name username role phone plantId");
 
       // Fetch ALL active assignments for today across the company
       const activeAssignments = await WorkerAssignment.find({
