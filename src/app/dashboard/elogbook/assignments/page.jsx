@@ -272,6 +272,9 @@ export default function WorkerAssignmentPage() {
                     size={5}
                     className="w-full border border-gray-200 rounded-xl text-sm bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-400"
                   >
+                    <option value="" disabled className="text-gray-400 px-3 py-2">
+                      {filteredWorkers.length === 0 ? "No workers found" : "-- Select Worker --"}
+                    </option>
                     {filteredWorkers.map((worker) => (
                       <option
                         key={String(worker._id)}
