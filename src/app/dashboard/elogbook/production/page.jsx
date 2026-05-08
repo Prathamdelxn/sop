@@ -340,6 +340,13 @@ export default function ProductionPage() {
       return;
     }
 
+    // Auto-select the part if not already selected
+    if (!selectedMasterData) {
+      setSelectedPart(primaryPart._id);
+      setSelectedMasterData(primaryPart);
+      localStorage.setItem('ELOGBOOK_PRODUCTION_PART', primaryPart._id);
+    }
+
     const success = await handleStartBatch({
       masterDataId: primaryPart._id,
       startUser: userData?.name || userData?.username,
@@ -417,6 +424,10 @@ export default function ProductionPage() {
   };
 
   const onStartBatch = () => {
+    if (!selectedPlantId || !selectedLineId) {
+      alert("Please select a plant and line first.");
+      return;
+    }
     requestPasswordFor('startBatch');
   };
 
@@ -621,7 +632,7 @@ export default function ProductionPage() {
                   {!activeBatch ? (
                     <button
                       onClick={onStartBatch}
-                      disabled={batchActionLoading === 'batch' || !canStartWork}
+                      disabled={batchActionLoading === 'batch' || !canStartWork || !selectedPlantId || !selectedLineId}
                       className="flex-1 sm:flex-none flex items-center justify-center gap-2 px-6 py-2.5 bg-gradient-to-r from-indigo-500 to-blue-600 text-white rounded-xl font-bold text-sm shadow-lg shadow-indigo-200 hover:shadow-xl transition-all active:scale-95 disabled:opacity-50"
                     >
                       {batchActionLoading === 'batch' ? (
