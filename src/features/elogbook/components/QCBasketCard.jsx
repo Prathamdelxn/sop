@@ -13,12 +13,12 @@ export default function QCBasketCard({
   basket, qcRecords, saving, activeQCForm, directBasketId, isLocked,
   onToggleForm, onUpdateForm, onUpdateDefect, onSubmitQC, getFormForBasket
 }) {
-  const items = (basket.items && basket.items.length > 0) 
-    ? basket.items 
+  const items = (basket.items && basket.items.length > 0)
+    ? basket.items
     : [{ masterDataId: basket.masterDataId, quantity: basket.masterDataId?.partsPerBasket || 0 }];
 
   const existingQC = qcRecords.find(r => r.basketId?._id === basket._id);
-  
+
   const standard = basket.masterDataId?.standardCycleTime || 0;
   const isActive = basket.status === 'in-progress' || basket.status === 'stopped';
   const isOver = basket.actualCycleTime > standard && !isActive;
@@ -26,22 +26,20 @@ export default function QCBasketCard({
   return (
     <div
       id={`basket-${basket._id}`}
-      className={`bg-white rounded-2xl border transition-all duration-300 hover:shadow-xl flex flex-col ${
-        directBasketId === basket._id ? 'ring-2 ring-indigo-500 border-transparent shadow-lg scale-[1.01]' :
+      className={`bg-white rounded-2xl border transition-all duration-300 hover:shadow-xl flex flex-col ${directBasketId === basket._id ? 'ring-2 ring-indigo-500 border-transparent shadow-lg scale-[1.01]' :
         basket.status === 'in-progress' ? 'border-emerald-200 shadow-md shadow-emerald-50' :
-        basket.status === 'stopped' ? 'border-amber-200 shadow-md shadow-amber-50' :
-        isOver ? 'border-red-200' : 'border-gray-100'
-      }`}
+          basket.status === 'stopped' ? 'border-amber-200 shadow-md shadow-amber-50' :
+            isOver ? 'border-red-200' : 'border-gray-100'
+        }`}
     >
       {/* Header */}
       <div className="p-5 border-b border-gray-50">
         <div className="flex items-center justify-between mb-4">
           <div className="flex items-center gap-2">
-            <div className={`w-10 h-10 rounded-xl flex items-center justify-center font-bold text-white ${
-              basket.status === 'in-progress' ? 'bg-gradient-to-br from-emerald-500 to-teal-500' :
+            <div className={`w-10 h-10 rounded-xl flex items-center justify-center font-bold text-white ${basket.status === 'in-progress' ? 'bg-gradient-to-br from-emerald-500 to-teal-500' :
               basket.status === 'stopped' ? 'bg-gradient-to-br from-amber-500 to-orange-500' :
-              'bg-gradient-to-br from-indigo-500 to-blue-500'
-            }`}>{basket.basketNumber}</div>
+                'bg-gradient-to-br from-indigo-500 to-blue-500'
+              }`}>{basket.basketNumber}</div>
             <div>
               <h3 className="font-bold text-gray-900">Basket {basket.basketNumber}</h3>
               <div className="flex items-center gap-1.5 flex-wrap">
@@ -111,12 +109,12 @@ export default function QCBasketCard({
           const formKey = `${basket._id}_${mId}`;
           const isFormOpen = activeQCForm === formKey;
           const form = getFormForBasket(basket._id, mId);
-          
+
           const existingItem = existingQC?.items?.find(it => (it.masterDataId?._id || it.masterDataId).toString() === mId.toString());
           const checkedSoFar = existingItem ? (existingItem.goodQuantity + existingItem.reworkQuantity) : 0;
           const inspectedQty = item.quantity || 0;
           const remaining = inspectedQty - checkedSoFar;
-          
+
           const incomingGood = Number(form.goodQuantity) || 0;
           const incomingDefects = Object.values(form.defects).reduce((sum, v) => sum + v, 0);
           const incomingTotal = incomingGood + incomingDefects;
@@ -139,8 +137,8 @@ export default function QCBasketCard({
                     </span>
                   ) : (
                     <div className="flex items-center gap-2">
-                       <span className="text-[10px] font-bold text-indigo-600">{Math.round((checkedSoFar/inspectedQty)*100)}%</span>
-                       {isFormOpen ? <ChevronUp className="w-4 h-4 text-gray-400" /> : <ClipboardCheck className="w-4 h-4 text-indigo-500" />}
+                      <span className="text-[10px] font-bold text-indigo-600">{Math.round((checkedSoFar / inspectedQty) * 100)}%</span>
+                      {isFormOpen ? <ChevronUp className="w-4 h-4 text-gray-400" /> : <ClipboardCheck className="w-4 h-4 text-indigo-500" />}
                     </div>
                   )}
                 </div>
@@ -153,8 +151,13 @@ export default function QCBasketCard({
                       <label className="block text-[9px] font-bold text-gray-500 uppercase mb-1 flex items-center gap-1">
                         <CheckCircle2 className="w-2.5 h-2.5 text-emerald-500" /> Good
                       </label>
-                      <input type="number" value={form.goodQuantity} placeholder="0"
-                        onChange={e => onUpdateForm(basket._id, mId, 'goodQuantity', e.target.value)}
+                      <input type="text" inputMode='numeric' value={form.goodQuantity} placeholder="0"
+                        onChange={e => {
+                          const val = e.target.value;
+                          if (val === '' || /^\d+$/.test(val)) {
+                            onUpdateForm(basket._id, mId, 'goodQuantity', val);
+                          }
+                        }}
                         className="w-full px-2 py-1.5 bg-gray-50 border border-gray-100 rounded text-xs focus:ring-1 focus:ring-emerald-500 font-bold" />
                     </div>
                     <div>
@@ -169,7 +172,7 @@ export default function QCBasketCard({
                     {DEFECT_TYPES.map(defect => (
                       <div key={defect.key} className="flex items-center justify-between gap-1 bg-gray-50 p-1.5 rounded border border-gray-100">
                         <label className="text-[8px] font-bold text-gray-400 uppercase truncate">{defect.label}</label>
-                        <input type="number" min="0" value={form.defects[defect.key]}
+                        <input type="text" inputMode='numeric' min="0" value={form.defects[defect.key]}
                           onChange={e => onUpdateDefect(basket._id, mId, defect.key, e.target.value)}
                           className="w-10 px-1 py-0.5 border border-gray-200 bg-white rounded text-[10px] text-center font-bold" />
                       </div>
