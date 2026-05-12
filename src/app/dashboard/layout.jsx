@@ -59,9 +59,9 @@ const allNavigationItems = [
 
   // ── Non-Pharma E-Logbook ──
   { name: 'Master Data Management', href: '/dashboard/elogbook/master-data', icon: Database, current: false, category: 'NON-PHARMA-ELOGBOOK' },
+  { name: 'Worker Assignment', href: '/dashboard/elogbook/assignments', icon: Users, current: false, category: 'NON-PHARMA-ELOGBOOK' },
   { name: 'Bucket Execution', href: '/dashboard/elogbook/production', icon: Package, current: false, category: 'NON-PHARMA-ELOGBOOK' },
   { name: 'Quality Check', href: '/dashboard/elogbook/qc', icon: ShieldCheck, current: false, category: 'NON-PHARMA-ELOGBOOK' },
-  { name: 'Worker Assignment', href: '/dashboard/elogbook/assignments', icon: Users, current: false, category: 'NON-PHARMA-ELOGBOOK' },
   { name: 'Graphical Representation', href: '/dashboard/elogbook/reports', icon: BarChart3, current: false, category: 'NON-PHARMA-ELOGBOOK' },
   { name: 'Plant Monitor', href: '/dashboard/elogbook/monitor', icon: MonitorCheck, current: false, category: 'NON-PHARMA-ELOGBOOK' },
   { name: 'Utility Tracking', href: '/dashboard/elogbook/utility-tracking', icon: Activity, current: false, category: 'NON-PHARMA-ELOGBOOK' },
