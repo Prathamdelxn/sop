@@ -1,16 +1,16 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { 
-  Activity, 
-  Clock, 
-  Save, 
-  CheckCircle, 
-  AlertCircle, 
-  Thermometer, 
-  Zap, 
-  Droplets, 
-  Package, 
+import {
+  Activity,
+  Clock,
+  Save,
+  CheckCircle,
+  AlertCircle,
+  Thermometer,
+  Zap,
+  Droplets,
+  Package,
   Layers,
   Settings,
   Flame,
@@ -20,7 +20,7 @@ import {
 import { toast, Toaster } from "react-hot-toast";
 
 const UTILITIES = [
-  "UGVCL", "Compressor", "Main Panel", "PLC Panel", 
+  "UGVCL", "Compressor", "Main Panel", "PLC Panel",
   "GUJRAT GAS", "RAW WATER", "RO WATER", "DM WATER"
 ];
 
@@ -29,12 +29,12 @@ const OVEN_LINES = [
 ];
 
 const CHEMICALS = [
-  "N 390", "R 6559", "D 249 TE", "D 249 TA", "D Additive 31", 
+  "N 390", "R 6559", "D 249 TE", "D 249 TA", "D Additive 31",
   "M 523D", "Sion - CR 681", "Roller", "Or 14", "Gardobond Additive H 7375"
 ];
 
 const OTHER_ITEMS = [
-  "Tape", "Paper - 320 Grade", "Grinder Disc - 180", "Cotton", 
+  "Tape", "Paper - 320 Grade", "Grinder Disc - 180", "Cotton",
   "Waste Cotton", "Wire", "Waste Rubber", "Waste"
 ];
 
@@ -215,7 +215,7 @@ export default function UtilityTrackingPage() {
   return (
     <div className="py-8 px-4 max-w-7xl mx-auto space-y-8 animate-in fade-in duration-700">
       <Toaster position="top-right" />
-      
+
       {/* Header Section */}
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 bg-white/40 backdrop-blur-md p-6 rounded-3xl border border-white/20 shadow-xl">
         <div className="flex items-center gap-4">
@@ -231,11 +231,10 @@ export default function UtilityTrackingPage() {
         </div>
 
         <div className="flex items-center gap-3">
-          <div className={`px-4 py-2 rounded-full font-bold text-xs uppercase tracking-widest border ${
-            status === "not-started" ? "bg-gray-100 text-gray-500 border-gray-200" :
+          <div className={`px-4 py-2 rounded-full font-bold text-xs uppercase tracking-widest border ${status === "not-started" ? "bg-gray-100 text-gray-500 border-gray-200" :
             status === "started" ? "bg-amber-100 text-amber-600 border-amber-200 animate-pulse" :
-            "bg-emerald-100 text-emerald-600 border-emerald-200"
-          }`}>
+              "bg-emerald-100 text-emerald-600 border-emerald-200"
+            }`}>
             {status.replace("-", " ")}
           </div>
         </div>
@@ -245,21 +244,19 @@ export default function UtilityTrackingPage() {
       <div className="flex p-1 bg-gray-100/50 rounded-2xl w-fit border border-gray-200/50 backdrop-blur-sm">
         <button
           onClick={() => setActiveTab("start")}
-          className={`px-8 py-3 rounded-xl font-bold text-sm transition-all duration-300 flex items-center gap-2 ${
-            activeTab === "start" 
-            ? "bg-white text-indigo-600 shadow-md scale-[1.02]" 
+          className={`px-8 py-3 rounded-xl font-bold text-sm transition-all duration-300 flex items-center gap-2 ${activeTab === "start"
+            ? "bg-white text-indigo-600 shadow-md scale-[1.02]"
             : "text-gray-500 hover:text-gray-700 hover:bg-gray-200/50"
-          }`}
+            }`}
         >
           <Flame className="w-4 h-4" /> Start Day Form
         </button>
         <button
           onClick={() => setActiveTab("end")}
-          className={`px-8 py-3 rounded-xl font-bold text-sm transition-all duration-300 flex items-center gap-2 ${
-            activeTab === "end" 
-            ? "bg-white text-indigo-600 shadow-md scale-[1.02]" 
+          className={`px-8 py-3 rounded-xl font-bold text-sm transition-all duration-300 flex items-center gap-2 ${activeTab === "end"
+            ? "bg-white text-indigo-600 shadow-md scale-[1.02]"
             : "text-gray-500 hover:text-gray-700 hover:bg-gray-200/50"
-          }`}
+            }`}
         >
           <CheckCircle className="w-4 h-4" /> Day End Form
         </button>
@@ -362,7 +359,7 @@ export default function UtilityTrackingPage() {
                 <div key={u.utilityName} className="p-5 bg-blue-50/30 rounded-2xl border border-blue-100 space-y-4 group hover:bg-blue-50/50 transition-all duration-300">
                   <h3 className="font-black text-blue-800 text-sm">{u.utilityName}</h3>
                   <div className="space-y-2">
-                    <label className="text-[10px] font-bold text-blue-400 uppercase tracking-widest">Opening Reading</label>
+                    <label className="text-[10px] font-bold text-black uppercase tracking-widest">Opening Reading</label>
                     <input
                       type="text"
                       disabled={status === "completed"}
@@ -403,7 +400,7 @@ export default function UtilityTrackingPage() {
                   <h3 className="font-black text-cyan-800 text-sm">{u.utilityName}</h3>
                   <div className="space-y-3">
                     <div>
-                      <label className="text-[10px] font-bold text-cyan-400 uppercase tracking-widest">Closing Reading</label>
+                      <label className="text-[10px] font-bold text-black uppercase tracking-widest">Closing Reading</label>
                       <input
                         type="text"
                         disabled={status === "completed"}
@@ -413,7 +410,7 @@ export default function UtilityTrackingPage() {
                       />
                     </div>
                     <div>
-                      <label className="text-[10px] font-bold text-cyan-400 uppercase tracking-widest">Consumption</label>
+                      <label className="text-[10px] font-bold text-black uppercase tracking-widest">Consumption</label>
                       <input
                         type="text"
                         disabled={status === "completed"}
@@ -483,21 +480,21 @@ export default function UtilityTrackingPage() {
                 <div key={item.itemName} className="flex items-center gap-6 group">
                   <div className="w-1/3 text-sm font-bold text-gray-600 group-hover:text-purple-600 transition-colors">{item.itemName}</div>
                   <div className="flex-1 space-y-1">
-                    <input 
-                      type="text" 
+                    <input
+                      type="text"
                       placeholder="Consumption"
                       disabled={status === "completed"}
-                      value={item.consumption} 
-                      onChange={(e) => updateNested("otherConsumables", "consumption", e.target.value, idx)} 
-                      className="w-full border-b border-gray-200 outline-none focus:border-purple-500 py-2 text-sm bg-transparent" 
+                      value={item.consumption}
+                      onChange={(e) => updateNested("otherConsumables", "consumption", e.target.value, idx)}
+                      className="w-full border-b border-gray-200 outline-none focus:border-purple-500 py-2 text-sm bg-transparent"
                     />
-                    <input 
-                      type="text" 
+                    <input
+                      type="text"
                       placeholder="Remarks"
                       disabled={status === "completed"}
-                      value={item.remarks} 
-                      onChange={(e) => updateNested("otherConsumables", "remarks", e.target.value, idx)} 
-                      className="w-full border-b border-gray-200 outline-none focus:border-purple-500 py-1 text-xs text-gray-400 bg-transparent italic" 
+                      value={item.remarks}
+                      onChange={(e) => updateNested("otherConsumables", "remarks", e.target.value, idx)}
+                      className="w-full border-b border-gray-200 outline-none focus:border-purple-500 py-1 text-xs text-gray-400 bg-transparent italic"
                     />
                   </div>
                 </div>
@@ -509,22 +506,22 @@ export default function UtilityTrackingPage() {
           <div className="bg-white/80 backdrop-blur-md rounded-3xl p-8 border border-white/20 shadow-xl grid grid-cols-1 md:grid-cols-2 gap-8">
             <div className="space-y-2">
               <label className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">CED Operator</label>
-              <input 
-                type="text" 
+              <input
+                type="text"
                 disabled={status === "completed"}
-                value={formData.operatorDetails.cedOperator} 
-                onChange={(e) => updateNested("operatorDetails", "cedOperator", e.target.value)} 
-                className="w-full bg-gray-50/50 border border-gray-200 rounded-xl px-4 py-3 outline-none focus:border-indigo-500" 
+                value={formData.operatorDetails.cedOperator}
+                onChange={(e) => updateNested("operatorDetails", "cedOperator", e.target.value)}
+                className="w-full bg-gray-50/50 border border-gray-200 rounded-xl px-4 py-3 outline-none focus:border-indigo-500"
               />
             </div>
             <div className="space-y-2">
               <label className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">Inspector Name</label>
-              <input 
-                type="text" 
+              <input
+                type="text"
                 disabled={status === "completed"}
-                value={formData.operatorDetails.inspector} 
-                onChange={(e) => updateNested("operatorDetails", "inspector", e.target.value)} 
-                className="w-full bg-gray-50/50 border border-gray-200 rounded-xl px-4 py-3 outline-none focus:border-indigo-500" 
+                value={formData.operatorDetails.inspector}
+                onChange={(e) => updateNested("operatorDetails", "inspector", e.target.value)}
+                className="w-full bg-gray-50/50 border border-gray-200 rounded-xl px-4 py-3 outline-none focus:border-indigo-500"
               />
             </div>
           </div>
