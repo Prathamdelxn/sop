@@ -201,7 +201,6 @@ export default function MasterDataPage() {
                       <th className="text-center px-4 py-3 font-semibold text-gray-600 text-xs uppercase tracking-wider"><div className="flex items-center justify-center gap-1"><Thermometer className="w-3 h-3" /> Temp</div></th>
                       <th className="text-center px-4 py-3 font-semibold text-gray-600 text-xs uppercase tracking-wider"><div className="flex items-center justify-center gap-1"><Package className="w-3 h-3" /> Surface Area</div></th>
                       <th className="text-center px-4 py-3 font-semibold text-gray-600 text-xs uppercase tracking-wider"><div className="flex items-center justify-center gap-1"><Package className="w-3 h-3" /> Parts/Basket</div></th>
-                      <th className="text-center px-4 py-3 font-semibold text-gray-600 text-xs uppercase tracking-wider">Baskets</th>
                       <th className="text-center px-4 py-3 font-semibold text-gray-600 text-xs uppercase tracking-wider">Actions</th>
                     </tr></thead>
                     <tbody className="divide-y divide-gray-50">
@@ -215,7 +214,6 @@ export default function MasterDataPage() {
                           <td className="px-4 py-3 text-center text-gray-700 font-medium">{record.standardTemperature}°C</td>
                           <td className="px-4 py-3 text-center text-gray-700 font-medium">{record.surfaceAreaPerBasket ? `${record.surfaceAreaPerBasket} dm²` : '-'}</td>
                           <td className="px-4 py-3 text-center font-bold text-gray-800">{record.partsPerBasket}</td>
-                          <td className="px-4 py-3 text-center"><span className="inline-flex items-center px-2 py-0.5 rounded-md bg-gray-100 text-gray-600 font-medium text-xs">{record.basketCount}</span></td>
                           <td className="px-4 py-3 text-center"><div className="flex items-center justify-center gap-1">
                             <button onClick={() => handleEdit(record)} className="p-2 rounded-lg hover:bg-indigo-50 text-gray-400 hover:text-indigo-600 transition-all"><Pencil className="w-4 h-4" /></button>
                             <button onClick={() => onDelete(record._id)} className="p-2 rounded-lg hover:bg-red-50 text-gray-400 hover:text-red-600 transition-all"><Trash2 className="w-4 h-4" /></button>
