@@ -75,6 +75,7 @@ export async function GET(request) {
     // Fetch baskets
     const baskets = await ElogbookBasket.find(basketFilter)
       .populate("masterDataId")
+      .populate("items.masterDataId")
       .populate("batchId", "batchNumber startTime endTime startUser endUser")
       .populate("plantId", "name code")
       .populate("lineId", "lineNumber name")
@@ -186,11 +187,19 @@ export async function GET(request) {
         });
       }
 
+      // Extract all part names from items
+      const executedParts = basket.items?.map(item => item.masterDataId?.partName).filter(Boolean) || [];
+      if (executedParts.length === 0 && basket.masterDataId?.partName) {
+        executedParts.push(basket.masterDataId.partName);
+      }
+      const executedPartsStr = executedParts.join(', ') || "-";
+
       // Add detailed basket info
       basketDetails.push({
         doneBy: basket.endUser || basket.startUser || "-",
         qualityCheckedBy: qc ? qc.inspectorName : "-",
         totalParts: basket.masterDataId?.partsPerBasket || 0,
+        partName: executedPartsStr,
         batchNumber: batchNum,
         plantName: plantName,
         plantCode: plantCode,
