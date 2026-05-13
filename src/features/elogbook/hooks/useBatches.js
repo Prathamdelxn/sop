@@ -2,6 +2,7 @@
 
 import { useState, useCallback, useEffect } from 'react';
 import * as batchService from '../services/batchService';
+import { io } from 'socket.io-client';
 
 /**
  * Hook encapsulating batch state management.
@@ -26,30 +27,32 @@ export function useBatches({ companyId, plantId, lineId }, masterDataId = null) 
 
   // Real-time synchronization logic
   useEffect(() => {
-    if (!companyId || !lineId || !masterDataId) return;
+    if (!companyId || !lineId) return;
 
-    // Use EventSource for real-time notifications
-    const eventSource = new EventSource(`/api/elogbook/events?lineId=${lineId}`);
+    // Use Custom WebSocket for real-time notifications
+    const wsUrl = process.env.NEXT_PUBLIC_WEBSOCKET_URL;
+    if (!wsUrl) return;
 
-    eventSource.onmessage = (event) => {
-      try {
-        const data = JSON.parse(event.data);
-        if (data.type === 'BATCH_UPDATED') {
-          console.log('Real-time refresh triggered for batch');
-          fetchActiveBatch(masterDataId);
-        }
-      } catch (err) {
-        // Heartbeat or other non-JSON messages
+    const socket = io(wsUrl);
+
+    socket.on('connect', () => {
+      console.log('Connected to WebSocket server');
+      socket.emit('join-line', lineId);
+    });
+
+    socket.on('refresh', (data) => {
+      if (data.type === 'BATCH_UPDATED') {
+        console.log('Real-time refresh triggered for batch via WebSocket');
+        fetchActiveBatch(masterDataId);
       }
-    };
+    });
 
-    eventSource.onerror = (err) => {
-      console.error('SSE Error:', err);
-      eventSource.close();
+    return () => {
+      socket.disconnect();
     };
-
-    return () => eventSource.close();
   }, [companyId, lineId, masterDataId, fetchActiveBatch]);
+
+
 
   const handleStartBatch = async ({ masterDataId, startUser }) => {
     if (!masterDataId) return false;

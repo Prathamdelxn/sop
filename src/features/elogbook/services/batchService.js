@@ -3,13 +3,13 @@
  */
 
 /**
- * Fetch active batch for a given company and master data,
- * optionally scoped by plant and line.
+ * Fetch active batch for a given company, optionally scoped by master data, plant and line.
  */
 export async function fetchActiveBatch(companyId, masterDataId, plantId, lineId) {
-  if (!companyId || !masterDataId) return { success: false, data: null };
+  if (!companyId) return { success: false, data: null };
 
-  let url = `/api/elogbook/batches?companyId=${companyId}&masterDataId=${masterDataId}`;
+  let url = `/api/elogbook/batches?companyId=${companyId}`;
+  if (masterDataId && masterDataId !== "ALL") url += `&masterDataId=${masterDataId}`;
   if (plantId) url += `&plantId=${plantId}`;
   if (lineId) url += `&lineId=${lineId}`;
 

@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import * as basketService from '../services/basketService';
+import { io } from 'socket.io-client';
 
 /**
  * Hook encapsulating basket state management and API interactions.
@@ -68,29 +69,33 @@ export function useBaskets({ companyId, plantId, lineId, masterDataId, batchId }
   useEffect(() => {
     if (!companyId || !lineId) return;
 
-    // Use EventSource for real-time notifications
-    const eventSource = new EventSource(`/api/elogbook/events?lineId=${lineId}`);
+    // Use Custom WebSocket for real-time notifications
+    const wsUrl = process.env.NEXT_PUBLIC_WEBSOCKET_URL;
+    if (!wsUrl) {
+      console.warn('NEXT_PUBLIC_WEBSOCKET_URL not set');
+      return;
+    }
 
-    eventSource.onmessage = (event) => {
-      try {
-        const data = JSON.parse(event.data);
-        if (data.type === 'BASKET_UPDATED') {
-          console.log('Real-time refresh triggered for basket');
-          fetchData(true); // Silent refresh
-        }
-      } catch (err) {
-        // Heartbeat or other non-JSON messages
+    const socket = io(wsUrl);
+
+    socket.on('connect', () => {
+      console.log('Connected to WebSocket server');
+      socket.emit('join-line', lineId);
+    });
+
+    socket.on('refresh', (data) => {
+      if (data.type === 'BASKET_UPDATED') {
+        console.log('Real-time refresh triggered for basket via WebSocket');
+        fetchData(true); // Silent refresh
       }
-    };
+    });
 
-    eventSource.onerror = (err) => {
-      console.error('SSE Error:', err);
-      eventSource.close();
-      // Optionally implement reconnection logic here
+    return () => {
+      socket.disconnect();
     };
-
-    return () => eventSource.close();
   }, [companyId, lineId, fetchData]);
+
+
 
   const handleStartBasket = async ({ startBasketNumber, barcode, items, startUser, additionalUsers }) => {
     if (!masterDataId || !startBasketNumber) return false;
