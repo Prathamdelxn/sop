@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect, useRef } from 'react';
 import { useRouter } from 'next/navigation';
-import { ArrowLeft, BarChart3, Download, Loader2, Clock, AlertTriangle, CheckCircle2, TrendingUp, Package, User, Shield, Factory, GitBranch, Hash, Mail, X } from 'lucide-react';
+import { ArrowLeft, BarChart3, Download, Loader2, Clock, AlertTriangle, CheckCircle2, TrendingUp, Package, User, Shield, Factory, GitBranch, Hash, Mail, X, Timer, Zap, Thermometer } from 'lucide-react';
 
 import { useElogbookPermission } from '@/features/elogbook/hooks/useElogbookPermission';
 import { useMasterData } from '@/features/elogbook/hooks/useMasterData';
@@ -573,25 +573,68 @@ export default function ReportsPage() {
                 <table className="w-full text-sm">
                   <thead><tr className="bg-gray-50 border-b border-gray-100">
                     {['Batch #', 'Plant', 'Line', 'Start Time', 'End Time', 'Started By', 'Ended By', 'Total Baskets', 'Total Parts', 'Good', 'Rejected'].map(h => (
-                      <th key={h} className={`${h === 'Batch #' ? 'text-left' : 'text-center'} px-4 py-3 text-xs font-semibold text-gray-500 uppercase whitespace-nowrap`}>{h}</th>
+                      <th key={h} className={`${h === 'Batch #' ? 'text-left' : 'text-center'} px-4 py-2 text-[11px] font-semibold text-gray-500 uppercase whitespace-nowrap`}>{h}</th>
                     ))}
                   </tr></thead>
                   <tbody className="divide-y divide-gray-50">
                     {batchWiseData.map((b, i) => (
-                      <tr key={i} className="hover:bg-indigo-50/30 transition-colors whitespace-nowrap">
-                        <td className="px-4 py-3 text-left"><span className="inline-flex items-center gap-1 px-2 py-0.5 bg-indigo-50 text-indigo-700 rounded-md text-xs font-bold">{b.batchNumber}</span></td>
-                        <td className="px-4 py-3 text-center text-gray-600 text-xs font-medium">{b.plantName || '-'}</td>
-                        <td className="px-4 py-3 text-center text-gray-600 text-xs font-medium">{b.lineNumber ? `Line ${b.lineNumber}` : '-'}</td>
-                        <td className="px-4 py-3 text-center text-gray-700 text-xs font-medium">{b.startTime && !isNaN(new Date(b.startTime)) ? new Date(b.startTime).toLocaleString([], { dateStyle: 'short', timeStyle: 'short' }) : '-'}</td>
-                        <td className="px-4 py-3 text-center text-gray-700 text-xs font-medium">{b.endTime && !isNaN(new Date(b.endTime)) ? new Date(b.endTime).toLocaleString([], { dateStyle: 'short', timeStyle: 'short' }) : '-'}</td>
-                        <td className="px-4 py-3 text-center"><div className="flex items-center justify-center gap-1"><User className="w-3 h-3 text-gray-400" /><span className="text-gray-700 text-xs">{b.startUser || '-'}</span></div></td>
-                        <td className="px-4 py-3 text-center"><div className="flex items-center justify-center gap-1"><User className="w-3 h-3 text-gray-400" /><span className="text-gray-700 text-xs">{b.endUser || '-'}</span></div></td>
-                        <td className="px-4 py-3 text-center font-bold text-indigo-600">{b.basketCount}</td>
-                        <td className="px-4 py-3 text-center font-bold text-gray-700">{b.totalParts || 0}</td>
-                        <td className="px-4 py-3 text-center text-emerald-600 font-medium">{b.good || 0}</td>
-                        <td className="px-4 py-3 text-center text-red-600 font-medium">{b.rejected || 0}</td>
+                      <tr key={i} className="hover:bg-indigo-50/30 transition-colors text-[11px]">
+                        <td className="px-4 py-2 text-left whitespace-nowrap"><span className="inline-flex items-center gap-1 px-1.5 py-0.5 bg-indigo-50 text-indigo-700 rounded-md text-[10px] font-bold">{b.batchNumber}</span></td>
+                        <td className="px-4 py-2 text-center text-gray-600 font-medium">{b.plantName || '-'}</td>
+                        <td className="px-4 py-2 text-center text-gray-600 font-medium">{b.lineNumber ? `Line ${b.lineNumber}` : '-'}</td>
+                        <td className="px-4 py-2 text-center text-gray-700 font-medium whitespace-nowrap">{b.startTime && !isNaN(new Date(b.startTime)) ? new Date(b.startTime).toLocaleString([], { dateStyle: 'short', timeStyle: 'short' }) : '-'}</td>
+                        <td className="px-4 py-2 text-center text-gray-700 font-medium whitespace-nowrap">{b.endTime && !isNaN(new Date(b.endTime)) ? new Date(b.endTime).toLocaleString([], { dateStyle: 'short', timeStyle: 'short' }) : '-'}</td>
+                        <td className="px-4 py-2 text-center"><div className="flex items-center justify-center gap-1"><User className="w-3 h-3 text-gray-400" /><span className="text-gray-700">{b.startUser || '-'}</span></div></td>
+                        <td className="px-4 py-2 text-center"><div className="flex items-center justify-center gap-1"><User className="w-3 h-3 text-gray-400" /><span className="text-gray-700">{b.endUser || '-'}</span></div></td>
+                        <td className="px-4 py-2 text-center font-bold text-indigo-600">{b.basketCount}</td>
+                        <td className="px-4 py-2 text-center font-bold text-gray-700">{b.totalParts || 0}</td>
+                        <td className="px-4 py-2 text-center text-emerald-600 font-medium">{b.good || 0}</td>
+                        <td className="px-4 py-2 text-center text-red-600 font-medium">{b.rejected || 0}</td>
                       </tr>
                     ))}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          )}
+
+          {/* Master Data Details Table */}
+          {masterDataList?.length > 0 && (
+            <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden mt-6">
+              <div className="px-6 py-4 border-b border-gray-100 flex items-center justify-between">
+                <h3 className="text-sm font-bold text-gray-800">Master Data Details</h3>
+                <span className="text-[10px] font-bold text-indigo-600 bg-indigo-50 px-2 py-0.5 rounded-full uppercase tracking-wider">Reference Data</span>
+              </div>
+              <div className="overflow-x-auto">
+                <table className="w-full text-sm">
+                  <thead><tr className="bg-gray-50 border-b border-gray-100">
+                    <th className="text-left px-4 py-2 font-semibold text-gray-600 text-[11px] uppercase tracking-wider">Customer</th>
+                    <th className="text-left px-4 py-2 font-semibold text-gray-600 text-[11px] uppercase tracking-wider">Part Name</th>
+                    <th className="text-left px-4 py-2 font-semibold text-gray-600 text-[11px] uppercase tracking-wider">Description</th>
+                    <th className="text-center px-4 py-2 font-semibold text-gray-600 text-[11px] uppercase tracking-wider"><div className="flex items-center justify-center gap-1"><Timer className="w-3 h-3" /> Cycle Time</div></th>
+                    <th className="text-center px-4 py-2 font-semibold text-gray-600 text-[11px] uppercase tracking-wider"><div className="flex items-center justify-center gap-1"><Zap className="w-3 h-3" /> Voltage</div></th>
+                    <th className="text-center px-4 py-2 font-semibold text-gray-600 text-[11px] uppercase tracking-wider"><div className="flex items-center justify-center gap-1"><Zap className="w-3 h-3" /> Max Current</div></th>
+                    <th className="text-center px-4 py-2 font-semibold text-gray-600 text-[11px] uppercase tracking-wider"><div className="flex items-center justify-center gap-1"><Thermometer className="w-3 h-3" /> Temp</div></th>
+                    <th className="text-center px-4 py-2 font-semibold text-gray-600 text-[11px] uppercase tracking-wider"><div className="flex items-center justify-center gap-1"><Package className="w-3 h-3" /> Surface Area</div></th>
+                    <th className="text-center px-4 py-2 font-semibold text-gray-600 text-[11px] uppercase tracking-wider"><div className="flex items-center justify-center gap-1"><Package className="w-3 h-3" /> Parts/Basket</div></th>
+                  </tr></thead>
+                  <tbody className="divide-y divide-gray-50">
+                    {masterDataList
+                      .filter(md => !selectedCustomer || md.customerName === selectedCustomer)
+                      .filter(md => !selectedMasterData || md._id === selectedMasterData)
+                      .map((record, i) => (
+                        <tr key={i} className="hover:bg-indigo-50/30 transition-colors text-[11px]">
+                          <td className="px-4 py-2 text-left font-medium text-gray-900">{record.customerName}</td>
+                          <td className="px-4 py-2 text-left font-medium text-gray-700">{record.partName}</td>
+                          <td className="px-4 py-2 text-left text-gray-500 text-[10px] truncate max-w-[150px]" title={record.coatingRequirements}>{record.coatingRequirements || '-'}</td>
+                          <td className="px-4 py-2 text-center whitespace-nowrap"><span className="inline-flex items-center px-1.5 py-0.5 rounded-md bg-blue-50 text-blue-700 font-bold text-[10px]">{record.standardCycleTime} min</span></td>
+                          <td className="px-4 py-2 text-center text-gray-700 font-medium whitespace-nowrap">{record.standardVoltage}V</td>
+                          <td className="px-4 py-2 text-center text-gray-700 font-medium whitespace-nowrap">{record.maxCurrent ? `${record.maxCurrent}A` : '-'}</td>
+                          <td className="px-4 py-2 text-center text-gray-700 font-medium whitespace-nowrap">{record.standardTemperature}°C</td>
+                          <td className="px-4 py-2 text-center text-gray-700 font-medium whitespace-nowrap">{record.surfaceAreaPerBasket ? `${record.surfaceAreaPerBasket} dm²` : '-'}</td>
+                          <td className="px-4 py-2 text-center font-bold text-gray-800 whitespace-nowrap">{record.partsPerBasket}</td>
+                        </tr>
+                      ))}
                   </tbody>
                 </table>
               </div>
