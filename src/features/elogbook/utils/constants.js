@@ -32,6 +32,8 @@ export const EXECUTION_REASONS = [
   'Operator learning curve',
   'Material handling delay',
   'Process deviation approved',
+  'Executed 30 sec earlier than standard time',
+  'just 30 sec late than standard time',
   'Other',
 ];
 
