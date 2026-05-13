@@ -29,13 +29,12 @@ const OVEN_LINES = [
 ];
 
 const CHEMICALS = [
-  "N 390", "R 6559", "D 249 TE", "D 249 TA", "D Additive 31",
-  "M 523D", "Sion - CR 681", "Roller", "Or 14", "Gardobond Additive H 7375"
+  "Gardoclean 390", "Gardolean 6559", "Gardobond 249 TE", "Gardobond 249 TA", "Gardobond Additive 31",
+  "CED Paste- 523D", "CED Emulsion - CR 681", "Flow Controller", "Accelerator 14", "Gardobond Additive H 7375"
 ];
 
 const OTHER_ITEMS = [
-  "Tape", "Paper - 320 Grade", "Grinder Disc - 180", "Cotton",
-  "Waste Cotton", "Wire", "Waste Rubber", "Waste"
+  "Masking Tape", "Polish Paper- 320 Grade", "Orbital Sander Disc -180", "Cotton", "Lint Free Cotton", "Mask", "Handgloves Cotton", "Winding Wire", "Handgloves Rubber", "Scotch Brite", "Thinner", "Spray"
 ];
 
 export default function UtilityTrackingPage() {
@@ -389,7 +388,7 @@ export default function UtilityTrackingPage() {
       ) : (
         <div className="space-y-8 animate-in slide-in-from-right-4 duration-500">
           {/* Final Utility Readings */}
-          <div className="bg-white/80 backdrop-blur-md rounded-3xl p-8 border border-white/20 shadow-xl overflow-hidden relative">
+          {/* <div className="bg-white/80 backdrop-blur-md rounded-3xl p-8 border border-white/20 shadow-xl overflow-hidden relative">
             <div className="absolute top-0 left-0 w-2 h-full bg-gradient-to-b from-blue-500 to-cyan-600"></div>
             <h2 className="text-xl font-bold text-gray-800 mb-6 flex items-center gap-3">
               <Zap className="text-blue-600" /> Utility Final Readings & Consumption
@@ -423,7 +422,7 @@ export default function UtilityTrackingPage() {
                 </div>
               ))}
             </div>
-          </div>
+          </div> */}
 
           {/* Section F: Chemical Consumption */}
           <div className="bg-white/80 backdrop-blur-md rounded-3xl p-8 border border-white/20 shadow-xl overflow-hidden relative">
@@ -435,7 +434,7 @@ export default function UtilityTrackingPage() {
               <table className="w-full text-sm text-left">
                 <thead>
                   <tr className="text-[10px] font-bold text-gray-400 uppercase tracking-widest border-b border-gray-100">
-                    <th className="py-4 px-4">Chemical Item</th>
+                    <th className="py-4 px-4">Material Details</th>
                     <th className="py-4 px-4">Batch No</th>
                     <th className="py-4 px-4">MFG</th>
                     <th className="py-4 px-4">EXP</th>
@@ -503,7 +502,7 @@ export default function UtilityTrackingPage() {
           </div>
 
           {/* Operator Details */}
-          <div className="bg-white/80 backdrop-blur-md rounded-3xl p-8 border border-white/20 shadow-xl grid grid-cols-1 md:grid-cols-2 gap-8">
+          {/* <div className="bg-white/80 backdrop-blur-md rounded-3xl p-8 border border-white/20 shadow-xl grid grid-cols-1 md:grid-cols-2 gap-8">
             <div className="space-y-2">
               <label className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">CED Operator</label>
               <input
@@ -524,7 +523,7 @@ export default function UtilityTrackingPage() {
                 className="w-full bg-gray-50/50 border border-gray-200 rounded-xl px-4 py-3 outline-none focus:border-indigo-500"
               />
             </div>
-          </div>
+          </div> */}
 
           {/* Action Button */}
           <div className="flex justify-end pt-6">
