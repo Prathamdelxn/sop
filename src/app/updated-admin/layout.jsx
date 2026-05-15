@@ -17,12 +17,17 @@ export default function RootLayout({ children }) {
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
   const [Id, setId] = useState();
   
+  useEffect(() => {
+    const path = window.location.pathname;
+    if (path.includes('/users')) {
+      setActiveItemId('users');
+    } else if (path === '/updated-admin' || path === '/updated-admin/') {
+      setActiveItemId('roles');
+    }
+  }, []);
+  
   // Use sidebar context
   const { 
-    dynamicSidebarItems, 
-    isLoadingItems, 
-    updateSidebarItems,
-    setIsLoadingItems ,
     getRandomIcon
   } = useSidebar();
 
@@ -50,11 +55,6 @@ export default function RootLayout({ children }) {
     setId(userdata?.id);
   }, [])
   
-  const getDynamicRoutePath = (title) => {
-    // Convert title to lowercase and replace spaces with hyphens
-    const slug = title.toLowerCase().replace(/\s+/g, '-');
-    return `/updated-admin/${slug}`;
-  };
   
   useEffect(() => {
     const fetchData = async () => {
@@ -65,18 +65,6 @@ export default function RootLayout({ children }) {
         router.push('/deactivate')
       }
       setCompanyData(newdata.superAdmin);
-      console.log(newdata.superAdmin?.workerRole);
-      const dd = newdata.superAdmin?.workerRole;
-      
-      // Add random icons to dynamic items
-      const itemsWithIcons = dd?.map((item, index) => ({
-        ...item,
-        icon: getRandomIcon(index)
-      })) || [];
-      
-      updateSidebarItems(itemsWithIcons);
-      console.log(dd?.length);
-      setIsLoadingItems(false);
     }
     if (Id) {
       fetchData();
@@ -115,51 +103,6 @@ export default function RootLayout({ children }) {
 
   const toggleSidebar = () => {
     setIsSidebarCollapsed(!isSidebarCollapsed);
-  };
-
-  const renderEmptyState = () => {
-    if (isLoadingItems) {
-      return (
-        <div className="px-4 py-8 text-center">
-          <div className="flex flex-col items-center space-y-3">
-            <div className="relative">
-              <div className="animate-spin w-8 h-8 border-3 border-blue-500 border-t-transparent rounded-full"></div>
-              <div className="absolute inset-0 animate-ping w-8 h-8 border border-blue-300 rounded-full opacity-20"></div>
-            </div>
-            {!isSidebarCollapsed && (
-              <div className="space-y-2">
-                <p className="text-sm font-medium text-gray-600">Loading roles...</p>
-                <div className="flex space-x-1">
-                  <div className="w-2 h-2 bg-blue-400 rounded-full animate-bounce"></div>
-                  <div className="w-2 h-2 bg-blue-400 rounded-full animate-bounce" style={{animationDelay: '0.1s'}}></div>
-                  <div className="w-2 h-2 bg-blue-400 rounded-full animate-bounce" style={{animationDelay: '0.2s'}}></div>
-                </div>
-              </div>
-            )}
-          </div>
-        </div>
-      );
-    }
-
-    if (dynamicSidebarItems?.length === 0) {
-      return (
-        <div className="px-4 py-8 text-center">
-          <div className="flex flex-col items-center space-y-3">
-            <div className="text-4xl opacity-50 animate-pulse">📋</div>
-            {!isSidebarCollapsed && (
-              <div className="space-y-2">
-                <p className="text-sm font-semibold text-gray-600">No additional roles</p>
-                <p className="text-xs text-gray-400 leading-relaxed">
-                  New menu items will appear here when roles are configured
-                </p>
-              </div>
-            )}
-          </div>
-        </div>
-      );
-    }
-
-    return null;
   };
 
   return (
@@ -203,100 +146,77 @@ export default function RootLayout({ children }) {
 
           {/* Navigation */}
           <nav className="flex-1 px-4 py-6 space-y-2 overflow-y-auto scrollbar-thin scrollbar-thumb-gray-300 scrollbar-track-transparent">
-            {/* Static Dashboard Item with Enhanced Styling */}
+            {/* Roles Link */}
             <div className="group relative">
               <Link
-                href={staticDashboardItem.path}
-                onClick={() => setActiveItem(staticDashboardItem.id)}
+                href="/updated-admin"
+                onClick={() => setActiveItem('roles')}
                 className={`
                   flex items-center px-4 py-4 rounded-2xl text-sm font-semibold
                   transition-all duration-300 overflow-hidden relative
-                  ${activeItemId === staticDashboardItem.id
+                  ${activeItemId === 'roles' || activeItemId === 'dashboard'
                     ? 'bg-gradient-to-r from-blue-500 to-purple-600 text-white shadow-lg transform scale-105'
                     : 'text-gray-700 hover:bg-gradient-to-r hover:from-blue-50 hover:to-purple-50 hover:text-blue-700 hover:scale-102'}
                   group-hover:shadow-md
                 `}
               >
                 <div className="flex items-center space-x-4 w-full">
-                  <span className={`text-2xl transition-all duration-300 ${activeItemId === staticDashboardItem.id ? 'animate-pulse' : 'group-hover:scale-110'}`}>
-                    {staticDashboardItem.icon} 
+                  <span className={`text-2xl transition-all duration-300 ${activeItemId === 'roles' ? 'animate-pulse' : 'group-hover:scale-110'}`}>
+                    🛡️
                   </span>
                   {!isSidebarCollapsed && (
                     <>
-                      <span className="flex-1 font-semibold">{staticDashboardItem.title}</span>
-                      {activeItemId === staticDashboardItem.id && (
+                      <span className="flex-1 font-semibold">Roles</span>
+                      {activeItemId === 'roles' && (
                         <div className="w-2 h-2 bg-white rounded-full animate-ping"></div>
                       )}
                     </>
                   )}
                 </div>
-                {/* Hover effect overlay */}
                 <div className="absolute inset-0 bg-gradient-to-r from-blue-400/10 to-purple-400/10 opacity-0 group-hover:opacity-100 transition-opacity duration-300 rounded-2xl"></div>
               </Link>
-              {/* Tooltip for collapsed state */}
               {isSidebarCollapsed && (
                 <div className="absolute left-full ml-2 top-1/2 -translate-y-1/2 bg-gray-900 text-white text-xs px-2 py-1 rounded opacity-0 group-hover:opacity-100 transition-opacity duration-300 whitespace-nowrap z-50">
-                  {staticDashboardItem.title}
+                  Roles
                 </div>
               )}
             </div>
 
-            {/* Enhanced Divider */}
-            {dynamicSidebarItems?.length > 0 && (
-              <div className="px-4 py-3">
-                <div className="border-t border-gradient-to-r from-transparent via-gray-300 to-transparent relative">
+            {/* Users Link */}
+            <div className="group relative">
+              <Link
+                href="/updated-admin/users"
+                onClick={() => setActiveItem('users')}
+                className={`
+                  flex items-center px-4 py-4 rounded-2xl text-sm font-semibold
+                  transition-all duration-300 overflow-hidden relative
+                  ${activeItemId === 'users'
+                    ? 'bg-gradient-to-r from-indigo-500 to-purple-600 text-white shadow-lg transform scale-105'
+                    : 'text-gray-700 hover:bg-gradient-to-r hover:from-indigo-50 hover:to-purple-50 hover:text-indigo-700 hover:scale-102'}
+                  group-hover:shadow-md
+                `}
+              >
+                <div className="flex items-center space-x-4 w-full">
+                  <span className={`text-2xl transition-all duration-300 ${activeItemId === 'users' ? 'animate-pulse' : 'group-hover:scale-110'}`}>
+                    👥
+                  </span>
                   {!isSidebarCollapsed && (
-                    <span className="absolute -top-2 left-1/2  -translate-x-1/2 bg-white px-3 text-xs text-gray-500 font-medium">
-                      Roles
-                    </span>
+                    <>
+                      <span className="flex-1 font-semibold">Users</span>
+                      {activeItemId === 'users' && (
+                        <div className="w-2 h-2 bg-white rounded-full animate-ping"></div>
+                      )}
+                    </>
                   )}
                 </div>
-              </div>
-            )}
-
-            {/* Enhanced Dynamic Sidebar Items */}
-            {dynamicSidebarItems?.map((item, index) => (
-              <div key={item._id || index} className="group relative">
-                <Link
-                href={getDynamicRoutePath(item.title)}
-                  onClick={() => setActiveItem(item._id)}
-                  className={`
-                    flex items-center px-4 py-4 rounded-2xl text-sm font-semibold
-                    transition-all duration-300 overflow-hidden relative
-                    ${activeItemId === item._id
-                      ? 'bg-gradient-to-r from-indigo-500 to-purple-600 text-white shadow-lg transform scale-105'
-                      : 'text-gray-700 hover:bg-gradient-to-r hover:from-indigo-50 hover:to-purple-50 hover:text-indigo-700 hover:scale-102'}
-                    group-hover:shadow-md
-                  `}
-                >
-                  <div className="flex items-center space-x-4 w-full">
-                    <span className={`text-2xl transition-all duration-300 ${activeItemId === item._id ? 'animate-pulse' : 'group-hover:scale-110'}`}>
-                      {item.icon}
-                      {/* <Disc /> */}
-                    </span>
-                    {!isSidebarCollapsed && (
-                      <>
-                        <span className="flex-1 font-semibold capitalize">{item.title}</span>
-                        {activeItemId === item._id && (
-                          <div className="w-2 h-2 bg-white rounded-full animate-ping"></div>
-                        )}
-                      </>
-                    )}
-                  </div>
-                  {/* Hover effect overlay */}
-                  <div className="absolute inset-0 bg-gradient-to-r from-indigo-400/10 to-purple-400/10 opacity-0 group-hover:opacity-100 transition-opacity duration-300 rounded-2xl"></div>
-                </Link>
-                {/* Tooltip for collapsed state */}
-                {isSidebarCollapsed && (
-                  <div className="absolute left-full ml-2 top-1/2 -translate-y-1/2 bg-gray-900 text-white text-xs px-2 py-1 rounded opacity-0 group-hover:opacity-100 transition-opacity duration-300 whitespace-nowrap z-50 capitalize">
-                    {item.title}
-                  </div>
-                )}
-              </div>
-            ))}
-
-            {/* Enhanced Empty State */}
-            {renderEmptyState()}
+                <div className="absolute inset-0 bg-gradient-to-r from-indigo-400/10 to-purple-400/10 opacity-0 group-hover:opacity-100 transition-opacity duration-300 rounded-2xl"></div>
+              </Link>
+              {isSidebarCollapsed && (
+                <div className="absolute left-full ml-2 top-1/2 -translate-y-1/2 bg-gray-900 text-white text-xs px-2 py-1 rounded opacity-0 group-hover:opacity-100 transition-opacity duration-300 whitespace-nowrap z-50">
+                  Users
+                </div>
+              )}
+            </div>
           </nav>
 
           {/* Enhanced User Section */}
